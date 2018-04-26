@@ -41,6 +41,7 @@ jobs:
       - run:
           name: 'Install api dependencies'
           command: |
+            cd ~/ndid/api
             npm install
 
       #region Start IDP node
