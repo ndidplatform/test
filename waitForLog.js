@@ -1,4 +1,5 @@
 const args = require('minimist')(process.argv.slice(2))
+const fs = require('fs')
 
 if (!args.file) throw new Error('Specify --file')
 const file = args.file
