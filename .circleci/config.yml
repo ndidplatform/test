@@ -20,15 +20,30 @@ jobs:
             unzip tendermint_0.16.0_linux_amd64.zip
             sudo install tendermint /usr/local/bin
       - run:
-          name: Install project dependencies (todo use a dep management solution?)
+          name: Install Yarn
           command: |
-            go get github.com/fatih/color
+            curl -o- -L https://yarnpkg.com/install.sh | bash
+      - run:
+          name: Install test dependencies
+          command: |
+            yarn --frozen-lockfile
       - run:
           name: Create logs directory
           command: |
             mkdir -p ~/logs
+
       - run: git clone https://github.com/ndidplatform/smart-contract.git /go/src/github.com/ndidplatform/smart-contract
+      - run:
+          name: 'Install smart-contract dependencies (todo: use a dep management solution?)'
+          command: |
+            go get github.com/fatih/color
       - run: git clone https://github.com/ndidplatform/api.git ~/ndid/api
+      - run:
+          name: 'Install api dependencies'
+          command: |
+            npm install
+
+      #region Start IDP node
       - run:
           name: idp-abci
           command: |
@@ -46,6 +61,9 @@ jobs:
               tendermint --home ./config/tendermint/IdP node --consensus.create_empty_blocks=false
             ) 2>&1 | tee -a ~/logs/idp-tendermint.log
           background: true
+      - run: node waitForLog --file=~/logs/idp-abci.log --text=Commit --count=2
+      #endregion
+      #region Start RP node
       - run:
           name: rp-abci
           command: |
@@ -63,7 +81,38 @@ jobs:
               tendermint --home ./config/tendermint/RP node --consensus.create_empty_blocks=false
             ) 2>&1 | tee -a ~/logs/rp-tendermint.log
           background: true
-      - run: sleep 20
+      - run: node waitForLog --file=~/logs/rp-abci.log --text=Commit --count=2
+      #endregion
+
+      #region Start IDP API
+      - run:
+          name: idp-api
+          command: |
+            cd ~/ndid/api
+            ROLE=idp \
+            MQ_CONTACT_IP=127.0.0.1 \
+            MQ_BINDING_PORT=5555 \
+            ABCI_APP_CALLBACK_PORT=3000 \
+            SERVER_PORT=8080 \
+            npm start
+          background: true
+      - run:
+          name: rp-api
+          command: |
+            cd ~/ndid/api
+            ROLE=rp \
+            ABCI_APP_CALLBACK_PORT=3001 \
+            MQ_CONTACT_IP=127.0.0.1 \
+            MQ_BINDING_PORT=5556 \
+            SERVER_PORT=8081 \
+            npm start
+          background: true
+      - run: node waitForLog --file=~/logs/idp-abci.log --text=Commit --count=3
+      - run: node waitForLog --file=~/logs/rp-abci.log --text=Commit --count=3
+      #endregion
+
+      #region Post-test
       - store_artifacts:
           path: ~/logs
           destination: logs
+      #endregion
