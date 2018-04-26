@@ -16,8 +16,8 @@ jobs:
       - run:
           name: Install Tendermint
           command: |
-            wget https://github.com/tendermint/tendermint/releases/download/v0.19.0/tendermint_0.19.0_linux_amd64.zip
-            unzip tendermint_0.19.0_linux_amd64.zip
+            wget https://github.com/tendermint/tendermint/releases/download/v0.18.0-autodraft/tendermint_0.18.0_linux_amd64.zip
+            unzip tendermint_0.18.0_linux_amd64.zip
             sudo install tendermint /usr/local/bin
       - run:
           name: Install project dependencies (todo use a dep management solution?)
