@@ -107,8 +107,8 @@ jobs:
             SERVER_PORT=8081 \
             npm start
           background: true
-      - run: node waitForLog --file=~/logs/idp-abci.log --text=Commit --count=3
-      - run: node waitForLog --file=~/logs/rp-abci.log --text=Commit --count=3
+      - run: node waitForLog --file=$HOME/logs/idp-abci.log --text=Commit --count=3
+      - run: node waitForLog --file=$HOME/logs/rp-abci.log --text=Commit --count=3
       #endregion
 
       #region Post-test
