@@ -3,12 +3,18 @@ jobs:
   build:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.10.1
     working_directory: ~/ndid/test
     steps:
       - checkout
       - run:
           name: Install Node.js
           command: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash - && sudo apt-get install -y nodejs
+      - run:
+          name: Install Tendermint ABCI
+          command: go get github.com/tendermint/abci/cmd/abci-cli
+      - run:
+          name: Install Tendermint
+          command: go get github.com/tendermint/tendermint/cmd/tendermint
       - run: git clone https://github.com/ndidplatform/smart-contract.git /go/github.com/ndidplatform/smart-contract
       - run: git clone https://github.com/ndidplatform/api.git ~/ndid/api
