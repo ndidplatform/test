@@ -61,7 +61,6 @@ jobs:
               tendermint --home ./config/tendermint/IdP node --consensus.create_empty_blocks=false
             ) 2>&1 | tee -a ~/logs/idp-tendermint.log
           background: true
-      - run: node waitForLog --file=$HOME/logs/idp-abci.log --text=Commit --count=2
       #endregion
       #region Start RP node
       - run:
@@ -81,8 +80,9 @@ jobs:
               tendermint --home ./config/tendermint/RP node --consensus.create_empty_blocks=false
             ) 2>&1 | tee -a ~/logs/rp-tendermint.log
           background: true
-      - run: node waitForLog --file=$HOME/logs/rp-abci.log --text=Commit --count=2
       #endregion
+      - run: node waitForLog --file=$HOME/logs/idp-abci.log --text=Commit --count=2
+      - run: node waitForLog --file=$HOME/logs/rp-abci.log --text=Commit --count=2
 
       #region Start IDP API
       - run:
