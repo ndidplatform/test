@@ -1,0 +1,14 @@
+version: 2
+jobs:
+  build:
+    docker:
+      # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
+      - image: circleci/golang:1.8
+    working_directory: ~/ndid/test
+    steps:
+      - checkout
+      - run:
+          name: Install Node.js
+          command: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash - && sudo apt-get install -y nodejs
+      - run: git clone https://github.com/ndidplatform/smart-contract.git /go/github.com/ndidplatform/smart-contract
+      - run: git clone https://github.com/ndidplatform/api.git ~/ndid/api
