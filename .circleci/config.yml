@@ -115,10 +115,19 @@ jobs:
             SERVER_PORT=8081 \
             npm start
           background: true
+      - run:
+          name: Install Newman
+          command: |
+            npm install -g newman
       - run: node waitForLog --file=$HOME/logs/idp-abci.log --text=Commit --count=3
       - run: node waitForLog --file=$HOME/logs/rp-abci.log --text=Commit --count=3
       #endregion
 
+      - run:
+          name: Run Newman
+          command: |
+            ls -l 
+            newman run relying_party.postman_collection.json
       #region Post-test
       - store_artifacts:
           path: ~/logs
