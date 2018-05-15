@@ -118,7 +118,7 @@ jobs:
       - run:
           name: Install Newman
           command: |
-            npm install -g newman
+            sudo npm install -g newman
       - run: node waitForLog --file=$HOME/logs/idp-abci.log --text=Commit --count=3
       - run: node waitForLog --file=$HOME/logs/rp-abci.log --text=Commit --count=3
       #endregion
