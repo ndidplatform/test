@@ -34,9 +34,16 @@ jobs:
 
       - run: git clone https://github.com/ndidplatform/smart-contract.git /go/src/github.com/ndidplatform/smart-contract
       - run:
+          name: Install go dep
+          command: |
+            go get github.com/golang/dep/cmd/dep
+      - run:
           name: 'Install smart-contract dependencies (todo: use a dep management solution?)'
           command: |
-            go get github.com/fatih/color
+            cd /go/src/github.com/ndidplatform/smart-contract/abci
+            dep ensure
+            go install
+            cd ~/ndid/test
       - run: git clone https://github.com/ndidplatform/api.git ~/ndid/api
       - run:
           name: 'Install api dependencies'
