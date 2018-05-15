@@ -26,7 +26,7 @@ jobs:
       - run:
           name: Install test dependencies
           command: |
-            ~/.yarn/bin/yarn --frozen-lockfile
+            ~/.yarn/bin/yarn
       - run:
           name: Create logs directory
           command: |
