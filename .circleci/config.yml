@@ -126,7 +126,6 @@ jobs:
       - run:
           name: Run Newman
           command: |
-            ls -l 
             newman run relying_party.postman_collection.json
       #region Post-test
       - store_artifacts:
