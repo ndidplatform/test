@@ -31,7 +31,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"@#$%^&*<>/\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"@#$%^&*<>/\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -76,7 +76,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"12345678\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"12345678\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid2/12345",
@@ -108,7 +108,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"reference_id\": \"12345678\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+							"raw": "{\n  \"reference_id\": \"12345678\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 						},
 						"url": {
 							"raw": "http://127.0.0.1:8081/rp/requests/uid2/12345",
@@ -197,7 +197,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABCDEzxc\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABCDEzxc\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -242,7 +242,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -287,7 +287,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -332,7 +332,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"1234\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"1234\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -377,7 +377,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"ABAabcd1234\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"ABAabcd1234\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -422,7 +422,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"ABAabcd\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"ABAabcd\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -467,7 +467,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"@#$%^&*<>?\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"@#$%^&*<>?\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -512,7 +512,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -577,59 +577,7 @@
 				}
 			},
 			"response": []
-		},
-		{
-			"name": "case: not integer ial & aal",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"id": "4acd90e4-74ae-4579-b33b-fbc91f5a44a9",
-						"type": "text/javascript",
-						"exec": [
-							"pm.test(\"Status code is 200\", function () {",
-							"    pm.response.to.have.status(200);",
-							"});",
-							"",
-							"pm.test(\"not integer\", function () {",
-							"    var jsonData = pm.response.json();",
-							"    pm.expect(jsonData.errors[0].message).to.eql(\"should be integer\");",
-							"});",
-							"",
-							""
-						]
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"\",\n  \"min_ial\": \"3.0\",\n  \"min_aal\": \"3.0\",\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
-				},
-				"url": {
-					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
-					"protocol": "http",
-					"host": [
-						"127","0","0","1"
-					],
-					"port": "8081",
-					"path": [
-						"rp",
-						"requests",
-						"uid",
-						"123456"
-					]
-				}
-			},
-			"response": []
-		},
+		},		
 		{
 			"name": "case: less than 1 count",
 			"event": [
@@ -663,7 +611,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 0,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 0,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -715,7 +663,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1.1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 0,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1.1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 0,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -762,7 +710,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 2,\n  \"request_timeout\": 3\n}\n"
+					"raw": "{\n  \"reference_id\": \"ABa12345678\",\n  \"idp_list\": [\n    \"123\",\"acc\",\"12Ab\",\"@#$AS12\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 2,\n  \"request_timeout\": 3\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
@@ -807,7 +755,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
