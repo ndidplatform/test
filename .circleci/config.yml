@@ -96,24 +96,28 @@ jobs:
       - run:
           name: idp-api
           command: |
-            cd ~/ndid/api
-            ROLE=idp \
-            MQ_CONTACT_IP=127.0.0.1 \
-            MQ_BINDING_PORT=5555 \
-            ABCI_APP_CALLBACK_PORT=3000 \
-            SERVER_PORT=8080 \
-            npm start
+            (
+              cd ~/ndid/api
+              ROLE=idp \
+              MQ_CONTACT_IP=127.0.0.1 \
+              MQ_BINDING_PORT=5555 \
+              ABCI_APP_CALLBACK_PORT=3000 \
+              SERVER_PORT=8080 \
+              npm start
+            ) 2>&1 | tee -a ~/logs/idp-api.log
           background: true
       - run:
           name: rp-api
           command: |
-            cd ~/ndid/api
-            ROLE=rp \
-            ABCI_APP_CALLBACK_PORT=3001 \
-            MQ_CONTACT_IP=127.0.0.1 \
-            MQ_BINDING_PORT=5556 \
-            SERVER_PORT=8081 \
-            npm start
+            (
+              cd ~/ndid/api
+              ROLE=rp \
+              ABCI_APP_CALLBACK_PORT=3001 \
+              MQ_CONTACT_IP=127.0.0.1 \
+              MQ_BINDING_PORT=5556 \
+              SERVER_PORT=8081 \
+              npm start
+            ) 2>&1 | tee -a ~/logs/idp-rp.log
           background: true
       - run:
           name: Install Newman
