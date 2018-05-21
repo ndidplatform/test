@@ -113,7 +113,7 @@ jobs:
             newman run relying_party.postman_collection.json --reporters junit
       #region Post-test
       - store_test_results:
-        path: /ndid/test/newman
+          path: /ndid/test/newman
       - store_artifacts:
           path: /ndid/logs
           destination: logs
