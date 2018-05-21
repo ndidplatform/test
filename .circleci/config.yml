@@ -111,7 +111,7 @@ jobs:
       - run:
           name: Run Newman
           command: |
-            newman run relying_party.postman_collection.json --reporters junit
+            newman run postman/relying_party.postman_collection.json -e postman/env1.postman_environment.json --reporters junit
       #region Post-test
       - store_test_results:
           path: /ndid/test/newman
