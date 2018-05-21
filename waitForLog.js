@@ -15,6 +15,11 @@ function main () {
   check()
 }
 
+function exitWhenTimeOff() {
+  console.log("Exit because it is too long")
+  process.exit(1)
+}
+
 function check () {
   const data = fs.readFileSync(args.file, 'utf8')
   const found = data.split(text).length - 1
@@ -26,4 +31,5 @@ function check () {
   }
 }
 
+setTimeout(exitWhenTimeOff, 60000)
 main()
