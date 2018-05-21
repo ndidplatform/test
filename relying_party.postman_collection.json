@@ -31,7 +31,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"reference_id\": \"@#$%^&*<>/\",\n  \"idp_list\": [\n    \"string\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"params\": \"string\"\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+					"raw": "{\n  \"reference_id\": \"@#$%^&*<>/\",\n  \"callback_url\": \"http://localhost\",\n  \"data_request_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"demo\":\"string\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 				},
 				"url": {
 					"raw": "http://127.0.0.1:8081/rp/requests/uid/123456",
