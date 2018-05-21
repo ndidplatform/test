@@ -26,6 +26,7 @@ function check () {
   console.log('Found', found, 'match(es).')
   if (found >= count) {
     console.log('Done!')
+    process.exit(0)
   } else {
     setTimeout(check, 1000)
   }
