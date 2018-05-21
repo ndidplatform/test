@@ -105,6 +105,7 @@ jobs:
       - run:
           name: Init sample identity
           command: |
+            sleep 10
             curl --header 'Content-Type: Application/json' -X POST --data " {\"namespace\": \"uid\", \"identifier\" : \"123456\", \"secret\":\"MAGIC\", \"accessor_type\":\"awesome-type\", \"accessor_key\":\"awesome-key\",\"accessor_id\":\"some-awesome-accessor\"}"  http://localhost:8080/identity
 
       - run:
