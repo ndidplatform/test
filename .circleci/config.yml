@@ -68,6 +68,11 @@ jobs:
 
       #region Start IDP API
       - run:
+          name: Initialize Dev Key
+          command: |
+            cd /ndid/api
+            npm run initDevKey
+      - run:
           name: idp-api
           command: |
             (
@@ -93,10 +98,6 @@ jobs:
               npm start
             ) 2>&1 | tee -a /ndid/logs/rp-api.log
           background: true
-      - run:
-          name: Install Newman
-          command: |
-            sudo npm install -g newman
       - run: node waitForLog --file=/ndid/logs/idp-abci.log --text=Commit --count=3
       - run: node waitForLog --file=/ndid/logs/rp-abci.log --text=Commit --count=3
       #endregion
@@ -109,8 +110,10 @@ jobs:
       - run:
           name: Run Newman
           command: |
-            newman run relying_party.postman_collection.json
+            newman run relying_party.postman_collection.json --reporters junit
       #region Post-test
+      - store_test_results:
+        path: /ndid/test/newman
       - store_artifacts:
           path: /ndid/logs
           destination: logs
