@@ -50,7 +50,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"reference_id\": \"ABCDEzxc\",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+									"raw": "{\n  \"reference_id\": \"ABCDEzxc\",\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
 								},
 								"url": {
 									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
@@ -110,7 +110,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"reference_id\": \"\",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"string\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 0,\n      \"request_params\": {\"key\":\"value\"}\n    }\n  ],\n  \"request_message\": \"string\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+									"raw": "{\n  \"reference_id\": \"\",\n  \"callback_url\": \"string\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 0,\n      \"request_params\": {\"key\":\"value\"}\n    }\n  ],\n  \"request_message\": \"string\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
 								},
 								"url": {
 									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
@@ -165,7 +165,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"reference_id\": \" \",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+									"raw": "{\n  \"reference_id\": \" \",\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
 								},
 								"url": {
 									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
@@ -222,7 +222,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"reference_id\": \"AaB@#$%^<>\",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+									"raw": "{\n  \"reference_id\": \"AaB@#$%^<>\",\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
 								},
 								"url": {
 									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
