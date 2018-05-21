@@ -103,15 +103,10 @@ jobs:
       #endregion
 
       - run:
-          name: Init sample identity
-          command: |
-            sleep 5
-            curl --header 'Content-Type: Application/json' -X POST --data " {\"namespace\": \"uid\", \"identifier\" : \"123456\", \"secret\":\"MAGIC\", \"accessor_type\":\"awesome-type\", \"accessor_key\":\"awesome-key\",\"accessor_id\":\"some-awesome-accessor\"}"  http://localhost:8080/identity
-
-      - run:
           name: Run Newman
           command: |
-            newman run postman/relying_party.postman_collection.json -e postman/env1.postman_environment.json --reporters junit
+            sleep 3
+            newman run postman/relying_party.postman_collection.json -e postman/env1.postman_environment.json --reporters junit,cli
       #region Post-test
       - store_test_results:
           path: /ndid/test/newman
@@ -120,4 +115,5 @@ jobs:
           destination: logs
       - store_artifacts:
           path: /ndid/test/newman
+          destination: tests
       #endregion
