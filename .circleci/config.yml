@@ -3,45 +3,26 @@ jobs:
   build:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
-      - image: circleci/golang:1.10.1
-    working_directory: ~/ndid/test
+      - image: ndidplatform/base-test
+    working_directory: /ndid/test
     steps:
       - checkout
       - run:
-          name: Install Node.js
-          command: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash - && sudo apt-get install -y nodejs
-      - run:
-          name: Install Tendermint ABCI
-          command: go get github.com/tendermint/abci/cmd/abci-cli
-      - run:
-          name: Install Tendermint
-          command: |
-            wget https://github.com/tendermint/tendermint/releases/download/v0.16.0/tendermint_0.16.0_linux_amd64.zip
-            unzip tendermint_0.16.0_linux_amd64.zip
-            sudo install tendermint /usr/local/bin
-      - run:
-          name: Install Yarn
-          command: |
-            curl -o- -L https://yarnpkg.com/install.sh | bash
-      - run:
           name: Install test dependencies
           command: |
-            ~/.yarn/bin/yarn --frozen-lockfile
-      - run:
-          name: Create logs directory
-          command: |
-            mkdir -p ~/logs
-
+            ~/.yarn/bin/yarn
       - run: git clone https://github.com/ndidplatform/smart-contract.git /go/src/github.com/ndidplatform/smart-contract
       - run:
           name: 'Install smart-contract dependencies (todo: use a dep management solution?)'
           command: |
-            go get github.com/fatih/color
-      - run: git clone https://github.com/ndidplatform/api.git ~/ndid/api
+            cd /go/src/github.com/ndidplatform/smart-contract/abci
+            dep ensure
+            go install
+      - run: git clone https://github.com/ndidplatform/api.git /ndid/api
       - run:
           name: 'Install api dependencies'
           command: |
-            cd ~/ndid/api
+            cd /ndid/api
             npm install
 
       #region Start IDP node
@@ -51,7 +32,7 @@ jobs:
             (
               cd /go/src/github.com/ndidplatform/smart-contract
               CALLBACK_URI=http://localhost:3000/callback go run abci/server.go tcp://127.0.0.1:46000
-            ) 2>&1 | tee -a ~/logs/idp-abci.log
+            ) 2>&1 | tee -a /ndid/logs/idp-abci.log
           background: true
       - run:
           name: idp-tendermint
@@ -60,7 +41,7 @@ jobs:
               cd /go/src/github.com/ndidplatform/smart-contract
               tendermint --home ./config/tendermint/IdP unsafe_reset_all
               tendermint --home ./config/tendermint/IdP node --consensus.create_empty_blocks=false
-            ) 2>&1 | tee -a ~/logs/idp-tendermint.log
+            ) 2>&1 | tee -a /ndid/logs/idp-tendermint.log
           background: true
       #endregion
       #region Start RP node
@@ -70,7 +51,7 @@ jobs:
             (
               cd /go/src/github.com/ndidplatform/smart-contract
               CALLBACK_URI=http://localhost:3001/callback go run abci/server.go tcp://127.0.0.1:46001
-            ) 2>&1 | tee -a ~/logs/rp-abci.log
+            ) 2>&1 | tee -a /ndid/logs/rp-abci.log
           background: true
       - run:
           name: rp-tendermint
@@ -79,41 +60,62 @@ jobs:
               cd /go/src/github.com/ndidplatform/smart-contract
               tendermint --home ./config/tendermint/RP unsafe_reset_all
               tendermint --home ./config/tendermint/RP node --consensus.create_empty_blocks=false
-            ) 2>&1 | tee -a ~/logs/rp-tendermint.log
+            ) 2>&1 | tee -a /ndid/logs/rp-tendermint.log
           background: true
       #endregion
-      - run: node waitForLog --file=$HOME/logs/idp-abci.log --text=Commit --count=2
-      - run: node waitForLog --file=$HOME/logs/rp-abci.log --text=Commit --count=2
+      - run: node waitForLog --file=/ndid/logs/idp-abci.log --text=Commit --count=2
+      - run: node waitForLog --file=/ndid/logs/rp-abci.log --text=Commit --count=2
 
       #region Start IDP API
       - run:
+          name: Initialize Dev Key
+          command: |
+            cd /ndid/api
+            npm run initDevKey
+      - run:
           name: idp-api
           command: |
-            cd ~/ndid/api
-            ROLE=idp \
-            MQ_CONTACT_IP=127.0.0.1 \
-            MQ_BINDING_PORT=5555 \
-            ABCI_APP_CALLBACK_PORT=3000 \
-            SERVER_PORT=8080 \
-            npm start
+            (
+              cd /ndid/api
+              ROLE=idp \
+              MQ_CONTACT_IP=127.0.0.1 \
+              MQ_BINDING_PORT=5555 \
+              ABCI_APP_CALLBACK_PORT=3000 \
+              SERVER_PORT=8080 \
+              npm start
+            ) 2>&1 | tee -a /ndid/logs/idp-api.log
           background: true
       - run:
           name: rp-api
           command: |
-            cd ~/ndid/api
-            ROLE=rp \
-            ABCI_APP_CALLBACK_PORT=3001 \
-            MQ_CONTACT_IP=127.0.0.1 \
-            MQ_BINDING_PORT=5556 \
-            SERVER_PORT=8081 \
-            npm start
+            (
+              cd /ndid/api
+              ROLE=rp \
+              ABCI_APP_CALLBACK_PORT=3001 \
+              MQ_CONTACT_IP=127.0.0.1 \
+              MQ_BINDING_PORT=5556 \
+              SERVER_PORT=8081 \
+              npm start
+            ) 2>&1 | tee -a /ndid/logs/rp-api.log
           background: true
-      - run: node waitForLog --file=$HOME/logs/idp-abci.log --text=Commit --count=3
-      - run: node waitForLog --file=$HOME/logs/rp-abci.log --text=Commit --count=3
+      - run: node waitForLog --file=/ndid/logs/idp-abci.log --text=Commit --count=3
+      - run: node waitForLog --file=/ndid/logs/rp-abci.log --text=Commit --count=3
       #endregion
 
+      - run:
+          name: Run Newman
+          command: |
+            sleep 3
+            curl --header 'Content-Type: Application/json' -X POST --data " {\"namespace\": \"uuidTest1\", \"identifier\" : \"12345\", \"secret\":\"MAGIC\", \"accessor_type\":\"awesome-type\", \"accessor_key\":\"awesome-key\",\"accessor_id\":\"some-awesome-accessor\"}"  http://localhost:8080/identity
+            sleep 1
+            newman run postman/relying_party.postman_collection.json -e postman/env1.postman_environment.json --reporters junit,cli
       #region Post-test
+      - store_test_results:
+          path: /ndid/test/newman
       - store_artifacts:
-          path: ~/logs
+          path: /ndid/logs
           destination: logs
+      - store_artifacts:
+          path: /ndid/test/newman
+          destination: tests
       #endregion

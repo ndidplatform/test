@@ -1,0 +1,375 @@
+{
+	"info": {
+		"_postman_id": "9f50b7c6-eaaa-41bf-8de7-963428b386f5",
+		"name": "Relying_party",
+		"description": "API for RP specific functions and roles",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "POST /rp/requests/{namespace}/{identifier}",
+			"description": "/rp/requests/{namespace}/{identifier}\n",
+			"item": [
+				{
+					"name": "reference_id",
+					"description": "",
+					"item": [
+						{
+							"name": "Case: Input reference id with empty",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "adb45711-3b6d-42d5-bc25-da78cc2e3553",
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.response.to.have.status(400);",
+											"});",
+											"",
+											"",
+											"",
+											"pm.test('Should shows error \"should not be shorter than 1 characters\"' , function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.errors[0].message).to.eql(\"should NOT be shorter than 1 characters\");",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "f28ea516-45c4-44b7-8d6f-b0660216135c",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reference_id\": \"\",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"string\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 0,\n      \"request_params\": {\"key\":\"value\"}\n    }\n  ],\n  \"request_message\": \"string\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+								},
+								"url": {
+									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
+									"host": [
+										"{{url_rp}}"
+									],
+									"path": [
+										"rp",
+										"requests",
+										"{{namespace}}",
+										"{{identifier}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Case: Input reference id with space",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "43101a2e-7557-4ab8-953c-2b6b6405aac8",
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.response.to.have.status(400);",
+											"});",
+											"",
+											""
+										]
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "0fbc562e-1dc7-416c-ba3f-425201e5d6b0",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reference_id\": \" \",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+								},
+								"url": {
+									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
+									"host": [
+										"{{url_rp}}"
+									],
+									"path": [
+										"rp",
+										"requests",
+										"{{namespace}}",
+										"{{identifier}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Case: Input reference id with special characters",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "31dad7ae-8ab3-4564-b055-7a15d6f8f3a6",
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.response.to.have.status(400);",
+											"});",
+											"",
+											"",
+											"",
+											""
+										]
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "59cdad85-5e7c-45f1-afb8-6cd0c305e22c",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reference_id\": \"AaB@#$%^<>\",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+								},
+								"url": {
+									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
+									"host": [
+										"{{url_rp}}"
+									],
+									"path": [
+										"rp",
+										"requests",
+										"{{namespace}}",
+										"{{identifier}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Case: Input reference id without string",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "c278b8b7-8069-4f8e-b86e-7e49c8cab551",
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Status code is 400\", function () {",
+											"    pm.response.to.have.status(400);",
+											"});",
+											"",
+											"",
+											""
+										]
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "ccd21406-60f3-4ec9-a869-2cf948abf122",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reference_id\": 12234,\n  \"idp_list\": [\n    \t\"idp1\",\"ab12\",\"QEsafd\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+								},
+								"url": {
+									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
+									"host": [
+										"{{url_rp}}"
+									],
+									"path": [
+										"rp",
+										"requests",
+										"{{namespace}}",
+										"{{identifier}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Case: Send request to namespace and identity success",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2f0ffba-ffe2-473a-8cc4-1124f47bf94a",
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "38243afb-9cb8-444f-8795-e4dfe11a404f",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reference_id\": \"ABCDEzxc\",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+								},
+								"url": {
+									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
+									"host": [
+										"{{url_rp}}"
+									],
+									"path": [
+										"rp",
+										"requests",
+										"{{namespace}}",
+										"{{identifier}}"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "82ddee3f-d81e-4fed-89c0-657074673e3f",
+						"type": "text/javascript",
+						"exec": [
+							"setTimeout(function () {},1000);",
+							"var url_idp = pm.variables.get(\"url_idp\");",
+							"",
+							"const createIdentity = {",
+							"    url: url_idp +\"/identity\",",
+							"    method: 'POST',",
+							"    header: \"Content-Type:application/json\",",
+							"    body:{",
+							"        mode: 'raw',",
+							"        raw: JSON.stringify({",
+							"             \"namespace\": \"uuid889\",",
+							"             \"identifier\": \"12345\",",
+							"             \"secret\": \"abc\",",
+							"             \"accessor_type\": \"a\",",
+							"             \"accessor_key\": \"ab\",",
+							"             \"accessor_id\": \"cc\"",
+							"        })",
+							"    }",
+							"};",
+							"",
+							"pm.sendRequest(createIdentity, function (err, response) {",
+							"    if (err) {",
+							"        console.log(err);",
+							"    } else {",
+							"        pm.environment.set(\"namespace\", \"uuid889\");",
+							"        pm.environment.set(\"identifier\", \"12345\");",
+							"    }",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "ec1d75b0-c05c-4144-b9d5-e6e6f9171b31",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "043b2dd6-510f-4a05-a591-9afbb5a6cf7d",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "f03a263b-d9d7-4307-909c-1c39545da545",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
