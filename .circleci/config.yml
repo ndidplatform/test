@@ -106,6 +106,8 @@ jobs:
           name: Run Newman
           command: |
             sleep 3
+            curl --header 'Content-Type: Application/json' -X POST --data " {\"namespace\": \"uuidTest1\", \"identifier\" : \"12345\", \"secret\":\"MAGIC\", \"accessor_type\":\"awesome-type\", \"accessor_key\":\"awesome-key\",\"accessor_id\":\"some-awesome-accessor\"}"  http://localhost:8080/identity
+            sleep 1
             newman run postman/relying_party.postman_collection.json -e postman/env1.postman_environment.json --reporters junit,cli
       #region Post-test
       - store_test_results:
