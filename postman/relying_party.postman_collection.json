@@ -15,59 +15,6 @@
 					"description": "",
 					"item": [
 						{
-							"name": "Case: Send request to namespace and identity success",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"id": "a2f0ffba-ffe2-473a-8cc4-1124f47bf94a",
-										"type": "text/javascript",
-										"exec": [
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
-											"});"
-										]
-									}
-								},
-								{
-									"listen": "prerequest",
-									"script": {
-										"id": "38243afb-9cb8-444f-8795-e4dfe11a404f",
-										"type": "text/javascript",
-										"exec": [
-											""
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"reference_id\": \"ABCDEzxc\",\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
-								},
-								"url": {
-									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
-									"host": [
-										"{{url_rp}}"
-									],
-									"path": [
-										"rp",
-										"requests",
-										"{{namespace}}",
-										"{{identifier}}"
-									]
-								}
-							},
-							"response": []
-						},
-						{
 							"name": "Case: Input reference id with empty",
 							"event": [
 								{
@@ -110,7 +57,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"reference_id\": \"\",\n  \"callback_url\": \"string\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 0,\n      \"request_params\": {\"key\":\"value\"}\n    }\n  ],\n  \"request_message\": \"string\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+									"raw": "{\n  \"reference_id\": \"\",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"string\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 0,\n      \"request_params\": {\"key\":\"value\"}\n    }\n  ],\n  \"request_message\": \"string\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
 								},
 								"url": {
 									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
@@ -165,7 +112,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"reference_id\": \" \",\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+									"raw": "{\n  \"reference_id\": \" \",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
 								},
 								"url": {
 									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
@@ -222,7 +169,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"reference_id\": \"AaB@#$%^<>\",\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
+									"raw": "{\n  \"reference_id\": \"AaB@#$%^<>\",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}"
 								},
 								"url": {
 									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
@@ -294,6 +241,59 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Case: Send request to namespace and identity success",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2f0ffba-ffe2-473a-8cc4-1124f47bf94a",
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "38243afb-9cb8-444f-8795-e4dfe11a404f",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reference_id\": \"ABCDEzxc\",\n  \"idp_list\": [\n    \"idp1\"\n  ],\n  \"callback_url\": \"http://localhost\",\n  \"as_service_list\": [\n    {\n      \"service_id\": \"string\",\n      \"as_id\": [\n        \"string\"\n      ],\n      \"count\": 1,\n      \"request_params\": {\"id\":\"1234\"}\n    }\n  ],\n  \"request_message\": \"OK\",\n  \"min_ial\": 1.1,\n  \"min_aal\": 1,\n  \"min_idp\": 1,\n  \"request_timeout\": 0\n}\n"
+								},
+								"url": {
+									"raw": "{{url_rp}}/rp/requests/{{namespace}}/{{identifier}}",
+									"host": [
+										"{{url_rp}}"
+									],
+									"path": [
+										"rp",
+										"requests",
+										"{{namespace}}",
+										"{{identifier}}"
+									]
+								}
+							},
+							"response": []
 						}
 					],
 					"_postman_isSubFolder": true
@@ -306,6 +306,7 @@
 						"id": "82ddee3f-d81e-4fed-89c0-657074673e3f",
 						"type": "text/javascript",
 						"exec": [
+							"setTimeout(function () {},1000);",
 							"var url_idp = pm.variables.get(\"url_idp\");",
 							"",
 							"const createIdentity = {",
@@ -315,13 +316,12 @@
 							"    body:{",
 							"        mode: 'raw',",
 							"        raw: JSON.stringify({",
-							"             \"namespace\": \"uuidTest1\",",
+							"             \"namespace\": \"uuid889\",",
 							"             \"identifier\": \"12345\",",
 							"             \"secret\": \"abc\",",
 							"             \"accessor_type\": \"a\",",
 							"             \"accessor_key\": \"ab\",",
 							"             \"accessor_id\": \"cc\"",
-							"             ",
 							"        })",
 							"    }",
 							"};",
@@ -330,8 +330,7 @@
 							"    if (err) {",
 							"        console.log(err);",
 							"    } else {",
-							"        console.log(response.json());",
-							"        pm.environment.set(\"namespace\", \"uuidTest1\");",
+							"        pm.environment.set(\"namespace\", \"uuid889\");",
 							"        pm.environment.set(\"identifier\", \"12345\");",
 							"    }",
 							"});"
