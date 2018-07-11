@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "E2E test for NDID platform",
   "scripts": {
-    "test": "mocha src/scenarios/*.js --require babel-core/register"
+    "test": "mocha src/tests/index.js --require babel-core/register"
   },
   "repository": {
     "type": "git",
@@ -16,7 +16,9 @@
   "dependencies": {
     "body-parser": "^1.18.3",
     "express": "^4.16.3",
-    "node-fetch": "^2.1.2"
+    "node-fetch": "^2.1.2",
+    "node-forge": "^0.7.5",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

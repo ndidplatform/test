@@ -14,6 +14,7 @@ export const asEventEmitter = new EventEmitter();
 /*
   RP
 */
+let rpServer;
 const rpApp = express();
 rpApp.use(bodyParser.json({ limit: '2mb' }));
 
@@ -23,11 +24,10 @@ rpApp.post('/rp/callback', async function(req, res) {
   res.status(204).end();
 });
 
-rpApp.listen(config.RP_CALLBACK_PORT);
-
 /*
   IdP
 */
+let idpServer;
 const idpApp = express();
 idpApp.use(bodyParser.json({ limit: '2mb' }));
 
@@ -52,11 +52,10 @@ idpApp.post('/idp/accessor/sign', async function(req, res) {
   });
 });
 
-idpApp.listen(config.IDP_CALLBACK_PORT);
-
 /*
   AS
 */
+let asServer;
 const asApp = express();
 asApp.use(bodyParser.json({ limit: '2mb' }));
 
@@ -66,4 +65,14 @@ asApp.post('/as/callback', async function(req, res) {
   res.status(204).end();
 });
 
-asApp.listen(config.AS_CALLBACK_PORT);
+export function startCallbackServers() {
+  rpServer = rpApp.listen(config.RP_CALLBACK_PORT);
+  idpServer = idpApp.listen(config.IDP_CALLBACK_PORT);
+  asServer = asApp.listen(config.AS_CALLBACK_PORT);
+}
+
+export function stopCallbackServers() {
+  rpServer.close();
+  idpServer.close();
+  asServer.close();
+}

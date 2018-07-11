@@ -1,5 +1,18 @@
 import crypto from 'crypto';
 
+export function createEventPromise() {
+  let resolve, reject;
+  const promise = new Promise((_resolve, _reject) => {
+    resolve = _resolve;
+    reject = _reject;
+  });
+  return {
+    promise,
+    resolve,
+    reject,
+  };
+}
+
 export function hash(stringToHash) {
   const hash = crypto.createHash('sha256');
   hash.update(stringToHash);

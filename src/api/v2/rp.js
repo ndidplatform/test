@@ -1,4 +1,4 @@
-import { getApiBaseUrl, httpGet, httpPost } from './common';
+import { getApiBaseUrl, httpGet, httpPost } from './helpers';
 
 const ROLE = 'rp';
 const apiBaseUrl = getApiBaseUrl(ROLE);
