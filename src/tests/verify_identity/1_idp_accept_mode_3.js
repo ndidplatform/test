@@ -1,19 +1,24 @@
 import { expect } from 'chai';
 
-import * as rpApi from '../api/v2/rp';
-import * as idpApi from '../api/v2/idp';
-// import * as commonApi from '../api/v2/common';
-import { rpEventEmitter, idpEventEmitter } from '../callback_server';
-import * as db from '../db';
-import { createEventPromise, hash, createSignature } from '../utils';
-import * as config from '../config';
+import * as rpApi from '../../api/v2/rp';
+import * as idpApi from '../../api/v2/idp';
+// import * as commonApi from '../../api/v2/common';
+import { rpEventEmitter, idp1EventEmitter } from '../../callback_server';
+import * as db from '../../db';
+import {
+  createEventPromise,
+  generateReferenceId,
+  hash,
+  createSignature,
+} from '../../utils';
+import * as config from '../../config';
 
-describe('Verify identity flow (no data request)', function() {
+describe('1 IdP, accept consent, mode 3', function() {
   let namespace;
   let identifier;
 
-  const rpReferenceId = Math.floor(Math.random() * 100000 + 1).toString();
-  const idpReferenceId = Math.floor(Math.random() * 100000 + 1).toString();
+  const rpReferenceId = generateReferenceId();
+  const idpReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
@@ -68,7 +73,7 @@ describe('Verify identity flow (no data request)', function() {
       }
     });
 
-    idpEventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function(callbackData) {
       if (callbackData.type === 'incoming_request') {
         incomingRequestPromise.resolve(callbackData);
       } else if (callbackData.type === 'response_result') {
@@ -79,10 +84,10 @@ describe('Verify identity flow (no data request)', function() {
 
   it('RP should create a request successfully', async function() {
     this.timeout(10000);
-    const response = await rpApi.createRequest(createRequestParams);
+    const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string');
+    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
 
@@ -132,9 +137,9 @@ describe('Verify identity flow (no data request)', function() {
         identity.namespace === namespace && identity.identifier === identifier
     );
 
-    const response = await idpApi.createResponse({
+    const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
-      callback_url: config.IDP_CALLBACK_URL,
+      callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
@@ -200,6 +205,6 @@ describe('Verify identity flow (no data request)', function() {
 
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
-    idpEventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('callback');
   });
 });

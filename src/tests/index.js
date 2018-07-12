@@ -1,7 +1,4 @@
-import {
-  startCallbackServers,
-  stopCallbackServers,
-} from '../callback_server';
+import { startCallbackServers, stopCallbackServers } from '../callback_server';
 
 describe('End-to-End NDID API test', function() {
   before(function() {
@@ -11,6 +8,8 @@ describe('End-to-End NDID API test', function() {
   require('./idp_setup');
   require('./create_identity');
   require('./verify_identity');
+  require('./as_service_setup');
+  require('./data_request');
 
   after(function() {
     stopCallbackServers();

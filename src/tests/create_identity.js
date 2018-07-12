@@ -4,9 +4,9 @@ import uuidv4 from 'uuid/v4';
 
 import * as idpApi from '../api/v2/idp';
 // import * as commonApi from '../api/v2/common';
-import { idpEventEmitter } from '../callback_server';
+import { idp1EventEmitter } from '../callback_server';
 import * as db from '../db';
-import { createEventPromise } from '../utils';
+import { createEventPromise, generateReferenceId } from '../utils';
 import * as config from '../config';
 
 const namespace = 'cid';
@@ -15,8 +15,8 @@ const keypair = forge.pki.rsa.generateKeyPair(2048);
 const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
 const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
-describe('IdP create identity (without providing accessor_id)', function() {
-  const referenceId = Math.floor(Math.random() * 100000 + 1).toString();
+describe('IdP (idp1) create identity (without providing accessor_id)', function() {
+  const referenceId = generateReferenceId();
 
   const createIdentityRequestResultPromise = createEventPromise();
   const createIdentityResultPromise = createEventPromise();
@@ -40,7 +40,7 @@ describe('IdP create identity (without providing accessor_id)', function() {
     //   this.skip();
     // }
 
-    idpEventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function(callbackData) {
       if (callbackData.type === 'create_identity_request_result') {
         createIdentityRequestResultPromise.resolve(callbackData);
       } else if (callbackData.type === 'create_identity_result') {
@@ -51,9 +51,9 @@ describe('IdP create identity (without providing accessor_id)', function() {
 
   it('should create identity request successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.createIdentity({
+    const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
-      callback_url: config.IDP_CALLBACK_URL,
+      callback_url: config.IDP1_CALLBACK_URL,
       namespace,
       identifier,
       accessor_type: 'RSA',
@@ -63,8 +63,8 @@ describe('IdP create identity (without providing accessor_id)', function() {
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string');
-    expect(responseBody.accessor_id).to.be.a('string');
+    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
@@ -87,7 +87,7 @@ describe('IdP create identity (without providing accessor_id)', function() {
       request_id: requestId,
       success: true,
     });
-    expect(createIdentityResult.secret).to.be.a('string');
+    expect(createIdentityResult.secret).to.be.a('string').that.is.not.empty;
 
     const secret = createIdentityResult.secret;
 
@@ -106,6 +106,6 @@ describe('IdP create identity (without providing accessor_id)', function() {
   });
 
   after(function() {
-    idpEventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('callback');
   });
 });

@@ -13,6 +13,10 @@ export function createEventPromise() {
   };
 }
 
+export function generateReferenceId() {
+  return Math.floor(Math.random() * 100000 + 1).toString();
+}
+
 export function hash(stringToHash) {
   const hash = crypto.createHash('sha256');
   hash.update(stringToHash);

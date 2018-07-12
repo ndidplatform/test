@@ -8,8 +8,10 @@ import * as utils from '../utils';
 import * as config from '../config';
 
 export const rpEventEmitter = new EventEmitter();
-export const idpEventEmitter = new EventEmitter();
-export const asEventEmitter = new EventEmitter();
+export const idp1EventEmitter = new EventEmitter();
+export const idp2EventEmitter = new EventEmitter();
+export const as1EventEmitter = new EventEmitter();
+export const as2EventEmitter = new EventEmitter();
 
 /*
   RP
@@ -25,21 +27,21 @@ rpApp.post('/rp/callback', async function(req, res) {
 });
 
 /*
-  IdP
+  IdP-1
 */
-let idpServer;
-const idpApp = express();
-idpApp.use(bodyParser.json({ limit: '2mb' }));
+let idp1Server;
+const idp1App = express();
+idp1App.use(bodyParser.json({ limit: '2mb' }));
 
-idpApp.post('/idp/callback', async function(req, res) {
+idp1App.post('/idp/callback', async function(req, res) {
   const callbackData = req.body;
-  idpEventEmitter.emit('callback', callbackData);
+  idp1EventEmitter.emit('callback', callbackData);
   res.status(204).end();
 });
 
-idpApp.post('/idp/accessor/sign', async function(req, res) {
+idp1App.post('/idp/accessor/sign', async function(req, res) {
   const callbackData = req.body;
-  idpEventEmitter.emit('accessor_sign_callback', callbackData);
+  idp1EventEmitter.emit('accessor_sign_callback', callbackData);
 
   const reference = db.createIdentityReferences.find(
     (ref) => ref.referenceId === callbackData.reference_id
@@ -53,26 +55,71 @@ idpApp.post('/idp/accessor/sign', async function(req, res) {
 });
 
 /*
-  AS
+  IdP-2
 */
-let asServer;
-const asApp = express();
-asApp.use(bodyParser.json({ limit: '2mb' }));
+let idp2Server;
+const idp2App = express();
+idp2App.use(bodyParser.json({ limit: '2mb' }));
 
-asApp.post('/as/callback', async function(req, res) {
+idp2App.post('/idp/callback', async function(req, res) {
   const callbackData = req.body;
-  asEventEmitter.emit('callback', callbackData);
+  idp2EventEmitter.emit('callback', callbackData);
+  res.status(204).end();
+});
+
+idp2App.post('/idp/accessor/sign', async function(req, res) {
+  const callbackData = req.body;
+  idp2EventEmitter.emit('accessor_sign_callback', callbackData);
+
+  const reference = db.createIdentityReferences.find(
+    (ref) => ref.referenceId === callbackData.reference_id
+  );
+  res.status(200).json({
+    signature: utils.createSignature(
+      reference.accessorPrivateKey,
+      callbackData.sid
+    ),
+  });
+});
+
+/*
+  AS-1
+*/
+let as1Server;
+const as1App = express();
+as1App.use(bodyParser.json({ limit: '2mb' }));
+
+as1App.post('/as/callback', async function(req, res) {
+  const callbackData = req.body;
+  as1EventEmitter.emit('callback', callbackData);
+  res.status(204).end();
+});
+
+/*
+  AS-2
+*/
+let as2Server;
+const as2App = express();
+as2App.use(bodyParser.json({ limit: '2mb' }));
+
+as2App.post('/as/callback', async function(req, res) {
+  const callbackData = req.body;
+  as2EventEmitter.emit('callback', callbackData);
   res.status(204).end();
 });
 
 export function startCallbackServers() {
   rpServer = rpApp.listen(config.RP_CALLBACK_PORT);
-  idpServer = idpApp.listen(config.IDP_CALLBACK_PORT);
-  asServer = asApp.listen(config.AS_CALLBACK_PORT);
+  idp1Server = idp1App.listen(config.IDP1_CALLBACK_PORT);
+  idp2Server = idp2App.listen(config.IDP2_CALLBACK_PORT);
+  as1Server = as1App.listen(config.AS1_CALLBACK_PORT);
+  as2Server = as2App.listen(config.AS2_CALLBACK_PORT);
 }
 
 export function stopCallbackServers() {
   rpServer.close();
-  idpServer.close();
-  asServer.close();
+  idp1Server.close();
+  idp2Server.close();
+  as1Server.close();
+  as2Server.close();
 }

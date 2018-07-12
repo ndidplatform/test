@@ -1,11 +1,18 @@
 import { getApiBaseUrl, httpGet, httpPost } from './helpers';
 
-const ROLE = 'rp';
-const apiBaseUrl = getApiBaseUrl(ROLE);
+export function createRequest(nodeId, data) {
+  const apiBaseUrl = getApiBaseUrl(nodeId);
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(`${apiBaseUrl}/rp/requests/${namespace}/${identifier}`, rest);
+}
 
-export function createRequest(data) {
-  return httpPost(
-    `${apiBaseUrl}/rp/requests/${data.namespace}/${data.identifier}`,
-    data
-  );
+export function closeRequest(nodeId, data) {
+  const apiBaseUrl = getApiBaseUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/rp/requests/close`, data);
+}
+
+export function getDataFromAS(nodeId, data) {
+  const apiBaseUrl = getApiBaseUrl(nodeId);
+  const { requestId } = data;
+  return httpGet(`${apiBaseUrl}/rp/requests/data/${requestId}`);
 }
