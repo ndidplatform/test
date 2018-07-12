@@ -1,10 +1,10 @@
 import { expect } from 'chai';
+import forge from 'node-forge';
 
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
 // import * as commonApi from '../../api/v2/common';
 import { rpEventEmitter, idp1EventEmitter } from '../../callback_server';
-import * as db from '../../db';
 import {
   createEventPromise,
   generateReferenceId,
@@ -13,42 +13,40 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('1 IdP, reject consent, mode 3', function() {
+describe('1 IdP, accept consent, mode 1', function() {
   let namespace;
   let identifier;
 
-  const rpCreateRequestReferenceId = generateReferenceId();
+  const keypair = forge.pki.rsa.generateKeyPair(2048);
+  const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
+
+  const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
-  const rpCloseRequestReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
-  const requestStatusRejectedPromise = createEventPromise(); // RP
-  const closeRequestResultPromise = createEventPromise(); // RP
+  const requestStatusCompletedPromise = createEventPromise(); // RP
+  const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
 
   let requestId;
 
   before(function() {
-    if (db.identities[0] == null) {
-      throw new Error('No created identity to use');
-    }
-
-    namespace = db.identities[0].namespace;
-    identifier = db.identities[0].identifier;
+    namespace = 'cid';
+    identifier = '1234567890123';
 
     createRequestParams = {
-      reference_id: rpCreateRequestReferenceId,
+      reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
-      mode: 3,
+      mode: 1,
       namespace,
       identifier,
-      idp_id_list: [],
+      idp_id_list: ['idp1'],
       data_request_list: [],
-      request_message: 'Test request message (reject) (mode 3)',
+      request_message: 'Test request message (mode 1)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
@@ -58,7 +56,7 @@ describe('1 IdP, reject consent, mode 3', function() {
     rpEventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
-        callbackData.reference_id === rpCreateRequestReferenceId
+        callbackData.reference_id === rpReferenceId
       ) {
         createRequestResultPromise.resolve(callbackData);
       } else if (
@@ -67,14 +65,13 @@ describe('1 IdP, reject consent, mode 3', function() {
       ) {
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
-        } else if (callbackData.status === 'rejected') {
-          requestStatusRejectedPromise.resolve(callbackData);
+        } else if (callbackData.status === 'completed') {
+          if (callbackData.closed) {
+            requestClosedPromise.resolve(callbackData);
+          } else {
+            requestStatusCompletedPromise.resolve(callbackData);
+          }
         }
-      } else if (
-        callbackData.type === 'close_request_result' &&
-        callbackData.reference_id === rpCloseRequestReferenceId
-      ) {
-        closeRequestResultPromise.resolve(callbackData);
       }
     });
 
@@ -138,13 +135,8 @@ describe('1 IdP, reject consent, mode 3', function() {
     });
   });
 
-  it('IdP should create response (reject) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
-    const identity = db.identities.find(
-      (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -153,13 +145,11 @@ describe('1 IdP, reject consent, mode 3', function() {
       identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
-      status: 'reject',
+      status: 'accept',
       signature: createSignature(
-        identity.accessors[0].accessorPrivateKey,
+        userPrivateKey,
         createRequestParams.request_message
       ),
-      accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(202);
 
@@ -171,12 +161,12 @@ describe('1 IdP, reject consent, mode 3', function() {
     });
   });
 
-  it('RP should receive rejected request status with valid proofs', async function() {
+  it('RP should receive completed request status', async function() {
     this.timeout(15000);
-    const requestStatus = await requestStatusRejectedPromise.promise;
+    const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
-      status: 'rejected',
+      status: 'completed',
       mode: createRequestParams.mode,
       min_idp: createRequestParams.min_idp,
       answered_idp_count: 1,
@@ -184,24 +174,31 @@ describe('1 IdP, reject consent, mode 3', function() {
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('RP should be able to close request', async function() {
+  it('RP should receive request closed status', async function() {
     this.timeout(10000);
-    const response = await rpApi.closeRequest('rp1', {
-      reference_id: rpCloseRequestReferenceId,
-      callback_url: config.RP_CALLBACK_URL,
+    const requestStatus = await requestClosedPromise.promise;
+    expect(requestStatus).to.deep.include({
       request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: true,
+      timed_out: false,
+      service_list: [],
+      response_valid_list: [
+        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
+      ],
     });
-    expect(response.status).to.equal(202);
-
-    const closeRequestResult = await closeRequestResultPromise.promise;
-    expect(closeRequestResult.success).to.equal(true);
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
   });
 
   after(function() {

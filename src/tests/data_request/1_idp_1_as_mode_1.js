@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import forge from 'node-forge';
 
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
@@ -9,7 +10,6 @@ import {
   idp1EventEmitter,
   as1EventEmitter,
 } from '../../callback_server';
-import * as db from '../../db';
 import {
   createEventPromise,
   generateReferenceId,
@@ -18,9 +18,12 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('1 IdP, 1 AS, mode 3', function() {
+describe('1 IdP, 1 AS, mode 1', function() {
   let namespace;
   let identifier;
+
+  const keypair = forge.pki.rsa.generateKeyPair(2048);
+  const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
@@ -46,20 +49,16 @@ describe('1 IdP, 1 AS, mode 3', function() {
   let requestId;
 
   before(function() {
-    if (db.identities[0] == null) {
-      throw new Error('No created identity to use');
-    }
-
-    namespace = db.identities[0].namespace;
-    identifier = db.identities[0].identifier;
+    namespace = 'cid';
+    identifier = '1234567890123';
 
     createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
-      mode: 3,
+      mode: 1,
       namespace,
       identifier,
-      idp_id_list: [],
+      idp_id_list: ['idp1'],
       data_request_list: [
         {
           service_id: 'bank_statement',
@@ -70,7 +69,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
           }),
         },
       ],
-      request_message: 'Test request message (data request) (mode 3)',
+      request_message: 'Test request message (data request) (mode 1)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
@@ -191,11 +190,6 @@ describe('1 IdP, 1 AS, mode 3', function() {
 
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
-    const identity = db.identities.find(
-      (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -204,13 +198,11 @@ describe('1 IdP, 1 AS, mode 3', function() {
       identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
       signature: createSignature(
-        identity.accessors[0].accessorPrivateKey,
+        userPrivateKey,
         createRequestParams.request_message
       ),
-      accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(202);
 
@@ -222,7 +214,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
     });
   });
 
-  it('RP should receive confirmed request status with valid proofs', async function() {
+  it('RP should receive confirmed request status', async function() {
     this.timeout(15000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
@@ -242,7 +234,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -303,7 +295,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -330,7 +322,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -357,7 +349,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
       ],
     });
     expect(requestStatus).to.have.property('block_height');

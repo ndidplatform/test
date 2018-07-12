@@ -3,7 +3,7 @@ import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as idpApi from '../api/v2/idp';
-// import * as commonApi from '../api/v2/common';
+import * as commonApi from '../api/v2/common';
 import { idp1EventEmitter } from '../callback_server';
 import * as db from '../db';
 import { createEventPromise, generateReferenceId } from '../utils';
@@ -29,7 +29,7 @@ describe('IdP (idp1) create identity (without providing accessor_id)', function(
     accessorPrivateKey,
   });
 
-  before(async function() {
+  before(function() {
     // const response = await commonApi.getRelevantIdpNodesBySid('idp', {
     //   namespace,
     //   identifier,
@@ -90,6 +90,14 @@ describe('IdP (idp1) create identity (without providing accessor_id)', function(
     expect(createIdentityResult.secret).to.be.a('string').that.is.not.empty;
 
     const secret = createIdentityResult.secret;
+
+    const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
+      namespace,
+      identifier,
+    });
+    const idpNodes = await response.json();
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
+    expect(idpNode).to.exist;
 
     db.identities.push({
       namespace,

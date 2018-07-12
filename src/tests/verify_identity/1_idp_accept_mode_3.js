@@ -32,12 +32,12 @@ describe('1 IdP, accept consent, mode 3', function() {
   let requestId;
 
   before(function() {
-    namespace = db.identities[0].namespace;
-    identifier = db.identities[0].identifier;
-
-    if (namespace == null || identifier == null) {
+    if (db.identities[0] == null) {
       throw new Error('No created identity to use');
     }
+
+    namespace = db.identities[0].namespace;
+    identifier = db.identities[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -47,7 +47,7 @@ describe('1 IdP, accept consent, mode 3', function() {
       identifier,
       idp_id_list: [],
       data_request_list: [],
-      request_message: 'Test request message',
+      request_message: 'Test request message (mode 3)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
@@ -60,7 +60,10 @@ describe('1 IdP, accept consent, mode 3', function() {
         callbackData.reference_id === rpReferenceId
       ) {
         createRequestResultPromise.resolve(callbackData);
-      } else if (callbackData.type === 'request_status') {
+      } else if (
+        callbackData.type === 'request_status' &&
+        callbackData.request_id === requestId
+      ) {
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'completed') {
@@ -74,7 +77,10 @@ describe('1 IdP, accept consent, mode 3', function() {
     });
 
     idp1EventEmitter.on('callback', function(callbackData) {
-      if (callbackData.type === 'incoming_request') {
+      if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId
+      ) {
         incomingRequestPromise.resolve(callbackData);
       } else if (callbackData.type === 'response_result') {
         responseResultPromise.resolve(callbackData);

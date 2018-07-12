@@ -1,6 +1,11 @@
 import { getApiBaseUrl, httpGet, httpPost } from './helpers';
 
-export function setCallback(nodeId, data) {
+export function getCallbacks(nodeId) {
+  const apiBaseUrl = getApiBaseUrl(nodeId);
+  return httpGet(`${apiBaseUrl}/idp/callback`);
+}
+
+export function setCallbacks(nodeId, data) {
   const apiBaseUrl = getApiBaseUrl(nodeId);
   return httpPost(`${apiBaseUrl}/idp/callback`, data);
 }

@@ -35,4 +35,19 @@ describe('AS (as1) setup', function() {
       success: true,
     });
   });
+
+  it('should have offered service (bank_statement)', async function() {
+    const response = await asApi.getService('as1', {
+      serviceId: 'bank_statement',
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      min_ial: 1.1,
+      min_aal: 1,
+      url: config.AS1_CALLBACK_URL,
+      active: true,
+      suspended: false,
+    });
+  });
 });
