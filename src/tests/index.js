@@ -1,6 +1,6 @@
 import { startCallbackServers, stopCallbackServers } from '../callback_server';
 
-describe('End-to-End NDID API test', function() {
+describe('End-to-End NDID API (v2) test', function() {
   before(function() {
     startCallbackServers();
   });
