@@ -1,11 +1,18 @@
 import { expect } from 'chai';
 
+import { as1Available } from '.';
 import * as asApi from '../api/v2/as';
 import { as1EventEmitter } from '../callback_server';
 import { createEventPromise, generateReferenceId } from '../utils';
 import * as config from '../config';
 
 describe('AS (as1) setup', function() {
+  before(function() {
+    if (!as1Available) {
+      this.skip();
+    }
+  });
+
   const referenceId = generateReferenceId();
 
   const addOrUpdateServiceResultPromise = createEventPromise();

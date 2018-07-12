@@ -33,12 +33,12 @@ describe('1 IdP, reject consent, mode 3', function() {
   let requestId;
 
   before(function() {
-    if (db.identities[0] == null) {
+    if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.identities[0].namespace;
-    identifier = db.identities[0].identifier;
+    namespace = db.idp1Identities[0].namespace;
+    identifier = db.idp1Identities[0].identifier;
 
     createRequestParams = {
       reference_id: rpCreateRequestReferenceId,
@@ -140,7 +140,7 @@ describe('1 IdP, reject consent, mode 3', function() {
 
   it('IdP should create response (reject) successfully', async function() {
     this.timeout(10000);
-    const identity = db.identities.find(
+    const identity = db.idp1Identities.find(
       (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );

@@ -2,20 +2,20 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import * as idpApi from '../api/v2/idp';
-import * as commonApi from '../api/v2/common';
-import { idp1EventEmitter } from '../callback_server';
-import * as db from '../db';
-import { createEventPromise, generateReferenceId } from '../utils';
-import * as config from '../config';
+import * as idpApi from '../../api/v2/idp';
+import * as commonApi from '../../api/v2/common';
+import { idp1EventEmitter } from '../../callback_server';
+import * as db from '../../db';
+import { createEventPromise, generateReferenceId } from '../../utils';
+import * as config from '../../config';
 
-const namespace = 'cid';
-const identifier = uuidv4();
-const keypair = forge.pki.rsa.generateKeyPair(2048);
-const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP', function() {
+  const namespace = 'cid';
+  const identifier = uuidv4();
+  const keypair = forge.pki.rsa.generateKeyPair(2048);
+  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
+  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
-describe('IdP (idp1) create identity (without providing accessor_id)', function() {
   const referenceId = generateReferenceId();
 
   const createIdentityRequestResultPromise = createEventPromise();
@@ -99,7 +99,7 @@ describe('IdP (idp1) create identity (without providing accessor_id)', function(
     const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.exist;
 
-    db.identities.push({
+    db.idp1Identities.push({
       namespace,
       identifier,
       accessors: [
