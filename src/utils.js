@@ -1,5 +1,7 @@
 import crypto from 'crypto';
 
+import uuidv4 from 'uuid/v4';
+
 export function createEventPromise() {
   let resolve, reject;
   const promise = new Promise((_resolve, _reject) => {
@@ -14,7 +16,7 @@ export function createEventPromise() {
 }
 
 export function generateReferenceId() {
-  return Math.floor(Math.random() * 100000 + 1).toString();
+  return uuidv4();
 }
 
 export function hash(stringToHash) {
