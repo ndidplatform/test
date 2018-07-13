@@ -11,6 +11,7 @@ import {
   createEventPromise,
   generateReferenceId,
   createSignature,
+  hash,
 } from '../../utils';
 import * as config from '../../config';
 
@@ -26,6 +27,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
   const idp1ReferenceId = generateReferenceId();
 
   const createIdentityRequestResultPromise = createEventPromise(); // 2nd IdP
+  const accessorSignPromise = createEventPromise(); // 2nd IdP
   const incomingRequestPromise = createEventPromise(); // 1st IdP
   const responseResultPromise = createEventPromise(); // 1st IdP
   const createIdentityResultPromise = createEventPromise(); // 2nd IdP
@@ -55,16 +57,31 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
         callbackData.request_id === requestId
       ) {
         incomingRequestPromise.resolve(callbackData);
-      } else if (callbackData.type === 'response_result') {
+      } else if (
+        callbackData.type === 'response_result' &&
+        callbackData.reference_id === idp1ReferenceId
+      ) {
         responseResultPromise.resolve(callbackData);
       }
     });
 
     idp2EventEmitter.on('callback', function(callbackData) {
-      if (callbackData.type === 'create_identity_request_result') {
+      if (
+        callbackData.type === 'create_identity_request_result' &&
+        callbackData.reference_id === referenceId
+      ) {
         createIdentityRequestResultPromise.resolve(callbackData);
-      } else if (callbackData.type === 'create_identity_result') {
+      } else if (
+        callbackData.type === 'create_identity_result' &&
+        callbackData.reference_id === referenceId
+      ) {
         createIdentityResultPromise.resolve(callbackData);
+      }
+    });
+
+    idp2EventEmitter.on('accessor_sign_callback', function(callbackData) {
+      if (callbackData.reference_id === referenceId) {
+        accessorSignPromise.resolve(callbackData);
       }
     });
   });
@@ -95,6 +112,25 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       exist: true,
       accessor_id: accessorId,
       success: true,
+    });
+  });
+
+  it('should receive accessor sign callback with correct data', async function() {
+    this.timeout(15000);
+    const sid = `${namespace}:${identifier}`;
+    const sid_hash = hash(sid);
+
+    const accessorSignParams = await accessorSignPromise.promise;
+    expect(accessorSignParams).to.deep.equal({
+      type: 'accessor_sign',
+      reference_id: referenceId,
+      accessor_id: accessorId,
+      sid,
+      sid_hash,
+      hash_method: 'SHA256',
+      key_type: 'RSA',
+      sign_method: 'RSA-SHA256',
+      padding: 'PKCS#1v1.5',
     });
   });
 
@@ -187,5 +223,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
+    idp2EventEmitter.removeAllListeners('callback');
+    idp2EventEmitter.removeAllListeners('accessor_sign_callback');
   });
 });

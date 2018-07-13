@@ -6,7 +6,7 @@ import * as idpApi from '../../api/v2/idp';
 import * as commonApi from '../../api/v2/common';
 import { idp1EventEmitter } from '../../callback_server';
 import * as db from '../../db';
-import { createEventPromise, generateReferenceId } from '../../utils';
+import { createEventPromise, generateReferenceId, hash } from '../../utils';
 import * as config from '../../config';
 
 describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP', function() {
@@ -19,6 +19,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
   const referenceId = generateReferenceId();
 
   const createIdentityRequestResultPromise = createEventPromise();
+  const accessorSignPromise = createEventPromise();
   const createIdentityResultPromise = createEventPromise();
 
   let requestId;
@@ -41,10 +42,22 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
     // }
 
     idp1EventEmitter.on('callback', function(callbackData) {
-      if (callbackData.type === 'create_identity_request_result') {
+      if (
+        callbackData.type === 'create_identity_request_result' &&
+        callbackData.reference_id === referenceId
+      ) {
         createIdentityRequestResultPromise.resolve(callbackData);
-      } else if (callbackData.type === 'create_identity_result') {
+      } else if (
+        callbackData.type === 'create_identity_result' &&
+        callbackData.reference_id === referenceId
+      ) {
         createIdentityResultPromise.resolve(callbackData);
+      }
+    });
+
+    idp1EventEmitter.on('accessor_sign_callback', function(callbackData) {
+      if (callbackData.reference_id === referenceId) {
+        accessorSignPromise.resolve(callbackData);
       }
     });
   });
@@ -76,6 +89,25 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       exist: false,
       accessor_id: accessorId,
       success: true,
+    });
+  });
+
+  it('should receive accessor sign callback with correct data', async function() {
+    this.timeout(15000);
+    const sid = `${namespace}:${identifier}`;
+    const sid_hash = hash(sid);
+
+    const accessorSignParams = await accessorSignPromise.promise;
+    expect(accessorSignParams).to.deep.equal({
+      type: 'accessor_sign',
+      reference_id: referenceId,
+      accessor_id: accessorId,
+      sid,
+      sid_hash,
+      hash_method: 'SHA256',
+      key_type: 'RSA',
+      sign_method: 'RSA-SHA256',
+      padding: 'PKCS#1v1.5',
     });
   });
 
@@ -115,5 +147,6 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_sign_callback');
   });
 });

@@ -19,7 +19,10 @@ describe('AS (as1) setup', function() {
 
   before(function() {
     as1EventEmitter.on('callback', function(callbackData) {
-      if (callbackData.type === 'add_or_update_service_result') {
+      if (
+        callbackData.type === 'add_or_update_service_result' &&
+        callbackData.reference_id === referenceId
+      ) {
         addOrUpdateServiceResultPromise.resolve(callbackData);
       }
     });
