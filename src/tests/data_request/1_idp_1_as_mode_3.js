@@ -250,6 +250,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
   });
 
   it('AS should receive data request', async function() {
+    this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -267,6 +268,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
   });
 
   it('AS should send data successfully', async function() {
+    this.timeout(15000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
