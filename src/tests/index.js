@@ -39,9 +39,9 @@ describe('End-to-End NDID API test (API v2)', function() {
   });
 
   require('./idp_setup');
+  require('./as_service_setup');
   require('./create_identity');
   require('./verify_identity');
-  require('./as_service_setup');
   require('./data_request');
 
   after(function() {
