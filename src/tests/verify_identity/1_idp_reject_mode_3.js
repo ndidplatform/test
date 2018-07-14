@@ -27,10 +27,13 @@ describe('1 IdP, reject consent, mode 3', function() {
   const responseResultPromise = createEventPromise(); // IDP
   const requestStatusRejectedPromise = createEventPromise(); // RP
   const closeRequestResultPromise = createEventPromise(); // RP
+  const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
 
   let requestId;
+
+  const requestStatusUpdates = [];
 
   before(function() {
     if (db.idp1Identities[0] == null) {
@@ -65,10 +68,15 @@ describe('1 IdP, reject consent, mode 3', function() {
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
+        requestStatusUpdates.push(callbackData);
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'rejected') {
-          requestStatusRejectedPromise.resolve(callbackData);
+          if (callbackData.closed) {
+            requestClosedPromise.resolve(callbackData);
+          } else {
+            requestStatusRejectedPromise.resolve(callbackData);
+          }
         }
       } else if (
         callbackData.type === 'close_request_result' &&
@@ -202,6 +210,30 @@ describe('1 IdP, reject consent, mode 3', function() {
 
     const closeRequestResult = await closeRequestResultPromise.promise;
     expect(closeRequestResult.success).to.equal(true);
+  });
+
+  it('RP should receive request closed status', async function() {
+    this.timeout(10000);
+    const requestStatus = await requestClosedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'rejected',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: true,
+      timed_out: false,
+      service_list: [],
+      response_valid_list: [
+        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('RP should receive 3 request status updates', function() {
+    expect(requestStatusUpdates).to.have.lengthOf(3);
   });
 
   after(function() {

@@ -40,6 +40,8 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
 
   let requestId;
 
+  const requestStatusUpdates = [];
+
   before(function() {
     if (!idp2Available) {
       this.skip();
@@ -79,6 +81,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
+        requestStatusUpdates.push(callbackData);
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
@@ -307,6 +310,10 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     });
     expect(requestStatus).to.have.property('block_height');
     expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('RP should receive 4 request status updates', function() {
+    expect(requestStatusUpdates).to.have.lengthOf(4);
   });
 
   after(function() {

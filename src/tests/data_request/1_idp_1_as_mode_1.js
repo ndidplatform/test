@@ -48,6 +48,8 @@ describe('1 IdP, 1 AS, mode 1', function() {
 
   let requestId;
 
+  const requestStatusUpdates = [];
+
   before(function() {
     namespace = 'cid';
     identifier = '1234567890123';
@@ -86,6 +88,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
+        requestStatusUpdates.push(callbackData);
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
@@ -372,6 +375,10 @@ describe('1 IdP, 1 AS, mode 1', function() {
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+  });
+
+  it('RP should receive 5 request status updates', function() {
+    expect(requestStatusUpdates).to.have.lengthOf(5);
   });
 
   after(function() {

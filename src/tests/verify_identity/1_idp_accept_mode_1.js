@@ -34,6 +34,8 @@ describe('1 IdP, accept consent, mode 1', function() {
 
   let requestId;
 
+  const requestStatusUpdates = [];
+
   before(function() {
     namespace = 'cid';
     identifier = '1234567890123';
@@ -63,6 +65,7 @@ describe('1 IdP, accept consent, mode 1', function() {
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
+        requestStatusUpdates.push(callbackData);
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'completed') {
@@ -199,6 +202,10 @@ describe('1 IdP, accept consent, mode 1', function() {
     });
     expect(requestStatus).to.have.property('block_height');
     expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('RP should receive 3 request status updates', function() {
+    expect(requestStatusUpdates).to.have.lengthOf(3);
   });
 
   after(function() {

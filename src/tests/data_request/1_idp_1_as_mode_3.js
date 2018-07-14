@@ -45,6 +45,8 @@ describe('1 IdP, 1 AS, mode 3', function() {
 
   let requestId;
 
+  const requestStatusUpdates = [];
+
   before(function() {
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
@@ -87,6 +89,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
+        requestStatusUpdates.push(callbackData);
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
@@ -380,6 +383,10 @@ describe('1 IdP, 1 AS, mode 3', function() {
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+  });
+
+  it('RP should receive 5 request status updates', function() {
+    expect(requestStatusUpdates).to.have.lengthOf(5);
   });
 
   after(function() {
