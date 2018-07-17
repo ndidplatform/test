@@ -13,17 +13,20 @@ describe('AS (as1) setup', function() {
     }
   });
 
-  const referenceId = generateReferenceId();
+  const bankStatementReferenceId = generateReferenceId();
+  const customerInfoReferenceId = generateReferenceId();
 
-  const addOrUpdateServiceResultPromise = createEventPromise();
+  const addOrUpdateServiceBankStatementResultPromise = createEventPromise();
+  const addOrUpdateServiceCustomerInfoResultPromise = createEventPromise();
 
   before(function() {
     as1EventEmitter.on('callback', function(callbackData) {
-      if (
-        callbackData.type === 'add_or_update_service_result' &&
-        callbackData.reference_id === referenceId
-      ) {
-        addOrUpdateServiceResultPromise.resolve(callbackData);
+      if (callbackData.type === 'add_or_update_service_result') {
+        if (callbackData.reference_id === bankStatementReferenceId) {
+          addOrUpdateServiceBankStatementResultPromise.resolve(callbackData);
+        } else if (callbackData.reference_id === customerInfoReferenceId) {
+          addOrUpdateServiceCustomerInfoResultPromise.resolve(callbackData);
+        }
       }
     });
   });
@@ -31,7 +34,7 @@ describe('AS (as1) setup', function() {
   it('should add offered service (bank_statement) successfully', async function() {
     const response = await asApi.addOrUpdateService('as1', {
       serviceId: 'bank_statement',
-      reference_id: referenceId,
+      reference_id: bankStatementReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
       min_ial: 1.1,
       min_aal: 1,
@@ -39,9 +42,9 @@ describe('AS (as1) setup', function() {
     });
     expect(response.status).to.equal(202);
 
-    const addOrUpdateServiceResult = await addOrUpdateServiceResultPromise.promise;
+    const addOrUpdateServiceResult = await addOrUpdateServiceBankStatementResultPromise.promise;
     expect(addOrUpdateServiceResult).to.deep.include({
-      reference_id: referenceId,
+      reference_id: bankStatementReferenceId,
       success: true,
     });
   });
@@ -49,6 +52,39 @@ describe('AS (as1) setup', function() {
   it('should have offered service (bank_statement)', async function() {
     const response = await asApi.getService('as1', {
       serviceId: 'bank_statement',
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      min_ial: 1.1,
+      min_aal: 1,
+      url: config.AS1_CALLBACK_URL,
+      active: true,
+      suspended: false,
+    });
+  });
+
+  it('should add offered service (customer_info) successfully', async function() {
+    const response = await asApi.addOrUpdateService('as1', {
+      serviceId: 'customer_info',
+      reference_id: customerInfoReferenceId,
+      callback_url: config.AS1_CALLBACK_URL,
+      min_ial: 1.1,
+      min_aal: 1,
+      url: config.AS1_CALLBACK_URL,
+    });
+    expect(response.status).to.equal(202);
+
+    const addOrUpdateServiceResult = await addOrUpdateServiceCustomerInfoResultPromise.promise;
+    expect(addOrUpdateServiceResult).to.deep.include({
+      reference_id: customerInfoReferenceId,
+      success: true,
+    });
+  });
+
+  it('should have offered service (customer_info)', async function() {
+    const response = await asApi.getService('as1', {
+      serviceId: 'customer_info',
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(200);
