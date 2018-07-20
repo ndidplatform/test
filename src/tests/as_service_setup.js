@@ -32,6 +32,7 @@ describe('AS (as1) setup', function() {
   });
 
   it('should add offered service (bank_statement) successfully', async function() {
+    this.timeout(10000);
     const response = await asApi.addOrUpdateService('as1', {
       serviceId: 'bank_statement',
       reference_id: bankStatementReferenceId,
@@ -65,6 +66,7 @@ describe('AS (as1) setup', function() {
   });
 
   it('should add offered service (customer_info) successfully', async function() {
+    this.timeout(10000);
     const response = await asApi.addOrUpdateService('as1', {
       serviceId: 'customer_info',
       reference_id: customerInfoReferenceId,
