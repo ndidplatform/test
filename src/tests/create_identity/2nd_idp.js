@@ -34,6 +34,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
 
   let requestId;
   let requestMessage;
+  let requestMessageSalt;
 
   db.createIdentityReferences.push({
     referenceId,
@@ -150,8 +151,14 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
     expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
     expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
       .empty;
+    expect(incomingRequest.request_message_hash).to.equal(
+      hash(
+        incomingRequest.request_message_salt + incomingRequest.request_message
+      )
+    );
 
     requestMessage = incomingRequest.request_message;
+    requestMessageSalt = incomingRequest.request_message_salt;
   });
 
   it('1st IdP should create response (accept) successfully', async function() {
@@ -173,7 +180,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       status: 'accept',
       signature: createSignature(
         identity.accessors[0].accessorPrivateKey,
-        requestMessage
+        requestMessageSalt + requestMessage
       ),
       accessor_id: identity.accessors[0].accessorId,
     });

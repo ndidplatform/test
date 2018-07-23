@@ -39,6 +39,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   let createRequestParams;
 
   let requestId;
+  let requestMessageSalt;
 
   const requestStatusUpdates = [];
 
@@ -159,12 +160,19 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hash(createRequestParams.request_message),
+      request_message_hash: hash(
+        incomingRequest.request_message_salt +
+          createRequestParams.request_message
+      ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: createRequestParams.data_request_list,
     });
+    expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
+      .empty;
+
+    requestMessageSalt = incomingRequest.request_message_salt;
   });
 
   it('IdP-2 should receive incoming request callback', async function() {
@@ -176,12 +184,19 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hash(createRequestParams.request_message),
+      request_message_hash: hash(
+        incomingRequest.request_message_salt +
+          createRequestParams.request_message
+      ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: createRequestParams.data_request_list,
     });
+    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
+      .empty;
+
+    requestMessageSalt = incomingRequest.request_message_salt;
   });
 
   it('IdP-1 should create response (accept) successfully', async function() {
@@ -203,7 +218,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       status: 'accept',
       signature: createSignature(
         identity.accessors[0].accessorPrivateKey,
-        createRequestParams.request_message
+        requestMessageSalt + createRequestParams.request_message
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
@@ -256,7 +271,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       status: 'accept',
       signature: createSignature(
         identity.accessors[0].accessorPrivateKey,
-        createRequestParams.request_message
+        requestMessageSalt + createRequestParams.request_message
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
