@@ -2,6 +2,20 @@ import crypto from 'crypto';
 
 import uuidv4 from 'uuid/v4';
 
+export function wait(ms, stoppable) {
+  let setTimeoutFn;
+  const promise = new Promise(
+    (resolve) => (setTimeoutFn = setTimeout(resolve, ms))
+  );
+  if (stoppable) {
+    return {
+      promise,
+      stopWaiting: () => clearTimeout(setTimeoutFn),
+    };
+  }
+  return promise;
+}
+
 export function createEventPromise() {
   let resolve, reject;
   const promise = new Promise((_resolve, _reject) => {

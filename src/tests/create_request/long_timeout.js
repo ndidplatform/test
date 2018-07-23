@@ -1,12 +1,13 @@
 import { expect } from 'chai';
 
 import * as rpApi from '../../api/v2/rp';
+import * as commonApi from '../../api/v2/common';
 import { rpEventEmitter } from '../../callback_server';
 import * as db from '../../db';
-import { createEventPromise, generateReferenceId } from '../../utils';
+import { createEventPromise, generateReferenceId, wait } from '../../utils';
 import * as config from '../../config';
 
-describe('Timeout test (3 seconds)', function() {
+describe('Long timeout test (>2147483647 seconds or >24.8 days - greater than 32-bit integer)', function() {
   let namespace;
   let identifier;
 
@@ -42,7 +43,7 @@ describe('Timeout test (3 seconds)', function() {
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 3, // seconds
+      request_timeout: 9947483647, // seconds
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -98,26 +99,20 @@ describe('Timeout test (3 seconds)', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('RP should receive request timed out status in time limit', async function() {
+  it('Created request should not timeout within time limit', async function() {
     this.timeout(10000);
-    const requestStatus = await requestStatusTimedOutPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: true,
-      service_list: [],
-      response_valid_list: [],
+    await wait(7000);
+    const response = await commonApi.getRequest('rp1', {
+      requestId,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+
+    expect(responseBody.timed_out).to.equal(false);
   });
 
-  it('RP should receive 2 request status updates', function() {
-    expect(requestStatusUpdates).to.have.lengthOf(2);
+  it('RP should receive 1 request status update', function() {
+    expect(requestStatusUpdates).to.have.lengthOf(1);
   });
 
   after(function() {
