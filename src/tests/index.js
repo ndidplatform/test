@@ -43,6 +43,7 @@ describe('End-to-End NDID API test (API v2)', function() {
   require('./create_identity');
   require('./verify_identity');
   require('./data_request');
+  require('./create_request');
 
   after(function() {
     stopCallbackServers();
