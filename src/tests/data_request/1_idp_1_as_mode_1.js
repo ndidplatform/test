@@ -185,8 +185,8 @@ describe('1 IdP, 1 AS, mode 1', function() {
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
-        incomingRequest.request_message_salt +
-          createRequestParams.request_message
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -212,7 +212,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
       status: 'accept',
       signature: createSignature(
         userPrivateKey,
-        requestMessageSalt + createRequestParams.request_message
+        createRequestParams.request_message + requestMessageSalt
       ),
     });
     expect(response.status).to.equal(202);
@@ -380,9 +380,11 @@ describe('1 IdP, 1 AS, mode 1', function() {
     expect(dataArr[0]).to.deep.include({
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
+      signature_sign_method: 'RSA-SHA256',
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
   });
 
   it('RP should receive 5 request status updates', function() {

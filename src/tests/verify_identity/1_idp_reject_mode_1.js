@@ -140,8 +140,8 @@ describe('1 IdP, reject consent, mode 1', function() {
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
-        incomingRequest.request_message_salt +
-          createRequestParams.request_message
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -167,7 +167,7 @@ describe('1 IdP, reject consent, mode 1', function() {
       status: 'reject',
       signature: createSignature(
         userPrivateKey,
-        requestMessageSalt + createRequestParams.request_message
+        createRequestParams.request_message + requestMessageSalt
       ),
     });
     expect(response.status).to.equal(202);
