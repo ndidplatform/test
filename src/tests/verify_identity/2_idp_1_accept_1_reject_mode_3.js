@@ -1,9 +1,8 @@
 import { expect } from 'chai';
-
 import { idp2Available } from '..';
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
-// import * as commonApi from '../../api/v2/common';
+
 import {
   rpEventEmitter,
   idp1EventEmitter,
@@ -18,14 +17,15 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
+describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mode 3', function() {
   let namespace;
   let identifier;
 
   const rpReferenceId = generateReferenceId();
   const idp1ReferenceId = generateReferenceId();
   const idp2ReferenceId = generateReferenceId();
-
+  const rpCloseRequestReferenceId = generateReferenceId();
+  
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
   const idp1IncomingRequestPromise = createEventPromise(); // IdP-1
@@ -33,7 +33,8 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   const idp2IncomingRequestPromise = createEventPromise(); // IdP-2
   const idp2ResponseResultPromise = createEventPromise(); // IdP-2
   const requestStatusConfirmedPromise = createEventPromise(); // RP
-  const requestStatusCompletedPromise = createEventPromise(); // RP
+  const requestStatusComplicatedPromise = createEventPromise(); // RP
+  const closeRequestResultPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
@@ -87,13 +88,18 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
           requestStatusConfirmedPromise.resolve(callbackData);
-        } else if (callbackData.status === 'completed') {
+        } else if (callbackData.status === 'complicated') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
           } else {
-            requestStatusCompletedPromise.resolve(callbackData);
+            requestStatusComplicatedPromise.resolve(callbackData);
           }
         }
+      } else if (
+        callbackData.type === 'close_request_result' &&
+        callbackData.reference_id === rpCloseRequestReferenceId
+      ) {
+        closeRequestResultPromise.resolve(callbackData);
       }
     });
 
@@ -202,7 +208,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   it('IdP-1 should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -252,10 +258,10 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('IdP-2 should create response (accept) successfully', async function() {
+  it('IdP-2 should create response (reject) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp2Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -268,7 +274,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       ial: 2.3,
       aal: 3,
       secret: identity.accessors[0].secret,
-      status: 'accept',
+      status: 'reject',
       signature: createSignature(
         identity.accessors[0].accessorPrivateKey,
         createRequestParams.request_message + requestMessageSalt
@@ -285,12 +291,12 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     });
   });
 
-  it('RP should receive completed request status with valid proofs', async function() {
+  it('RP should receive complicated request status with valid proofs', async function() {
     this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
+    const requestStatus = await requestStatusComplicatedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
-      status: 'completed',
+      status: 'complicated',
       mode: createRequestParams.mode,
       min_idp: createRequestParams.min_idp,
       answered_idp_count: 2,
@@ -306,12 +312,24 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
+  it('RP should be able to close request', async function() {
+    this.timeout(10000);
+    const response = await rpApi.closeRequest('rp1', {
+      reference_id: rpCloseRequestReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      request_id: requestId,
+    });
+    expect(response.status).to.equal(202);
+    const closeRequestResult = await closeRequestResultPromise.promise;
+    expect(closeRequestResult.success).to.equal(true);
+  });
+
   it('RP should receive request closed status', async function() {
     this.timeout(10000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
-      status: 'completed',
+      status: 'complicated',
       mode: createRequestParams.mode,
       min_idp: createRequestParams.min_idp,
       answered_idp_count: 2,
@@ -327,7 +345,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('RP should receive 4 request status updates', function() {
+  it('RP should receive 3 request status updates', function() {
     expect(requestStatusUpdates).to.have.lengthOf(4);
   });
 
