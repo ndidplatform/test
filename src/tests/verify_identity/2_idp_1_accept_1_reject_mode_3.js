@@ -345,7 +345,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('RP should receive 3 request status updates', function() {
+  it('RP should receive 4 request status updates', function() {
     expect(requestStatusUpdates).to.have.lengthOf(4);
   });
 
