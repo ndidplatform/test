@@ -1,5 +1,7 @@
 export const CALLBACK_IP = process.env.CALLBACK_IP || 'localhost';
 
+export const nodeIdMappingAddress = false;
+
 export const RP_CALLBACK_PORT = 9200;
 
 export const IDP1_CALLBACK_PORT = 9100;
