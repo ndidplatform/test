@@ -2,7 +2,9 @@ import fetch from 'node-fetch';
 import { nodeIdMappingAddress } from '../config';
 
 export function getApiAddressUrl(nodeId) {
-  if(nodeIdMappingAddress) return nodeIdMappingAddress[nodeId];
+  if(nodeIdMappingAddress && nodeIdMappingAddress[nodeId]) {
+    return nodeIdMappingAddress[nodeId];
+  }
   if (nodeId === 'rp1') {
     return 'http://localhost:8200';
   } else if (nodeId === 'idp1') {
