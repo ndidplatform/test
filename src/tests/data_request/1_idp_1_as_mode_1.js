@@ -43,6 +43,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
   let createRequestParams;
   const data = JSON.stringify({
     test: 'test',
+    withEscapedChar: 'test|fff||ss\\|NN\\\\|',
     arr: [1, 2, 3],
   });
 

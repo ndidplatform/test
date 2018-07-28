@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
 
 import * as rpApi from '../../api/v2/rp';
@@ -18,7 +19,7 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('1 IdP, 1 AS, mode 3', function() {
+describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
   let namespace;
   let identifier;
 
@@ -38,11 +39,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
   const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
-  const data = JSON.stringify({
-    test: 'test',
-    withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3],
-  });
+  const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
 
   let requestId;
   let requestMessageSalt;
@@ -50,6 +47,9 @@ describe('1 IdP, 1 AS, mode 3', function() {
   const requestStatusUpdates = [];
 
   before(function() {
+    // TODO: need to silence logger in api process to not go over test timeout limit
+    this.skip();
+
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -280,7 +280,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(35000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -325,7 +325,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(50000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,

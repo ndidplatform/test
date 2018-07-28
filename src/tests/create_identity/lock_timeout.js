@@ -13,6 +13,9 @@ describe('Use debug API to lock first IdP', function() {
 
   this.timeout(5000);
   before(async function() {
+    // TODO: Use NDID node to set register message destination timeout to 10 blocks
+    this.skip();
+
     debugApi.transact('idp1',{
       fnName: 'RegisterMsqDestination',
       users: [{

@@ -46,11 +46,13 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   const bankStatementData = JSON.stringify({
     type: 'statement',
     name: 'test',
+    withEscapedChar: 'test|fff||ss\\|NN\\\\|',
     arr: [1, 2, 3],
   });
   const customerInfoData = JSON.stringify({
     type: 'customer',
     name: 'test',
+    withEscapedChar: 'test|fff||ss\\|NN\\\\|',
     arr: [1, 2, 3],
   });
 

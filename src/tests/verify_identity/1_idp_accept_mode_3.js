@@ -50,7 +50,8 @@ describe('1 IdP, accept consent, mode 3', function() {
       identifier,
       idp_id_list: [],
       data_request_list: [],
-      request_message: 'Test request message (mode 3)',
+      request_message:
+        'Test request message (mode 3) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
