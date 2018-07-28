@@ -130,10 +130,10 @@ app.post('/dpki/master/sign', (req, res) => {
   }
 });
 
-export function startCallbackServers() {
+export function startCallbackServer() {
   dpkiServer = app.listen(config.DPKI_CALLBACK_PORT);
 }
 
-export function stopCallbackServers() {
+export function stopCallbackServer() {
   dpkiServer.close();
 }

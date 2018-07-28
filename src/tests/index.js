@@ -1,5 +1,10 @@
 import { startCallbackServers, stopCallbackServers } from '../callback_server';
+import {
+  startCallbackServer as startDpkiCallbackServer,
+  stopCallbackServer as stopDpkiCallbackServer,
+} from '../callback_server/dpki';
 import { isNodeAvailable } from '../helpers';
+import * as config from '../config';
 
 export let rpAvailable;
 export let idp1Available;
@@ -32,12 +37,16 @@ async function checkForAvailableNodes() {
 describe('End-to-End NDID API test (API v2)', function() {
   before(async function() {
     startCallbackServers();
+    if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
+      startDpkiCallbackServer();
+    }
     await checkForAvailableNodes();
     if (!rpAvailable || !idp1Available) {
       throw new Error('Could not connect to RP and IdP-1 nodes');
     }
   });
 
+  require('./dpki_setup');
   require('./idp_setup');
   require('./as_service_setup');
   require('./create_identity');
@@ -47,5 +56,8 @@ describe('End-to-End NDID API test (API v2)', function() {
 
   after(function() {
     stopCallbackServers();
+    if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
+      stopDpkiCallbackServer();
+    }
   });
 });
