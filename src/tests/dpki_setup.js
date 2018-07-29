@@ -7,6 +7,7 @@ import * as config from '../config';
 describe('DPKI callback setup', function() {
   before(function() {
     if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
+      this.test.parent.pending = true;
       this.skip();
     }
   });
