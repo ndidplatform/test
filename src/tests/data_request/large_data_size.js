@@ -67,7 +67,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
       data_request_list: [
         {
           service_id: 'bank_statement',
-          as_id_list: ['as1', 'as2', 'as3'],
+          as_id_list: ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
             format: 'pdf',
