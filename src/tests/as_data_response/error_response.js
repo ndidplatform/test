@@ -125,7 +125,7 @@ describe('AS data response errors', function() {
       status: 'accept',
       signature: createSignature(
         identity.accessors[0].accessorPrivateKey,
-        createRequestParams.request_message + requestMessageSalt
+        createRequestParams.request_message
       ),
       accessor_id: identity.accessors[0].accessorId,
     });

@@ -153,7 +153,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       .empty;
     expect(incomingRequest.request_message_hash).to.equal(
       hash(
-        incomingRequest.request_message + incomingRequest.request_message_salt
+        incomingRequest.request_message
       )
     );
 
@@ -180,7 +180,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       status: 'accept',
       signature: createSignature(
         identity.accessors[0].accessorPrivateKey,
-        requestMessage + requestMessageSalt
+        requestMessage
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
