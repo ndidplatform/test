@@ -6,7 +6,12 @@ import * as idpApi from '../../api/v2/idp';
 import * as commonApi from '../../api/v2/common';
 import { idp1EventEmitter } from '../../callback_server';
 import * as db from '../../db';
-import { createEventPromise, generateReferenceId, hash } from '../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  hash,
+  wait,
+} from '../../utils';
 import * as config from '../../config';
 
 describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP', function() {
@@ -128,7 +133,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.exist;
 
     db.idp1Identities.push({
@@ -142,6 +147,27 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
           secret,
         },
       ],
+    });
+  });
+
+  it('Special request status for create identity should be completed and closed', async function() {
+    this.timeout(10000);
+    //wait for API close request
+    await wait(1000); 
+    const response = await commonApi.getRequest('idp1', { requestId });
+    const responseBody = await response.json();
+    expect(responseBody).to.deep.include({
+      request_id: requestId,
+      min_idp: 0,
+      min_aal: 1,
+      min_ial: 1.1,
+      request_timeout: 86400,
+      data_request_list: [],
+      response_list: [],
+      closed: true,
+      timed_out: false,
+      mode: 3,
+      status: 'completed',
     });
   });
 

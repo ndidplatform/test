@@ -16,7 +16,7 @@ export function getApiAddressUrl(nodeId) {
   } else if (nodeId === 'as2') {
     return 'http://localhost:8301';
   } else if (nodeId === 'ndid1') {
-    return 'http://localhost:8000';
+    return 'http://localhost:8080';
   } else {
     throw new Error('Unsupported Node ID');
   }

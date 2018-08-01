@@ -11,6 +11,7 @@ import {
   createEventPromise,
   generateReferenceId,
   hash,
+  wait,
   hashRequestMessage,
   createResponseSignature,
 } from '../../utils';
@@ -167,7 +168,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -214,7 +215,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
     expect(idpNode).to.exist;
 
     db.idp2Identities.push({
@@ -228,6 +229,26 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
           secret,
         },
       ],
+    });
+  });
+
+  it('Special request status for create identity should be completed and closed', async function() {
+    this.timeout(10000);
+    //wait for API close request
+    await wait(1000);
+    const response = await commonApi.getRequest('idp2', { requestId });
+    const responseBody = await response.json();
+    expect(responseBody).to.deep.include({
+      request_id: requestId,
+      min_idp: 1,
+      min_aal: 1,
+      min_ial: 1.1,
+      request_timeout: 86400,
+      data_request_list: [],
+      closed: true,
+      timed_out: false,
+      mode: 3,
+      status: 'completed',
     });
   });
 

@@ -6,6 +6,7 @@ import {
 import { isNodeAvailable } from '../helpers';
 import * as config from '../config';
 
+export let ndidAvailable;
 export let rpAvailable;
 export let idp1Available;
 export let idp2Available;
@@ -14,12 +15,14 @@ export let as2Available;
 
 async function checkForAvailableNodes() {
   const [
+    _ndidAvailable,
     _rpAvailable,
     _idp1Available,
     _idp2Available,
     _as1Available,
     _as2Available,
   ] = await Promise.all([
+    isNodeAvailable('ndid1'),
     isNodeAvailable('rp1'),
     isNodeAvailable('idp1'),
     isNodeAvailable('idp2'),
@@ -27,6 +30,7 @@ async function checkForAvailableNodes() {
     isNodeAvailable('as2'),
   ]);
 
+  ndidAvailable = _ndidAvailable;
   rpAvailable = _rpAvailable;
   idp1Available = _idp1Available;
   idp2Available = _idp2Available;
@@ -46,6 +50,7 @@ describe('End-to-End NDID API test (API v2)', function() {
     }
   });
 
+  require('./ndid');
   require('./dpki_setup');
   require('./idp_setup');
   require('./as_service_setup');
