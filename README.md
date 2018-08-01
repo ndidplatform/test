@@ -77,11 +77,23 @@
       ```
       ROLE=as \
       TENDERMINT_IP=127.0.0.1 \
-      TENDERMINT_PORT=45000 \
+      TENDERMINT_PORT=45002 \
       MQ_CONTACT_IP=127.0.0.1 \
       MQ_BINDING_PORT=5557 \
       SERVER_PORT=8300 \
       NODE_ID=as1 \
+      npm start
+      ```
+
+    - as2
+      ```
+      ROLE=as \
+      TENDERMINT_IP=127.0.0.1 \
+      TENDERMINT_PORT=45002 \
+      MQ_CONTACT_IP=127.0.0.1 \
+      MQ_BINDING_PORT=5657 \
+      SERVER_PORT=8301 \
+      NODE_ID=as2 \
       npm start
       ```
 

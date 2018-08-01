@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
 
 import * as rpApi from '../../api/v2/rp';
@@ -18,43 +19,27 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('1 IdP, 1 AS, mode 3, 2 services', function() {
+describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
   let namespace;
   let identifier;
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
-  const asDataBankStatementReferenceId = generateReferenceId();
-  const asDataCustomerInfoReferenceId = generateReferenceId();
+  const asReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
   const requestStatusConfirmedPromise = createEventPromise(); // RP
-  const dataRequestBankStatementReceivedPromise = createEventPromise(); // AS
-  const dataRequestCustomerInfoReceivedPromise = createEventPromise(); // AS
-  const sendDataBankStatementResultPromise = createEventPromise(); // AS
-  const sendDataCustomerInfoResultPromise = createEventPromise(); // AS
-  const requestStatusSignedDataBankStatementPromise = createEventPromise(); // RP
-  const requestStatusReceivedDataBankStatementPromise = createEventPromise(); // RP
-  const requestStatusSignedDataCustomerInfoPromise = createEventPromise(); // RP
+  const dataRequestReceivedPromise = createEventPromise(); // AS
+  const sendDataResultPromise = createEventPromise(); // AS
+  const requestStatusSignedDataPromise = createEventPromise(); // RP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
-  const bankStatementData = JSON.stringify({
-    type: 'statement',
-    name: 'test',
-    withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3],
-  });
-  const customerInfoData = JSON.stringify({
-    type: 'customer',
-    name: 'test',
-    withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3],
-  });
+  const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
 
   let requestId;
   let requestMessageSalt;
@@ -62,6 +47,9 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   const requestStatusUpdates = [];
 
   before(function() {
+    // TODO: need to silence logger in api process to not go over test timeout limit
+    this.skip();
+
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -83,14 +71,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
           min_as: 1,
           request_params: JSON.stringify({
             format: 'pdf',
-          }),
-        },
-        {
-          service_id: 'customer_info',
-          as_id_list: ['as1'],
-          min_as: 1,
-          request_params: JSON.stringify({
-            format: 'json',
           }),
         },
       ],
@@ -115,27 +95,8 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
-          if (
-            callbackData.service_list[0].signed_data_count === 1 &&
-            callbackData.service_list[0].received_data_count === 0 &&
-            callbackData.service_list[1].signed_data_count === 0 &&
-            callbackData.service_list[1].received_data_count === 0
-          ) {
-            requestStatusSignedDataBankStatementPromise.resolve(callbackData);
-          } else if (
-            callbackData.service_list[0].signed_data_count === 1 &&
-            callbackData.service_list[0].received_data_count === 1 &&
-            callbackData.service_list[1].signed_data_count === 0 &&
-            callbackData.service_list[1].received_data_count === 0
-          ) {
-            requestStatusReceivedDataBankStatementPromise.resolve(callbackData);
-          } else if (
-            callbackData.service_list[0].signed_data_count === 1 &&
-            callbackData.service_list[0].received_data_count === 1 &&
-            callbackData.service_list[1].signed_data_count === 1 &&
-            callbackData.service_list[1].received_data_count === 0
-          ) {
-            requestStatusSignedDataCustomerInfoPromise.resolve(callbackData);
+          if (callbackData.service_list[0].signed_data_count === 1) {
+            requestStatusSignedDataPromise.resolve(callbackData);
           } else {
             requestStatusConfirmedPromise.resolve(callbackData);
           }
@@ -168,19 +129,12 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         callbackData.type === 'data_request' &&
         callbackData.request_id === requestId
       ) {
-        if (callbackData.service_id === 'bank_statement') {
-          dataRequestBankStatementReceivedPromise.resolve(callbackData);
-        } else if (callbackData.service_id === 'customer_info') {
-          dataRequestCustomerInfoReceivedPromise.resolve(callbackData);
-        }
-      } else if (callbackData.type === 'send_data_result') {
-        if (callbackData.reference_id === asDataBankStatementReferenceId) {
-          sendDataBankStatementResultPromise.resolve(callbackData);
-        } else if (
-          callbackData.reference_id === asDataCustomerInfoReferenceId
-        ) {
-          sendDataCustomerInfoResultPromise.resolve(callbackData);
-        }
+        dataRequestReceivedPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'send_data_result' &&
+        callbackData.reference_id === asReferenceId
+      ) {
+        sendDataResultPromise.resolve(callbackData);
       }
     });
   });
@@ -191,8 +145,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
-    expect(responseBody.request_message_salt).to.be.a('string').that.is.not
-      .empty;
 
     requestId = responseBody.request_id;
 
@@ -215,12 +167,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
           signed_data_count: 0,
           received_data_count: 0,
         },
@@ -305,12 +251,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
           signed_data_count: 0,
           received_data_count: 0,
         },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
       ],
       response_valid_list: [
         { idp_id: 'idp1', valid_proof: true, valid_ial: true },
@@ -320,9 +260,9 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('AS should receive data request for "bank_statement" service', async function() {
+  it('AS should receive data request', async function() {
     this.timeout(15000);
-    const dataRequest = await dataRequestBankStatementReceivedPromise.promise;
+    const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
       mode: createRequestParams.mode,
@@ -338,45 +278,27 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
       .empty;
   });
 
-  it('AS should receive data request for "customer_info" service', async function() {
-    this.timeout(15000);
-    const dataRequest = await dataRequestCustomerInfoReceivedPromise.promise;
-    expect(dataRequest).to.deep.include({
-      request_id: requestId,
-      mode: createRequestParams.mode,
-      namespace,
-      identifier,
-      service_id: createRequestParams.data_request_list[1].service_id,
-      request_params: createRequestParams.data_request_list[1].request_params,
-      max_ial: 2.3,
-      max_aal: 3,
-    });
-    expect(dataRequest.response_signature_list).to.have.lengthOf(1);
-    expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
-      .empty;
-  });
-
-  it('AS should send data successfully (bank_statement)', async function() {
-    this.timeout(15000);
+  it('AS should send data successfully', async function() {
+    this.timeout(35000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
-      reference_id: asDataBankStatementReferenceId,
+      reference_id: asReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data: bankStatementData,
+      data,
     });
     expect(response.status).to.equal(202);
 
-    const sendDataResult = await sendDataBankStatementResultPromise.promise;
+    const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
-      reference_id: asDataBankStatementReferenceId,
+      reference_id: asReferenceId,
       success: true,
     });
   });
 
-  it('RP should receive request status with signed data count = 1 for "bank_statement" service', async function() {
+  it('RP should receive request status with signed data count = 1', async function() {
     this.timeout(15000);
-    const requestStatus = await requestStatusSignedDataBankStatementPromise.promise;
+    const requestStatus = await requestStatusSignedDataPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
       status: 'confirmed',
@@ -392,12 +314,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
           signed_data_count: 1,
           received_data_count: 0,
         },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
       ],
       response_valid_list: [
         { idp_id: 'idp1', valid_proof: true, valid_ial: true },
@@ -407,92 +323,8 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('RP should receive confirmed request status with received data count = 1 for "bank_statement" service', async function() {
-    this.timeout(15000);
-    const requestStatus = await requestStatusReceivedDataBankStatementPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'confirmed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
-      ],
-    });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
-  });
-
-  it('AS should send data successfully (customer_info)', async function() {
-    this.timeout(15000);
-    const response = await asApi.sendData('as1', {
-      requestId,
-      serviceId: createRequestParams.data_request_list[1].service_id,
-      reference_id: asDataCustomerInfoReferenceId,
-      callback_url: config.AS1_CALLBACK_URL,
-      data: customerInfoData,
-    });
-    expect(response.status).to.equal(202);
-
-    const sendDataResult = await sendDataCustomerInfoResultPromise.promise;
-    expect(sendDataResult).to.deep.include({
-      reference_id: asDataCustomerInfoReferenceId,
-      success: true,
-    });
-  });
-
-  it('RP should receive request status with signed data count = 1 for "customer_info" service', async function() {
-    this.timeout(15000);
-    const requestStatus = await requestStatusSignedDataCustomerInfoPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'confirmed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
-          signed_data_count: 1,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
-      ],
-    });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
-  });
-
-  it('RP should receive completed request status with received data count = 1 for "customer_info" service', async function() {
-    this.timeout(15000);
+  it('RP should receive completed request status with received data count = 1', async function() {
+    this.timeout(50000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -506,12 +338,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
           signed_data_count: 1,
           received_data_count: 1,
         },
@@ -542,12 +368,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
           signed_data_count: 1,
           received_data_count: 1,
         },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
       ],
       response_valid_list: [
         { idp_id: 'idp1', valid_proof: true, valid_ial: true },
@@ -564,27 +384,19 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
 
-    expect(dataArr).to.have.lengthOf(2);
+    expect(dataArr).to.have.lengthOf(1);
     expect(dataArr[0]).to.deep.include({
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_sign_method: 'RSA-SHA256',
-      data: bankStatementData,
+      data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
-    expect(dataArr[1]).to.deep.include({
-      source_node_id: 'as1',
-      service_id: createRequestParams.data_request_list[1].service_id,
-      signature_sign_method: 'RSA-SHA256',
-      data: customerInfoData,
-    });
-    expect(dataArr[1].source_signature).to.be.a('string').that.is.not.empty;
-    expect(dataArr[1].data_salt).to.be.a('string').that.is.not.empty;
   });
 
-  it('RP should receive 7 request status updates', function() {
-    expect(requestStatusUpdates).to.have.lengthOf(7);
+  it('RP should receive 5 request status updates', function() {
+    expect(requestStatusUpdates).to.have.lengthOf(5);
   });
 
   after(function() {

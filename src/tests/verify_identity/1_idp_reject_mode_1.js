@@ -12,7 +12,6 @@ import {
   createSignature,
 } from '../../utils';
 import * as config from '../../config';
-import { isNull } from 'util';
 
 describe('1 IdP, reject consent, mode 1', function() {
   let namespace;
@@ -105,6 +104,8 @@ describe('1 IdP, reject consent, mode 1', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    expect(responseBody.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
     requestId = responseBody.request_id;
 
@@ -140,8 +141,7 @@ describe('1 IdP, reject consent, mode 1', function() {
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
-        createRequestParams.request_message +
-          incomingRequest.request_message_salt
+        createRequestParams.request_message
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -167,7 +167,7 @@ describe('1 IdP, reject consent, mode 1', function() {
       status: 'reject',
       signature: createSignature(
         userPrivateKey,
-        createRequestParams.request_message + requestMessageSalt
+        createRequestParams.request_message
       ),
     });
     expect(response.status).to.equal(202);

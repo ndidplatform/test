@@ -43,6 +43,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
   let createRequestParams;
   const data = JSON.stringify({
     test: 'test',
+    withEscapedChar: 'test|fff||ss\\|NN\\\\|',
     arr: [1, 2, 3],
   });
 
@@ -65,7 +66,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
       data_request_list: [
         {
           service_id: 'bank_statement',
-          as_id_list: ['as1', 'as2', 'as3'],
+          as_id_list: ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
             format: 'pdf',
@@ -143,6 +144,8 @@ describe('1 IdP, 1 AS, mode 1', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    expect(responseBody.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
     requestId = responseBody.request_id;
 
@@ -185,8 +188,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
-        createRequestParams.request_message +
-          incomingRequest.request_message_salt
+        createRequestParams.request_message
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -212,7 +214,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
       status: 'accept',
       signature: createSignature(
         userPrivateKey,
-        createRequestParams.request_message + requestMessageSalt
+        createRequestParams.request_message
       ),
     });
     expect(response.status).to.equal(202);
