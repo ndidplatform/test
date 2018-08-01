@@ -98,6 +98,8 @@ describe('1 IdP, accept consent, mode 1', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    expect(responseBody.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
     requestId = responseBody.request_id;
 
@@ -132,9 +134,7 @@ describe('1 IdP, accept consent, mode 1', function() {
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hash(
-        createRequestParams.request_message
-      ),
+      request_message_hash: hash(createRequestParams.request_message),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,

@@ -104,6 +104,8 @@ describe('1 IdP, reject consent, mode 1', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    expect(responseBody.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
     requestId = responseBody.request_id;
 
