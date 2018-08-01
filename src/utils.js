@@ -46,3 +46,45 @@ export function createSignature(privateKey, message) {
     .update(message)
     .sign(privateKey, 'base64');
 }
+
+export function createResponseSignature(privateKey, message_hash) {
+  return crypto.privateEncrypt({
+    key: privateKey,
+    padding: crypto.constants.RSA_NO_PADDING,
+  },Buffer.from(message_hash, 'base64')).toString('base64');
+}
+
+function generateCustomPadding(initialSalt, blockLength = 2048) {
+  let hashLength = 256;
+  let padLengthInbyte = parseInt(Math.floor((blockLength - hashLength)/8));
+  let paddingBuffer = Buffer.from([]);
+  
+  for(let i = 1 ; paddingBuffer.length + 16 <= padLengthInbyte ; i++) {
+    paddingBuffer = Buffer.concat([
+      paddingBuffer,
+      Buffer.from(
+        hash(initialSalt + i.toString()),
+        'base64'
+      ).slice(0,16)
+    ]);
+  }
+  //set most significant bit to 0
+  paddingBuffer[0] = paddingBuffer[0] & 0x7f;
+  return paddingBuffer;
+}
+
+export function hashRequestMessage(request_message, request_message_salt) {
+  let paddingBuffer = generateCustomPadding(request_message_salt);
+  let derivedSalt = Buffer.from( 
+    hash(request_message_salt), 'base64'
+  ).slice(0,16).toString('base64');
+
+  let normalHashBuffer = Buffer.from(
+    hash(request_message + derivedSalt),
+  'base64');
+
+  return Buffer.concat([
+    paddingBuffer,
+    normalHashBuffer
+  ]).toString('base64');
+}

@@ -8,8 +8,8 @@ import { rpEventEmitter, idp1EventEmitter } from '../../callback_server';
 import {
   createEventPromise,
   generateReferenceId,
-  hash,
-  createSignature,
+  hashRequestMessage,
+  createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
 
@@ -34,6 +34,7 @@ describe('1 IdP, accept consent, mode 1', function() {
 
   let requestId;
   let requestMessageSalt;
+  let requestMessageHash;
 
   const requestStatusUpdates = [];
 
@@ -134,7 +135,10 @@ describe('1 IdP, accept consent, mode 1', function() {
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hash(createRequestParams.request_message),
+      request_message_hash: hashRequestMessage(
+        createRequestParams.request_message,
+        incomingRequest.request_message_salt,
+      ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
@@ -144,6 +148,7 @@ describe('1 IdP, accept consent, mode 1', function() {
       .empty;
 
     requestMessageSalt = incomingRequest.request_message_salt;
+    requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('IdP should create response (accept) successfully', async function() {
@@ -157,9 +162,9 @@ describe('1 IdP, accept consent, mode 1', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: createSignature(
+      signature: createResponseSignature(
         userPrivateKey,
-        createRequestParams.request_message
+        requestMessageHash
       ),
     });
     expect(response.status).to.equal(202);
