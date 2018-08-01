@@ -193,8 +193,8 @@ describe('1 IdP, 1 AS, mode 1', function() {
       min_aal: createRequestParams.min_aal,
       data_request_list: createRequestParams.data_request_list,
     });
-    // expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
-    //   .empty;
+    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
     requestMessageSalt = incomingRequest.request_message_salt;
   });
@@ -380,11 +380,11 @@ describe('1 IdP, 1 AS, mode 1', function() {
     expect(dataArr[0]).to.deep.include({
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
-      // signature_sign_method: 'RSA-SHA256',
+      signature_sign_method: 'RSA-SHA256',
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
-    // expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
+    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
   });
 
   it('RP should receive 5 request status updates', function() {

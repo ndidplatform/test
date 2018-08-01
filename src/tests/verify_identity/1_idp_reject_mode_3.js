@@ -147,8 +147,8 @@ describe('1 IdP, reject consent, mode 3', function() {
       min_aal: createRequestParams.min_aal,
       data_request_list: createRequestParams.data_request_list,
     });
-    // expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
-    //   .empty;
+    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
     requestMessageSalt = incomingRequest.request_message_salt;
   });

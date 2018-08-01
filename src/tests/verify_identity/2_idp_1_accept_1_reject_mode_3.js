@@ -174,8 +174,8 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       min_aal: createRequestParams.min_aal,
       data_request_list: createRequestParams.data_request_list,
     });
-    // expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
-    //   .empty;
+    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
     requestMessageSalt = incomingRequest.request_message_salt;
   });
@@ -197,8 +197,8 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       min_aal: createRequestParams.min_aal,
       data_request_list: createRequestParams.data_request_list,
     });
-    // expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
-    //   .empty;
+    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
     requestMessageSalt = incomingRequest.request_message_salt;
   });
