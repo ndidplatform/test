@@ -11,6 +11,7 @@ import {
   createEventPromise,
   generateReferenceId,
   hash,
+  hashRequestMessage,
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
@@ -152,14 +153,14 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
     expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
     expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
       .empty;
-    expect(incomingRequest.request_message_hash).to.equal(
-      hash(
-        incomingRequest.request_message
-      )
-    );
 
     requestMessage = incomingRequest.request_message;
     requestMessageSalt = incomingRequest.request_message_salt;
+
+    expect(incomingRequest.request_message_hash).to.equal(
+      hashRequestMessage(requestMessage, requestMessageSalt)
+    );
+
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
