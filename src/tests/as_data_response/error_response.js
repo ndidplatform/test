@@ -12,7 +12,7 @@ import * as db from '../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  createSignature,
+  createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
 
@@ -37,6 +37,7 @@ describe('AS data response errors', function() {
 
   let requestId;
   let requestMessageSalt;
+  let requestMessageHash;
 
   before(async function() {
     this.timeout(30000);
@@ -108,6 +109,7 @@ describe('AS data response errors', function() {
 
     const incomingRequest = await incomingRequestPromise.promise;
     requestMessageSalt = incomingRequest.request_message_salt;
+    requestMessageHash = incomingRequest.request_message_hash;
 
     const identity = db.idp1Identities.find(
       (identity) =>
@@ -123,9 +125,9 @@ describe('AS data response errors', function() {
       aal: 3,
       secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createSignature(
+      signature: createResponseSignature(
         identity.accessors[0].accessorPrivateKey,
-        createRequestParams.request_message
+        requestMessageHash,
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
