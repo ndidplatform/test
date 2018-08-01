@@ -198,7 +198,12 @@ describe('1 IdP, accept consent, mode 3', function() {
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -218,7 +223,12 @@ describe('1 IdP, accept consent, mode 3', function() {
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');

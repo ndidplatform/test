@@ -186,9 +186,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hash(
-        createRequestParams.request_message
-      ),
+      request_message_hash: hash(createRequestParams.request_message),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
@@ -253,7 +251,12 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -316,7 +319,12 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -343,7 +351,12 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -370,7 +383,12 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');

@@ -165,7 +165,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       request_message: createRequestParams.request_message,
       request_message_hash: hashRequestMessage(
         createRequestParams.request_message,
-        incomingRequest.request_message_salt,
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -190,7 +190,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       request_message: createRequestParams.request_message,
       request_message_hash: hashRequestMessage(
         createRequestParams.request_message,
-        incomingRequest.request_message_salt,
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -223,7 +223,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       status: 'accept',
       signature: createResponseSignature(
         identity.accessors[0].accessorPrivateKey,
-        requestMessageHash,
+        requestMessageHash
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
@@ -250,7 +250,12 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -276,7 +281,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       status: 'accept',
       signature: createResponseSignature(
         identity.accessors[0].accessorPrivateKey,
-        requestMessageHash,
+        requestMessageHash
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
@@ -303,8 +308,18 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
-        { idp_id: 'idp2', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
+        {
+          idp_id: 'idp2',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -324,8 +339,18 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
-        { idp_id: 'idp2', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
+        {
+          idp_id: 'idp2',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');

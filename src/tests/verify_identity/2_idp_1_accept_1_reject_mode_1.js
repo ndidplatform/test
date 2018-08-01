@@ -45,7 +45,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
 
   let requestId;
   let requestMessageSalt;
-  let requestMessageHash
+  let requestMessageHash;
 
   const requestStatusUpdates = [];
 
@@ -168,7 +168,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       request_message: createRequestParams.request_message,
       request_message_hash: hashRequestMessage(
         createRequestParams.request_message,
-        incomingRequest.request_message_salt,
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -193,7 +193,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       request_message: createRequestParams.request_message,
       request_message_hash: hashRequestMessage(
         createRequestParams.request_message,
-        incomingRequest.request_message_salt,
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -218,10 +218,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: createResponseSignature(
-        userPrivateKey,
-        requestMessageHash
-      ),
+      signature: createResponseSignature(userPrivateKey, requestMessageHash),
     });
     expect(response.status).to.equal(202);
 
@@ -246,7 +243,12 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -264,10 +266,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       ial: 2.3,
       aal: 3,
       status: 'reject',
-      signature: createResponseSignature(
-        userPrivateKey,
-        requestMessageHash
-      ),
+      signature: createResponseSignature(userPrivateKey, requestMessageHash),
     });
     expect(response.status).to.equal(202);
 
@@ -292,8 +291,18 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
-        { idp_id: 'idp2', valid_proof: null, valid_ial: null },
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+        {
+          idp_id: 'idp2',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -325,8 +334,18 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
-        { idp_id: 'idp2', valid_proof: null, valid_ial: null },
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+        {
+          idp_id: 'idp2',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');

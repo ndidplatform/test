@@ -25,7 +25,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
   const idp1ReferenceId = generateReferenceId();
   const idp2ReferenceId = generateReferenceId();
   const rpCloseRequestReferenceId = generateReferenceId();
-  
+
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
   const idp1IncomingRequestPromise = createEventPromise(); // IdP-1
@@ -171,7 +171,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       request_message: createRequestParams.request_message,
       request_message_hash: hashRequestMessage(
         createRequestParams.request_message,
-        incomingRequest.request_message_salt,
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -196,7 +196,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       request_message: createRequestParams.request_message,
       request_message_hash: hashRequestMessage(
         createRequestParams.request_message,
-        incomingRequest.request_message_salt,
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -213,7 +213,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
   it('IdP-1 should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -229,7 +229,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       status: 'accept',
       signature: createResponseSignature(
         identity.accessors[0].accessorPrivateKey,
-        requestMessageHash,
+        requestMessageHash
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
@@ -256,7 +256,12 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -266,7 +271,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
   it('IdP-2 should create response (reject) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp2Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -309,8 +314,18 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
-        { idp_id: 'idp2', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
+        {
+          idp_id: 'idp2',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -342,8 +357,18 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
-        { idp_id: 'idp2', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
+        {
+          idp_id: 'idp2',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');

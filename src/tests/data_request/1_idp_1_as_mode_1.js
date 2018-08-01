@@ -190,7 +190,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
       request_message: createRequestParams.request_message,
       request_message_hash: hashRequestMessage(
         createRequestParams.request_message,
-        incomingRequest.request_message_salt,
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -215,10 +215,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: createResponseSignature(
-        userPrivateKey,
-        requestMessageHash
-      ),
+      signature: createResponseSignature(userPrivateKey, requestMessageHash),
     });
     expect(response.status).to.equal(202);
 
@@ -250,7 +247,12 @@ describe('1 IdP, 1 AS, mode 1', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -313,7 +315,12 @@ describe('1 IdP, 1 AS, mode 1', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -340,7 +347,12 @@ describe('1 IdP, 1 AS, mode 1', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -367,7 +379,12 @@ describe('1 IdP, 1 AS, mode 1', function() {
         },
       ],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: null, valid_ial: null },
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
