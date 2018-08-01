@@ -10,8 +10,8 @@ import * as db from '../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  createSignature,
   hash,
+  createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
 
@@ -35,6 +35,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
   let requestId;
   let requestMessage;
   let requestMessageSalt;
+  let requestMessageHash;
 
   db.createIdentityReferences.push({
     referenceId,
@@ -159,6 +160,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
 
     requestMessage = incomingRequest.request_message;
     requestMessageSalt = incomingRequest.request_message_salt;
+    requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('1st IdP should create response (accept) successfully', async function() {
@@ -178,9 +180,9 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       aal: 3,
       secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createSignature(
+      signature: createResponseSignature(
         identity.accessors[0].accessorPrivateKey,
-        requestMessage
+        requestMessageHash
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
