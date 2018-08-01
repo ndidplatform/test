@@ -11,11 +11,8 @@ import {
   createEventPromise,
   generateReferenceId,
   hash,
-<<<<<<< HEAD
   wait,
-=======
   hashRequestMessage,
->>>>>>> development-api-v2.1
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
