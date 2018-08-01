@@ -23,7 +23,7 @@
 
     3.1 Follow step 1-2 in [getting started instructions in `api` repository](https://github.com/ndidplatform/api#getting-started)
 
-    3.2 Initialize Developement node keys
+    3.2 Initialize Development node keys
 
     ```
     TENDERMINT_IP=127.0.0.1 \
