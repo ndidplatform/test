@@ -7,6 +7,7 @@ import * as commonApi from '../../api/v2/common';
 import { createRequest } from '../../api/v2/rp';
 import { hash, wait } from '../../utils';
 import { RP_CALLBACK_URL } from '../../config';
+import { ndidAvailable } from '..';
 
 describe('Use debug API to lock first IdP', function() {
   const namespace = 'cid';
@@ -14,6 +15,12 @@ describe('Use debug API to lock first IdP', function() {
 
   before(async function() {
     this.timeout(8000);
+
+    if (!ndidAvailable) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+
     await ndidApi.setTimeoutBlockRegisterMqDestination('ndid1', {
       blocks_to_timeout: 5,
     });
