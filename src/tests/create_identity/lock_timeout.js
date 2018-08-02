@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
 import * as debugApi from '../../api/v2/debug';
+import * as ndidApi from '../../api/v2/ndid';
 import * as commonApi from '../../api/v2/common';
 import { createRequest } from '../../api/v2/rp';
 import { hash, wait } from '../../utils';
@@ -11,45 +12,50 @@ describe('Use debug API to lock first IdP', function() {
   const namespace = 'cid';
   const identifier = uuidv4();
 
-  this.timeout(5000);
   before(async function() {
-    // TODO: Use NDID node to set register message destination timeout to 10 blocks
-    this.skip();
-
-    debugApi.transact('idp1',{
+    this.timeout(8000);
+    await ndidApi.setTimeoutBlockRegisterMqDestination('ndid1', {
+      blocks_to_timeout: 5,
+    });
+    
+    await debugApi.transact('idp1', {
       fnName: 'RegisterMsqDestination',
-      users: [{
-        hash_id: hash(namespace + ':' + identifier),
-        ial: 1.1,
-        first: true,
-      }],
+      users: [
+        {
+          hash_id: hash(namespace + ':' + identifier),
+          ial: 1.1,
+          first: true,
+        },
+      ],
       node_id: 'idp1',
     });
+
+    // wait for it to propagate to all other Tendermint nodes
     await wait(2000);
   });
 
   it('should see idp1 associated with user', async function() {
     this.timeout(10000);
-    let response = await commonApi.getRelevantIdpNodesBySid('idp1', {
+    const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
     });
 
-    let idpList = await response.json();
+    const idpList = await response.json();
     expect(idpList.length).to.be.equal(1);
     expect(idpList).to.deep.include({
       node_id: 'idp1',
       node_name: '',
       max_ial: 3,
-      max_aal: 3
+      max_aal: 3,
     });
   });
 
-  it('After flood tendermint with 10 blocks, idp1 should no longer associate', async function() {
+  it('idp1 should no longer associated after timed out', async function() {
     this.timeout(30000);
-    //flood 10 block (no need to be valid tx)
-    for(let i = 0 ; i < 10 ; i++) {
-      let response = await createRequest('rp1', {
+    // flood 5 blocks
+    for (let i = 0; i < 5; i++) {
+      await createRequest('rp1', {
         reference_id: uuidv4(),
         callback_url: RP_CALLBACK_URL,
         mode: 1,
@@ -68,13 +74,19 @@ describe('Use debug API to lock first IdP', function() {
       //console.log(JSON.stringify(await response.json(),null,2));
     }
 
-    let response = await commonApi.getRelevantIdpNodesBySid('idp1', {
+    const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
     });
 
-    let idpList = await response.json();
+    const idpList = await response.json();
     expect(idpList).to.be.empty;
   });
 
+  after(async function() {
+    this.timeout(5000);
+    await ndidApi.setTimeoutBlockRegisterMqDestination('ndid1', {
+      blocks_to_timeout: 500,
+    });
+  });
 });
