@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { idp2Available, as1Available, as2Available } from '.';
 import * as dpkiApi from '../api/v2/dpki';
 import * as config from '../config';
+import { wait } from '../utils';
 
 describe('DPKI callback setup', function() {
   before(function() {
@@ -139,4 +140,13 @@ describe('DPKI callback setup', function() {
       });
     });
   });
+
+  after(async function() {
+    this.timeout(5000);
+    if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
+      //wait for register msq after set callback
+      await wait(2000);
+    }
+  });
+
 });

@@ -75,9 +75,9 @@ function generateCustomPadding(initialSalt, blockLength = 2048) {
   return paddingBuffer;
 }
 
-export function hashRequestMessage(request_message, request_message_salt) {
-  const paddingBuffer = generateCustomPadding(request_message_salt);
-  const derivedSalt = Buffer.from(hash(request_message_salt), 'base64')
+export function hashRequestMessageForConsent(request_message, initialSalt, request_id) {
+  const paddingBuffer = generateCustomPadding(initialSalt);
+  const derivedSalt = Buffer.from(hash(request_id + initialSalt), 'base64')
     .slice(0, 16)
     .toString('base64');
 

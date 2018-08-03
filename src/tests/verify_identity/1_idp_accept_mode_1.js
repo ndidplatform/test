@@ -8,7 +8,7 @@ import { rpEventEmitter, idp1EventEmitter } from '../../callback_server';
 import {
   createEventPromise,
   generateReferenceId,
-  hashRequestMessage,
+  hashRequestMessageForConsent,
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
@@ -135,9 +135,10 @@ describe('1 IdP, accept consent, mode 1', function() {
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessage(
+      request_message_hash: hashRequestMessageForConsent(
         createRequestParams.request_message,
-        incomingRequest.request_message_salt
+        incomingRequest.initial_salt,
+        requestId,
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,

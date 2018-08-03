@@ -14,7 +14,7 @@ import * as db from '../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  hashRequestMessage,
+  hashRequestMessageForConsent,
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
@@ -39,7 +39,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
   const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
-  const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
+  const data = crypto.randomBytes(1000000).toString('hex'); // 2000000 bytes in hex string
 
   let requestId;
   let requestMessageSalt;
@@ -187,9 +187,10 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessage(
+      request_message_hash: hashRequestMessageForConsent(
         createRequestParams.request_message,
-        incomingRequest.request_message_salt
+        incomingRequest.initial_salt,
+        requestId,
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,

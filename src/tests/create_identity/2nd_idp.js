@@ -12,7 +12,7 @@ import {
   generateReferenceId,
   hash,
   wait,
-  hashRequestMessage,
+  hashRequestMessageForConsent,
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
@@ -159,7 +159,10 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
     requestMessageSalt = incomingRequest.request_message_salt;
 
     expect(incomingRequest.request_message_hash).to.equal(
-      hashRequestMessage(requestMessage, requestMessageSalt)
+      hashRequestMessageForConsent(requestMessage, 
+        incomingRequest.initial_salt, 
+        incomingRequest.request_id
+      )
     );
 
     requestMessageHash = incomingRequest.request_message_hash;
