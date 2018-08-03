@@ -39,7 +39,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
   const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
-  const data = crypto.randomBytes(1000000).toString('hex'); // 2000000 bytes in hex string
+  const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
 
   let requestId;
   let requestMessageSalt;
