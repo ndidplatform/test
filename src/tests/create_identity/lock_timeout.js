@@ -50,9 +50,9 @@ describe('Use debug API to lock first IdP', function() {
 
     const idpList = await response.json();
     expect(idpList.length).to.be.equal(1);
-    expect(idpList).to.deep.include({
+    expect(idpList[0]).to.deep.include({
       node_id: 'idp1',
-      node_name: '',
+      // node_name: '',
       max_ial: 3,
       max_aal: 3,
     });
