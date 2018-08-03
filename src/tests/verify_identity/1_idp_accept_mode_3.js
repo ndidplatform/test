@@ -8,8 +8,8 @@ import * as db from '../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  hash,
-  createSignature,
+  hashRequestMessageForConsent,
+  createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
 
@@ -31,6 +31,7 @@ describe('1 IdP, accept consent, mode 3', function() {
 
   let requestId;
   let requestMessageSalt;
+  let requestMessageHash;
 
   const requestStatusUpdates = [];
 
@@ -99,6 +100,7 @@ describe('1 IdP, accept consent, mode 3', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
 
@@ -133,18 +135,21 @@ describe('1 IdP, accept consent, mode 3', function() {
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hash(
-        createRequestParams.request_message
+      request_message_hash: hashRequestMessageForConsent(
+        createRequestParams.request_message,
+        incomingRequest.initial_salt,
+        requestId
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: createRequestParams.data_request_list,
     });
-    // expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
-    //   .empty;
+    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
     requestMessageSalt = incomingRequest.request_message_salt;
+    requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('IdP should create response (accept) successfully', async function() {
@@ -164,9 +169,9 @@ describe('1 IdP, accept consent, mode 3', function() {
       aal: 3,
       secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createSignature(
+      signature: createResponseSignature(
         identity.accessors[0].accessorPrivateKey,
-        createRequestParams.request_message
+        requestMessageHash
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
@@ -193,7 +198,12 @@ describe('1 IdP, accept consent, mode 3', function() {
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');
@@ -213,7 +223,12 @@ describe('1 IdP, accept consent, mode 3', function() {
       timed_out: false,
       service_list: [],
       response_valid_list: [
-        { idp_id: 'idp1', valid_proof: true, valid_ial: true },
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
       ],
     });
     expect(requestStatus).to.have.property('block_height');

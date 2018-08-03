@@ -10,8 +10,10 @@ import * as db from '../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  createSignature,
   hash,
+  wait,
+  hashRequestMessageForConsent,
+  createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
 
@@ -35,6 +37,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
   let requestId;
   let requestMessage;
   let requestMessageSalt;
+  let requestMessageHash;
 
   db.createIdentityReferences.push({
     referenceId,
@@ -151,20 +154,24 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
     expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
     expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
       .empty;
-    expect(incomingRequest.request_message_hash).to.equal(
-      hash(
-        incomingRequest.request_message
-      )
-    );
 
     requestMessage = incomingRequest.request_message;
     requestMessageSalt = incomingRequest.request_message_salt;
+
+    expect(incomingRequest.request_message_hash).to.equal(
+      hashRequestMessageForConsent(requestMessage, 
+        incomingRequest.initial_salt, 
+        incomingRequest.request_id
+      )
+    );
+
+    requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -178,9 +185,9 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       aal: 3,
       secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createSignature(
+      signature: createResponseSignature(
         identity.accessors[0].accessorPrivateKey,
-        requestMessage
+        requestMessageHash
       ),
       accessor_id: identity.accessors[0].accessorId,
     });
@@ -211,7 +218,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
     expect(idpNode).to.exist;
 
     db.idp2Identities.push({
@@ -225,6 +232,26 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
           secret,
         },
       ],
+    });
+  });
+
+  it('Special request status for create identity should be completed and closed', async function() {
+    this.timeout(10000);
+    //wait for API close request
+    await wait(1000);
+    const response = await commonApi.getRequest('idp2', { requestId });
+    const responseBody = await response.json();
+    expect(responseBody).to.deep.include({
+      request_id: requestId,
+      min_idp: 1,
+      min_aal: 1,
+      min_ial: 1.1,
+      request_timeout: 86400,
+      data_request_list: [],
+      closed: true,
+      timed_out: false,
+      mode: 3,
+      status: 'completed',
     });
   });
 

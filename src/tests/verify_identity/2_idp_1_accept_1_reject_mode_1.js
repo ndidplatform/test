@@ -1,4 +1,6 @@
 import { expect } from 'chai';
+import forge from 'node-forge';
+
 import { idp2Available } from '..';
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
@@ -8,7 +10,6 @@ import {
   idp1EventEmitter,
   idp2EventEmitter,
 } from '../../callback_server';
-import * as db from '../../db';
 import {
   createEventPromise,
   generateReferenceId,
@@ -17,9 +18,12 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mode 3', function() {
+describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mode 1', function() {
   let namespace;
   let identifier;
+
+  const keypair = forge.pki.rsa.generateKeyPair(2048);
+  const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
 
   const rpReferenceId = generateReferenceId();
   const idp1ReferenceId = generateReferenceId();
@@ -49,25 +53,19 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
     if (!idp2Available) {
       this.skip();
     }
-    if (db.idp1Identities[0] == null) {
-      throw new Error('No created identity to use on IdP-1');
-    }
-    if (db.idp2Identities[0] == null) {
-      throw new Error('No created identity to use on IdP-2');
-    }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = 'cid';
+    identifier = '1234567890123';
 
     createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
-      mode: 3,
+      mode: 1,
       namespace,
       identifier,
-      idp_id_list: [],
+      idp_id_list: ['idp1', 'idp2'],
       data_request_list: [],
-      request_message: 'Test request message (2 IdPs) (mode 3)',
+      request_message: 'Test request message (2 IdPs) (mode 1)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 2,
@@ -92,9 +90,8 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
         } else if (callbackData.status === 'complicated') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
-          } else {
-            requestStatusComplicatedPromise.resolve(callbackData);
           }
+          requestStatusComplicatedPromise.resolve(callbackData);
         }
       } else if (
         callbackData.type === 'close_request_result' &&
@@ -213,11 +210,6 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
 
   it('IdP-1 should create response (accept) successfully', async function() {
     this.timeout(10000);
-    const identity = db.idp1Identities.find(
-      (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-
     const response = await idpApi.createResponse('idp1', {
       reference_id: idp1ReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -226,13 +218,8 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      signature: createResponseSignature(userPrivateKey, requestMessageHash),
     });
     expect(response.status).to.equal(202);
 
@@ -259,9 +246,9 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       response_valid_list: [
         {
           idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
         },
       ],
     });
@@ -271,11 +258,6 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
 
   it('IdP-2 should create response (reject) successfully', async function() {
     this.timeout(10000);
-    const identity = db.idp2Identities.find(
-      (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-
     const response = await idpApi.createResponse('idp2', {
       reference_id: idp2ReferenceId,
       callback_url: config.IDP2_CALLBACK_URL,
@@ -284,13 +266,8 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'reject',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      signature: createResponseSignature(userPrivateKey, requestMessageHash),
     });
     expect(response.status).to.equal(202);
 
@@ -317,15 +294,15 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       response_valid_list: [
         {
           idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
         },
         {
           idp_id: 'idp2',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
         },
       ],
     });
@@ -360,15 +337,15 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       response_valid_list: [
         {
           idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
         },
         {
           idp_id: 'idp2',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
         },
       ],
     });

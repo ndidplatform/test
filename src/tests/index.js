@@ -1,3 +1,5 @@
+import 'source-map-support/register';
+
 import { startCallbackServers, stopCallbackServers } from '../callback_server';
 import {
   startCallbackServer as startDpkiCallbackServer,
@@ -6,6 +8,7 @@ import {
 import { isNodeAvailable } from '../helpers';
 import * as config from '../config';
 
+export let ndidAvailable;
 export let rpAvailable;
 export let idp1Available;
 export let idp2Available;
@@ -14,12 +17,14 @@ export let as2Available;
 
 async function checkForAvailableNodes() {
   const [
+    _ndidAvailable,
     _rpAvailable,
     _idp1Available,
     _idp2Available,
     _as1Available,
     _as2Available,
   ] = await Promise.all([
+    isNodeAvailable('ndid1'),
     isNodeAvailable('rp1'),
     isNodeAvailable('idp1'),
     isNodeAvailable('idp2'),
@@ -27,6 +32,7 @@ async function checkForAvailableNodes() {
     isNodeAvailable('as2'),
   ]);
 
+  ndidAvailable = _ndidAvailable;
   rpAvailable = _rpAvailable;
   idp1Available = _idp1Available;
   idp2Available = _idp2Available;
@@ -36,6 +42,7 @@ async function checkForAvailableNodes() {
 
 describe('End-to-End NDID API test (API v2)', function() {
   before(async function() {
+    this.timeout(5000);
     startCallbackServers();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
       startDpkiCallbackServer();
@@ -46,8 +53,10 @@ describe('End-to-End NDID API test (API v2)', function() {
     }
   });
 
+  require('./ndid');
   require('./dpki_setup');
   require('./idp_setup');
+  require('./as_setup');
   require('./as_service_setup');
   require('./create_identity');
   require('./verify_identity');

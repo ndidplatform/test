@@ -37,7 +37,7 @@ function createSignature(privateKey, hashMethod, message) {
 
 let dpkiServer;
 const app = express();
-app.use(bodyParser.json({ limit: '2mb' }));
+app.use(bodyParser.json({ limit: '4mb' }));
 
 app.post('/dpki/decrypt', (req, res) => {
   try {
