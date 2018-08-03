@@ -106,8 +106,7 @@ describe('1 IdP, reject consent, mode 3', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
-    expect(responseBody.request_message_salt).to.be.a('string').that.is.not
-      .empty;
+    expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
 
@@ -145,7 +144,7 @@ describe('1 IdP, reject consent, mode 3', function() {
       request_message_hash: hashRequestMessageForConsent(
         createRequestParams.request_message,
         incomingRequest.initial_salt,
-        requestId,
+        requestId
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,

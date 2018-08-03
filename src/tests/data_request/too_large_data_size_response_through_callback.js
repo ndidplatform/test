@@ -1,13 +1,15 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
 
-import { idp2Available } from '..';
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
+import * as asApi from '../../api/v2/as';
 // import * as commonApi from '../../api/v2/common';
 import {
   rpEventEmitter,
   idp1EventEmitter,
-  idp2EventEmitter,
+  as1EventEmitter,
+  setAsSendDataThroughCallback,
 } from '../../callback_server';
 import * as db from '../../db';
 import {
@@ -18,25 +20,28 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
+describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3', function() {
   let namespace;
   let identifier;
 
   const rpReferenceId = generateReferenceId();
-  const idp1ReferenceId = generateReferenceId();
-  const idp2ReferenceId = generateReferenceId();
+  const idpReferenceId = generateReferenceId();
+  const asReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
-  const idp1IncomingRequestPromise = createEventPromise(); // IdP-1
-  const idp1ResponseResultPromise = createEventPromise(); // IdP-1
-  const idp2IncomingRequestPromise = createEventPromise(); // IdP-2
-  const idp2ResponseResultPromise = createEventPromise(); // IdP-2
+  const incomingRequestPromise = createEventPromise(); // IDP
+  const responseResultPromise = createEventPromise(); // IDP
   const requestStatusConfirmedPromise = createEventPromise(); // RP
+  const dataRequestReceivedPromise = createEventPromise(); // AS
+  const errorCallbackPromise = createEventPromise(); // AS
+  const sendDataResultPromise = createEventPromise(); // AS
+  const requestStatusSignedDataPromise = createEventPromise(); // RP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
+  const data = crypto.randomBytes(2499995).toString('hex'); // 4999990 bytes in hex string
 
   let requestId;
   let requestMessageSalt;
@@ -45,14 +50,8 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   const requestStatusUpdates = [];
 
   before(function() {
-    if (!idp2Available) {
-      this.skip();
-    }
     if (db.idp1Identities[0] == null) {
-      throw new Error('No created identity to use on IdP-1');
-    }
-    if (db.idp2Identities[0] == null) {
-      throw new Error('No created identity to use on IdP-2');
+      throw new Error('No created identity to use');
     }
 
     namespace = db.idp1Identities[0].namespace;
@@ -65,13 +64,24 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       namespace,
       identifier,
       idp_id_list: [],
-      data_request_list: [],
-      request_message: 'Test request message (2 IdPs) (mode 3)',
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: ['as1'],
+          min_as: 1,
+          request_params: JSON.stringify({
+            format: 'pdf',
+          }),
+        },
+      ],
+      request_message: 'Test request message (data request) (mode 3)',
       min_ial: 1.1,
       min_aal: 1,
-      min_idp: 2,
+      min_idp: 1,
       request_timeout: 86400,
     };
+
+    setAsSendDataThroughCallback(true);
 
     rpEventEmitter.on('callback', function(callbackData) {
       if (
@@ -87,7 +97,11 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
-          requestStatusConfirmedPromise.resolve(callbackData);
+          if (callbackData.service_list[0].signed_data_count === 1) {
+            requestStatusSignedDataPromise.resolve(callbackData);
+          } else {
+            requestStatusConfirmedPromise.resolve(callbackData);
+          }
         } else if (callbackData.status === 'completed') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
@@ -103,20 +117,31 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
       ) {
-        idp1IncomingRequestPromise.resolve(callbackData);
-      } else if (callbackData.type === 'response_result') {
-        idp1ResponseResultPromise.resolve(callbackData);
+        incomingRequestPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'response_result' &&
+        callbackData.reference_id === idpReferenceId
+      ) {
+        responseResultPromise.resolve(callbackData);
       }
     });
 
-    idp2EventEmitter.on('callback', function(callbackData) {
+    as1EventEmitter.on('callback', function(callbackData, sendData) {
       if (
-        callbackData.type === 'incoming_request' &&
+        callbackData.type === 'data_request' &&
         callbackData.request_id === requestId
       ) {
-        idp2IncomingRequestPromise.resolve(callbackData);
-      } else if (callbackData.type === 'response_result') {
-        idp2ResponseResultPromise.resolve(callbackData);
+        dataRequestReceivedPromise.resolve(callbackData);
+        sendData({
+          data,
+        });
+      } else if (
+        callbackData.type === 'send_data_result' &&
+        callbackData.reference_id === asReferenceId
+      ) {
+        sendDataResultPromise.resolve(callbackData);
+      } else if (callbackData.type === 'error') {
+        errorCallbackPromise.resolve(callbackData);
       }
     });
   });
@@ -146,16 +171,23 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       answered_idp_count: 0,
       closed: false,
       timed_out: false,
-      service_list: [],
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 0,
+          received_data_count: 0,
+        },
+      ],
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('IdP-1 should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
-    const incomingRequest = await idp1IncomingRequestPromise.promise;
+    const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
@@ -179,33 +211,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP-2 should receive incoming request callback', async function() {
-    this.timeout(15000);
-    const incomingRequest = await idp2IncomingRequestPromise.promise;
-    expect(incomingRequest).to.deep.include({
-      mode: createRequestParams.mode,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
-      ),
-      requester_node_id: 'rp1',
-      min_ial: createRequestParams.min_ial,
-      min_aal: createRequestParams.min_aal,
-      data_request_list: createRequestParams.data_request_list,
-    });
-    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
-      .empty;
-
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
-  });
-
-  it('IdP-1 should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
       (identity) =>
@@ -213,7 +219,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     );
 
     const response = await idpApi.createResponse('idp1', {
-      reference_id: idp1ReferenceId,
+      reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
       namespace: createRequestParams.namespace,
@@ -230,9 +236,9 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     });
     expect(response.status).to.equal(202);
 
-    const responseResult = await idp1ResponseResultPromise.promise;
+    const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
-      reference_id: idp1ReferenceId,
+      reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
     });
@@ -249,7 +255,14 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       answered_idp_count: 1,
       closed: false,
       timed_out: false,
-      service_list: [],
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 0,
+          received_data_count: 0,
+        },
+      ],
       response_valid_list: [
         {
           idp_id: 'idp1',
@@ -263,108 +276,37 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('IdP-2 should create response (accept) successfully', async function() {
-    this.timeout(10000);
-    const identity = db.idp2Identities.find(
-      (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-
-    const response = await idpApi.createResponse('idp2', {
-      reference_id: idp2ReferenceId,
-      callback_url: config.IDP2_CALLBACK_URL,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      ial: 2.3,
-      aal: 3,
-      secret: identity.accessors[0].secret,
-      status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
-    });
-    expect(response.status).to.equal(202);
-
-    const responseResult = await idp2ResponseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      reference_id: idp2ReferenceId,
-      request_id: requestId,
-      success: true,
-    });
-  });
-
-  it('RP should receive completed request status with valid proofs', async function() {
+  it('AS should receive data request', async function() {
     this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
-    expect(requestStatus).to.deep.include({
+    const dataRequest = await dataRequestReceivedPromise.promise;
+    expect(dataRequest).to.deep.include({
       request_id: requestId,
-      status: 'completed',
       mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 2,
-      closed: false,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
-        },
-        {
-          idp_id: 'idp2',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
-        },
-      ],
+      namespace,
+      identifier,
+      service_id: createRequestParams.data_request_list[0].service_id,
+      request_params: createRequestParams.data_request_list[0].request_params,
+      max_ial: 2.3,
+      max_aal: 3,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(dataRequest.response_signature_list).to.have.lengthOf(1);
+    expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
+      .empty;
   });
 
-  it('RP should receive request closed status', async function() {
+  it('AS should get error callback', async function() {
     this.timeout(10000);
-    const requestStatus = await requestClosedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 2,
-      closed: true,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
-        },
-        {
-          idp_id: 'idp2',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
-        },
-      ],
+    const error = await errorCallbackPromise.promise;
+    expect(error).to.have.property('error');
+    expect(error.error).to.deep.include({
+      code: 20036,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
-  });
-
-  it('RP should receive 4 request status updates', function() {
-    expect(requestStatusUpdates).to.have.lengthOf(4);
   });
 
   after(function() {
+    setAsSendDataThroughCallback(false);
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('callback');
+    as1EventEmitter.removeAllListeners('callback');
   });
 });

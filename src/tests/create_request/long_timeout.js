@@ -74,8 +74,7 @@ describe('Long timeout test (>2147483647 seconds or >24.8 days - greater than 32
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
-    expect(responseBody.request_message_salt).to.be.a('string').that.is.not
-      .empty;
+    expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
 

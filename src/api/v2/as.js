@@ -17,3 +17,13 @@ export function sendData(nodeId, data) {
   const { requestId, serviceId, ...rest } = data;
   return httpPost(`${apiBaseUrl}/as/data/${requestId}/${serviceId}`, rest);
 }
+
+export function getCallbacks(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpGet(`${apiBaseUrl}/as/callback`);
+}
+
+export function setCallbacks(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpPost(`${apiBaseUrl}/as/callback`, data);
+}

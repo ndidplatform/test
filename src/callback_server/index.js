@@ -13,6 +13,12 @@ export const idp2EventEmitter = new EventEmitter();
 export const as1EventEmitter = new EventEmitter();
 export const as2EventEmitter = new EventEmitter();
 
+export let asSendDataThroughCallback = false;
+
+export function setAsSendDataThroughCallback(sendThroughCallback) {
+  asSendDataThroughCallback = sendThroughCallback;
+}
+
 /*
   RP
 */
@@ -91,8 +97,14 @@ as1App.use(bodyParser.json({ limit: '2mb' }));
 
 as1App.post('/as/callback', async function(req, res) {
   const callbackData = req.body;
-  as1EventEmitter.emit('callback', callbackData);
-  res.status(204).end();
+  if (callbackData.type === 'data_request' && asSendDataThroughCallback) {
+    as1EventEmitter.emit('callback', callbackData, function(data) {
+      res.status(200).json(data);
+    });
+  } else {
+    as1EventEmitter.emit('callback', callbackData);
+    res.status(204).end();
+  }
 });
 
 /*

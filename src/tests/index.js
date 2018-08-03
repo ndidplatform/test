@@ -1,3 +1,5 @@
+import 'source-map-support/register';
+
 import { startCallbackServers, stopCallbackServers } from '../callback_server';
 import {
   startCallbackServer as startDpkiCallbackServer,
@@ -54,6 +56,7 @@ describe('End-to-End NDID API test (API v2)', function() {
   require('./ndid');
   require('./dpki_setup');
   require('./idp_setup');
+  require('./as_setup');
   require('./as_service_setup');
   require('./create_identity');
   require('./verify_identity');
