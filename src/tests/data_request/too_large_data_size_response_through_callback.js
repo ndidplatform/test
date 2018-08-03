@@ -206,6 +206,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
+    expect(incomingRequest.creation_time).to.be.a('number');
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;

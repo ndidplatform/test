@@ -177,6 +177,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
+    expect(incomingRequest.creation_time).to.be.a('number');
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;
@@ -203,6 +204,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
+    expect(incomingRequest.creation_time).to.be.a('number');
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;

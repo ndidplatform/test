@@ -147,6 +147,7 @@ describe('1 IdP, accept consent, mode 3', function() {
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
+    expect(incomingRequest.creation_time).to.be.a('number');
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;
