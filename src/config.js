@@ -1,13 +1,6 @@
 export const CALLBACK_IP = process.env.CALLBACK_IP || 'localhost';
 
-export const nodeIdMappingAddress = {
-  rp1: 'http://localhost:8081',
-  idp1: 'http://localhost:8080',
-  idp2: 'http://localhost:8083',
-  as1: 'http://localhost:8082',
-  as2: 'http://localhost:8084',
-  ndid1: 'http://localhost:8085',
-};
+export const nodeIdMappingAddress = false;
 
 export const RP_CALLBACK_PORT = 9200;
 
@@ -33,8 +26,8 @@ export const AS2_CALLBACK_URL = `http://${CALLBACK_IP}:${AS2_CALLBACK_PORT}/as/c
 
 export const NDID_CALLBACK_URL = `http://${CALLBACK_IP}:${NDID_CALLBACK_PORT}/ndid/callback`;
 
-export const USE_EXTERNAL_CRYPTO_SERVICE = true;
-  //process.env.USE_EXTERNAL_CRYPTO_SERVICE === 'true';
+export const USE_EXTERNAL_CRYPTO_SERVICE =
+  process.env.USE_EXTERNAL_CRYPTO_SERVICE === 'true';
 
 export const DPKI_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/sign`;
 export const DPKI_MASTER_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/master/sign`;
