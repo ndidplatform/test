@@ -403,6 +403,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
   });
 
   it('RP should get the correct data received from AS', async function() {
+    this.timeout(10000);
     const response = await rpApi.getDataFromAS('rp1', {
       requestId,
     });
