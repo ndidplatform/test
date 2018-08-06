@@ -1,5 +1,3 @@
-import 'source-map-support/register';
-
 import { startCallbackServers, stopCallbackServers } from '../callback_server';
 import {
   startCallbackServer as startDpkiCallbackServer,
