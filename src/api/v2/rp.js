@@ -1,5 +1,15 @@
 import { getApiAddressUrl, httpGet, httpPost } from '../helpers';
 
+export function getCallbacks(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpGet(`${apiBaseUrl}/rp/callback`);
+}
+
+export function setCallbacks(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpPost(`${apiBaseUrl}/rp/callback`, data);
+}
+
 export function createRequest(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   const { namespace, identifier, ...rest } = data;

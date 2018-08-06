@@ -53,6 +53,7 @@ describe('End-to-End NDID API test (API v2)', function() {
 
   require('./ndid');
   require('./dpki_setup');
+  require('./rp_setup');
   require('./idp_setup');
   require('./as_setup');
   require('./as_service_setup');
@@ -60,6 +61,7 @@ describe('End-to-End NDID API test (API v2)', function() {
   require('./verify_identity');
   require('./data_request');
   require('./create_request');
+  require('./idp_response');
   require('./as_data_response');
 
   after(function() {
