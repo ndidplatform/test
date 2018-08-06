@@ -38,7 +38,7 @@ async function checkForAvailableNodes() {
   as2Available = _as2Available;
 }
 
-describe('End-to-End NDID API test (API v2)', function() {
+describe('End-to-End NDID API test (API v2.1)', function() {
   before(async function() {
     this.timeout(5000);
     startCallbackServers();
