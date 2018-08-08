@@ -9,6 +9,10 @@ describe('NDID update nodes', function() {
   const max_ial = 1.1;
   const max_aal = 1;
 
+  const rp_node_name = 'test update node_name rp1';
+  const idp_node_name = 'test update node_name idp1';
+  const as_node_name = 'test update node_name as1';
+
   before(function() {
     if (!ndidAvailable) {
       this.skip();
@@ -19,7 +23,7 @@ describe('NDID update nodes', function() {
     this.timeout(10000);
     const response = await ndidApi.updateNode('ndid1', {
       node_id: 'rp1',
-      node_name: 'test update node_name rp1',
+      node_name: rp_node_name,
     });
     expect(response.status).to.equal(200);
   });
@@ -28,14 +32,14 @@ describe('NDID update nodes', function() {
     this.timeout(10000);
     const response = await commonApi.getNodeInfo('rp1');
     const responseBody = await response.json();
-    expect(responseBody.node_name).to.equal('test update node_name rp1');
+    expect(responseBody.node_name).to.equal(rp_node_name);
   });
 
   it("NDID should update IDP's node name successfully", async function() {
     this.timeout(10000);
     const response = await ndidApi.updateNode('ndid1', {
       node_id: 'idp1',
-      node_name: 'test update node_name idp1',
+      node_name: idp_node_name,
     });
     expect(response.status).to.equal(200);
   });
@@ -44,7 +48,7 @@ describe('NDID update nodes', function() {
     this.timeout(10000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
-    expect(responseBody.node_name).to.equal('test update node_name idp1');
+    expect(responseBody.node_name).to.equal(idp_node_name);
   });
 
   it("NDID should update IDP's max ial successfully", async function() {
@@ -85,7 +89,7 @@ describe('NDID update nodes', function() {
     this.timeout(10000);
     const response = await ndidApi.updateNode('ndid1', {
       node_id: 'as1',
-      node_name: 'test update node_name as1',
+      node_name: as_node_name,
     });
     expect(response.status).to.equal(200);
   });
@@ -94,7 +98,7 @@ describe('NDID update nodes', function() {
     this.timeout(10000);
     const response = await commonApi.getNodeInfo('as1');
     const responseBody = await response.json();
-    expect(responseBody.node_name).to.equal('test update node_name as1');
+    expect(responseBody.node_name).to.equal(as_node_name);
   });
 
   after(async function() {
