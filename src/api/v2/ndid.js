@@ -5,6 +5,11 @@ export function registerNamespace(nodeId, data) {
   return httpPost(`${apiBaseUrl}/ndid/namespaces`, data);
 }
 
+export function updateNode(nodeId, data){
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/updateNode`, data);
+}
+
 export function setTimeoutBlockRegisterMqDestination(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(

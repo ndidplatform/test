@@ -1,0 +1,108 @@
+import { expect } from 'chai';
+
+import * as ndidApi from '../../api/v2/ndid';
+import * as commonApi from '../../api/v2/common';
+
+import { ndidAvailable } from '..';
+
+describe('NDID update nodes', function() {
+  const max_ial = 1.1;
+  const max_aal = 1;
+
+  before(function() {
+    if (!ndidAvailable) {
+      this.skip();
+    }
+  });
+
+  it("NDID should update RP's node name successfully", async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'rp1',
+      node_name: 'test update node_name rp1',
+    });
+    expect(response.status).to.equal(200);
+  });
+
+  it("RP's node name should be updated successfully", async function() {
+    this.timeout(10000);
+    const response = await commonApi.getNodeInfo('rp1');
+    const responseBody = await response.json();
+    expect(responseBody.node_name).to.equal('test update node_name rp1');
+  });
+
+  it("NDID should update IDP's node name successfully", async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'idp1',
+      node_name: 'test update node_name idp1',
+    });
+    expect(response.status).to.equal(200);
+  });
+
+  it("IDP's node name should be updated successfully", async function() {
+    this.timeout(10000);
+    const response = await commonApi.getNodeInfo('idp1');
+    const responseBody = await response.json();
+    expect(responseBody.node_name).to.equal('test update node_name idp1');
+  });
+
+  it("NDID should update IDP's max ial successfully", async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'idp1',
+      max_ial: max_ial,
+      max_aal: max_aal,
+    });
+    expect(response.status).to.equal(200);
+  });
+
+  it("IDP's node name should be updated successfully", async function() {
+    this.timeout(10000);
+    const response = await commonApi.getNodeInfo('idp1');
+    const responseBody = await response.json();
+    expect(responseBody.max_ial).to.equal(max_ial);
+    expect(responseBody.max_aal).to.equal(max_aal);
+  });
+
+  it("NDID should update IDP's max aal successfully", async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'idp1',
+      max_aal: max_aal,
+    });
+    expect(response.status).to.equal(200);
+  });
+
+  it("IDP's node name should be updated successfully", async function() {
+    this.timeout(10000);
+    const response = await commonApi.getNodeInfo('idp1');
+    const responseBody = await response.json();
+    expect(responseBody.max_aal).to.equal(max_aal);
+  });
+
+  it("NDID should update AS's node name successfully", async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'as1',
+      node_name: 'test update node_name as1',
+    });
+    expect(response.status).to.equal(200);
+  });
+
+  it("AS's node name should be updated successfully", async function() {
+    this.timeout(10000);
+    const response = await commonApi.getNodeInfo('as1');
+    const responseBody = await response.json();
+    expect(responseBody.node_name).to.equal('test update node_name as1');
+  });
+
+  after(async function() {
+    this.timeout(5000);
+    await ndidApi.updateNode('ndid1', {
+      node_id: 'idp1',
+      max_aal: 3,
+      max_ial: 3,
+    });
+  });
+});

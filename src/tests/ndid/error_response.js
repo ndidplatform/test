@@ -4,7 +4,7 @@ import * as ndidApi from '../../api/v2/ndid';
 
 import { ndidAvailable } from '..';
 
-describe('NDID errors', function() {
+describe('NDID response errors', function() {
 
   before(function() {
     if (!ndidAvailable) {
