@@ -3,7 +3,6 @@ import { expect } from 'chai';
 import * as ndidApi from '../../api/v2/ndid';
 import * as commonApi from '../../api/v2/common';
 import { wait } from '../../utils';
-
 import { ndidAvailable } from '..';
 
 describe('NDID update nodes', function() {
@@ -35,6 +34,8 @@ describe('NDID update nodes', function() {
     const response = await commonApi.getNodeInfo('rp1');
     const responseBody = await response.json();
     expect(responseBody.node_name).to.equal(rp_node_name);
+    expect(responseBody.role).to.equal('RP');
+    expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
   });
 
   it("NDID should update IDP's node name successfully", async function() {
@@ -52,6 +53,8 @@ describe('NDID update nodes', function() {
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     expect(responseBody.node_name).to.equal(idp_node_name);
+    expect(responseBody.role).to.equal('IdP');
+    expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
   });
 
   it("NDID should update IDP's max ial successfully", async function() {
@@ -59,7 +62,6 @@ describe('NDID update nodes', function() {
     const response = await ndidApi.updateNode('ndid1', {
       node_id: 'idp1',
       max_ial: max_ial,
-      max_aal: max_aal,
     });
     expect(response.status).to.equal(200);
     await wait(1000);
@@ -70,7 +72,8 @@ describe('NDID update nodes', function() {
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     expect(responseBody.max_ial).to.equal(max_ial);
-    expect(responseBody.max_aal).to.equal(max_aal);
+    expect(responseBody.role).to.equal('IdP');
+    expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
   });
 
   it("NDID should update IDP's max aal successfully", async function() {
@@ -88,6 +91,8 @@ describe('NDID update nodes', function() {
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     expect(responseBody.max_aal).to.equal(max_aal);
+    expect(responseBody.role).to.equal('IdP');
+    expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
   });
 
   it("NDID should update AS's node name successfully", async function() {
@@ -105,6 +110,8 @@ describe('NDID update nodes', function() {
     const response = await commonApi.getNodeInfo('as1');
     const responseBody = await response.json();
     expect(responseBody.node_name).to.equal(as_node_name);
+    expect(responseBody.role).to.equal('AS');
+    expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
   });
 
   after(async function() {
