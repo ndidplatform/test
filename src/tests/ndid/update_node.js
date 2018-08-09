@@ -2,6 +2,7 @@ import { expect } from 'chai';
 
 import * as ndidApi from '../../api/v2/ndid';
 import * as commonApi from '../../api/v2/common';
+import { wait } from '../../utils';
 
 import { ndidAvailable } from '..';
 
@@ -26,6 +27,7 @@ describe('NDID update nodes', function() {
       node_name: rp_node_name,
     });
     expect(response.status).to.equal(200);
+    await wait(1000);
   });
 
   it("RP's node name should be updated successfully", async function() {
@@ -42,6 +44,7 @@ describe('NDID update nodes', function() {
       node_name: idp_node_name,
     });
     expect(response.status).to.equal(200);
+    await wait(1000);
   });
 
   it("IDP's node name should be updated successfully", async function() {
@@ -59,9 +62,10 @@ describe('NDID update nodes', function() {
       max_aal: max_aal,
     });
     expect(response.status).to.equal(200);
+    await wait(1000);
   });
 
-  it("IDP's node name should be updated successfully", async function() {
+  it("IDP's max ial should be updated successfully", async function() {
     this.timeout(10000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
@@ -76,9 +80,10 @@ describe('NDID update nodes', function() {
       max_aal: max_aal,
     });
     expect(response.status).to.equal(200);
+    await wait(1000);
   });
 
-  it("IDP's node name should be updated successfully", async function() {
+  it("IDP's max aal should be updated successfully", async function() {
     this.timeout(10000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
@@ -92,6 +97,7 @@ describe('NDID update nodes', function() {
       node_name: as_node_name,
     });
     expect(response.status).to.equal(200);
+    await wait(1000);
   });
 
   it("AS's node name should be updated successfully", async function() {

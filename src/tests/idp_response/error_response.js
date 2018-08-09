@@ -11,6 +11,7 @@ import {
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
+import { as2Available } from '..';
 
 describe('IdP response errors', function() {
   let namespace;
@@ -53,7 +54,7 @@ describe('IdP response errors', function() {
         },
         {
           service_id: 'customer_info',
-          as_id_list: ['as2'],
+          as_id_list: as2Available ? ['as2'] : ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
             format: 'pdf',
