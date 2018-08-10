@@ -39,3 +39,18 @@ export function approveService(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/approveService`, data);
 }
+
+export function setNodeToken(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/setNodeToken`, data);
+}
+
+export function addNodeToken(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/addNodeToken`, data);
+}
+
+export function reduceNodeToken(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/reduceNodeToken`, data);
+}
