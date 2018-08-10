@@ -13,7 +13,7 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('Close request the 2nd time', function() {
+describe('Close request the 2nd time test', function() {
   let namespace;
   let identifier;
 
