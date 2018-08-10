@@ -8,6 +8,7 @@ describe('NDID API', function() {
     }
   });
 
+  require('./add_service');
   require('./update_node');
   require('./error_response');
 });

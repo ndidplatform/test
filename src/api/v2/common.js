@@ -16,3 +16,8 @@ export function getNodeInfo(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   return httpGet(`${apiBaseUrl}/utility/nodes/${nodeId}`);
 }
+
+export function getServices(nodeId){
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpGet(`${apiBaseUrl}/utility/services`);
+}

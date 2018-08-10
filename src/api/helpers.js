@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import { nodeIdMappingAddress } from '../config';
 
 export function getApiAddressUrl(nodeId) {
-  if(nodeIdMappingAddress && nodeIdMappingAddress[nodeId]) {
+  if (nodeIdMappingAddress && nodeIdMappingAddress[nodeId]) {
     return nodeIdMappingAddress[nodeId];
   }
   if (nodeId === 'rp1') {
@@ -39,5 +39,14 @@ export async function httpPost(url, body) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
+  });
+}
+
+export async function httpDelte(url) {
+  return fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+    },
   });
 }
