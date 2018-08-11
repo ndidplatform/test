@@ -67,10 +67,10 @@ describe('Spent and refill node token test', function() {
         min_idp: 1,
         request_timeout: 86400,
       });
-      await wait(1000);
+      await wait(1500);
     }
 
-    await wait(1000);
+    await wait(4000);
 
     const response = await commonApi.getToken('rp1');
     const responseBody = await response.json();
