@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { as1Available } from '../';
+import { as1Available, ndidAvailable } from '../';
 import * as asApi from '../../api/v2/as';
 import * as ndidApi from '../../api/v2/ndid';
 import { as1EventEmitter } from '../../callback_server';
@@ -8,12 +8,6 @@ import { createEventPromise, generateReferenceId, wait } from '../../utils';
 import * as config from '../../config';
 
 describe('AS error callback response', function() {
-  before(function() {
-    if (!as1Available) {
-      this.skip();
-    }
-  });
-
   const customerAssetsInfoReferenceId = generateReferenceId(); //NDID is not registered this service
   const disapprovedReferenceId = generateReferenceId(); //NDID disapproved this service
 
@@ -21,6 +15,10 @@ describe('AS error callback response', function() {
   const addOrUpdateServiceDisapprovedResultPromise = createEventPromise();
 
   before(async function() {
+    if (!as1Available) {
+      this.skip();
+    }
+
     this.timeout(10000);
     as1EventEmitter.on('callback', function(callbackData) {
       if (callbackData.type === 'add_or_update_service_result') {
@@ -34,10 +32,12 @@ describe('AS error callback response', function() {
       }
     });
 
-    await ndidApi.addService('ndid1', {
-      service_id: 'disapproved_service',
-      service_name: 'Disapproved service for test',
-    });
+    if (ndidAvailable) {
+      await ndidApi.addService('ndid1', {
+        service_id: 'disapproved_service',
+        service_name: 'Disapproved service for test',
+      });
+    }
 
     // wait for it to propagate to all other Tendermint nodes
     await wait(2000);
@@ -64,6 +64,10 @@ describe('AS error callback response', function() {
   });
 
   it('should get an error callback response when add offered service (disapproved_service) that NDID disapproved service for AS', async function() {
+    if (!ndidAvailable) {
+      this.skip();
+    }
+
     this.timeout(10000);
     const response = await asApi.addOrUpdateService('as1', {
       serviceId: 'disapproved_service',
