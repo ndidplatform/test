@@ -62,7 +62,7 @@ describe('NDID response errors', function() {
     const responseBody = await response.json();
 
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(25045); //Amount must be greater than or equal to 0
+    expect(responseBody.error.code).to.equal(20003);
   });
 
   it('NDID should get an error when add node token with negative number', async function() {
@@ -75,7 +75,7 @@ describe('NDID response errors', function() {
     const responseBody = await response.json();
 
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(25045); //Amount must be greater than or equal to 0
+    expect(responseBody.error.code).to.equal(20003);
   });
 
   it('NDID should get an error when reduce node token with negative number', async function() {
@@ -88,7 +88,7 @@ describe('NDID response errors', function() {
     const responseBody = await response.json();
 
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(25045); //Amount must be greater than or equal to 0
+    expect(responseBody.error.code).to.equal(20003);
   });
 
   //TODO: Wait For Error code
@@ -100,7 +100,6 @@ describe('NDID response errors', function() {
     });
 
     const responseBody = await response.json();
-    
 
     //Expect code 13 and message
 
