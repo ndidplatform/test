@@ -29,14 +29,14 @@ export function updateService(nodeId, data) {
   return httpPost(`${apiBaseUrl}/ndid/services/${service_id}`, rest);
 }
 
-export function disableServiceDestination(nodeId) {
+export function disableServiceDestination(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(`${apiBaseUrl}/ndid/enableServiceDestination`);
+  return httpPost(`${apiBaseUrl}/ndid/disableServiceDestination`, data);
 }
 
-export function enableServiceDestination(nodeId) {
+export function enableServiceDestination(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(`${apiBaseUrl}/ndid/disableServiceDestination`);
+  return httpPost(`${apiBaseUrl}/ndid/enableServiceDestination`, data);
 }
 
 export function approveService(nodeId, data) {

@@ -51,8 +51,8 @@ describe('End-to-End NDID API test (API v2.1)', function() {
     }
   });
 
-  require('./ndid');
   require('./dpki_setup');
+  require('./ndid');
   require('./rp_setup');
   require('./idp_setup');
   require('./as_setup');
