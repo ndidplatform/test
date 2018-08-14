@@ -48,7 +48,7 @@ describe('NDID response errors', function() {
     const responseBody = await response.json();
 
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(25006); //Token account (Node ID) could not be found
+    expect(responseBody.error.code).to.equal(25006);
   });
 
   it('NDID should get an error when set node token with negative number', async function() {
@@ -91,7 +91,6 @@ describe('NDID response errors', function() {
     expect(responseBody.error.code).to.equal(20003);
   });
 
-  //TODO: Wait For Error code
   it('NDID should get an error when reduce node token greater than existing token (negative token value)', async function() {
     this.timeout(10000);
     const response = await ndidApi.reduceNodeToken('ndid1', {
@@ -100,10 +99,7 @@ describe('NDID response errors', function() {
     });
 
     const responseBody = await response.json();
-
-    //Expect code 13 and message
-
-    //TODO: Expect error code and message
     expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(25007);
   });
 });
