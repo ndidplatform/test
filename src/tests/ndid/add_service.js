@@ -81,11 +81,9 @@ describe('NDID add new service', function() {
     });
   });
 
-  //TODO:  Wait API has EnableService api
   it('NDID should disable service (test_add_new_service) successfully', async function() {
     this.timeout(10000);
-    this.skip();
-    const response = await ndidApi.disableService('ndid1', {
+    const response = await ndidApi.disableServiceDestination('ndid1', {
       service_id: 'test_add_new_service',
     });
     expect(response.status).to.equal(204);
@@ -94,7 +92,7 @@ describe('NDID add new service', function() {
 
   it('Service (test_add_new_service) should be disabled successfully', async function() {
     this.timeout(10000);
-    this.skip();
+    
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(
@@ -102,5 +100,31 @@ describe('NDID add new service', function() {
     );
 
     expect(service).to.be.an('undefined');
+  });
+
+  it('NDID should enable service (test_add_new_service) successfully', async function() {
+    this.timeout(10000);
+    const response = await ndidApi.enableServiceDestination('ndid1', {
+      service_id: 'test_add_new_service',
+    });
+    expect(response.status).to.equal(204);
+    await wait(1000);
+  });
+
+  it('Service (test_add_new_service) should be enabled successfully', async function() {
+    this.timeout(10000);
+
+    const response = await commonApi.getServices('ndid1');
+    const responseBody = await response.json();
+    const service = responseBody.find(
+      service => service.service_id === 'test_add_new_service'
+    );
+
+    expect(service).to.deep.equal({
+      service_id: 'test_add_new_service',
+      service_name: 'Test add new service',
+      active: true,
+    });
+
   });
 });
