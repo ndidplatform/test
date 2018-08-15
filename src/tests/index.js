@@ -64,6 +64,7 @@ describe('End-to-End NDID API test (API v2.1)', function() {
   require('./idp_response');
   require('./as_data_response');
   require('./token');
+  require('./ndid_disable_enable');
 
   after(function() {
     stopCallbackServers();

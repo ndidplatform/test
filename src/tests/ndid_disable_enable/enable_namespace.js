@@ -16,7 +16,7 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('NDID disable and enable namespace test', function() {
+describe('NDID enable namespace test', function() {
   const namespace = 'cid';
   const identifier = uuidv4();
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -37,7 +37,7 @@ describe('NDID disable and enable namespace test', function() {
     accessorPrivateKey,
   });
 
-  before(function() {
+  before(async function() {
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_identity_request_result' &&
@@ -57,48 +57,7 @@ describe('NDID disable and enable namespace test', function() {
         accessorSignPromise.resolve(callbackData);
       }
     });
-  });
 
-  it('NDID should disable namespace (cid) successfully', async function() {
-    this.timeout(10000);
-
-    const response = await ndidApi.disableNamespace('ndid1', {
-      namespace: 'cid',
-    });
-
-    expect(response.status).to.equal(204);
-    await wait(1000);
-  });
-
-  it('Namespace (cid) should be disabled successfully', async function() {
-    this.timeout(10000);
-
-    const responseUtilityGetNamespaces = await commonApi.getNamespaces('ndid1');
-    const responseBody = await responseUtilityGetNamespaces.json();
-
-    let namespace = responseBody.find(
-      namespace => namespace.namespace === 'cid'
-    );
-
-    expect(namespace).to.be.an('undefined');
-  });
-
-  it('should create identity request unsuccessfully', async function() {
-    this.timeout(10000);
-    const response = await idpApi.createIdentity('idp1', {
-      reference_id: referenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
-      accessor_type: 'RSA',
-      accessor_public_key: accessorPublicKey,
-      //accessor_id,
-      ial: 2.3,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20013);
-    
   });
 
   it('NDID should enable namespace (cid) successfully', async function() {

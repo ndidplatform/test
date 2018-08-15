@@ -1,6 +1,6 @@
 import { ndidAvailable } from '..';
 
-describe('NDID API', function() {
+describe('NDID API tests', function() {
   before(function() {
     if (!ndidAvailable) {
       this.test.parent.pending = true;
@@ -11,8 +11,5 @@ describe('NDID API', function() {
   require('./add_namespace');
   require('./add_service');
   require('./update_node');
-  require('./disable_enable_service');
-  require('./disable_enable_service_destination_by_ndid');
-  require('./disable_enable_namespace');
   require('./error_response');
 });

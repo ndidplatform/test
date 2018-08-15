@@ -21,11 +21,10 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('NDID disable and enable service test', function() {
+describe('NDID enable service test', function() {
   const namespace = 'cid';
   const identifier = uuidv4();
 
-  const testAddNewServiceReferenceId = generateReferenceId();
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const asServiceReferenceId = generateReferenceId();
@@ -33,7 +32,7 @@ describe('NDID disable and enable service test', function() {
   const createRequestResultPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
-  const addOrUpdateServiceResultPromise = createEventPromise(); // AS
+  const dataRequestReceivedPromise = createEventPromise(); // AS
   const sendDataResultPromise = createEventPromise(); // AS
 
   let createRequestParams;
@@ -54,7 +53,7 @@ describe('NDID disable and enable service test', function() {
       idp_id_list: ['idp1'],
       data_request_list: [
         {
-          service_id: 'test_add_new_service',
+          service_id: 'test_disable_service',
           as_id_list: ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
@@ -62,7 +61,7 @@ describe('NDID disable and enable service test', function() {
           }),
         },
       ],
-      request_message: 'Test request message (disabled service)',
+      request_message: 'Test request message (enable service)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
@@ -93,10 +92,11 @@ describe('NDID disable and enable service test', function() {
     });
 
     as1EventEmitter.on('callback', function(callbackData) {
-      if (callbackData.type === 'add_or_update_service_result') {
-        if (callbackData.reference_id === testAddNewServiceReferenceId) {
-          addOrUpdateServiceResultPromise.resolve(callbackData);
-        }
+      if (
+        callbackData.type === 'data_request' &&
+        callbackData.request_id === requestId
+      ) {
+        dataRequestReceivedPromise.resolve(callbackData);
       } else if (callbackData.type === 'send_data_result') {
         if (callbackData.reference_id === asServiceReferenceId) {
           sendDataResultPromise.resolve(callbackData);
@@ -104,90 +104,23 @@ describe('NDID disable and enable service test', function() {
       }
     });
   });
-  
-  it('NDID should approve service (test_add_new_service) for as1 successfully', async function() {
-    this.timeout(10000);
 
-    const response = await ndidApi.approveService('ndid1', {
-      node_id: 'as1',
-      service_id: 'test_add_new_service',
-    });
-    expect(response.status).to.equal(204);
-  });
-
-  it('AS should add offered service (test_add_new_service) successfully', async function() {
-    this.timeout(30000);
-    const response = await asApi.addOrUpdateService('as1', {
-      serviceId: 'test_add_new_service',
-      reference_id: testAddNewServiceReferenceId,
-      callback_url: config.AS1_CALLBACK_URL,
-      min_ial: 1.1,
-      min_aal: 1,
-      url: config.AS1_CALLBACK_URL,
-    });
-    expect(response.status).to.equal(202);
-
-    const addOrUpdateServiceResult = await addOrUpdateServiceResultPromise.promise;
-    expect(addOrUpdateServiceResult).to.deep.include({
-      reference_id: testAddNewServiceReferenceId,
-      success: true,
-    });
-  });
-
-  it('NDID should disable service (test_add_new_service) successfully', async function() {
-    this.timeout(10000);
-
-    const response = await ndidApi.disableService('ndid1', {
-      service_id: 'test_add_new_service',
-    });
-
-    expect(response.status).to.equal(204);
-    await wait(1000);
-  });
-
-  it('Service (test_add_new_service) should be disabled successfully', async function() {
-    this.timeout(10000);
-
-    const responseAsGetService = await asApi.getService('as1', {
-      serviceId: 'test_add_new_service',
-    });
-
-    expect(responseAsGetService.status).to.equal(404);
-
-    const responseUtilityGetServices = await commonApi.getServices('as1');
-    const responseBody = await responseUtilityGetServices.json();
-
-    let service = responseBody.find(
-      service => service.service_id === 'test_add_new_service'
-    );
-
-    expect(service).to.be.an('undefined');
-  });
-
-  it('RP should create a request unsuccessfully', async function() {
-    this.timeout(10000);
-    const response = await rpApi.createRequest('rp1', createRequestParams);
-    const responseBody = await response.json();
-    expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20024);
-  });
-
-  it('NDID should enable service (test_add_new_service) successfully', async function() {
+  it('NDID should enable service (test_disable_service) successfully', async function() {
     this.timeout(10000);
 
     const response = await ndidApi.enableService('ndid1', {
-      service_id: 'test_add_new_service',
+      service_id: 'test_disable_service',
     });
 
     expect(response.status).to.equal(204);
     await wait(1000);
   });
 
-  it('Service (test_add_new_service) should be enabled successfully', async function() {
+  it('Service (test_disable_service) should be enabled successfully', async function() {
     this.timeout(10000);
 
     const responseAsGetService = await asApi.getService('as1', {
-      serviceId: 'test_add_new_service',
+      serviceId: 'test_disable_service',
     });
     const responseBodyAsGetService = await responseAsGetService.json();
     expect(responseAsGetService.status).to.equal(200);
@@ -198,12 +131,12 @@ describe('NDID disable and enable service test', function() {
     const responseBodyUtilityGetServices = await responseUtilityGetServices.json();
 
     let service = responseBodyUtilityGetServices.find(
-      service => service.service_id === 'test_add_new_service'
+      service => service.service_id === 'test_disable_service'
     );
 
     expect(service).to.deep.equal({
-      service_id: 'test_add_new_service',
-      service_name: 'Test update service name by ndid',
+      service_id: 'test_disable_service',
+      service_name: 'Test disable service',
       active: true,
     });
   });
@@ -270,48 +203,64 @@ describe('NDID disable and enable service test', function() {
       request_id: requestId,
       success: true,
     });
-
-    await wait(2000); //wait for tx to propagate to AS
   });
 
-  it('NDID should disable service (test_add_new_service) successfully', async function() {
-    this.timeout(10000);
+  // it('NDID should disable service (test_add_new_service) successfully', async function() {
+  //   this.timeout(10000);
 
-    const response = await ndidApi.disableService('ndid1', {
-      service_id: 'test_add_new_service',
+  //   const response = await ndidApi.disableService('ndid1', {
+  //     service_id: 'test_add_new_service',
+  //   });
+
+  //   expect(response.status).to.equal(204);
+  //   await wait(1000);
+  // });
+
+  // it('Service (test_add_new_service) should be disabled successfully', async function() {
+  //   this.timeout(10000);
+
+  //   const responseAsGetService = await asApi.getService('as1', {
+  //     serviceId: 'test_add_new_service',
+  //   });
+
+  //   expect(responseAsGetService.status).to.equal(404);
+
+  //   const responseUtilityGetServices = await commonApi.getServices('as1');
+  //   const responseBody = await responseUtilityGetServices.json();
+
+  //   let service = responseBody.find(
+  //     service => service.service_id === 'test_add_new_service'
+  //   );
+
+  //   expect(service).to.be.an('undefined');
+  // });
+
+  it('AS should receive data request', async function() {
+    this.timeout(15000);
+    const dataRequest = await dataRequestReceivedPromise.promise;
+    expect(dataRequest).to.deep.include({
+      request_id: requestId,
+      mode: createRequestParams.mode,
+      namespace,
+      identifier,
+      service_id: createRequestParams.data_request_list[0].service_id,
+      request_params: createRequestParams.data_request_list[0].request_params,
+      max_ial: 2.3,
+      max_aal: 3,
     });
-
-    expect(response.status).to.equal(204);
-    await wait(1000);
+    expect(dataRequest.response_signature_list).to.have.lengthOf(1);
+    expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
+      .empty;
   });
 
-  it('Service (test_add_new_service) should be disabled successfully', async function() {
-    this.timeout(10000);
-
-    const responseAsGetService = await asApi.getService('as1', {
-      serviceId: 'test_add_new_service',
-    });
-
-    expect(responseAsGetService.status).to.equal(404);
-
-    const responseUtilityGetServices = await commonApi.getServices('as1');
-    const responseBody = await responseUtilityGetServices.json();
-
-    let service = responseBody.find(
-      service => service.service_id === 'test_add_new_service'
-    );
-
-    expect(service).to.be.an('undefined');
-  });
-
-  it('AS should send data unsuccessfully (test_add_new_service)', async function() {
+  it('AS should send data successfully (test_disable_service)', async function() {
     this.timeout(15000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asServiceReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data: 'Test service is disabled by NDID ',
+      data: 'Test service is enabled by NDID ',
     });
     expect(response.status).to.equal(202);
 
@@ -319,19 +268,15 @@ describe('NDID disable and enable service test', function() {
     expect(sendDataResult).to.deep.include({
       reference_id: asServiceReferenceId,
       request_id: requestId,
-      success: false,
+      success: true,
     });
 
-    expect(sendDataResult.error.code).to.equal(15023);
+    // expect(sendDataResult.error.code).to.equal(15023);
   });
 
   after(async function() {
-    await ndidApi.enableService('ndid1', {
-      service_id: 'test_add_new_service',
-    });
+    rpEventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('callback');
+    as1EventEmitter.removeAllListeners('callback');
   });
-
-  rpEventEmitter.removeAllListeners('callback');
-  idp1EventEmitter.removeAllListeners('callback');
-  as1EventEmitter.removeAllListeners('callback');
 });
