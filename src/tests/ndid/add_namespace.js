@@ -6,7 +6,7 @@ import * as commonApi from '../../api/v2/common';
 import { ndidAvailable } from '..';
 import { wait } from '../../utils';
 
-describe('NDID add new namespace', function() {
+describe('NDID add new namespace test', function() {
   let alreadyAddedNamespace;
 
   before(async function() {
