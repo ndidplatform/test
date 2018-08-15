@@ -10,6 +10,7 @@ describe('NDID API', function() {
 
   require('./add_service');
   require('./update_node');
-  require('./disable_enable_service_destination');
+  require('./disable_enable_service');
+  require('./disable_enable_service_destination_by_ndid');
   require('./error_response');
 });

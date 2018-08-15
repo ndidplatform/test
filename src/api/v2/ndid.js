@@ -39,6 +39,30 @@ export function enableServiceDestination(nodeId, data) {
   return httpPost(`${apiBaseUrl}/ndid/enableServiceDestination`, data);
 }
 
+export function disableService(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  const { service_id } = data;
+  return httpPost(`${apiBaseUrl}/ndid/services/${service_id}/disable`, data);
+}
+
+export function enableService(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  const { service_id } = data;
+  return httpPost(`${apiBaseUrl}/ndid/services/${service_id}/enable`, data);
+}
+
+export function disableNamespace(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  const { namespace } = data;
+  return httpPost(`${apiBaseUrl}/ndid/namespaces/${namespace}/disable`, data);
+}
+
+export function enableNamespace(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  const { namespace } = data;
+  return httpPost(`${apiBaseUrl}/ndid/namespaces/${namespace}/enable`, data);
+}
+
 export function approveService(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/approveService`, data);

@@ -26,3 +26,8 @@ export function getToken(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   return httpGet(`${apiBaseUrl}/utility/nodes/${nodeId}/token`);
 }
+
+export function getNamespaces(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpGet(`${apiBaseUrl}/utility/namespaces`);
+}
