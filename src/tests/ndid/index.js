@@ -12,5 +12,6 @@ describe('NDID API', function() {
   require('./update_node');
   require('./disable_enable_service');
   require('./disable_enable_service_destination_by_ndid');
+  require('./disable_enable_namespace');
   require('./error_response');
 });
