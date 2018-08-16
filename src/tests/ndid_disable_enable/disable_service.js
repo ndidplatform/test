@@ -149,7 +149,7 @@ describe('NDID disable service test', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(2000);
   });
 
   it('Service (test_disable_service) should be disabled successfully', async function() {
@@ -178,10 +178,13 @@ describe('NDID disable service test', function() {
     expect(response.status).to.equal(400);
     expect(responseBody.error.code).to.equal(20024);
   });
+
   after(async function() {
+    this.timeout(5000);
     await ndidApi.enableService('ndid1', {
       service_id: 'test_disable_service',
     });
+    await wait(2000);
 
     as1EventEmitter.removeAllListeners('callback');
   });

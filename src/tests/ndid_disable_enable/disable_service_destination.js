@@ -151,7 +151,7 @@ describe('NDID disable service destination test', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(2000);
   });
 
   it('AS service (test_disable_service_destination) should be disabled service destination successfully', async function() {
@@ -175,10 +175,12 @@ describe('NDID disable service destination test', function() {
   });
 
   after(async function() {
+    this.timeout(5000);
     await ndidApi.enableServiceDestination('ndid1', {
       node_id: 'as1',
       service_id: 'test_disable_service_destination',
     });
+    await wait(2000);
 
     as1EventEmitter.removeAllListeners('callback');
   });
