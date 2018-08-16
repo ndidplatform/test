@@ -70,12 +70,12 @@ describe('NDID disable service test', function() {
       }
     });
 
-    //If already added test_disable_service service then skip add new service step
     const responseGetServices = await commonApi.getServices('ndid1');
     const responseBody = await responseGetServices.json();
     alreadyAddedService = responseBody.find(
       service => service.service_id === 'test_disable_service'
     );
+
   });
 
   it('NDID should add new service (test_disable_service) successfully', async function() {
@@ -86,6 +86,7 @@ describe('NDID disable service test', function() {
       service_name: 'Test disable service',
     });
 
+    //If already added test_disable_service service then expect error code
     if (alreadyAddedService) {
       const responseBody = await response.json();
       expect(response.status).to.equal(400);
@@ -182,8 +183,6 @@ describe('NDID disable service test', function() {
       service_id: 'test_disable_service',
     });
 
-    rpEventEmitter.removeAllListeners('callback');
-    idp1EventEmitter.removeAllListeners('callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });
@@ -385,7 +384,7 @@ describe('NDID disable service after RP create request test', function() {
       .empty;
   });
 
-  it('AS should send data successfully (test_disable_service)', async function() {
+  it('AS should send data unsuccessfully (test_disable_service)', async function() {
     this.timeout(15000);
     const response = await asApi.sendData('as1', {
       requestId,
