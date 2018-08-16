@@ -27,7 +27,7 @@ describe('Set Add Reduce tokens tests', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(2000);
   });
 
   it('Node token should be set successfully', async function() {
@@ -49,7 +49,7 @@ describe('Set Add Reduce tokens tests', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(2000);
   });
 
   it('Node token should be added successfully', async function() {
@@ -71,7 +71,7 @@ describe('Set Add Reduce tokens tests', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(2000);
   });
 
   it('Node token should be reduced successfully', async function() {
@@ -85,9 +85,11 @@ describe('Set Add Reduce tokens tests', function() {
   });
 
   after(async function() {
+    this.timeout(5000);
     await ndidApi.setNodeToken('ndid1', {
       node_id: 'rp1',
       amount: nodeTokenBeforeTest,
     });
+    await wait(2000);
   });
 });
