@@ -113,7 +113,7 @@ describe('NDID enable service destination test', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(3000);
   });
 
   it('AS service (test_disable_service_destination) should be enabled service destination successfully', async function() {

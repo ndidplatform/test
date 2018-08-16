@@ -75,7 +75,7 @@ describe('NDID disable service test', function() {
     alreadyAddedService = responseBody.find(
       service => service.service_id === 'test_disable_service'
     );
-    
+
   });
 
   it('NDID should add new service (test_disable_service) successfully', async function() {
@@ -120,6 +120,7 @@ describe('NDID disable service test', function() {
       service_id: 'test_disable_service',
     });
     expect(response.status).to.equal(204);
+    await wait(1000);
   });
 
   it('AS should add offered service (test_disable_service) successfully', async function() {
@@ -347,7 +348,7 @@ describe('NDID disable service after RP create request test', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(3000);
   });
 
   it('Service (test_disable_service) should be disabled successfully', async function() {

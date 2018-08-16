@@ -113,7 +113,7 @@ describe('NDID enable service test', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(3000);
   });
 
   it('Service (test_disable_service) should be enabled successfully', async function() {

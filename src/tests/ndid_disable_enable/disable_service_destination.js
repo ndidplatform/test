@@ -95,7 +95,7 @@ describe('NDID disable service destination test', function() {
     } else {
       expect(response.status).to.equal(201);
     }
-    await wait(1000);
+    await wait(3000);
   });
 
   it('Service (test_disable_service_destination) should be added successfully', async function() {
@@ -151,7 +151,7 @@ describe('NDID disable service destination test', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(2000);
+    await wait(3000);
   });
 
   it('AS service (test_disable_service_destination) should be disabled service destination successfully', async function() {
@@ -344,7 +344,7 @@ describe('NDID disable service destination after RP create request test', functi
     });
 
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(3000);
   });
 
   it('AS service (test_disable_service_destination) should be disabled service destination successfully', async function() {

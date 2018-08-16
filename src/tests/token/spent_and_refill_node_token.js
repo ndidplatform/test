@@ -125,7 +125,7 @@ describe('Spent and refill node token test', function() {
       amount: 5,
     });
     expect(response.status).to.equal(204);
-    await wait(1000);
+    await wait(2000);
   });
 
   it('RP should making request after add node token successfully', async function() {
@@ -155,12 +155,12 @@ describe('Spent and refill node token test', function() {
   });
 
   after(async function() {
+    this.timeout(5000);
     await ndidApi.setNodeToken('ndid1', {
       node_id: 'rp1',
       amount: nodeTokenBeforeTest,
     });
-    
+    await wait(2000);
     rpEventEmitter.removeAllListeners('callback');
-
   });
 });
