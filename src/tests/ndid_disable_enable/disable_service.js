@@ -75,7 +75,7 @@ describe('NDID disable service test', function() {
     alreadyAddedService = responseBody.find(
       service => service.service_id === 'test_disable_service'
     );
-
+    
   });
 
   it('NDID should add new service (test_disable_service) successfully', async function() {
@@ -149,7 +149,7 @@ describe('NDID disable service test', function() {
     });
 
     expect(response.status).to.equal(204);
-    await wait(2000);
+    await wait(3000);
   });
 
   it('Service (test_disable_service) should be disabled successfully', async function() {
