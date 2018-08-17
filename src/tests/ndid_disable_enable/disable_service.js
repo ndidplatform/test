@@ -75,7 +75,6 @@ describe('NDID disable service test', function() {
     alreadyAddedService = responseBody.find(
       service => service.service_id === 'test_disable_service'
     );
-
   });
 
   it('NDID should add new service (test_disable_service) successfully', async function() {
@@ -94,7 +93,7 @@ describe('NDID disable service test', function() {
     } else {
       expect(response.status).to.equal(201);
     }
-    await wait(1000);
+    await wait(3000);
   });
 
   it('Service (test_disable_service) should be added successfully', async function() {
@@ -411,6 +410,145 @@ describe('NDID disable service after RP create request test', function() {
   after(async function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    as1EventEmitter.removeAllListeners('callback');
+  });
+});
+
+describe('NDID disable service before AS offered service test', function() {
+  const testDisableServiceBeforeASOfferredReferenceId = generateReferenceId();
+
+  const addOrUpdateServiceResultPromise = createEventPromise(); // AS
+
+  let alreadyAddedService;
+
+  before(async function() {
+    if (!ndidAvailable || !as1Available) {
+      this.skip();
+    }
+
+    as1EventEmitter.on('callback', function(callbackData) {
+      if (callbackData.type === 'add_or_update_service_result') {
+        if (
+          callbackData.reference_id ===
+          testDisableServiceBeforeASOfferredReferenceId
+        ) {
+          addOrUpdateServiceResultPromise.resolve(callbackData);
+        }
+      }
+    });
+
+    const responseGetServices = await commonApi.getServices('ndid1');
+    const responseBody = await responseGetServices.json();
+    alreadyAddedService = responseBody.find(
+      service =>
+        service.service_id === 'test_disable_service_before_as_offered_service'
+    );
+  });
+
+  it('NDID should add new service (test_disable_service_before_as_offered_service) successfully', async function() {
+    this.timeout(10000);
+
+    const response = await ndidApi.addService('ndid1', {
+      service_id: 'test_disable_service_before_as_offered_service',
+      service_name: 'Test disable service before as offerred service',
+    });
+
+    //If already added test_disable_service_before_as_offered_service service then expect error code
+    if (alreadyAddedService) {
+      const responseBody = await response.json();
+      expect(response.status).to.equal(400);
+      expect(responseBody.error.code).to.equal(25005);
+    } else {
+      expect(response.status).to.equal(201);
+    }
+    await wait(3000);
+  });
+
+  it('Service (test_disable_service_before_as_offered_service) should be added successfully', async function() {
+    this.timeout(10000);
+
+    const response = await commonApi.getServices('ndid1');
+    const responseBody = await response.json();
+    const service = responseBody.find(
+      service =>
+        service.service_id === 'test_disable_service_before_as_offered_service'
+    );
+    expect(service).to.deep.equal({
+      service_id: 'test_disable_service_before_as_offered_service',
+      service_name: 'Test disable service before as offerred service',
+      active: true,
+    });
+  });
+
+  it('NDID should approve service (test_disable_service_before_as_offered_service) for as1 successfully', async function() {
+    this.timeout(10000);
+
+    const response = await ndidApi.approveService('ndid1', {
+      node_id: 'as1',
+      service_id: 'test_disable_service_before_as_offered_service',
+    });
+    expect(response.status).to.equal(204);
+    await wait(3000);
+  });
+
+  it('NDID should disable service (test_disable_service_before_as_offered_service) successfully', async function() {
+    this.timeout(10000);
+
+    const response = await ndidApi.disableService('ndid1', {
+      service_id: 'test_disable_service_before_as_offered_service',
+    });
+
+    expect(response.status).to.equal(204);
+    await wait(3000);
+  });
+
+  it('Service (test_disable_service_before_as_offered_service) should be disabled successfully', async function() {
+    this.timeout(10000);
+
+    const responseAsGetService = await asApi.getService('as1', {
+      serviceId: 'test_disable_service_before_as_offered_service',
+    });
+
+    expect(responseAsGetService.status).to.equal(404);
+
+    const responseUtilityGetServices = await commonApi.getServices('as1');
+    const responseBody = await responseUtilityGetServices.json();
+
+    let service = responseBody.find(
+      service =>
+        service.service_id === 'test_disable_service_before_as_offered_service'
+    );
+
+    expect(service).to.be.an('undefined');
+  });
+
+  it('AS should add offered service (test_disable_service_before_as_offered_service) unsuccessfully', async function() {
+    this.timeout(30000);
+    const response = await asApi.addOrUpdateService('as1', {
+      serviceId: 'test_disable_service_before_as_offered_service',
+      reference_id: testDisableServiceBeforeASOfferredReferenceId,
+      callback_url: config.AS1_CALLBACK_URL,
+      min_ial: 1.1,
+      min_aal: 1,
+      url: config.AS1_CALLBACK_URL,
+    });
+    expect(response.status).to.equal(202);
+
+    const addOrUpdateServiceResult = await addOrUpdateServiceResultPromise.promise;
+    expect(addOrUpdateServiceResult).to.deep.include({
+      reference_id: testDisableServiceBeforeASOfferredReferenceId,
+      success: false,
+    });
+    expect(addOrUpdateServiceResult.error.code).to.equal(15023);
+  });
+
+  after(async function() {
+    this.timeout(5000);
+    await ndidApi.enableService('ndid1', {
+      service_id: 'test_disable_service_before_as_offered_service',
+    });
+    await wait(2000);
+
     as1EventEmitter.removeAllListeners('callback');
   });
 });
