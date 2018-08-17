@@ -105,7 +105,7 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
   });
 
   it('IdP should get an error when using accessor public key with length shorter than 2048-bit', async function() {
-    this.timeout(20000);
+    this.timeout(30000);
     const keypair = forge.pki.rsa.generateKeyPair(2047);
     const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
     const response = await idpApi.createIdentity('idp1', {

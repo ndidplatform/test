@@ -239,7 +239,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
   it('Special request status for create identity should be completed and closed', async function() {
     this.timeout(10000);
     //wait for API close request
-    await wait(1000);
+    await wait(3000);
     const response = await commonApi.getRequest('idp2', { requestId });
     const responseBody = await response.json();
     expect(responseBody).to.deep.include({

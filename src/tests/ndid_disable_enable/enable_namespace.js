@@ -157,7 +157,7 @@ describe('NDID enable namespace test', function() {
   it('Special request status for create identity should be completed and closed', async function() {
     this.timeout(10000);
     //wait for API close request
-    await wait(1000);
+    await wait(3000);
     const response = await commonApi.getRequest('idp1', { requestId });
     const responseBody = await response.json();
     expect(responseBody).to.deep.include({
