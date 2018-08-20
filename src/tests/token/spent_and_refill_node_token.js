@@ -502,8 +502,9 @@ describe('Spent and refill node token test', function() {
         amount: asNodeTokenBeforeTest,
       }),
     ]);
-    await wait(3000);
-
     rpEventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('callback');
+    as1EventEmitter.removeAllListeners('callback');
+    await wait(3000);
   });
 });
