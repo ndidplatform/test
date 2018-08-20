@@ -166,8 +166,15 @@ describe('Create request with duplicate reference id that is not in progress (cl
     expect(createRequestResult.success).to.equal(true);
   });
 
-  after(function() {
+  after(async function() {
+    this.timeout(5000);
+    await rpApi.closeRequest('rp1', {
+      reference_id: rpCloseRequestReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      request_id: requestId,
+    });
     rpEventEmitter.removeAllListeners('callback');
+    await wait(3000);
   });
 });
 
@@ -179,7 +186,6 @@ describe('Create request with duplicate reference id that is not in progress (ti
   const rpCloseRequestReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); //RP
-  const closeRequestResultPromise = createEventPromise(); //RP
   const requestStatusTimedOutPromise = createEventPromise(); // RP
 
   let createRequestParams;
@@ -216,11 +222,6 @@ describe('Create request with duplicate reference id that is not in progress (ti
         callbackData.reference_id === rpReferenceId
       ) {
         createRequestResultPromise.resolve(callbackData);
-      } else if (
-        callbackData.type === 'close_request_result' &&
-        callbackData.reference_id === rpCloseRequestReferenceId
-      ) {
-        closeRequestResultPromise.resolve(callbackData);
       } else if (
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
@@ -280,7 +281,14 @@ describe('Create request with duplicate reference id that is not in progress (ti
     expect(createRequestResult.success).to.equal(true);
   });
 
-  after(function() {
+  after(async function() {
+    this.timeout(5000);
+    await rpApi.closeRequest('rp1', {
+      reference_id: rpCloseRequestReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      request_id: requestId,
+    });
     rpEventEmitter.removeAllListeners('callback');
+    await wait(3000);
   });
 });
