@@ -24,7 +24,7 @@ describe('Use debug API to lock first IdP', function() {
     await ndidApi.setTimeoutBlockRegisterMqDestination('ndid1', {
       blocks_to_timeout: 5,
     });
-    
+
     await debugApi.transact('idp1', {
       fnName: 'RegisterMsqDestination',
       users: [
@@ -34,7 +34,6 @@ describe('Use debug API to lock first IdP', function() {
           first: true,
         },
       ],
-      node_id: 'idp1',
     });
 
     // wait for it to propagate to all other Tendermint nodes
