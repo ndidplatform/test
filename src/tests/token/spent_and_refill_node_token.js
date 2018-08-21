@@ -135,15 +135,14 @@ describe('Spent and refill node token test', function() {
       }
     });
 
-    await wait(3000);
+    await wait(5000);
   });
 
   it('RP should be out of token', async function() {
     this.timeout(30000);
-    let response;
     // flood 5 blocks for spent token
-    for (let i = 0; i < 5; i++) {
-      response = await createRequest('rp1', {
+    for (let i of [1, 2, 3, 4]) {
+      await createRequest('rp1', {
         reference_id: uuidv4(),
         callback_url: RP_CALLBACK_URL,
         mode: 1,
@@ -160,7 +159,7 @@ describe('Spent and refill node token test', function() {
             }),
           },
         ],
-        request_message: 'Flood block #' + i.toString(),
+        request_message: 'Spent Token #' + i.toString(),
         min_ial: 1.1,
         min_aal: 1,
         min_idp: 1,
@@ -168,9 +167,33 @@ describe('Spent and refill node token test', function() {
       });
       await wait(1000);
     }
+
+    const response = await createRequest('rp1', {
+      reference_id: uuidv4(),
+      callback_url: RP_CALLBACK_URL,
+      mode: 1,
+      namespace,
+      identifier,
+      idp_id_list: ['idp1'],
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: ['as1'],
+          min_as: 1,
+          request_params: JSON.stringify({
+            format: 'pdf',
+          }),
+        },
+      ],
+      request_message: 'Spent Token #5',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+    });
+
     let responseBody = await response.json();
     requestId = responseBody.request_id;
-
     await wait(3000);
 
     const responseGetToken = await commonApi.getToken('rp1');
@@ -188,9 +211,9 @@ describe('Spent and refill node token test', function() {
       request_id: requestId,
       namespace: namespace,
       identifier: identifier,
-      request_message: 'Flood block #4',
+      request_message: 'Spent Token #5',
       request_message_hash: hashRequestMessageForConsent(
-        'Flood block #4',
+        'Spent Token #5',
         incomingRequest.initial_salt,
         requestId
       ),
@@ -247,7 +270,7 @@ describe('Spent and refill node token test', function() {
   });
 
   it('AS should receive data request for "bank_statement" service', async function() {
-    this.timeout(15000);
+    this.timeout(30000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -293,7 +316,7 @@ describe('Spent and refill node token test', function() {
   });
 
   it('RP should get an error making a request when out of token', async function() {
-    this.timeout(10000);
+    this.timeout(15000);
 
     const response = await createRequest('rp1', {
       reference_id: RequestOutOfTokenReferenceId,
@@ -331,30 +354,50 @@ describe('Spent and refill node token test', function() {
   });
 
   it('NDID should add node token successfully', async function() {
-    this.timeout(10000);
-    const responseAddNodeTokenRP = await ndidApi.addNodeToken('ndid1', {
-      node_id: 'rp1',
-      amount: 1,
-    });
-    expect(responseAddNodeTokenRP.status).to.equal(204);
+    this.timeout(30000);
+    await Promise.all([
+      ndidApi.addNodeToken('ndid1', {
+        node_id: 'rp1',
+        amount: 5,
+      }),
+      ndidApi.addNodeToken('ndid1', {
+        node_id: 'idp1',
+        amount: 5,
+      }),
+      ndidApi.addNodeToken('ndid1', {
+        node_id: 'as1',
+        amount: 5,
+      }),
+    ]);
+    await wait(5000);
 
-    const responseAddNodeTokenIdP = await ndidApi.addNodeToken('ndid1', {
-      node_id: 'idp1',
-      amount: 1,
-    });
-    expect(responseAddNodeTokenIdP.status).to.equal(204);
+    // let resultGetToken = await Promise.all([
+    //   commonApi.getToken('rp1'),
+    //   commonApi.getToken('idp1'),
+    //   commonApi.getToken('as1'),
+    // ]);
 
-    const responseAddNodeTokenAS = await ndidApi.addNodeToken('ndid1', {
-      node_id: 'as1',
-      amount: 1,
-    });
-    expect(responseAddNodeTokenAS.status).to.equal(204);
+    const responseGetTokenRP = await commonApi.getToken('rp1');
+    const responseBodyGetTokenRP = await responseGetTokenRP.json();
 
-    await wait(3000);
+    expect(responseGetTokenRP.status).to.equal(200);
+    expect(responseBodyGetTokenRP.amount).to.equal(5);
+
+    const responseGetTokenIdP = await commonApi.getToken('idp1');
+    const responseBodyGetTokenIdP = await responseGetTokenIdP.json();
+
+    expect(responseGetTokenIdP.status).to.equal(200);
+    expect(responseBodyGetTokenIdP.amount).to.equal(5);
+
+    const responseGetTokenAS = await commonApi.getToken('as1');
+    const responseBodyGetTokenAS = await responseGetTokenAS.json();
+
+    expect(responseGetTokenAS.status).to.equal(200);
+    expect(responseBodyGetTokenAS.amount).to.equal(5);
   });
 
   it('RP should making request after add node token successfully', async function() {
-    this.timeout(10000);
+    this.timeout(15000);
 
     const response = await createRequest('rp1', {
       reference_id: RequestAfterAddNodeTokenReferenceId,
