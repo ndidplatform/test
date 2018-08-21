@@ -371,29 +371,39 @@ describe('Spent and refill node token test', function() {
     ]);
     await wait(5000);
 
-    // let resultGetToken = await Promise.all([
-    //   commonApi.getToken('rp1'),
-    //   commonApi.getToken('idp1'),
-    //   commonApi.getToken('as1'),
-    // ]);
+    let resultGetToken = await Promise.all([
+      commonApi.getToken('rp1'),
+      commonApi.getToken('idp1'),
+      commonApi.getToken('as1'),
+    ]);
 
-    const responseGetTokenRP = await commonApi.getToken('rp1');
-    const responseBodyGetTokenRP = await responseGetTokenRP.json();
+    let responseBodyGetToken = await Promise.all([
+      resultGetToken[0].json(),
+      resultGetToken[1].json(),
+      resultGetToken[2].json(),
+    ]);
 
-    expect(responseGetTokenRP.status).to.equal(200);
-    expect(responseBodyGetTokenRP.amount).to.equal(5);
+    expect(responseBodyGetToken[0].amount).to.equal(5); // RP node token
+    expect(responseBodyGetToken[1].amount).to.equal(5); // IdP node token
+    expect(responseBodyGetToken[2].amount).to.equal(5); // AS node token
 
-    const responseGetTokenIdP = await commonApi.getToken('idp1');
-    const responseBodyGetTokenIdP = await responseGetTokenIdP.json();
+    // const responseGetTokenRP = await commonApi.getToken('rp1');
+    // const responseBodyGetTokenRP = await responseGetTokenRP.json();
 
-    expect(responseGetTokenIdP.status).to.equal(200);
-    expect(responseBodyGetTokenIdP.amount).to.equal(5);
+    // expect(responseGetTokenRP.status).to.equal(200);
+    // expect(responseBodyGetTokenRP.amount).to.equal(5);
 
-    const responseGetTokenAS = await commonApi.getToken('as1');
-    const responseBodyGetTokenAS = await responseGetTokenAS.json();
+    // const responseGetTokenIdP = await commonApi.getToken('idp1');
+    // const responseBodyGetTokenIdP = await responseGetTokenIdP.json();
 
-    expect(responseGetTokenAS.status).to.equal(200);
-    expect(responseBodyGetTokenAS.amount).to.equal(5);
+    // expect(responseGetTokenIdP.status).to.equal(200);
+    // expect(responseBodyGetTokenIdP.amount).to.equal(5);
+
+    // const responseGetTokenAS = await commonApi.getToken('as1');
+    // const responseBodyGetTokenAS = await responseGetTokenAS.json();
+
+    // expect(responseGetTokenAS.status).to.equal(200);
+    // expect(responseBodyGetTokenAS.amount).to.equal(5);
   });
 
   it('RP should making request after add node token successfully', async function() {
