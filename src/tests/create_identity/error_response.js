@@ -14,6 +14,11 @@ describe('Create identity errors', function() {
   // const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
   const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
+  const keypairLengthShorterThan2048Bit = forge.pki.rsa.generateKeyPair(2047);
+  const accessorPublicKeyLengthShorterThan2048Bit = forge.pki.publicKeyToPem(
+    keypairLengthShorterThan2048Bit.publicKey
+  );
+
   const referenceId = generateReferenceId();
 
   before(function() {
@@ -46,8 +51,8 @@ describe('Create identity errors', function() {
     this.timeout(10000);
     const namespace = 'namespace_is_not_registered';
     const identifier = '1234';
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    // const keypair = forge.pki.rsa.generateKeyPair(2048);
+    // const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
     const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -106,15 +111,15 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
 
   it('IdP should get an error when using accessor public key with length shorter than 2048-bit', async function() {
     this.timeout(30000);
-    const keypair = forge.pki.rsa.generateKeyPair(2047);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    // const keypair = forge.pki.rsa.generateKeyPair(2047);
+    // const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
     const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       namespace,
       identifier,
       accessor_type: 'RSA',
-      accessor_public_key: accessorPublicKey,
+      accessor_public_key: accessorPublicKeyLengthShorterThan2048Bit,
       //accessor_id,
       ial: 2.3,
     });

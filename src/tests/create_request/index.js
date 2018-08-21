@@ -3,5 +3,6 @@ describe('(RP) Create request tests', function() {
   require('./short_timeout');
   require('./long_timeout');
   require('./close_request_2nd_time');
+  require('./duplicate_reference_id');
   require('./error_response');
 });
