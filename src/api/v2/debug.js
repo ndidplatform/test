@@ -1,4 +1,5 @@
 import { getApiAddressUrl, httpPost, httpGet } from '../helpers';
+import * as config from '../../config';
 
 export function transact(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/debug';
@@ -12,7 +13,9 @@ export async function query(nodeId, data) {
   let base64String = Buffer.from(dataStr).toString('base64');
   let queryData = `${fnName}|${base64String}`;
   let EncodeURIparamString = encodeURIComponent(queryData);
-  let uri = `http://localhost:45000/abci_query?data="${EncodeURIparamString}"`;
+  let uri = `http://${config.TENDERMINT_IP}:${
+    config.TENDERMINT_PORT
+  }/abci_query?data="${EncodeURIparamString}"`;
   let response = await httpGet(uri);
   let responseJson = await response.json();
   let queryResultString = Buffer.from(

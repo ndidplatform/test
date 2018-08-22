@@ -1,5 +1,8 @@
 export const CALLBACK_IP = process.env.CALLBACK_IP || 'localhost';
 
+export const TENDERMINT_IP = process.env.TENDERMINT_IP || 'localhost';
+export const TENDERMINT_PORT = process.env.TENDERMINT_PORT || 45000;
+
 export const nodeIdMappingAddress = false;
 
 export const RP_CALLBACK_PORT = 9200;
