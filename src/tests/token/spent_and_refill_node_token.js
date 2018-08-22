@@ -204,7 +204,7 @@ describe('Spent and refill node token test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(30000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 1,
