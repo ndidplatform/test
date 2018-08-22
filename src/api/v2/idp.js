@@ -19,3 +19,12 @@ export function createResponse(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   return httpPost(`${apiBaseUrl}/idp/response`, data);
 }
+
+export function updateIdentityIal(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/ial`,
+    rest
+  );
+}

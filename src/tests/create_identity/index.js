@@ -4,6 +4,7 @@ describe('Create identity', function() {
   require('./1st_idp');
   require('./2nd_idp');
   require('./lock_timeout');
+  require('./update_identity_ial');
   require('./error_response');
 
   after(async function() {
