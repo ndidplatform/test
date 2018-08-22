@@ -36,11 +36,14 @@ describe('IdP update identity ial', function() {
     namespace = db.idp1Identities[0].namespace;
     identifier = db.idp1Identities[0].identifier;
 
-    IalBeforeUpdate = await debugApi.query('idp1', {
+    const response = await debugApi.query('idp1', {
       fnName: 'GetIdentityInfo',
       hash_id: hash(namespace + ':' + identifier),
       node_id: 'idp1',
     });
+
+    const responseBody = await response.json();
+    IalBeforeUpdate = responseBody.ial;
 
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
@@ -78,7 +81,8 @@ describe('IdP update identity ial', function() {
       hash_id: hash(namespace + ':' + identifier),
       node_id: 'idp1',
     });
-    expect(response.ial).to.equal(3);
+    const responseBody = await response.json();
+    expect(responseBody.ial).to.equal(3);
   });
 
   after(async function() {
@@ -88,9 +92,9 @@ describe('IdP update identity ial', function() {
       identifier: identifier,
       reference_id: uuidv4(),
       callback_url: config.IDP1_CALLBACK_URL,
-      ial: IalBeforeUpdate.ial,
+      ial: IalBeforeUpdate,
     });
-    await wait(3000);
+    await wait(5000);
     idp1EventEmitter.removeAllListeners('callback');
   });
 });

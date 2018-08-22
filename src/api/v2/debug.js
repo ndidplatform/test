@@ -8,24 +8,7 @@ export function transact(nodeId, data) {
 }
 
 export async function query(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/debug';
   let { fnName, ...rest } = data;
-  let dataStr = JSON.stringify(rest);
-  let base64String = Buffer.from(dataStr).toString('base64');
-  let queryData = `${fnName}|${base64String}`;
-  let EncodeURIparamString = encodeURIComponent(queryData);
-  let uri = `http://${config.TENDERMINT_IP}:${
-    config.TENDERMINT_PORT
-  }/abci_query?data="${EncodeURIparamString}"`;
-  let response = await httpGet(uri);
-  let responseJson = await response.json();
-  let queryResultString = Buffer.from(
-    responseJson.result.response.value,
-    'base64'
-  ).toString();
-  try {
-    let queryResult = JSON.parse(queryResultString);
-    return queryResult;
-  } catch (error) {
-    new Error('Cannot parse Tendermint query result JSON');
-  }
+  return httpPost(`${apiBaseUrl}//tmQuery/${fnName}`, rest);
 }
