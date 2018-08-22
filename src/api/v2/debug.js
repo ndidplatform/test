@@ -1,5 +1,4 @@
-import { getApiAddressUrl, httpPost, httpGet } from '../helpers';
-import * as config from '../../config';
+import { getApiAddressUrl, httpPost } from '../helpers';
 
 export function transact(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/debug';
@@ -10,5 +9,5 @@ export function transact(nodeId, data) {
 export async function query(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/debug';
   let { fnName, ...rest } = data;
-  return httpPost(`${apiBaseUrl}//tmQuery/${fnName}`, rest);
+  return httpPost(`${apiBaseUrl}/tmQuery/${fnName}`, rest);
 }
