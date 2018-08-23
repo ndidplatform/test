@@ -16,7 +16,7 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('IdP update identity ial', function() {
+describe('IdP update identity ial test', function() {
   let namespace;
   let identifier;
 
@@ -101,7 +101,7 @@ describe('IdP update identity ial', function() {
   });
 });
 
-describe("IdP update identity ial greater than node's max ial", function() {
+describe("IdP update identity ial greater than node's max ial test", function() {
   let namespace;
   let identifier;
 

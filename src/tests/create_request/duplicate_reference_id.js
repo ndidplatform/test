@@ -11,10 +11,12 @@ describe('Create request with duplicate reference id test', function() {
   let identifier;
 
   const rpReferenceId = generateReferenceId();
+  const rpCloseRequestReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); //RP
 
   let createRequestParams;
+  let requestId;
 
   before(async function() {
     this.timeout(10000);
@@ -37,7 +39,7 @@ describe('Create request with duplicate reference id test', function() {
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 60, //sec
+      request_timeout: 86400,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -49,7 +51,9 @@ describe('Create request with duplicate reference id test', function() {
       }
     });
 
-    await rpApi.createRequest('rp1', createRequestParams);
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    requestId = responseBody.request_id;
     await createRequestResultPromise.promise;
     await wait(2000);
   });
@@ -62,7 +66,14 @@ describe('Create request with duplicate reference id test', function() {
     expect(responseBody.error.code).to.equal(20045);
   });
 
-  after(function() {
+  after(async function() {
+    this.timeout(15000);
+    await rpApi.closeRequest('rp1', {
+      reference_id: rpCloseRequestReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      request_id: requestId,
+    });
+    await wait(3000);
     rpEventEmitter.removeAllListeners('callback');
   });
 });
