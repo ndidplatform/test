@@ -422,7 +422,6 @@ describe('NDID disable service before AS offered service test', function() {
   let alreadyAddedService;
 
   before(async function() {
-    this.skip();
     if (!ndidAvailable || !as1Available) {
       this.skip();
     }
