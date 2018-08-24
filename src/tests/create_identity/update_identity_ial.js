@@ -113,6 +113,7 @@ describe("IdP update identity ial greater than node's max ial test", function() 
   before(async function() {
     this.timeout(30000);
     if (!idp1Available || !ndidAvailable) {
+      this.test.parent.pending = true;
       this.skip();
     }
     if (db.idp1Identities[0] == null) {
