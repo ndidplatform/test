@@ -9,6 +9,6 @@ describe('Token tests', function() {
   });
 
   require('./node_token');
-  require('./spent_and_refill_node_token');
+  require('./spend_and_refill_node_token');
 
 });
