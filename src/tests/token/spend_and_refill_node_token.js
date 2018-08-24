@@ -21,7 +21,7 @@ import {
 } from '../../callback_server';
 import * as config from '../../config';
 
-describe('Spent and refill node token test', function() {
+describe('Spend and refill node token test', function() {
   let rpNodeTokenBeforeTest = 0;
   let idpNodeTokenBeforeTest = 0;
   let asNodeTokenBeforeTest = 0;
@@ -140,7 +140,7 @@ describe('Spent and refill node token test', function() {
 
   it('RP should be out of token', async function() {
     this.timeout(30000);
-    // flood 5 blocks for spent token
+    // flood 5 blocks for spend token
     for (let i of [1, 2, 3, 4]) {
       await createRequest('rp1', {
         reference_id: uuidv4(),
@@ -159,7 +159,7 @@ describe('Spent and refill node token test', function() {
             }),
           },
         ],
-        request_message: 'Spent Token #' + i.toString(),
+        request_message: 'Spend Token #' + i.toString(),
         min_ial: 1.1,
         min_aal: 1,
         min_idp: 1,
@@ -185,7 +185,7 @@ describe('Spent and refill node token test', function() {
           }),
         },
       ],
-      request_message: 'Spent Token #5',
+      request_message: 'Spend Token #5',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
@@ -211,9 +211,9 @@ describe('Spent and refill node token test', function() {
       request_id: requestId,
       namespace: namespace,
       identifier: identifier,
-      request_message: 'Spent Token #5',
+      request_message: 'Spend Token #5',
       request_message_hash: hashRequestMessageForConsent(
-        'Spent Token #5',
+        'Spend Token #5',
         incomingRequest.initial_salt,
         requestId
       ),
@@ -296,7 +296,7 @@ describe('Spent and refill node token test', function() {
       serviceId: 'bank_statement',
       reference_id: asSendDataReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data: 'Test spent node token',
+      data: 'Test spend node token',
     });
     expect(response.status).to.equal(202);
 
@@ -528,7 +528,7 @@ describe('Spent and refill node token test', function() {
       serviceId: 'bank_statement',
       reference_id: asSendDataAfterAddNodeTokenReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data: 'Test spent node token',
+      data: 'Test spend node token',
     });
     expect(response.status).to.equal(202);
 
