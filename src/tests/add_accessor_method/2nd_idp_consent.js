@@ -1,13 +1,15 @@
 import { expect } from 'chai';
 import forge from 'node-forge';
+import uuidv4 from 'uuid/v4';
 
-import { idp1Available, rpAvailable, as1Available } from '..';
+import { idp1Available, idp2Available } from '..';
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
 import * as asApi from '../../api/v2/as';
 import * as commonApi from '../../api/v2/common';
 import {
   idp1EventEmitter,
+  idp2EventEmitter,
   rpEventEmitter,
   as1EventEmitter,
 } from '../../callback_server';
@@ -22,15 +24,16 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st IdP (idp1) consent test', function() {
+describe('IdP (idp1) add accessor method (providing accessor_id) and 2ns IdP (idp2) consent test', function() {
   let namespace;
   let identifier;
   const keypair = forge.pki.rsa.generateKeyPair(2048);
   const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
   const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const accessorId = uuidv4();
 
   const referenceId = generateReferenceId();
-  const idp1ReferenceId = generateReferenceId();
+  const idp2ReferenceId = generateReferenceId();
 
   const addAccessorRequestResultPromise = createEventPromise();
   const addAccessorResultPromise = createEventPromise();
@@ -39,7 +42,6 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
   const responseResultPromise = createEventPromise();
 
   let requestId;
-  let accessorId;
   let requestMessage;
   let requestMessageSalt;
   let requestMessageHash;
@@ -50,7 +52,8 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
   });
 
   before(function() {
-    if (!idp1Available || !rpAvailable || !as1Available) {
+    if (!idp1Available || !idp2Available) {
+      this.test.parent.pending = true;
       this.skip();
     }
     if (db.idp1Identities[0] == null) {
@@ -61,17 +64,6 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
     identifier = db.idp1Identities[0].identifier;
 
     idp1EventEmitter.on('callback', function(callbackData) {
-      if (
-        callbackData.type === 'incoming_request' &&
-        callbackData.request_id === requestId
-      ) {
-        incomingRequestPromise.resolve(callbackData);
-      } else if (
-        callbackData.type === 'response_result' &&
-        callbackData.reference_id === idp1ReferenceId
-      ) {
-        responseResultPromise.resolve(callbackData);
-      }
       if (
         callbackData.type === 'add_accessor_request_result' &&
         callbackData.reference_id === referenceId
@@ -90,6 +82,20 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
         accessorSignPromise.resolve(callbackData);
       }
     });
+
+    idp2EventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId
+      ) {
+        incomingRequestPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'response_result' &&
+        callbackData.reference_id === idp2ReferenceId
+      ) {
+        responseResultPromise.resolve(callbackData);
+      }
+    });
   });
 
   it('should add accessor method successfully', async function() {
@@ -101,7 +107,7 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
       callback_url: config.IDP1_CALLBACK_URL,
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
-      //accessor_id: accessorId,
+      accessor_id: accessorId,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -109,7 +115,6 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
-    accessorId = responseBody.accessor_id;
 
     const addAccessorRequestResult = await addAccessorRequestResultPromise.promise;
     expect(addAccessorRequestResult).to.deep.include({
@@ -139,7 +144,7 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
     });
   });
 
-  it('1st IdP should receive add accessor method request', async function() {
+  it('2nd IdP should receive add accessor method request', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
@@ -171,16 +176,16 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('1st IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
-    const identity = db.idp1Identities.find(
+  it('2nd IdP should create response (accept) successfully', async function() {
+    this.timeout(15000);
+    const identity = db.idp2Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idp1ReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
+    const response = await idpApi.createResponse('idp2', {
+      reference_id: idp2ReferenceId,
+      callback_url: config.IDP2_CALLBACK_URL,
       request_id: requestId,
       namespace,
       identifier,
@@ -198,7 +203,7 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
 
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
-      reference_id: idp1ReferenceId,
+      reference_id: idp2ReferenceId,
       request_id: requestId,
       success: true,
     });
@@ -434,13 +439,13 @@ describe('IdP (idp1) response with new accessor id test', function() {
       identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[1].secret,
+      secret: identity.accessors[2].secret,
       status: 'accept',
       signature: createResponseSignature(
-        identity.accessors[1].accessorPrivateKey,
+        identity.accessors[2].accessorPrivateKey,
         requestMessageHash
       ),
-      accessor_id: identity.accessors[1].accessorId,
+      accessor_id: identity.accessors[2].accessorId,
     });
     expect(response.status).to.equal(202);
 
