@@ -37,3 +37,14 @@ export function updateIdentityIal(nodeId, data) {
     rest
   );
 }
+
+export function closeIdentityRequest(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpPost(`${apiBaseUrl}/identity/requests/close`, data);
+}
+
+export function getRequestIdByReferenceId(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { reference_id } = data;
+  return httpGet(`${apiBaseUrl}/identity/requests/reference/${reference_id}`);
+}
