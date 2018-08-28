@@ -421,7 +421,12 @@ describe('IdP (idp1) response with new accessor id test', function() {
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
-
+    let latestAccessor;
+    if (identity) {
+      latestAccessor = identity.accessors.length - 1;
+    } else {
+      throw new Error('Identity not found');
+    }
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -430,13 +435,13 @@ describe('IdP (idp1) response with new accessor id test', function() {
       identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[1].secret,
+      secret: identity.accessors[latestAccessor].secret,
       status: 'accept',
       signature: createResponseSignature(
-        identity.accessors[1].accessorPrivateKey,
+        identity.accessors[latestAccessor].accessorPrivateKey,
         requestMessageHash
       ),
-      accessor_id: identity.accessors[1].accessorId,
+      accessor_id: identity.accessors[latestAccessor].accessorId,
     });
     expect(response.status).to.equal(202);
 
