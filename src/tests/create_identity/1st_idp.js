@@ -22,6 +22,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
   const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
   const referenceId = generateReferenceId();
+  const referenceIdForRecalculateSecret = generateReferenceId();
 
   const createIdentityRequestResultPromise = createEventPromise();
   const accessorSignPromise = createEventPromise();
@@ -29,9 +30,15 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
 
   let requestId;
   let accessorId;
+  let secret;
 
   db.createIdentityReferences.push({
     referenceId,
+    accessorPrivateKey,
+  });
+
+  db.createIdentityReferences.push({
+    referenceId :referenceIdForRecalculateSecret,
     accessorPrivateKey,
   });
 
@@ -126,7 +133,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
     });
     expect(createIdentityResult.secret).to.be.a('string').that.is.not.empty;
 
-    const secret = createIdentityResult.secret;
+    secret = createIdentityResult.secret;
 
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
@@ -169,6 +176,18 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       mode: 3,
       status: 'completed',
     });
+  });
+
+  it('Re-calculate secret should return same result', async function() {
+    this.timeout(10000);
+    const response = await commonApi.reCalculateSecret('idp1', {
+      accessor_id: accessorId,
+      namespace,
+      identifier,
+      reference_id: referenceIdForRecalculateSecret,
+    });
+    const responseBody = await response.json();
+    expect(responseBody.secret).to.be.eq(secret);
   });
 
   after(function() {

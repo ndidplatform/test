@@ -31,3 +31,8 @@ export function getNamespaces(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   return httpGet(`${apiBaseUrl}/utility/namespaces`);
 }
+
+export function reCalculateSecret(nodeId, body) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpPost(`${apiBaseUrl}/utility/secret`,body);
+}
