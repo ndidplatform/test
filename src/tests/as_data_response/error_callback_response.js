@@ -7,7 +7,7 @@ import { as1EventEmitter } from '../../callback_server';
 import { createEventPromise, generateReferenceId, wait } from '../../utils';
 import * as config from '../../config';
 
-describe('AS error callback response', function() {
+describe('AS error callback response tests', function() {
   const customerAssetsInfoReferenceId = generateReferenceId(); //NDID is not registered this service
   const disapprovedReferenceId = generateReferenceId(); //NDID disapproved this service
 

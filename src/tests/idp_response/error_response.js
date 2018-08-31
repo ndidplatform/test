@@ -15,7 +15,7 @@ import {
 import * as config from '../../config';
 import { as2Available } from '..';
 
-describe('IdP response errors', function() {
+describe('IdP response errors tests', function() {
   let namespace;
   let identifier;
 
