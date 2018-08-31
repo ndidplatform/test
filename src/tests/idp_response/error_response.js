@@ -78,16 +78,7 @@ describe('IdP response errors', function() {
         incomingRequestPromise.resolve(callbackData);
       }
     });
-
-    idp1EventEmitter.on('callback', function(callbackData) {
-      if (
-        callbackData.type === 'incoming_request' &&
-        callbackData.request_id === requestId
-      ) {
-        incomingRequestPromise.resolve(callbackData);
-      }
-    });
-
+    
     const responseRp = await rpApi.createRequest('rp1', createRequestParams);
     const responseBodyRp = await responseRp.json();
     requestId = responseBodyRp.request_id;
