@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import uuidv4 from 'uuid/v4';
 
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
@@ -9,6 +10,7 @@ import {
   createEventPromise,
   generateReferenceId,
   createResponseSignature,
+  wait,
 } from '../../utils';
 import * as config from '../../config';
 import { as2Available } from '..';
@@ -62,11 +64,20 @@ describe('IdP response errors', function() {
         },
       ],
       request_message: 'Test request message (error data response) (mode 3)',
-      min_ial: 1.1,
-      min_aal: 1,
+      min_ial: 2.3,
+      min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
     };
+
+    idp1EventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId
+      ) {
+        incomingRequestPromise.resolve(callbackData);
+      }
+    });
 
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
@@ -87,7 +98,7 @@ describe('IdP response errors', function() {
 
   it('should get an error when making a response with non-existent request ID', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -115,7 +126,7 @@ describe('IdP response errors', function() {
 
   it('should get an error when making a response without accessor ID (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -143,7 +154,7 @@ describe('IdP response errors', function() {
 
   it('should get an error when making a response without secret (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -169,9 +180,37 @@ describe('IdP response errors', function() {
     expect(responseBody.error.code).to.equal(20015);
   });
 
+  it('should get an error when making a response without signature (mode 3)', async function() {
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    const response = await idpApi.createResponse('idp1', {
+      reference_id: idpReferenceId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      request_id: requestId,
+      namespace: createRequestParams.namespace,
+      identifier: createRequestParams.identifier,
+      ial: 2.3,
+      aal: 3,
+      secret: identity.accessors[0].secret,
+      status: 'accept',
+      // signature: createResponseSignature(
+      //   identity.accessors[0].accessorPrivateKey,
+      //   requestMessageHash
+      // ),
+      accessor_id: identity.accessors[0].accessorId,
+    });
+    const responseBody = await response.json();
+
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20003);
+  });
+
   it('should get an error when making a response with non-existent accessor ID (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -189,7 +228,7 @@ describe('IdP response errors', function() {
         identity.accessors[0].accessorPrivateKey,
         requestMessageHash
       ),
-      accessor_id: 'invalid-accessor-id',
+      accessor_id: 'non-existent-accessor-id',
     });
     const responseBody = await response.json();
 
@@ -199,7 +238,7 @@ describe('IdP response errors', function() {
 
   it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -222,7 +261,70 @@ describe('IdP response errors', function() {
     expect(responseBody.error.code).to.equal(20028);
   });
 
-  after(function() {
+  it('should get an error when making a response with invalid ial (ial is not in enum) (mode 3)', async function() {
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    const response = await idpApi.createResponse('idp1', {
+      reference_id: idpReferenceId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      request_id: requestId,
+      namespace: createRequestParams.namespace,
+      identifier: createRequestParams.identifier,
+      ial: 5,
+      aal: 1,
+      secret: identity.accessors[0].secret,
+      status: 'accept',
+      signature: createResponseSignature(
+        identity.accessors[0].accessorPrivateKey,
+        requestMessageHash
+      ),
+      accessor_id: identity.accessors[0].accessorId,
+    });
+    const responseBody = await response.json();
+
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20003);
+  });
+
+  it('should get an error when making a response with invalid aal (aal is not in enum) (mode 3)', async function() {
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    const response = await idpApi.createResponse('idp1', {
+      reference_id: idpReferenceId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      request_id: requestId,
+      namespace: createRequestParams.namespace,
+      identifier: createRequestParams.identifier,
+      ial: 2.3,
+      aal: 5,
+      secret: identity.accessors[0].secret,
+      status: 'accept',
+      signature: createResponseSignature(
+        identity.accessors[0].accessorPrivateKey,
+        requestMessageHash
+      ),
+      accessor_id: identity.accessors[0].accessorId,
+    });
+    const responseBody = await response.json();
+
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20003);
+  });
+
+  after(async function() {
+    this.timeout(10000);
+    await rpApi.closeRequest('rp1', {
+      reference_id: uuidv4(),
+      callback_url: config.RP_CALLBACK_URL,
+      request_id: requestId,
+    });
     idp1EventEmitter.removeAllListeners('callback');
+    await wait(3000);
   });
 });
