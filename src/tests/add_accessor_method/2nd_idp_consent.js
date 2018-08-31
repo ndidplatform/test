@@ -290,8 +290,6 @@ describe('IdP (idp1) response with new accessor id test', function() {
   let requestMessageSalt;
   let requestMessageHash;
 
-  const requestStatusUpdates = [];
-
   before(function() {
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
