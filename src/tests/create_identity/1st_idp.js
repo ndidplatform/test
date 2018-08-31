@@ -38,7 +38,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
   });
 
   db.createIdentityReferences.push({
-    referenceId :referenceIdForRecalculateSecret,
+    referenceId: referenceIdForRecalculateSecret,
     accessorPrivateKey,
   });
 
@@ -160,7 +160,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
   it('Special request status for create identity should be completed and closed', async function() {
     this.timeout(10000);
     //wait for API close request
-    await wait(3000); 
+    await wait(3000);
     const response = await commonApi.getRequest('idp1', { requestId });
     const responseBody = await response.json();
     expect(responseBody).to.deep.include({
@@ -180,7 +180,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
 
   it('Re-calculate secret should return same result', async function() {
     this.timeout(10000);
-    const response = await commonApi.reCalculateSecret('idp1', {
+    const response = await idpApi.reCalculateSecret('idp1', {
       accessor_id: accessorId,
       namespace,
       identifier,

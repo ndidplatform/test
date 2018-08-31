@@ -48,3 +48,8 @@ export function getRequestIdByReferenceId(nodeId, data) {
   const { reference_id } = data;
   return httpGet(`${apiBaseUrl}/identity/requests/reference/${reference_id}`);
 }
+
+export function reCalculateSecret(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpPost(`${apiBaseUrl}/identity/secret`, data);
+}
