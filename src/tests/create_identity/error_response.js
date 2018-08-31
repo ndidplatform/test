@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import forge from 'node-forge';
+import uuidv4 from 'uuid/v4';
 
 import * as idpApi from '../../api/v2/idp';
 import * as db from '../../db';
@@ -9,6 +10,7 @@ import * as config from '../../config';
 describe('Create identity errors', function() {
   let namespace;
   let identifier;
+  let accessorId;
 
   const keypair = forge.pki.rsa.generateKeyPair(2048);
   // const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
@@ -28,6 +30,7 @@ describe('Create identity errors', function() {
 
     namespace = db.idp1Identities[0].namespace;
     identifier = db.idp1Identities[0].identifier;
+    accessorId = db.idp1Identities[0].accessors[0].accessorId;
   });
 
   it('IdP should get an error when creating duplicate identity', async function() {
@@ -45,6 +48,23 @@ describe('Create identity errors', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
     expect(responseBody.error.code).to.equal(20019); // Already created an idenity for this user
+  });
+
+  it('IdP should get an error when creating identity with duplicate accessor_id', async function() {
+    this.timeout(10000);
+    const response = await idpApi.createIdentity('idp1', {
+      reference_id: referenceId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      namespace,
+      identifier: uuidv4(),
+      accessor_type: 'RSA',
+      accessor_public_key: accessorPublicKey,
+      accessor_id: accessorId,
+      ial: 2.3,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20030);
   });
 
   it('IdP should get an error when using namespace that is not registered by NDID', async function() {
