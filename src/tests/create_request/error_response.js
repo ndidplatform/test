@@ -1,9 +1,8 @@
 import { expect } from 'chai';
 
 import * as rpApi from '../../api/v2/rp';
-// import { rpEventEmitter } from '../../callback_server';
 import * as db from '../../db';
-import { createEventPromise, generateReferenceId } from '../../utils';
+import { generateReferenceId } from '../../utils';
 import * as config from '../../config';
 
 describe('RP create request errors', function() {
@@ -12,8 +11,6 @@ describe('RP create request errors', function() {
 
   const rpReferenceId = generateReferenceId();
 
-  // const createRequestResultPromise = createEventPromise(); // RP
-
   before(function() {
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
@@ -21,27 +18,6 @@ describe('RP create request errors', function() {
 
     namespace = db.idp1Identities[0].namespace;
     identifier = db.idp1Identities[0].identifier;
-
-    // rpEventEmitter.on('callback', function(callbackData) {
-    //   if (
-    //     callbackData.type === 'create_request_result' &&
-    //     callbackData.reference_id === rpReferenceId
-    //   ) {
-    //     createRequestResultPromise.resolve(callbackData);
-    //   } else if (
-    //     callbackData.type === 'request_status' &&
-    //     callbackData.request_id === requestId
-    //   ) {
-    //     requestStatusUpdates.push(callbackData);
-    //     if (callbackData.status === 'pending') {
-    //       if (callbackData.timed_out) {
-    //         requestStatusTimedOutPromise.resolve(callbackData);
-    //       } else {
-    //         requestStatusPendingPromise.resolve(callbackData);
-    //       }
-    //     }
-    //   }
-    // });
   });
 
   it('should get an error when creating a request without IdP ID list in mode 1', async function() {
@@ -197,7 +173,34 @@ describe('RP create request errors', function() {
     expect(responseBody.error.code).to.equal(20003);
   });
 
-  after(function() {
-    // rpEventEmitter.removeAllListeners('callback');
+  it("should get an error when creating a request with min_ial greater than identity's ial", async function() {
+    const createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 3,
+      namespace,
+      identifier,
+      idp_id_list: [],
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: ['as1'],
+          min_as: 1,
+          request_params: JSON.stringify({
+            format: 'pdf',
+          }),
+        },
+      ],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 3,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+    };
+
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(202);
+    expect(responseBody.error.code).to.equal(20005);
   });
 });
