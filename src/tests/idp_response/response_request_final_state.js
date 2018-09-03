@@ -200,6 +200,7 @@ describe('IdP response request already confirmed test', function() {
       request_id: requestId,
     });
     idp1EventEmitter.removeAllListeners('callback');
+    idp2EventEmitter.removeAllListeners('callback');
     await wait(3000);
   });
 });
@@ -474,12 +475,8 @@ describe('IdP response request already timed out test', function() {
 
   before(async function() {
     this.timeout(30000);
-    if (db.idp1Identities[0] == null || db.idp2Identities == null) {
+    if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
-    }
-    if (!idp2Available) {
-      this.test.parent.pending = true;
-      this.skip();
     }
 
     namespace = db.idp1Identities[0].namespace;
@@ -511,7 +508,7 @@ describe('IdP response request already timed out test', function() {
         },
       ],
       request_message:
-        'Test request message (IdP response request already timeout test) (mode 3)',
+        'Test request message (IdP response request already timed out test) (mode 3)',
       min_ial: 2.3,
       min_aal: 3,
       min_idp: 1,
