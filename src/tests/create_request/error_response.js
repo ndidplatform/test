@@ -200,7 +200,7 @@ describe('RP create request errors', function() {
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
-    expect(response.status).to.equal(202);
+    expect(response.status).to.equal(400);
     expect(responseBody.error.code).to.equal(20005);
   });
 });
