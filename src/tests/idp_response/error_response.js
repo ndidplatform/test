@@ -21,6 +21,7 @@ describe('IdP response errors tests', function() {
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
+  const updateIalReferenceId = generateReferenceId();
 
   const incomingRequestPromise = createEventPromise(); // IDP
 
@@ -304,6 +305,20 @@ describe('IdP response errors tests', function() {
     });
     const responseBody = await response.json();
 
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20003);
+  });
+
+  it('should get an error when IdP update identity invalid ial (ial is not in enum)', async function() {
+    this.timeout(15000);
+    const response = await idpApi.updateIdentityIal('idp1', {
+      namespace: namespace,
+      identifier: identifier,
+      reference_id: updateIalReferenceId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      ial: 0,
+    });
+    const responseBody = await response.json();
     expect(response.status).to.equal(400);
     expect(responseBody.error.code).to.equal(20003);
   });
