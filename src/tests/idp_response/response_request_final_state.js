@@ -122,6 +122,7 @@ describe('IdP response request already confirmed test', function() {
   });
 
   it('IdP (idp2) should create response (accept) successfully', async function() {
+    this.timeout(20000);
     const idp2Identity = db.idp2Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -155,7 +156,7 @@ describe('IdP response request already confirmed test', function() {
   });
 
   it('IdP (idp1) should get an error callback response when making a response with request that already confirmed by idp2', async function() {
-    this.timeout(40000);
+    this.timeout(20000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -336,6 +337,7 @@ describe('IdP response request already closed test', function() {
   });
 
   it('IdP (idp2) should create response (accept) successfully', async function() {
+    this.timeout(20000);
     const idp2Identity = db.idp2Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -369,7 +371,7 @@ describe('IdP response request already closed test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(20000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -387,7 +389,7 @@ describe('IdP response request already closed test', function() {
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(20000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -405,7 +407,7 @@ describe('IdP response request already closed test', function() {
   });
 
   it('IdP (idp1) should get an error callback response when making a response with request that already closed', async function() {
-    this.timeout(40000);
+    this.timeout(20000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
