@@ -44,5 +44,6 @@ Icon
 .Trashes
 
 #Dev keys for test but doesn't ignore original dev keys from api
-/dev_key/*!/original_dev_key
+/dev_key/*
+!/dev_key/original_dev_key
 
