@@ -9,3 +9,8 @@ export function setCallbacks(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   return httpPost(`${apiBaseUrl}/dpki/node/callback`, data);
 }
+
+export function updateNode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpPost(`${apiBaseUrl}/dpki/node/update`, data);
+}

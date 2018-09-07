@@ -4,7 +4,9 @@
   "description": "E2E test for NDID platform",
   "scripts": {
     "test": "mocha src/tests/index.js --require babel-core/register --require source-map-support/register",
-    "test-exit-on-error": "mocha src/tests/index.js --require babel-core/register --require source-map-support/register --bail"
+    "test-with-dpki":"USE_EXTERNAL_CRYPTO_SERVICE=true npm run test-exit-on-error",
+    "test-exit-on-error": "mocha src/tests/index.js --require babel-core/register --require source-map-support/register --bail",
+    "reset-dev-key":"find dev_key/ -maxdepth 1 -type f -delete && cp -a dev_key/original_dev_key/ dev_key/"
   },
   "repository": {
     "type": "git",

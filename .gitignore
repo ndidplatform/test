@@ -33,7 +33,8 @@ node_modules
 .LSOverride
 
 # Icon must ends with two \r.
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -41,4 +42,7 @@ Icon
 # Files that might appear on external disk
 .Spotlight-V100
 .Trashes
+
+#Dev keys for test but doesn't ignore original dev keys from api
+/dev_key/*!/original_dev_key
 

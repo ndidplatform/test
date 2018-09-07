@@ -1,15 +1,28 @@
 import { expect } from 'chai';
+import { exec } from 'child_process';
 
 import { idp2Available, as1Available, as2Available } from '.';
 import * as dpkiApi from '../api/v2/dpki';
+import * as idpApi from '../api/v2/idp';
 import * as config from '../config';
 import { wait } from '../utils';
 
 describe('DPKI callback setup', function() {
-  before(function() {
+  before(async function() {
     if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
       this.test.parent.pending = true;
       this.skip();
+    } else {
+      const response = await dpkiApi.getCallbacks('idp1');
+      if (response.status === 404) {
+        exec('npm run reset-dev-key', (error, stdout, stderr) => {
+          if (error) {
+            console.error(`exec error: ${error}`);
+            return;
+          }
+        });
+        await wait(1500);
+      }
     }
   });
 
@@ -148,5 +161,4 @@ describe('DPKI callback setup', function() {
       await wait(2000);
     }
   });
-
 });

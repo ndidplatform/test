@@ -58,6 +58,7 @@ describe('End-to-End NDID API test (API v2.1)', function() {
   require('./as_service_setup');
   require('./ndid');
   require('./create_identity');
+  require('./dpki');
   require('./add_accessor_method');
   require('./verify_identity');
   require('./data_request');
