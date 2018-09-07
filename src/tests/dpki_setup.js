@@ -3,7 +3,6 @@ import { exec } from 'child_process';
 
 import { idp2Available, as1Available, as2Available } from '.';
 import * as dpkiApi from '../api/v2/dpki';
-import * as idpApi from '../api/v2/idp';
 import * as config from '../config';
 import { wait } from '../utils';
 
