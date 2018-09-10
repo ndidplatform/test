@@ -26,7 +26,7 @@ describe('NDID update nodes', function() {
       node_name: rp_node_name,
     });
     expect(response.status).to.equal(200);
-    await wait(1000);
+    await wait(3000);
   });
 
   it("RP's node name should be updated successfully", async function() {
@@ -45,7 +45,7 @@ describe('NDID update nodes', function() {
       node_name: idp_node_name,
     });
     expect(response.status).to.equal(200);
-    await wait(1000);
+    await wait(3000);
   });
 
   it("IDP's node name should be updated successfully", async function() {
@@ -64,7 +64,7 @@ describe('NDID update nodes', function() {
       max_ial: max_ial,
     });
     expect(response.status).to.equal(200);
-    await wait(1000);
+    await wait(3000);
   });
 
   it("IDP's max ial should be updated successfully", async function() {
@@ -83,7 +83,7 @@ describe('NDID update nodes', function() {
       max_aal: max_aal,
     });
     expect(response.status).to.equal(200);
-    await wait(1000);
+    await wait(3000);
   });
 
   it("IDP's max aal should be updated successfully", async function() {
@@ -102,7 +102,7 @@ describe('NDID update nodes', function() {
       node_name: as_node_name,
     });
     expect(response.status).to.equal(200);
-    await wait(1000);
+    await wait(3000);
   });
 
   it("AS's node name should be updated successfully", async function() {
@@ -121,5 +121,6 @@ describe('NDID update nodes', function() {
       max_aal: 3,
       max_ial: 3,
     });
+    await wait(3000);
   });
 });
