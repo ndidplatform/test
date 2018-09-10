@@ -7,6 +7,7 @@ import * as db from '../db';
 import * as utils from '../utils';
 import * as config from '../config';
 
+export const ndidEventEmitter = new EventEmitter();
 export const rpEventEmitter = new EventEmitter();
 export const idp1EventEmitter = new EventEmitter();
 export const idp2EventEmitter = new EventEmitter();
@@ -18,6 +19,19 @@ export let asSendDataThroughCallback = false;
 export function setAsSendDataThroughCallback(sendThroughCallback) {
   asSendDataThroughCallback = sendThroughCallback;
 }
+
+/*
+  NDID
+*/
+let ndidServer;
+const ndidApp = express();
+ndidApp.use(bodyParser.json({ limit: '2mb' }));
+
+ndidApp.post('/ndid/callback', async function(req, res) {
+  const callbackData = req.body;
+  ndidEventEmitter.emit('callback', callbackData);
+  res.status(204).end();
+});
 
 /*
   RP
@@ -50,7 +64,7 @@ idp1App.post('/idp/accessor/sign', async function(req, res) {
   idp1EventEmitter.emit('accessor_sign_callback', callbackData);
 
   const reference = db.createIdentityReferences.find(
-    (ref) => ref.referenceId === callbackData.reference_id
+    ref => ref.referenceId === callbackData.reference_id
   );
   res.status(200).json({
     signature: utils.createSignature(
@@ -78,7 +92,7 @@ idp2App.post('/idp/accessor/sign', async function(req, res) {
   idp2EventEmitter.emit('accessor_sign_callback', callbackData);
 
   const reference = db.createIdentityReferences.find(
-    (ref) => ref.referenceId === callbackData.reference_id
+    ref => ref.referenceId === callbackData.reference_id
   );
   res.status(200).json({
     signature: utils.createSignature(
@@ -121,6 +135,7 @@ as2App.post('/as/callback', async function(req, res) {
 });
 
 export function startCallbackServers() {
+  ndidServer = ndidApp.listen(config.NDID_CALLBACK_PORT);
   rpServer = rpApp.listen(config.RP_CALLBACK_PORT);
   idp1Server = idp1App.listen(config.IDP1_CALLBACK_PORT);
   idp2Server = idp2App.listen(config.IDP2_CALLBACK_PORT);
@@ -129,6 +144,7 @@ export function startCallbackServers() {
 }
 
 export function stopCallbackServers() {
+  ndidServer.close();
   rpServer.close();
   idp1Server.close();
   idp2Server.close();

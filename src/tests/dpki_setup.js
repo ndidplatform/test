@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { exec } from 'child_process';
 
-import { idp2Available, as1Available, as2Available } from '.';
+import { idp2Available, as1Available, as2Available, ndidAvailable } from '.';
 import * as dpkiApi from '../api/v2/dpki';
 import * as config from '../config';
 import { wait } from '../utils';
@@ -143,6 +143,34 @@ describe('DPKI callback setup', function() {
 
     it('should have set callbacks', async function() {
       const response = await dpkiApi.getCallbacks('as2');
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.deep.equal({
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+    });
+  });
+
+  describe('NDID DPKI callback setup', function() {
+    before(async function() {
+      if (!ndidAvailable) {
+        this.skip();
+      }
+    });
+
+    it('should set callbacks successfully', async function() {
+      const response = await dpkiApi.setCallbacks('ndid1', {
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('should have set callbacks', async function() {
+      const response = await dpkiApi.getCallbacks('ndid1');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
       expect(responseBody).to.deep.equal({

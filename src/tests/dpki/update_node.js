@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import forge from 'node-forge';
-import uuidv4 from 'uuid/v4';
 import fs from 'fs';
 import path from 'path';
 
@@ -8,6 +7,7 @@ import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
 import * as asApi from '../../api/v2/as';
 import {
+  ndidEventEmitter,
   rpEventEmitter,
   idp1EventEmitter,
   as1EventEmitter,
@@ -24,96 +24,65 @@ import {
 import { ndidAvailable } from '..';
 import * as db from '../../db';
 import * as config from '../../config';
-import { create } from 'domain';
 
 describe("NDID update nodes's DPKI test", function() {
   const keypair = forge.pki.rsa.generateKeyPair(2048);
   const privateKey = forge.pki.privateKeyToPem(keypair.privateKey);
   const publicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
-  // const masterKeypair = forge.pki.rsa.generateKeyPair(2048);
-  // const masterPrivateKey = forge.pki.privateKeyToPem(masterKeypair.privateKey);
-  // const masterPublicKey = forge.pki.publicKeyToPem(masterKeypair.publicKey);
+  const masterKeypair = forge.pki.rsa.generateKeyPair(2048);
+  const masterPrivateKey = forge.pki.privateKeyToPem(masterKeypair.privateKey);
+  const masterPublicKey = forge.pki.publicKeyToPem(masterKeypair.publicKey);
 
-  let originalPublicKey;
-  // let originalMasterPublicKey;
+  const NDIDUpdateNodeReferenceId = generateReferenceId();
+
+  const NDIDUpdateNodeResultPromise = createEventPromise();
+
+  let keyPath = path.join(__dirname, '..', '..', '..', 'dev_key');
+
+  ndidEventEmitter.on('callback', function(callbackData) {
+    if (
+      callbackData.type === 'update_node_result' &&
+      callbackData.reference_id === NDIDUpdateNodeReferenceId
+    ) {
+      NDIDUpdateNodeResultPromise.resolve(callbackData);
+    }
+  });
 
   before(function() {
     if (!ndidAvailable) {
       this.skip();
     }
-
-    let publicKeyPath = path.join(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      'dev_key',
-      'ndid1.pub'
-    );
-
-    // let masterPublicKeyPath = path.join(
-    //   __dirname,
-    //   '..',
-    //   '..',
-    //   '..',
-    //   'dev_key',
-    //   'ndid1_master.pub'
-    // );
-
-    originalPublicKey = fs.readFileSync(publicKeyPath, 'utf8');
-    // originalMasterPublicKey = fs.readFileSync(masterPublicKeyPath, 'utf8');
   });
 
-  it("NDID should update node's public key successfully", async function() {
+  it("NDID should update node's master key and public key successfully", async function() {
     this.timeout(15000);
     const response = await dpkiApi.updateNode('ndid1', {
-      reference_id: uuidv4(),
-      callback_url: config.RP_CALLBACK_URL,
+      reference_id: NDIDUpdateNodeReferenceId,
+      callback_url: config.NDID_CALLBACK_URL,
       node_key: publicKey,
+      node_master_key: masterPublicKey,
     });
     expect(response.status).to.equal(202);
+
+    const updateNodeResult = await NDIDUpdateNodeResultPromise.promise;
+    expect(updateNodeResult.success).to.equal(true);
+
+    let ndidPath = path.join(keyPath, 'ndid1');
+    fs.writeFileSync(ndidPath, privateKey);
+    fs.writeFileSync(ndidPath + '_master', masterPrivateKey);
+
     await wait(3000);
   });
 
-  it("NDID node's public key should be updated successfully", async function() {
+  it("NDID node's master key and public key should be updated successfully", async function() {
     this.timeout(10000);
     const response = await commonApi.getNodeInfo('ndid1');
     const responseBody = await response.json();
     expect(responseBody.node_name).to.equal('NDID');
     expect(responseBody.role).to.equal('NDID');
     expect(responseBody.public_key).to.equal(publicKey);
-  });
-
-  // it("NDID should update node's master public key successfully", async function() {
-  //   this.timeout(15000);
-  //   const response = await dpkiApi.updateNode('ndid1', {
-  //     reference_id: uuidv4(),
-  //     callback_url: config.RP_CALLBACK_URL,
-  //     node_master_key: masterPublicKey,
-  //   });
-  //   expect(response.status).to.equal(202);
-  //   await wait(3000);
-  // });
-
-  // it("NDID node's master public key should be updated successfully", async function() {
-  //   this.timeout(10000);
-  //   const response = await commonApi.getNodeInfo('ndid1');
-  //   const responseBody = await response.json();
-  //   expect(responseBody.node_name).to.equal('NDID');
-  //   expect(responseBody.role).to.equal('NDID');
-  //   expect(responseBody.master_public_key).to.equal(masterPublicKey);
-  // });
-
-  after(async function() {
-    this.timeout(20000);
-    await dpkiApi.updateNode('ndid1', {
-      reference_id: uuidv4(),
-      callback_url: config.RP_CALLBACK_URL,
-      node_key: originalPublicKey,
-      // node_master_key: originalMasterPublicKey,
-    });
-    await wait(5000);
+    expect(responseBody.master_public_key).to.equal(masterPublicKey);
   });
 });
 
@@ -161,13 +130,6 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   const sendDataResultPromise = createEventPromise();
   const requestClosedPromise = createEventPromise();
 
-  let RPOriginalPubKey;
-  let RPOriginalMasterPubKey;
-  let IdPOriginalPubKey;
-  let IdPOriginalMasterPubKey;
-  let ASOriginalPubKey;
-  let ASOriginalMasterPubKey;
-
   let keyPath = path.join(__dirname, '..', '..', '..', 'dev_key');
 
   let createRequestParams;
@@ -178,9 +140,6 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
 
   before(async function() {
     this.timeout(35000);
-    if (!ndidAvailable) {
-      this.skip();
-    }
 
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
@@ -188,21 +147,6 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
 
     namespace = db.idp1Identities[0].namespace;
     identifier = db.idp1Identities[0].identifier;
-
-    const responseRP = await commonApi.getNodeInfo('rp1');
-    const responseBodyRP = await responseRP.json();
-    RPOriginalPubKey = responseBodyRP.public_key;
-    RPOriginalMasterPubKey = responseBodyRP.master_public_key;
-
-    const responseIdP = await commonApi.getNodeInfo('idp1');
-    const responseBodyIdP = await responseIdP.json();
-    IdPOriginalPubKey = responseBodyIdP.public_key;
-    IdPOriginalMasterPubKey = responseBodyIdP.master_public_key;
-
-    const responseAS = await commonApi.getNodeInfo('as1');
-    const responseBodyAS = await responseAS.json();
-    ASOriginalPubKey = responseBodyAS.public_key;
-    ASOriginalMasterPubKey = responseBodyRP.master_public_key;
 
     createRequestParams = {
       reference_id: rpReferenceId,
