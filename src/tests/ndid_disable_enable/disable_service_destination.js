@@ -180,7 +180,7 @@ describe('NDID disable service destination test', function() {
       node_id: 'as1',
       service_id: 'test_disable_service_destination',
     });
-    await wait(2000);
+    await wait(3000);
 
     as1EventEmitter.removeAllListeners('callback');
   });
@@ -335,6 +335,24 @@ describe('NDID disable service destination after RP create request test', functi
     });
   });
 
+  it('AS should receive data request', async function() {
+    this.timeout(30000);
+    const dataRequest = await dataRequestReceivedPromise.promise;
+    expect(dataRequest).to.deep.include({
+      request_id: requestId,
+      mode: createRequestParams.mode,
+      namespace,
+      identifier,
+      service_id: createRequestParams.data_request_list[0].service_id,
+      request_params: createRequestParams.data_request_list[0].request_params,
+      max_ial: 2.3,
+      max_aal: 3,
+    });
+    expect(dataRequest.response_signature_list).to.have.lengthOf(1);
+    expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
+      .empty;
+  });
+
   it('NDID should disable service (test_disable_service_destination) destination successfully', async function() {
     this.timeout(10000);
 
@@ -359,24 +377,6 @@ describe('NDID disable service destination after RP create request test', functi
     expect(responseBody.suspended).to.equal(true);
   });
 
-  it('AS should receive data request', async function() {
-    this.timeout(15000);
-    const dataRequest = await dataRequestReceivedPromise.promise;
-    expect(dataRequest).to.deep.include({
-      request_id: requestId,
-      mode: createRequestParams.mode,
-      namespace,
-      identifier,
-      service_id: createRequestParams.data_request_list[0].service_id,
-      request_params: createRequestParams.data_request_list[0].request_params,
-      max_ial: 2.3,
-      max_aal: 3,
-    });
-    expect(dataRequest.response_signature_list).to.have.lengthOf(1);
-    expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
-      .empty;
-  });
-
   it('AS should send data unsuccessfully (test_disable_service_destination)', async function() {
     this.timeout(15000);
     const response = await asApi.sendData('as1', {
@@ -398,8 +398,14 @@ describe('NDID disable service destination after RP create request test', functi
   });
 
   after(async function() {
+    this.timeout(5000);
+    await ndidApi.enableServiceDestination('ndid1', {
+      node_id: 'as1',
+      service_id: 'test_disable_service_destination',
+    });
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
     as1EventEmitter.removeAllListeners('callback');
+    await wait(3000);
   });
 });
