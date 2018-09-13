@@ -142,6 +142,37 @@ describe('RP create request errors', function() {
     expect(responseBody.error.code).to.equal(20018);
   });
 
+  it('should get an error when creating a request with as_id_list less than min_as in data request list', async function() {
+    const createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 3,
+      namespace,
+      identifier,
+      idp_id_list: [],
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: ['as1'],
+          min_as: 2,
+          request_params: JSON.stringify({
+            format: 'pdf',
+          }),
+        },
+      ],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+    };
+
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20017);
+  });
+
   it('should get an error when creating a request with request_timeout = 0', async function() {
     const createRequestParams = {
       reference_id: rpReferenceId,
