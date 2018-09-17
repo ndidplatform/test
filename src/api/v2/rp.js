@@ -26,3 +26,9 @@ export function getDataFromAS(nodeId, data) {
   const { requestId } = data;
   return httpGet(`${apiBaseUrl}/rp/requests/data/${requestId}`);
 }
+
+export function getRequestIdByReferenceId(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { reference_id } = data;
+  return httpGet(`${apiBaseUrl}/rp/requests/reference/${reference_id}`);
+}
