@@ -66,6 +66,14 @@ describe('Create request with duplicate reference id test', function() {
     expect(responseBody.error.code).to.equal(20045);
   });
 
+  it('RP should create a request with duplicate reference id unsuccessfully', async function() {
+    this.timeout(10000);
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20045);
+  });
+
   after(async function() {
     this.timeout(15000);
     await rpApi.closeRequest('rp1', {
