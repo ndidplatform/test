@@ -10,4 +10,5 @@ describe('(AS) Data response tests', function() {
 
   require('./error_response');
   require('./error_callback_response');
+  require('./data_response_final_stage');
 });
