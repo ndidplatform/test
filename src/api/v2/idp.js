@@ -1,61 +1,59 @@
 import { getApiAddressUrl, httpGet, httpPost } from '../helpers';
 
 //idp
-export function getCallbacks(nodeId) {
+export function getCallbacks(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  return httpGet(`${apiBaseUrl}/idp/callback?node_id=${nodeId}`);
+  return httpGet(
+    `${apiBaseUrl}/idp/callback${data ? `node_id=${data.node_id}` : ''}`
+  );
 }
 
 export function setCallbacks(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  const body = { ...data, node_id: nodeId };
-  return httpPost(`${apiBaseUrl}/idp/callback`, body);
+  return httpPost(`${apiBaseUrl}/idp/callback`, data);
 }
 
 export function createResponse(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  const body = { ...data, node_id: nodeId };
-  return httpPost(`${apiBaseUrl}/idp/response`, body);
+  return httpPost(`${apiBaseUrl}/idp/response`, data);
 }
 
 //identity
 export function createIdentity(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  const body = { ...data, node_id: nodeId };
-  return httpPost(`${apiBaseUrl}/identity`, body);
+  return httpPost(`${apiBaseUrl}/identity`, data);
 }
 
 export function addAccessorMethod(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   const { namespace, identifier, ...rest } = data;
-  const body = { ...rest, node_id: nodeId };
   return httpPost(
     `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors`,
-    body
+    rest
   );
 }
 
 export function updateIdentityIal(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   const { namespace, identifier, ...rest } = data;
-  const body = { ...rest, node_id: nodeId };
   return httpPost(
     `${apiBaseUrl}/identity/${namespace}/${identifier}/ial`,
-    body
+    rest
   );
 }
 
 export function closeIdentityRequest(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  const body = { ...data, node_id: nodeId };
-  return httpPost(`${apiBaseUrl}/identity/requests/close`, body);
+  return httpPost(`${apiBaseUrl}/identity/requests/close`, data);
 }
 
 export function getRequestIdByReferenceId(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  const { reference_id } = data;
+  const { reference_id, node_id } = data;
   return httpGet(
-    `${apiBaseUrl}/identity/requests/reference/${reference_id}?node_id=${nodeId}`
+    `${apiBaseUrl}/identity/requests/reference/${reference_id}${
+      node_id ? `?node_id=${node_id}` : ''
+    }`
   );
 }
 

@@ -1,33 +1,34 @@
 import { getApiAddressUrl, httpGet, httpPost } from '../helpers';
 
-export function getCallbacks(nodeId) {
+export function getCallbacks(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  return httpGet(`${apiBaseUrl}/rp/callback?node_id=${nodeId}`);
+  return httpGet(
+    `${apiBaseUrl}/rp/callback${data ? `?node_id=${data.node_id}` : ''}`
+  );
 }
 
 export function setCallbacks(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  const body = { ...data, node_id: nodeId };
-  return httpPost(`${apiBaseUrl}/rp/callback`, body);
+  return httpPost(`${apiBaseUrl}/rp/callback`, data);
 }
 
 export function createRequest(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   const { namespace, identifier, ...rest } = data;
-  const body = { ...rest, node_id: nodeId };
-  return httpPost(`${apiBaseUrl}/rp/requests/${namespace}/${identifier}`, body);
+  return httpPost(`${apiBaseUrl}/rp/requests/${namespace}/${identifier}`, rest);
 }
 
 export function closeRequest(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  const body = { ...data, node_id: nodeId };
-  return httpPost(`${apiBaseUrl}/rp/requests/close`, body);
+  return httpPost(`${apiBaseUrl}/rp/requests/close`, data);
 }
 
 export function getDataFromAS(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  const { requestId } = data;
+  const { requestId, node_id } = data;
   return httpGet(
-    `${apiBaseUrl}/rp/requests/data/${requestId}?node_id=${nodeId}`
+    `${apiBaseUrl}/rp/requests/data/${requestId}${
+      node_id ? `?node_id=${node_id}` : ''
+    }`
   );
 }
