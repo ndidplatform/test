@@ -112,6 +112,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
     const accessorSignParams = await accessorSignPromise.promise;
     expect(accessorSignParams).to.deep.equal({
       type: 'accessor_sign',
+      node_id: 'idp1',
       reference_id: referenceId,
       accessor_id: accessorId,
       sid,

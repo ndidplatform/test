@@ -127,6 +127,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
     const accessorSignParams = await accessorSignPromise.promise;
     expect(accessorSignParams).to.deep.equal({
       type: 'accessor_sign',
+      node_id: 'idp2',
       reference_id: referenceId,
       accessor_id: accessorId,
       sid,
