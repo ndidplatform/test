@@ -17,6 +17,10 @@ export function getApiAddressUrl(nodeId) {
     return 'http://localhost:8301';
   } else if (nodeId === 'ndid1') {
     return 'http://localhost:8080';
+  } else if (nodeId === 'proxy1') {
+    return 'http://localhost:8400';
+  } else if (nodeId === 'proxy2') {
+    return 'http://localhost:8401';
   } else {
     throw new Error('Unsupported Node ID');
   }

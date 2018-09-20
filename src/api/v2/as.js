@@ -5,7 +5,7 @@ export function getService(nodeId, data) {
   const { serviceId, node_id } = data;
   return httpGet(
     `${apiBaseUrl}/as/service/${serviceId}${
-      node_id ? `?node_id=${nodeId}` : ''
+      node_id ? `?node_id=${node_id}` : ''
     }`
   );
 }

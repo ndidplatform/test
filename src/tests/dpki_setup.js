@@ -1,7 +1,13 @@
 import { expect } from 'chai';
 import { exec } from 'child_process';
 
-import { idp2Available, as1Available, as2Available, ndidAvailable } from '.';
+import {
+  idp2Available,
+  as1Available,
+  as2Available,
+  ndidAvailable,
+  proxy1Available,
+} from '.';
 import * as dpkiApi from '../api/v2/dpki';
 import * as config from '../config';
 import { wait } from '../utils';
@@ -143,6 +149,62 @@ describe('DPKI callback setup', function() {
 
     it('should have set callbacks', async function() {
       const response = await dpkiApi.getCallbacks('as2');
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.deep.equal({
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+    });
+  });
+
+  describe('Proxy (proxy1) DPKI callback setup', function() {
+    before(async function() {
+      if (!proxy1Available) {
+        this.skip();
+      }
+    });
+
+    it('should set callbacks successfully', async function() {
+      const response = await dpkiApi.setCallbacks('proxy1', {
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('should have set callbacks', async function() {
+      const response = await dpkiApi.getCallbacks('proxy1');
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.deep.equal({
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+    });
+  });
+
+  describe('Proxy (proxy2) DPKI callback setup', function() {
+    before(async function() {
+      if (!proxy1Available) {
+        this.skip();
+      }
+    });
+
+    it('should set callbacks successfully', async function() {
+      const response = await dpkiApi.setCallbacks('proxy2', {
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('should have set callbacks', async function() {
+      const response = await dpkiApi.getCallbacks('proxy2');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
       expect(responseBody).to.deep.equal({

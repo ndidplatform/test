@@ -12,7 +12,8 @@ export async function isNodeAvailable(nodeId) {
     if (error.code === 'ECONNREFUSED') {
       return false;
     } else {
-      throw error;
+      // throw error;
+      return false;
     }
   }
 }

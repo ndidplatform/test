@@ -13,6 +13,8 @@ export const idp1EventEmitter = new EventEmitter();
 export const idp2EventEmitter = new EventEmitter();
 export const as1EventEmitter = new EventEmitter();
 export const as2EventEmitter = new EventEmitter();
+export const proxy1EventEmitter = new EventEmitter();
+export const proxy2EventEmitter = new EventEmitter();
 
 export let asSendDataThroughCallback = false;
 
@@ -134,6 +136,63 @@ as2App.post('/as/callback', async function(req, res) {
   res.status(204).end();
 });
 
+/*
+  Proxy-1
+*/
+let proxy1Server;
+const proxy1App = express();
+proxy1App.use(bodyParser.json({ limit: '2mb' }));
+
+proxy1App.post('/proxy/callback', async function(req, res) {
+  const callbackData = req.body;
+  proxy1EventEmitter.emit('callback', callbackData);
+  res.status(204).end();
+});
+
+proxy1App.post('/proxy/accessor/sign', async function(req, res) {
+  const callbackData = req.body;
+  proxy1EventEmitter.emit('accessor_sign_callback', callbackData);
+
+  const reference = db.createIdentityReferences.find(
+    ref => ref.referenceId === callbackData.reference_id
+  );
+  res.status(200).json({
+    signature: utils.createSignature(
+      reference.accessorPrivateKey,
+      callbackData.sid
+    ),
+  });
+});
+
+/*
+  Proxy-2
+*/
+let proxy2Server;
+const proxy2App = express();
+proxy2App.use(bodyParser.json({ limit: '2mb' }));
+
+proxy2App.post('/proxy/callback', async function(req, res) {
+  const callbackData = req.body;
+  proxy2EventEmitter.emit('callback', callbackData);
+  res.status(204).end();
+});
+
+proxy2App.post('/proxy/accessor/sign', async function(req, res) {
+  const callbackData = req.body;
+  proxy2EventEmitter.emit('accessor_sign_callback', callbackData);
+
+  const reference = db.createIdentityReferences.find(
+    ref => ref.referenceId === callbackData.reference_id
+  );
+  res.status(200).json({
+    signature: utils.createSignature(
+      reference.accessorPrivateKey,
+      callbackData.sid
+    ),
+  });
+});
+
+
 export function startCallbackServers() {
   ndidServer = ndidApp.listen(config.NDID_CALLBACK_PORT);
   rpServer = rpApp.listen(config.RP_CALLBACK_PORT);
@@ -141,6 +200,8 @@ export function startCallbackServers() {
   idp2Server = idp2App.listen(config.IDP2_CALLBACK_PORT);
   as1Server = as1App.listen(config.AS1_CALLBACK_PORT);
   as2Server = as2App.listen(config.AS2_CALLBACK_PORT);
+  proxy1Server = proxy1App.listen(config.PROXY1_CALLBACK_PORT);
+  proxy2Server = proxy2App.listen(config.PROXY2_CALLBACK_PORT);
 }
 
 export function stopCallbackServers() {
@@ -150,4 +211,6 @@ export function stopCallbackServers() {
   idp2Server.close();
   as1Server.close();
   as2Server.close();
+  proxy1Server.close();
+  proxy2Server.close();
 }

@@ -39,6 +39,7 @@ describe('IdP update identity ial test', function() {
     identifier = db.idp1Identities[0].identifier;
 
     const response = await debugApi.query('idp1', {
+      nodeId: 'idp1',
       fnName: 'GetIdentityInfo',
       hash_id: hash(namespace + ':' + identifier),
       node_id: 'idp1',
@@ -79,6 +80,7 @@ describe('IdP update identity ial test', function() {
     this.timeout(15000);
 
     const response = await debugApi.query('idp1', {
+      nodeId: 'idp1',
       fnName: 'GetIdentityInfo',
       hash_id: hash(namespace + ':' + identifier),
       node_id: 'idp1',
@@ -124,6 +126,7 @@ describe("IdP update identity ial greater than node's max ial test", function() 
     identifier = db.idp1Identities[0].identifier;
 
     const responseIdentityInfo = await debugApi.query('idp1', {
+      nodeId: 'idp1',
       fnName: 'GetIdentityInfo',
       hash_id: hash(namespace + ':' + identifier),
       node_id: 'idp1',

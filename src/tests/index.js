@@ -12,6 +12,8 @@ export let idp1Available;
 export let idp2Available;
 export let as1Available;
 export let as2Available;
+export let proxy1Available;
+export let proxy2Available;
 
 async function checkForAvailableNodes() {
   const [
@@ -21,6 +23,8 @@ async function checkForAvailableNodes() {
     _idp2Available,
     _as1Available,
     _as2Available,
+    _proxy1Available,
+    _proxy2Available,
   ] = await Promise.all([
     isNodeAvailable('ndid1'),
     isNodeAvailable('rp1'),
@@ -28,6 +32,8 @@ async function checkForAvailableNodes() {
     isNodeAvailable('idp2'),
     isNodeAvailable('as1'),
     isNodeAvailable('as2'),
+    isNodeAvailable('proxy1'),
+    isNodeAvailable('proxy2'),
   ]);
 
   ndidAvailable = _ndidAvailable;
@@ -36,6 +42,8 @@ async function checkForAvailableNodes() {
   idp2Available = _idp2Available;
   as1Available = _as1Available;
   as2Available = _as2Available;
+  proxy1Available = _proxy1Available;
+  proxy2Available = _proxy2Available;
 }
 
 describe('End-to-End NDID API test (API v2.1)', function() {
@@ -56,6 +64,7 @@ describe('End-to-End NDID API test (API v2.1)', function() {
   require('./idp_setup');
   require('./as_setup');
   require('./as_service_setup');
+  require('./proxy_setup');
   require('./ndid');
   require('./create_identity');
   require('./dpki');

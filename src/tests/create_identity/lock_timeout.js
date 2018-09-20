@@ -26,6 +26,7 @@ describe('Use debug API to lock first IdP', function() {
     });
 
     await debugApi.transact('idp1', {
+      nodeId: 'idp1',
       fnName: 'RegisterMsqDestination',
       users: [
         {
