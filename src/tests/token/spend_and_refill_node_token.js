@@ -225,9 +225,6 @@ describe('Spend and refill node token test', function() {
           service_id: 'bank_statement',
           as_id_list: ['as1'],
           min_as: 1,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
         },
       ],
     });
@@ -465,9 +462,6 @@ describe('Spend and refill node token test', function() {
           service_id: 'bank_statement',
           as_id_list: ['as1'],
           min_as: 1,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
         },
       ],
     });
