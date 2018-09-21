@@ -280,6 +280,7 @@ describe('Spend and refill node token test', function() {
       }),
       max_ial: 2.3,
       max_aal: 3,
+      requester_node_id:'rp1'
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -509,6 +510,7 @@ describe('Spend and refill node token test', function() {
       }),
       max_ial: 2.3,
       max_aal: 3,
+      requester_node_id:'rp1'
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
