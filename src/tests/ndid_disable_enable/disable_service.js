@@ -73,7 +73,7 @@ describe('NDID disable service test', function() {
     const responseGetServices = await commonApi.getServices('ndid1');
     const responseBody = await responseGetServices.json();
     alreadyAddedService = responseBody.find(
-      service => service.service_id === 'test_disable_service'
+      (service) => service.service_id === 'test_disable_service'
     );
   });
 
@@ -102,7 +102,7 @@ describe('NDID disable service test', function() {
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(
-      service => service.service_id === 'test_disable_service'
+      (service) => service.service_id === 'test_disable_service'
     );
     expect(service).to.deep.equal({
       service_id: 'test_disable_service',
@@ -165,7 +165,7 @@ describe('NDID disable service test', function() {
     const responseBody = await responseUtilityGetServices.json();
 
     let service = responseBody.find(
-      service => service.service_id === 'test_disable_service'
+      (service) => service.service_id === 'test_disable_service'
     );
 
     expect(service).to.be.an('undefined');
@@ -292,6 +292,15 @@ describe('NDID disable service after RP create request test', function() {
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
+
+    const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
+      (dataRequest) => {
+        const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
+        return {
+          ...dataRequestWithoutParams,
+        };
+      }
+    );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
@@ -306,7 +315,7 @@ describe('NDID disable service after RP create request test', function() {
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
-      data_request_list: createRequestParams.data_request_list,
+      data_request_list: dataRequestListWithoutParams,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -381,7 +390,7 @@ describe('NDID disable service after RP create request test', function() {
     const responseBody = await responseUtilityGetServices.json();
 
     let service = responseBody.find(
-      service => service.service_id === 'test_disable_service'
+      (service) => service.service_id === 'test_disable_service'
     );
 
     expect(service).to.be.an('undefined');
@@ -445,7 +454,7 @@ describe('NDID disable service before AS offered service test', function() {
     const responseGetServices = await commonApi.getServices('ndid1');
     const responseBody = await responseGetServices.json();
     alreadyAddedService = responseBody.find(
-      service =>
+      (service) =>
         service.service_id === 'test_disable_service_before_as_offered_service'
     );
   });
@@ -475,7 +484,7 @@ describe('NDID disable service before AS offered service test', function() {
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(
-      service =>
+      (service) =>
         service.service_id === 'test_disable_service_before_as_offered_service'
     );
     expect(service).to.deep.equal({
@@ -520,7 +529,7 @@ describe('NDID disable service before AS offered service test', function() {
     const responseBody = await responseUtilityGetServices.json();
 
     let service = responseBody.find(
-      service =>
+      (service) =>
         service.service_id === 'test_disable_service_before_as_offered_service'
     );
 

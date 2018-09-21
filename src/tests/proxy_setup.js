@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { proxy2Available } from '.';
+import { proxy1Available, proxy2Available } from '.';
 import * as rpApi from '../api/v2/rp';
 import * as idpApi from '../api/v2/idp';
 import * as asApi from '../api/v2/as';
@@ -9,6 +9,13 @@ import { createEventPromise, generateReferenceId } from '../utils';
 import * as config from '../config';
 
 describe('Proxy (proxy1) setup', function() {
+  before(async function() {
+    if (!proxy1Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+  });
+
   // RP
   it('should set RP callbacks successfully', async function() {
     const response = await rpApi.setCallbacks('proxy1', {
@@ -169,6 +176,7 @@ describe('Proxy (proxy1) setup', function() {
 describe('Proxy (proxy2) setup', function() {
   before(async function() {
     if (!proxy2Available) {
+      this.test.parent.pending = true;
       this.skip();
     }
   });

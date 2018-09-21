@@ -175,7 +175,7 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -218,7 +218,7 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -390,6 +390,15 @@ describe('IdP (idp1) response with new accessor id test', function() {
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
+
+    const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
+      (dataRequest) => {
+        const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
+        return {
+          ...dataRequestWithoutParams,
+        };
+      }
+    );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
@@ -404,7 +413,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
-      data_request_list: createRequestParams.data_request_list,
+      data_request_list: dataRequestListWithoutParams,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -417,7 +426,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   it('IdP should create response (accept) with new accessor id successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;
