@@ -247,6 +247,7 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
       timed_out: false,
       mode: 3,
       status: 'completed',
+      requester_node_id: 'idp1',
     });
   });
 

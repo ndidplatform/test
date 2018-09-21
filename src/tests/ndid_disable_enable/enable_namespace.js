@@ -173,6 +173,7 @@ describe('NDID enable namespace test', function() {
       timed_out: false,
       mode: 3,
       status: 'completed',
+      requester_node_id: 'idp1',
     });
   });
 

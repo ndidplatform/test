@@ -146,7 +146,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === nodeId);
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === nodeId);
     expect(idpNode).to.exist;
 
     db.proxy1Idp4Identities.push({
@@ -181,6 +181,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       timed_out: false,
       mode: 3,
       status: 'completed',
+      requester_node_id: nodeId,
     });
   });
 

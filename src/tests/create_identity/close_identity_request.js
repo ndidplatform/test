@@ -627,6 +627,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       timed_out: false,
       mode: 3,
       status: 'completed',
+      requester_node_id: 'idp2',
     });
   });
 

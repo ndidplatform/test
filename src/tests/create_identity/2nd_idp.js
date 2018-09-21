@@ -254,6 +254,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       timed_out: false,
       mode: 3,
       status: 'completed',
+      requester_node_id: 'idp2',
     });
   });
 
