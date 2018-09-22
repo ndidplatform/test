@@ -10,10 +10,10 @@ export function updateNode(nodeId, data) {
   return httpPost(`${apiBaseUrl}/ndid/updateNode`, data);
 }
 
-export function setTimeoutBlockRegisterMqDestination(nodeId, data) {
+export function setTimeoutBlockRegisterIdentity(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(
-    `${apiBaseUrl}/ndid/setTimeoutBlockRegisterMqDestination`,
+    `${apiBaseUrl}/ndid/setTimeoutBlockRegisterIdentity`,
     data
   );
 }
