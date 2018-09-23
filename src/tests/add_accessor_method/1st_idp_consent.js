@@ -22,9 +22,11 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st IdP (idp1) consent test', function() {
+describe('IdP (idp1) add accessor method (providing custom request_message and without providing accessor_id) and 1st IdP (idp1) consent test', function() {
   let namespace;
   let identifier;
+  const addAccessorRequestMessage =
+    'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
   const keypair = forge.pki.rsa.generateKeyPair(2048);
   const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
   const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
@@ -40,8 +42,6 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
 
   let requestId;
   let accessorId;
-  let requestMessage;
-  let requestMessageSalt;
   let requestMessageHash;
 
   db.createIdentityReferences.push({
@@ -50,9 +50,6 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
   });
 
   before(function() {
-    if (!idp1Available || !rpAvailable || !as1Available) {
-      this.skip();
-    }
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -102,6 +99,7 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id: accessorId,
+      request_message: addAccessorRequestMessage,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -148,26 +146,19 @@ describe('IdP (idp1) add accessor method (without providing accessor_id) and 1st
       request_id: requestId,
       namespace,
       identifier,
+      request_message: addAccessorRequestMessage,
+      request_message_hash: hashRequestMessageForConsent(
+        addAccessorRequestMessage,
+        incomingRequest.initial_salt,
+        requestId
+      ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
       min_aal: 1,
       data_request_list: [],
     });
-    expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
-    expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
-      .empty;
-
-    requestMessage = incomingRequest.request_message;
-    requestMessageSalt = incomingRequest.request_message_salt;
-
-    expect(incomingRequest.request_message_hash).to.equal(
-      hashRequestMessageForConsent(
-        requestMessage,
-        incomingRequest.initial_salt,
-        incomingRequest.request_id
-      )
-    );
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
   });
@@ -287,6 +278,10 @@ describe('IdP (idp1) response with new accessor id test', function() {
   let requestMessageHash;
 
   before(function() {
+    if (!as1Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -506,7 +501,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id:'rp1'
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not

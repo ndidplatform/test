@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import { idp1Available, idp2Available } from '..';
+import { idp2Available, as1Available } from '..';
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
 import * as asApi from '../../api/v2/as';
@@ -52,7 +52,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   });
 
   before(function() {
-    if (!idp1Available || !idp2Available) {
+    if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
     }
@@ -293,6 +293,10 @@ describe('IdP (idp1) response with new accessor id test', function() {
   let requestMessageHash;
 
   before(function() {
+    if (!as1Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
