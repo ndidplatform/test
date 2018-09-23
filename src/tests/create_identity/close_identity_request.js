@@ -292,6 +292,7 @@ describe('2nd IdP close identity request test', function() {
       )
     );
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
   });

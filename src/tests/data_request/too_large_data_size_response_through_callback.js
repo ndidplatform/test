@@ -212,6 +212,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;

@@ -205,6 +205,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;

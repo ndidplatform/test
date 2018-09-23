@@ -166,6 +166,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       )
     );
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
   });
