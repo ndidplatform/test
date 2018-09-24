@@ -157,6 +157,7 @@ describe('2nd IdP close identity request test', function() {
     const accessorSignParams = await accessorSignPromise.promise;
     expect(accessorSignParams).to.deep.equal({
       type: 'accessor_sign',
+      node_id: 'idp1',
       reference_id: referenceId,
       accessor_id: accessorId,
       sid,
@@ -251,6 +252,7 @@ describe('2nd IdP close identity request test', function() {
     const accessorSignParams = await accessorSignPromise2.promise;
     expect(accessorSignParams).to.deep.equal({
       type: 'accessor_sign',
+      node_id: 'idp2',
       reference_id: referenceIdIdp2,
       accessor_id: accessorId2ndIdP,
       sid,
@@ -290,6 +292,7 @@ describe('2nd IdP close identity request test', function() {
       )
     );
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
   });
@@ -490,6 +493,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
     const accessorSignParams = await accessorSignPromise.promise;
     expect(accessorSignParams).to.deep.equal({
       type: 'accessor_sign',
+      node_id: 'idp2',
       reference_id: referenceId,
       accessor_id: accessorId,
       sid,
@@ -624,6 +628,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       timed_out: false,
       mode: 3,
       status: 'completed',
+      requester_node_id: 'idp2',
     });
   });
 

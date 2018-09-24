@@ -1,8 +1,10 @@
 import { getApiAddressUrl, httpGet, httpPost } from '../helpers';
 
-export function getCallbacks(nodeId) {
+export function getCallbacks(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  return httpGet(`${apiBaseUrl}/dpki/node/callback`);
+  return httpGet(
+    `${apiBaseUrl}/dpki/node/callback${data ? `?node_id=${data.node_id}` : ''}`
+  );
 }
 
 export function setCallbacks(nodeId, data) {

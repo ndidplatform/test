@@ -21,12 +21,13 @@ describe('Use debug API to lock first IdP', function() {
       this.skip();
     }
 
-    await ndidApi.setTimeoutBlockRegisterMqDestination('ndid1', {
+    await ndidApi.setTimeoutBlockRegisterIdentity('ndid1', {
       blocks_to_timeout: 5,
     });
 
     await debugApi.transact('idp1', {
-      fnName: 'RegisterMsqDestination',
+      nodeId: 'idp1',
+      fnName: 'RegisterIdentity',
       users: [
         {
           hash_id: hash(namespace + ':' + identifier),
@@ -91,7 +92,7 @@ describe('Use debug API to lock first IdP', function() {
 
   after(async function() {
     this.timeout(5000);
-    await ndidApi.setTimeoutBlockRegisterMqDestination('ndid1', {
+    await ndidApi.setTimeoutBlockRegisterIdentity('ndid1', {
       blocks_to_timeout: 500,
     });
   });

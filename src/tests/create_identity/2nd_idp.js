@@ -17,9 +17,11 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', function() {
+describe('IdP (idp2) create identity (providing accessor_id and custom request_message) as 2nd IdP', function() {
   let namespace;
   let identifier;
+  const createIdentityRequestMessage =
+    'Create identity consent request custom message ข้อความสำหรับขอสร้างตัวตนบนระบบ';
   const keypair = forge.pki.rsa.generateKeyPair(2048);
   const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
   const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
@@ -35,8 +37,6 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
   const createIdentityResultPromise = createEventPromise(); // 2nd IdP
 
   let requestId;
-  let requestMessage;
-  let requestMessageSalt;
   let requestMessageHash;
 
   db.createIdentityReferences.push({
@@ -101,6 +101,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       accessor_public_key: accessorPublicKey,
       accessor_id: accessorId,
       ial: 2.3,
+      request_message: createIdentityRequestMessage,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -127,6 +128,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
     const accessorSignParams = await accessorSignPromise.promise;
     expect(accessorSignParams).to.deep.equal({
       type: 'accessor_sign',
+      node_id: 'idp2',
       reference_id: referenceId,
       accessor_id: accessorId,
       sid,
@@ -146,25 +148,19 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       request_id: requestId,
       namespace,
       identifier,
+      request_message: createIdentityRequestMessage,
+      request_message_hash: hashRequestMessageForConsent(
+        createIdentityRequestMessage,
+        incomingRequest.initial_salt,
+        requestId
+      ),
       requester_node_id: 'idp2',
       min_ial: 1.1,
       min_aal: 1,
       data_request_list: [],
     });
-    expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
-    expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
-      .empty;
-
-    requestMessage = incomingRequest.request_message;
-    requestMessageSalt = incomingRequest.request_message_salt;
-
-    expect(incomingRequest.request_message_hash).to.equal(
-      hashRequestMessageForConsent(requestMessage, 
-        incomingRequest.initial_salt, 
-        incomingRequest.request_id
-      )
-    );
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
   });
@@ -172,7 +168,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -219,7 +215,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
     expect(idpNode).to.exist;
 
     db.idp2Identities.push({
@@ -253,6 +249,7 @@ describe('IdP (idp2) create identity (providing accessor_id) as 2nd IdP', functi
       timed_out: false,
       mode: 3,
       status: 'completed',
+      requester_node_id: 'idp2',
     });
   });
 

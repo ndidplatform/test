@@ -10,6 +10,9 @@ export const IDP2_CALLBACK_PORT = 9101;
 export const AS1_CALLBACK_PORT = 9300;
 export const AS2_CALLBACK_PORT = 9301;
 
+export const PROXY1_CALLBACK_PORT = 9400;
+export const PROXY2_CALLBACK_PORT = 9401;
+
 export const NDID_CALLBACK_PORT = 9000;
 
 export const DPKI_CALLBACK_PORT = 12000;
@@ -23,6 +26,11 @@ export const IDP2_ACCESSOR_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP2_CAL
 
 export const AS1_CALLBACK_URL = `http://${CALLBACK_IP}:${AS1_CALLBACK_PORT}/as/callback`;
 export const AS2_CALLBACK_URL = `http://${CALLBACK_IP}:${AS2_CALLBACK_PORT}/as/callback`;
+
+export const PROXY1_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY1_CALLBACK_PORT}/proxy/callback`;
+export const PROXY1_ACCESSOR_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY1_CALLBACK_PORT}/proxy/accessor/sign`;
+export const PROXY2_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY2_CALLBACK_PORT}/proxy/callback`;
+export const PROXY2_ACCESSOR_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY2_CALLBACK_PORT}/proxy/accessor/sign`;
 
 export const NDID_CALLBACK_URL = `http://${CALLBACK_IP}:${NDID_CALLBACK_PORT}/ndid/callback`;
 

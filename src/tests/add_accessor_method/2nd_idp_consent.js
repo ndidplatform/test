@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import { idp1Available, idp2Available } from '..';
+import { idp2Available, as1Available } from '..';
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
 import * as asApi from '../../api/v2/as';
@@ -52,7 +52,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   });
 
   before(function() {
-    if (!idp1Available || !idp2Available) {
+    if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
     }
@@ -133,6 +133,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
     const accessorSignParams = await accessorSignPromise.promise;
     expect(accessorSignParams).to.deep.equal({
       type: 'accessor_sign',
+      node_id: 'idp1',
       reference_id: referenceId,
       accessor_id: accessorId,
       sid,
@@ -179,7 +180,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   it('2nd IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp2Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -222,7 +223,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -251,6 +252,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
       timed_out: false,
       mode: 3,
       status: 'completed',
+      requester_node_id: 'idp1',
     });
   });
 
@@ -291,6 +293,10 @@ describe('IdP (idp1) response with new accessor id test', function() {
   let requestMessageHash;
 
   before(function() {
+    if (!as1Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -395,6 +401,15 @@ describe('IdP (idp1) response with new accessor id test', function() {
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
+
+    const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
+      (dataRequest) => {
+        const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
+        return {
+          ...dataRequestWithoutParams,
+        };
+      }
+    );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
@@ -409,7 +424,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
-      data_request_list: createRequestParams.data_request_list,
+      data_request_list: dataRequestListWithoutParams,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -422,7 +437,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   it('IdP should create response (accept) with new accessor id successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;
@@ -501,6 +516,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
+      requester_node_id:'rp1'
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not

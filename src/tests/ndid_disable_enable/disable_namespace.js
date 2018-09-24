@@ -135,7 +135,7 @@ describe('NDID disable namespace test', function() {
     const responseBody = await responseUtilityGetNamespaces.json();
 
     let namespace = responseBody.find(
-      namespace => namespace.namespace === 'cid'
+      (namespace) => namespace.namespace === 'cid'
     );
 
     expect(namespace).to.be.an('undefined');
@@ -175,6 +175,15 @@ describe('NDID disable namespace test', function() {
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
+
+    const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
+      (dataRequest) => {
+        const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
+        return {
+          ...dataRequestWithoutParams,
+        };
+      }
+    );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
@@ -189,7 +198,7 @@ describe('NDID disable namespace test', function() {
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
-      data_request_list: createRequestParams.data_request_list,
+      data_request_list: dataRequestListWithoutParams,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -202,7 +211,7 @@ describe('NDID disable namespace test', function() {
     this.timeout(10000);
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -244,6 +253,7 @@ describe('NDID disable namespace test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
+      requester_node_id:'rp1'
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -273,5 +283,4 @@ describe('NDID disable namespace test', function() {
     idp1EventEmitter.removeAllListeners('callback');
     as1EventEmitter.removeAllListeners('callback');
   });
-  
 });
