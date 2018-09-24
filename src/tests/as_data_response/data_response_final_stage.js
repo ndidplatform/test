@@ -563,8 +563,6 @@ describe('AS response data request already completed test', function() {
       request_id: requestId,
       success: true,
     });
-
-    await wait(3000);
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
