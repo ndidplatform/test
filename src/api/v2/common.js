@@ -12,9 +12,11 @@ export function getRequest(nodeId, data) {
   return httpGet(`${apiBaseUrl}/utility/requests/${requestId}`);
 }
 
-export function getNodeInfo(nodeId) {
+export function getNodeInfo(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  return httpGet(`${apiBaseUrl}/utility/nodes/${nodeId}`);
+  return httpGet(
+    `${apiBaseUrl}/utility/nodes/${data ? `${data.node_id}` : `${nodeId}`}`
+  );
 }
 
 export function getServices(nodeId) {
