@@ -6,7 +6,7 @@ import * as db from '../../db';
 import { createEventPromise, generateReferenceId, wait } from '../../utils';
 import * as config from '../../config';
 
-describe('Get request_id by reference_id test', function() {
+describe('RP get request_id by reference_id test', function() {
   let namespace;
   let identifier;
 
