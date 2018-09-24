@@ -12,6 +12,7 @@ import {
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
+import { idp2Available } from '..';
 
 describe('IdP response invalid ial test', function() {
   let namespace;
@@ -186,6 +187,9 @@ describe('IdP response invalid secret test', function() {
 
   before(async function() {
     this.timeout(20000);
+    if (!idp2Available) {
+      this.skip();
+    }
     if (db.idp1Identities[0] == null || db.idp2Identities[0] == null) {
       throw new Error('No created identity to use');
     }
