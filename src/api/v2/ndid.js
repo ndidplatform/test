@@ -1,4 +1,4 @@
-import { getApiAddressUrl, httpGet, httpPost, httpDelte } from '../helpers';
+import { getApiAddressUrl, httpPost } from '../helpers';
 
 export function registerNamespace(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
@@ -12,10 +12,7 @@ export function updateNode(nodeId, data) {
 
 export function setTimeoutBlockRegisterIdentity(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(
-    `${apiBaseUrl}/ndid/setTimeoutBlockRegisterIdentity`,
-    data
-  );
+  return httpPost(`${apiBaseUrl}/ndid/setTimeoutBlockRegisterIdentity`, data);
 }
 
 export function addService(nodeId, data) {
@@ -81,4 +78,19 @@ export function addNodeToken(nodeId, data) {
 export function reduceNodeToken(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/reduceNodeToken`, data);
+}
+
+export function addNodeToProxyNode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/addNodeToProxyNode`, data);
+}
+
+export function updateNodeProxyNode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/updateNodeProxyNode`, data);
+}
+
+export function removeNodeFromProxyNode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/removeNodeFromProxyNode`, data);
 }
