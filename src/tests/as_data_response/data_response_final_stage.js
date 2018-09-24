@@ -379,6 +379,7 @@ describe('AS response data request already completed test', function() {
   const as1DataRequestReceivedPromise = createEventPromise(); // AS1
   const as1SendDataResultPromise = createEventPromise(); // AS1
   const as2DataRequestReceivedPromise = createEventPromise(); // AS2
+  const requestStatusCompletedPromise = createEventPromise(); // RP
 
   let createRequestParams;
   const data = JSON.stringify({
@@ -438,6 +439,8 @@ describe('AS response data request already completed test', function() {
         if (callbackData.timed_out) {
           requestTimeoutPromise.resolve(callbackData);
         }
+      } else if (callbackData.status === 'completed') {
+        requestStatusCompletedPromise.resolve(callbackData);
       }
     });
 
@@ -562,6 +565,38 @@ describe('AS response data request already completed test', function() {
     });
 
     await wait(3000);
+  });
+
+  it('RP should receive completed request status with received data count = 1', async function() {
+    this.timeout(15000);
+    const requestStatus = await requestStatusCompletedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 1,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
   });
 
   it('AS (as2) should get an error response when send data with request that already completed', async function() {
