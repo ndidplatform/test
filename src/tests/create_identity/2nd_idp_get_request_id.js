@@ -12,6 +12,7 @@ import {
   generateReferenceId,
   hash,
   hashRequestMessageForConsent,
+  wait,
 } from '../../utils';
 import * as config from '../../config';
 
@@ -324,6 +325,8 @@ describe('2nd IdP get request_id by reference_id test', function() {
       reference_id: closeIdentityRequestReferenceId,
       request_id: requestId2ndIdP,
     });
+
+    await wait(3000);
   });
 
   it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
