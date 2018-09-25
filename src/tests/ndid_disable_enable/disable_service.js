@@ -22,7 +22,7 @@ import {
 import * as config from '../../config';
 
 describe('NDID disable service test', function() {
-  const namespace = 'cid';
+  const namespace = 'citizen_id';
   const identifier = uuidv4();
 
   const testDisableServiceReferenceId = generateReferenceId();
@@ -191,7 +191,7 @@ describe('NDID disable service test', function() {
 });
 
 describe('NDID disable service after RP create request test', function() {
-  const namespace = 'cid';
+  const namespace = 'citizen_id';
   const identifier = uuidv4();
 
   const rpReferenceId = generateReferenceId();

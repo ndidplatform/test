@@ -17,7 +17,7 @@ import {
 import * as config from '../../config';
 
 describe('2nd IdP get request_id by reference_id test', function() {
-  const namespace = 'cid';
+  const namespace = 'citizen_id';
   const identifier = uuidv4();
 
   //Keypair for 1st IdP

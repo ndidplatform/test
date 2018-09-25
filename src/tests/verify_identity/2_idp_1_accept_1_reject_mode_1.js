@@ -54,7 +54,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       this.skip();
     }
 
-    namespace = 'cid';
+    namespace = 'citizen_id';
     identifier = '1234567890123';
 
     createRequestParams = {

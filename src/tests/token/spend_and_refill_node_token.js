@@ -26,7 +26,7 @@ describe('Spend and refill node token test', function() {
   let idpNodeTokenBeforeTest = 0;
   let asNodeTokenBeforeTest = 0;
 
-  let namespace = 'cid';
+  let namespace = 'citizen_id';
   let identifier = uuidv4();
 
   const RequestOutOfTokenReferenceId = generateReferenceId();

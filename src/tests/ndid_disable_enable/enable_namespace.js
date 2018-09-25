@@ -17,7 +17,7 @@ import {
 import * as config from '../../config';
 
 describe('NDID enable namespace test', function() {
-  const namespace = 'cid';
+  const namespace = 'citizen_id';
   const identifier = uuidv4();
   const keypair = forge.pki.rsa.generateKeyPair(2048);
   const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
@@ -64,7 +64,7 @@ describe('NDID enable namespace test', function() {
     this.timeout(10000);
 
     const response = await ndidApi.enableNamespace('ndid1', {
-      namespace: 'cid',
+      namespace: 'citizen_id',
     });
 
     expect(response.status).to.equal(204);
@@ -78,7 +78,7 @@ describe('NDID enable namespace test', function() {
     const responseBody = await responseUtilityGetNamespaces.json();
 
     let namespace = responseBody.find(
-      namespace => namespace.namespace === 'cid'
+      namespace => namespace.namespace === 'citizen_id'
     );
 
     expect(namespace).to.be.an('object');

@@ -15,7 +15,7 @@ import {
 import * as config from '../../config';
 
 describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP', function() {
-  const namespace = 'cid';
+  const namespace = 'citizen_id';
   const identifier = uuidv4();
   const keypair = forge.pki.rsa.generateKeyPair(2048);
   const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);

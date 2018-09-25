@@ -39,7 +39,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy1_rp4) behind proxy', function
   const requestStatusUpdates = [];
 
   before(function() {
-    namespace = 'cid';
+    namespace = 'citizen_id';
     identifier = '1234567890123';
 
     createRequestParams = {

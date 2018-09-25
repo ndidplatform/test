@@ -21,7 +21,7 @@ import {
 import * as config from '../../config';
 
 describe('NDID enable service destination test', function() {
-  const namespace = 'cid';
+  const namespace = 'citizen_id';
   const identifier = uuidv4();
 
   const rpReferenceId = generateReferenceId();

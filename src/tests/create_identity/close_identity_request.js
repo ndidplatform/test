@@ -18,7 +18,7 @@ import {
 import * as config from '../../config';
 
 describe('2nd IdP close identity request test', function() {
-  const namespace = 'cid';
+  const namespace = 'citizen_id';
   const identifier = uuidv4();
 
   //Keypair for 1st IdP

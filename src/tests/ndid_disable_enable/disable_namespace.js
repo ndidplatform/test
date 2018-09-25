@@ -121,7 +121,7 @@ describe('NDID disable namespace test', function() {
     this.timeout(10000);
 
     const response = await ndidApi.disableNamespace('ndid1', {
-      namespace: 'cid',
+      namespace: 'citizen_id',
     });
 
     expect(response.status).to.equal(204);
@@ -135,7 +135,7 @@ describe('NDID disable namespace test', function() {
     const responseBody = await responseUtilityGetNamespaces.json();
 
     let namespace = responseBody.find(
-      (namespace) => namespace.namespace === 'cid'
+      (namespace) => namespace.namespace === 'citizen_id'
     );
 
     expect(namespace).to.be.an('undefined');

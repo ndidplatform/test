@@ -10,7 +10,7 @@ import { RP_CALLBACK_URL } from '../../config';
 import { ndidAvailable } from '..';
 
 describe('Use debug API to lock first IdP', function() {
-  const namespace = 'cid';
+  const namespace = 'citizen_id';
   const identifier = uuidv4();
 
   before(async function() {

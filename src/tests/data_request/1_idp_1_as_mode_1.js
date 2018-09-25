@@ -54,7 +54,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
   const requestStatusUpdates = [];
 
   before(function() {
-    namespace = 'cid';
+    namespace = 'citizen_id';
     identifier = '1234567890123';
 
     createRequestParams = {

@@ -50,7 +50,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
       this.skip();
     }
 
-    namespace = 'cid';
+    namespace = 'citizen_id';
     identifier = '1234567890123';
 
     createRequestParams = {
