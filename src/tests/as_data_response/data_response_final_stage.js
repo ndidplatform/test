@@ -599,6 +599,9 @@ describe('AS response data request already completed test', function() {
 
   it('AS (as2) should get an error response when send data with request that already completed', async function() {
     this.timeout(15000);
+
+    await wait(3000);
+
     const response = await asApi.sendData('as2', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
