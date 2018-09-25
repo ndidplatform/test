@@ -41,7 +41,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   const accessorSignPromise = createEventPromise(); //1s IDP
   const accessorSignPromise2 = createEventPromise(); //2nd IDP
   const closeIdentityRequestResultPromise = createEventPromise();
-
+  const IdP2createIdentityResultPromise = createEventPromise(); //2nd IDP
   //1st IdP
   let requestId;
   let accessorId;
@@ -108,6 +108,11 @@ describe('2nd IdP get request_id by reference_id test', function() {
         callbackData.reference_id === closeIdentityRequestReferenceId
       ) {
         closeIdentityRequestResultPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'create_identity_result' &&
+        callbackData.reference_id === referenceIdIdp2
+      ) {
+        IdP2createIdentityResultPromise.resolve(callbackData);
       }
     });
 
@@ -324,6 +329,16 @@ describe('2nd IdP get request_id by reference_id test', function() {
       success: true,
       reference_id: closeIdentityRequestReferenceId,
       request_id: requestId2ndIdP,
+    });
+
+    const IdP2createIdentityResultP = await IdP2createIdentityResultPromise.promise;
+    expect(IdP2createIdentityResultP).to.deep.include({
+      node_id: 'idp2',
+      type: 'create_identity_result',
+      success: false,
+      reference_id: referenceIdIdp2,
+      request_id: requestId2ndIdP,
+      error: { code: 20025, message: 'Request is already closed' },
     });
 
     await wait(3000);
