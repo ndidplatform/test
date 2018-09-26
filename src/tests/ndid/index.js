@@ -24,4 +24,5 @@ describe('NDID API tests (proxy)', function() {
   });
 
   require('./proxy/update_node_proxy_node');
+  require('./proxy/error_response');
 });
