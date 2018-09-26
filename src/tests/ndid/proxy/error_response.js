@@ -72,7 +72,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(20003);
   });
 
-  it('NDID should get an error when update node_id has not been associated with a proxy node', async function() {
+  it('NDID should get an error when add node to proxy with node_id has already been associated with a proxy node', async function() {
     this.timeout(10000);
     const response = await ndidApi.addNodeToProxyNode('ndid1', {
       node_id: 'proxy1_rp4',
@@ -84,7 +84,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(25046);
   });
 
-  it('NDID should get an error when update node_id has not been associated with a proxy node', async function() {
+  it('NDID should get an error when add node to proxy with node_id is a proxy node', async function() {
     this.timeout(10000);
     const response = await ndidApi.addNodeToProxyNode('ndid1', {
       node_id: 'proxy1',
@@ -96,7 +96,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(25047);
   });
 
-  it('NDID should get an error when update node_id has not been associated with a proxy node', async function() {
+  it('NDID should get an error when add node to proxy with node_id is a proxy node', async function() {
     this.timeout(10000);
     const response = await ndidApi.addNodeToProxyNode('ndid1', {
       node_id: 'proxy1',
@@ -108,7 +108,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(25047);
   });
 
-  it('NDID should get an error when update node_id has not been associated with a proxy node', async function() {
+  it('NDID should get an error when add node to proxy with node_id is not existing', async function() {
     this.timeout(10000);
     const response = await ndidApi.addNodeToProxyNode('ndid1', {
       node_id: 'not_existing_node_id',
@@ -120,7 +120,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(25015);
   });
 
-  it('NDID should get an error when update node_id has not been associated with a proxy node', async function() {
+  it('NDID should get an error when add node to proxy with proxy_node_id is not existing', async function() {
     this.timeout(10000);
     const response = await ndidApi.addNodeToProxyNode('ndid1', {
       node_id: 'rp1',
@@ -143,7 +143,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(25048);
   });
 
-  it('NDID should get an error when update node_id proxy', async function() {
+  it('NDID should get an error when update node with node_id is a proxy node', async function() {
     this.timeout(10000);
     const response = await ndidApi.updateNodeProxyNode('ndid1', {
       node_id: 'proxy1',
@@ -154,7 +154,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(25048);
   });
 
-  it('NDID should get an error when update node_id proxy', async function() {
+  it('NDID should get an error when update node with node_id is a proxy node', async function() {
     this.timeout(10000);
     const response = await ndidApi.updateNodeProxyNode('ndid1', {
       node_id: 'proxy1',
@@ -165,7 +165,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(25048);
   });
 
-  it('NDID should get an error when update node_id to not existing proxy node id', async function() {
+  it('NDID should get an error when update node to not existing proxy node id', async function() {
     this.timeout(10000);
     const response = await ndidApi.updateNodeProxyNode('ndid1', {
       node_id: 'proxy1_rp4',
@@ -176,7 +176,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(25049);
   });
 
-  it('NDID should get an error when update node_id with not existing node id', async function() {
+  it('NDID should get an error when update node with not existing node id', async function() {
     this.timeout(10000);
     const response = await ndidApi.updateNodeProxyNode('ndid1', {
       node_id: 'not_existing_node_id',
@@ -215,7 +215,7 @@ describe('NDID response errors (proxy)', function() {
     expect(responseBody.error.code).to.equal(25048);
   });
 
-  it('NDID should get an error when remove node from proxy with node_id is proxy node', async function() {
+  it('NDID should get an error when remove node from proxy with node_id is a proxy node', async function() {
     this.timeout(10000);
     const response = await ndidApi.removeNodeFromProxyNode('ndid1', {
       node_id: 'proxy1',
