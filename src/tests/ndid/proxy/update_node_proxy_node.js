@@ -22,6 +22,41 @@ import {
 } from '../../../utils';
 import * as config from '../../../config';
 
+describe('NDID update node config', function() {
+  it('NDID should update RP node (proxy1_rp4) config to KEY_ON_NODE', async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNodeProxyNode('ndid1', {
+      node_id: 'proxy1_rp4',
+      proxy_node_id: 'proxy1',
+      config: 'KEY_ON_NODE',
+    });
+    expect(response.status).to.equal(204);
+    await wait(3000);
+  });
+
+  it('RP node (proxy1_rp4) should be updated config successfully', async function() {
+    this.timeout(10000);
+    const response = await commonApi.getNodeInfo('proxy1', {
+      node_id: 'proxy1_rp4',
+    });
+    const responseBody = await response.json();
+    expect(responseBody.role).to.equal('RP');
+    expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
+    expect(responseBody.proxy.node_id).to.equal('proxy1');
+    expect(responseBody.proxy.config).to.equal('KEY_ON_NODE');
+  });
+
+  after(async function() {
+    this.timeout(5000);
+    await ndidApi.updateNodeProxyNode('ndid1', {
+      node_id: 'proxy1_rp4',
+      proxy_node_id: 'proxy1',
+      config: 'KEY_ON_PROXY',
+    });
+    await wait(3000);
+  });
+});
+
 describe('NDID update RP node to other proxy node', function() {
   let namespace;
   let identifier;
