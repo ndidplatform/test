@@ -250,7 +250,7 @@ describe('AS response data request already timed out test', function() {
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 5,
+      request_timeout: 7,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -322,7 +322,7 @@ describe('AS response data request already timed out test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(20000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -595,13 +595,11 @@ describe('AS response data request already completed test', function() {
     });
     expect(requestStatus).to.have.property('block_height');
     expect(requestStatus.block_height).is.a('number');
+    await wait(3000);
   });
 
   it('AS (as2) should get an error response when send data with request that already completed', async function() {
     this.timeout(15000);
-
-    await wait(3000);
-
     const response = await asApi.sendData('as2', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
