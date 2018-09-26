@@ -33,3 +33,35 @@ export function getNamespaces(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   return httpGet(`${apiBaseUrl}/utility/namespaces`);
 }
+
+export function getPrivateMessages(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { request_id, node_id } = data;
+  return httpGet(
+    `${apiBaseUrl}/utility/private_messages/${request_id}${
+      node_id ? `?node_id=${node_id}` : ''
+    }`
+  );
+}
+
+export function removePrivateMessages(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { request_id, node_id } = data;
+  return httpPost(
+    `${apiBaseUrl}/utility/private_messages/${request_id}/housekeeping${
+      node_id ? `?node_id=${node_id}` : ''
+    }`,
+    {}
+  );
+}
+
+export function removeAllPrivateMessages(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { node_id } = data;
+  return httpPost(
+    `${apiBaseUrl}/utility/private_messages/housekeeping${
+      node_id ? `?node_id=${node_id}` : ''
+    }`,
+    {}
+  );
+}

@@ -4,7 +4,7 @@ import forge from 'node-forge';
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
 import * as asApi from '../../api/v2/as';
-// import * as commonApi from '../../api/v2/common';
+import * as commonApi from '../../api/v2/common';
 import {
   rpEventEmitter,
   idp1EventEmitter,
@@ -423,6 +423,81 @@ describe('1 IdP, 1 AS, mode 1', function() {
 
   it('RP should receive 5 request status updates', function() {
     expect(requestStatusUpdates).to.have.lengthOf(5);
+  });
+
+  it('RP should have and able to get saved private messages', async function() {
+    const response = await commonApi.getPrivateMessages('rp1', {
+      request_id: requestId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.be.an('array').that.is.not.empty;
+  });
+
+  it('RP should remove saved private messages successfully', async function() {
+    const response = await commonApi.removePrivateMessages('rp1', {
+      request_id: requestId,
+    });
+    expect(response.status).to.equal(204);
+  });
+
+  it('RP should have no saved private messages left after removal', async function() {
+    const response = await commonApi.getPrivateMessages('rp1', {
+      request_id: requestId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.be.an('array').that.is.empty;
+  });
+
+  it('IdP should have and able to get saved private messages', async function() {
+    const response = await commonApi.getPrivateMessages('idp1', {
+      request_id: requestId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.be.an('array').that.is.not.empty;
+  });
+
+  it('IdP should remove saved private messages successfully', async function() {
+    const response = await commonApi.removePrivateMessages('idp1', {
+      request_id: requestId,
+    });
+    expect(response.status).to.equal(204);
+  });
+
+  it('IdP should have no saved private messages left after removal', async function() {
+    const response = await commonApi.getPrivateMessages('idp1', {
+      request_id: requestId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.be.an('array').that.is.empty;
+  });
+
+  it('AS should have and able to get saved private messages', async function() {
+    const response = await commonApi.getPrivateMessages('as1', {
+      request_id: requestId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.be.an('array').that.is.not.empty;
+  });
+
+  it('AS should remove saved private messages successfully', async function() {
+    const response = await commonApi.removePrivateMessages('as1', {
+      request_id: requestId,
+    });
+    expect(response.status).to.equal(204);
+  });
+
+  it('AS should have no saved private messages left after removal', async function() {
+    const response = await commonApi.getPrivateMessages('as1', {
+      request_id: requestId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.be.an('array').that.is.empty;
   });
 
   after(function() {
