@@ -128,8 +128,8 @@ describe('NDID response errors (proxy)', function() {
       config: 'KEY_ON_PROXY',
     });
     const responseBody = await response.json();
-    expect(response.status).to.equal(500); //TODO: wait for api declare error code
-    //expect(responseBody.error.code).to.equal(25047);
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(25049);
   });
 
   it('NDID should get an error when update node_id has not been associated with a proxy node', async function() {
@@ -172,8 +172,8 @@ describe('NDID response errors (proxy)', function() {
       proxy_node_id: 'not_existing_proxy_node_id',
     });
     const responseBody = await response.json();
-    expect(response.status).to.equal(500); //TODO: Expect status code 400 wait for api declare error code
-    // expect(responseBody.error.code).to.equal(25048);
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(25049);
   });
 
   it('NDID should get an error when update node_id with not existing node id', async function() {
