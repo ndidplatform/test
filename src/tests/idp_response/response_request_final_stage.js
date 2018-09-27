@@ -68,14 +68,6 @@ describe('IdP response request already confirmed test', function() {
             format: 'pdf',
           }),
         },
-        {
-          service_id: 'customer_info',
-          as_id_list: as2Available ? ['as2'] : ['as1'],
-          min_as: 1,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
-        },
       ],
       request_message:
         'Test request message (IdP response request already confirmed test) (mode 3)',
@@ -256,14 +248,6 @@ describe('IdP response request already closed test', function() {
             format: 'pdf',
           }),
         },
-        {
-          service_id: 'customer_info',
-          as_id_list: as2Available ? ['as2'] : ['as1'],
-          min_as: 1,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
-        },
       ],
       request_message:
         'Test request message (IdP response request already closed test) (mode 3)',
@@ -382,7 +366,7 @@ describe('IdP response request already closed test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id:'rp1'
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -496,14 +480,6 @@ describe('IdP response request already timed out test', function() {
         {
           service_id: 'bank_statement',
           as_id_list: ['as1'],
-          min_as: 1,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
-        },
-        {
-          service_id: 'customer_info',
-          as_id_list: as2Available ? ['as2'] : ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
             format: 'pdf',
