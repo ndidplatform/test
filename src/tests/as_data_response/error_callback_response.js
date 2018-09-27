@@ -86,7 +86,7 @@ describe('AS error callback response tests', function() {
       error: {
         code: 25028,
         message:
-          'Unauthorized to register a service (NDID may have not granted you the right to register this service)',
+          'Unauthorized to register a service (NDID may have not granted this node the right to register this service)',
       },
     });
   });
