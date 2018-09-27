@@ -34,29 +34,29 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
 
   const ProxyCreateRequestResultPromise = createEventPromise(); // Proxy RP
   const ProxyRequestStatusPendingPromise = createEventPromise(); // Proxy RP
-  const ProxyIncomingRequestPromise = createEventPromise(); // Proxy IDP
-  const ProxyResponseResultPromise = createEventPromise(); // Proxy IDP
+  const incomingRequestPromise1 = createEventPromise(); // Proxy IDP
+  const responseResultPromise1 = createEventPromise(); // Proxy IDP
   const ProxyRequestStatusConfirmedPromise = createEventPromise(); // Proxy RP
   const ProxyRequestStatusCompletedPromise = createEventPromise(); // Proxy RP
   const ProxyRequestClosedPromise = createEventPromise(); // Proxy RP
-  const ProxyDataRequestReceivedPromise = createEventPromise(); // Proxy AS
-  const ProxySendDataResultPromise = createEventPromise(); // Proxy AS
+  const dataRequestReceivedPromise1 = createEventPromise(); // Proxy AS
+  const sendDataResultPromise1 = createEventPromise(); // Proxy AS
 
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
   const requestStatusConfirmedPromise = createEventPromise(); // RP
-  const incomingRequestPromise = createEventPromise(); // IDP
-  const responseResultPromise = createEventPromise(); // IDP
+  const incomingRequestPromise2 = createEventPromise(); // IDP
+  const responseResultPromise2 = createEventPromise(); // IDP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
-  const dataRequestReceivedPromise = createEventPromise(); // AS
-  const sendDataResultPromise = createEventPromise(); // AS
+  const dataRequestReceivedPromise2 = createEventPromise(); // AS
+  const sendDataResultPromise2 = createEventPromise(); // AS
 
-  let ProxyCreateRequestParams;
-  let RP1createRequestParams;
+  let proxyCreateRequestParams;
+  let createRequestParams;
 
-  let ProxyRequestId;
-  let requestId;
+  let requestId1;
+  let requestId2;
   let requestMessageSalt;
   let requestMessageHash;
 
@@ -81,7 +81,7 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     namespace = db.idp1Identities[0].namespace;
     identifier = db.idp1Identities[0].identifier;
 
-    ProxyCreateRequestParams = {
+    proxyCreateRequestParams = {
       node_id: 'rp1',
       reference_id: rpReferenceId,
       callback_url: config.PROXY1_CALLBACK_URL,
@@ -107,7 +107,7 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
       request_timeout: 86400,
     };
 
-    RP1createRequestParams = {
+    createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
@@ -140,7 +140,7 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
         ProxyCreateRequestResultPromise.resolve(callbackData);
       } else if (
         callbackData.type === 'request_status' &&
-        callbackData.request_id === ProxyRequestId
+        callbackData.request_id === requestId1
       ) {
         if (callbackData.status === 'pending') {
           ProxyRequestStatusPendingPromise.resolve(callbackData);
@@ -159,49 +159,48 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     proxy1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'data_request' &&
-        callbackData.request_id === ProxyRequestId
+        callbackData.request_id === requestId1
       ) {
-        ProxyDataRequestReceivedPromise.resolve(callbackData);
+        dataRequestReceivedPromise1.resolve(callbackData);
       } else if (
         callbackData.type === 'send_data_result' &&
-        callbackData.request_id === ProxyRequestId
+        callbackData.request_id === requestId1
       ) {
-        ProxySendDataResultPromise.resolve(callbackData);
+        sendDataResultPromise1.resolve(callbackData);
       } else if (
         callbackData.type === 'data_request' &&
-        callbackData.request_id === requestId
+        callbackData.request_id === requestId2
       ) {
-        dataRequestReceivedPromise.resolve(callbackData);
+        dataRequestReceivedPromise2.resolve(callbackData);
       } else if (
         callbackData.type === 'send_data_result' &&
-        callbackData.request_id === requestId
+        callbackData.request_id === requestId2
       ) {
-        sendDataResultPromise.resolve(callbackData);
+        sendDataResultPromise2.resolve(callbackData);
       }
     });
 
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
-        callbackData.request_id === ProxyRequestId
+        callbackData.request_id === requestId1
       ) {
-        ProxyIncomingRequestPromise.resolve(callbackData);
+        incomingRequestPromise1.resolve(callbackData);
       } else if (
         callbackData.type === 'response_result' &&
-        callbackData.request_id === ProxyRequestId
+        callbackData.request_id === requestId1
       ) {
-        ProxyResponseResultPromise.resolve(callbackData);
-      }
-      if (
+        responseResultPromise1.resolve(callbackData);
+      } else if (
         callbackData.type === 'incoming_request' &&
-        callbackData.request_id === requestId
+        callbackData.request_id === requestId2
       ) {
-        incomingRequestPromise.resolve(callbackData);
+        incomingRequestPromise2.resolve(callbackData);
       } else if (
         callbackData.type === 'response_result' &&
-        callbackData.request_id === requestId
+        callbackData.request_id === requestId2
       ) {
-        responseResultPromise.resolve(callbackData);
+        responseResultPromise2.resolve(callbackData);
       }
     });
 
@@ -213,7 +212,7 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
         createRequestResultPromise.resolve(callbackData);
       } else if (
         callbackData.type === 'request_status' &&
-        callbackData.request_id === requestId
+        callbackData.request_id === requestId2
       ) {
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
@@ -250,25 +249,24 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     expect(responseBody.role).to.equal('RP');
     expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
     expect(responseBody.proxy.config).to.equal('KEY_ON_PROXY');
-    await wait(5000);
   });
 
-  it('After add RP node (rp1) to proxy1 should create a request successfully', async function() {
+  it('After add RP node (rp1) to proxy1 should it create a request successfully', async function() {
     this.timeout(10000);
     const response = await rpApi.createRequest(
       'proxy1',
-      ProxyCreateRequestParams
+      proxyCreateRequestParams
     );
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
-    ProxyRequestId = responseBody.request_id;
+    requestId1 = responseBody.request_id;
 
     const createRequestResult = await ProxyCreateRequestResultPromise.promise;
     expect(createRequestResult).to.deep.include({
-      node_id: ProxyCreateRequestParams.node_id,
+      node_id: proxyCreateRequestParams.node_id,
       success: true,
     });
   });
@@ -277,18 +275,18 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     this.timeout(10000);
     const requestStatus = await ProxyRequestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
-      node_id: ProxyCreateRequestParams.node_id,
-      request_id: ProxyRequestId,
+      node_id: proxyCreateRequestParams.node_id,
+      request_id: requestId1,
       status: 'pending',
-      mode: ProxyCreateRequestParams.mode,
-      min_idp: ProxyCreateRequestParams.min_idp,
+      mode: proxyCreateRequestParams.mode,
+      min_idp: proxyCreateRequestParams.min_idp,
       answered_idp_count: 0,
       closed: false,
       timed_out: false,
       service_list: [
         {
-          service_id: ProxyCreateRequestParams.data_request_list[0].service_id,
-          min_as: ProxyCreateRequestParams.data_request_list[0].min_as,
+          service_id: proxyCreateRequestParams.data_request_list[0].service_id,
+          min_as: proxyCreateRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
           received_data_count: 0,
         },
@@ -301,8 +299,8 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
 
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
-    const incomingRequest = await ProxyIncomingRequestPromise.promise;
-    const dataRequestListWithoutParams = ProxyCreateRequestParams.data_request_list.map(
+    const incomingRequest = await incomingRequestPromise1.promise;
+    const dataRequestListWithoutParams = proxyCreateRequestParams.data_request_list.map(
       dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
@@ -313,19 +311,19 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
 
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
-      mode: ProxyCreateRequestParams.mode,
-      request_id: ProxyRequestId,
-      namespace: ProxyCreateRequestParams.namespace,
-      identifier: ProxyCreateRequestParams.identifier,
-      request_message: ProxyCreateRequestParams.request_message,
+      mode: proxyCreateRequestParams.mode,
+      request_id: requestId1,
+      namespace: proxyCreateRequestParams.namespace,
+      identifier: proxyCreateRequestParams.identifier,
+      request_message: proxyCreateRequestParams.request_message,
       request_message_hash: hashRequestMessageForConsent(
-        ProxyCreateRequestParams.request_message,
+        proxyCreateRequestParams.request_message,
         incomingRequest.initial_salt,
-        ProxyRequestId
+        requestId1
       ),
-      requester_node_id: ProxyCreateRequestParams.node_id,
-      min_ial: ProxyCreateRequestParams.min_ial,
-      min_aal: ProxyCreateRequestParams.min_aal,
+      requester_node_id: proxyCreateRequestParams.node_id,
+      min_ial: proxyCreateRequestParams.min_ial,
+      min_aal: proxyCreateRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
@@ -346,9 +344,9 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      request_id: ProxyRequestId,
-      namespace: ProxyCreateRequestParams.namespace,
-      identifier: ProxyCreateRequestParams.identifier,
+      request_id: requestId1,
+      namespace: proxyCreateRequestParams.namespace,
+      identifier: proxyCreateRequestParams.identifier,
       ial: 2.3,
       aal: 3,
       secret: identity.accessors[0].secret,
@@ -361,11 +359,11 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     });
     expect(response.status).to.equal(202);
 
-    const responseResult = await ProxyResponseResultPromise.promise;
+    const responseResult = await responseResultPromise1.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
       reference_id: idpReferenceId,
-      request_id: ProxyRequestId,
+      request_id: requestId1,
       success: true,
     });
   });
@@ -374,17 +372,17 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     this.timeout(15000);
     const requestStatus = await ProxyRequestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
-      request_id: ProxyRequestId,
+      request_id: requestId1,
       status: 'confirmed',
-      mode: ProxyCreateRequestParams.mode,
-      min_idp: ProxyCreateRequestParams.min_idp,
+      mode: proxyCreateRequestParams.mode,
+      min_idp: proxyCreateRequestParams.min_idp,
       answered_idp_count: 1,
       closed: false,
       timed_out: false,
       service_list: [
         {
-          service_id: ProxyCreateRequestParams.data_request_list[0].service_id,
-          min_as: ProxyCreateRequestParams.data_request_list[0].min_as,
+          service_id: proxyCreateRequestParams.data_request_list[0].service_id,
+          min_as: proxyCreateRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
           received_data_count: 0,
         },
@@ -404,15 +402,15 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
 
   it('AS should receive data request', async function() {
     this.timeout(15000);
-    const dataRequest = await ProxyDataRequestReceivedPromise.promise;
+    const dataRequest = await dataRequestReceivedPromise1.promise;
     expect(dataRequest).to.deep.include({
-      request_id: ProxyRequestId,
-      mode: ProxyCreateRequestParams.mode,
+      request_id: requestId1,
+      mode: proxyCreateRequestParams.mode,
       namespace,
       identifier,
-      service_id: ProxyCreateRequestParams.data_request_list[0].service_id,
+      service_id: proxyCreateRequestParams.data_request_list[0].service_id,
       request_params:
-        ProxyCreateRequestParams.data_request_list[0].request_params,
+        proxyCreateRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
       requester_node_id: 'rp1',
@@ -426,15 +424,15 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     this.timeout(15000);
     const response = await asApi.sendData('proxy1', {
       node_id: asNodeId,
-      requestId: ProxyRequestId,
-      serviceId: ProxyCreateRequestParams.data_request_list[0].service_id,
+      requestId: requestId1,
+      serviceId: proxyCreateRequestParams.data_request_list[0].service_id,
       reference_id: asReferenceId,
       callback_url: config.PROXY1_CALLBACK_URL,
       data,
     });
     expect(response.status).to.equal(202);
 
-    const sendDataResult = await ProxySendDataResultPromise.promise;
+    const sendDataResult = await sendDataResultPromise1.promise;
     expect(sendDataResult).to.deep.include({
       node_id: asNodeId,
       reference_id: asReferenceId,
@@ -446,18 +444,18 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     this.timeout(15000);
     const requestStatus = await ProxyRequestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
-      node_id: ProxyCreateRequestParams.node_id,
-      request_id: ProxyRequestId,
+      node_id: proxyCreateRequestParams.node_id,
+      request_id: requestId1,
       status: 'completed',
-      mode: ProxyCreateRequestParams.mode,
-      min_idp: ProxyCreateRequestParams.min_idp,
+      mode: proxyCreateRequestParams.mode,
+      min_idp: proxyCreateRequestParams.min_idp,
       answered_idp_count: 1,
       closed: false,
       timed_out: false,
       service_list: [
         {
-          service_id: ProxyCreateRequestParams.data_request_list[0].service_id,
-          min_as: ProxyCreateRequestParams.data_request_list[0].min_as,
+          service_id: proxyCreateRequestParams.data_request_list[0].service_id,
+          min_as: proxyCreateRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
           received_data_count: 1,
         },
@@ -479,18 +477,18 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     this.timeout(10000);
     const requestStatus = await ProxyRequestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
-      node_id: ProxyCreateRequestParams.node_id,
-      request_id: ProxyRequestId,
+      node_id: proxyCreateRequestParams.node_id,
+      request_id: requestId1,
       status: 'completed',
-      mode: ProxyCreateRequestParams.mode,
-      min_idp: ProxyCreateRequestParams.min_idp,
+      mode: proxyCreateRequestParams.mode,
+      min_idp: proxyCreateRequestParams.min_idp,
       answered_idp_count: 1,
       closed: true,
       timed_out: false,
       service_list: [
         {
-          service_id: ProxyCreateRequestParams.data_request_list[0].service_id,
-          min_as: ProxyCreateRequestParams.data_request_list[0].min_as,
+          service_id: proxyCreateRequestParams.data_request_list[0].service_id,
+          min_as: proxyCreateRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
           received_data_count: 1,
         },
@@ -519,9 +517,7 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
 
   it('RP node (rp1) should remove from proxy1 successfully', async function() {
     this.timeout(10000);
-    const response = await commonApi.getNodeInfo('rp1', {
-      node_id: 'rp1',
-    });
+    const response = await commonApi.getNodeInfo('rp1');
     const responseBody = await response.json();
     expect(responseBody.role).to.equal('RP');
     expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
@@ -551,16 +547,16 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     expect(responseBody.mq).to.deep.equal(originalRPMqAddresses);
   });
 
-  it('After remove RP node (rp1) from proxy1 should create a request successfully', async function() {
+  it('After remove RP node (rp1) from proxy1 it should create a request successfully', async function() {
     this.timeout(10000);
 
-    const response = await rpApi.createRequest('rp1', RP1createRequestParams);
+    const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
-    requestId = responseBody.request_id;
+    requestId2 = responseBody.request_id;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult).to.deep.include({
@@ -573,17 +569,17 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     this.timeout(10000);
     const requestStatus = await requestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
-      request_id: requestId,
+      request_id: requestId2,
       status: 'pending',
-      mode: RP1createRequestParams.mode,
-      min_idp: RP1createRequestParams.min_idp,
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
       answered_idp_count: 0,
       closed: false,
       timed_out: false,
       service_list: [
         {
-          service_id: ProxyCreateRequestParams.data_request_list[0].service_id,
-          min_as: ProxyCreateRequestParams.data_request_list[0].min_as,
+          service_id: proxyCreateRequestParams.data_request_list[0].service_id,
+          min_as: proxyCreateRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
           received_data_count: 0,
         },
@@ -596,8 +592,8 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
 
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
-    const incomingRequest = await incomingRequestPromise.promise;
-    const dataRequestListWithoutParams = ProxyCreateRequestParams.data_request_list.map(
+    const incomingRequest = await incomingRequestPromise2.promise;
+    const dataRequestListWithoutParams = proxyCreateRequestParams.data_request_list.map(
       dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
@@ -607,19 +603,19 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
-      mode: RP1createRequestParams.mode,
-      request_id: requestId,
-      namespace: RP1createRequestParams.namespace,
-      identifier: RP1createRequestParams.identifier,
-      request_message: RP1createRequestParams.request_message,
+      mode: createRequestParams.mode,
+      request_id: requestId2,
+      namespace: createRequestParams.namespace,
+      identifier: createRequestParams.identifier,
+      request_message: createRequestParams.request_message,
       request_message_hash: hashRequestMessageForConsent(
-        RP1createRequestParams.request_message,
+        createRequestParams.request_message,
         incomingRequest.initial_salt,
-        requestId
+        requestId2
       ),
       requester_node_id: 'rp1',
-      min_ial: RP1createRequestParams.min_ial,
-      min_aal: RP1createRequestParams.min_aal,
+      min_ial: createRequestParams.min_ial,
+      min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
@@ -640,9 +636,9 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      namespace: RP1createRequestParams.namespace,
-      identifier: RP1createRequestParams.identifier,
+      request_id: requestId2,
+      namespace: createRequestParams.namespace,
+      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
       secret: identity.accessors[0].secret,
@@ -655,11 +651,11 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     });
     expect(response.status).to.equal(202);
 
-    const responseResult = await responseResultPromise.promise;
+    const responseResult = await responseResultPromise2.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
       reference_id: idpReferenceId,
-      request_id: requestId,
+      request_id: requestId2,
       success: true,
     });
   });
@@ -668,17 +664,17 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     this.timeout(15000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
-      request_id: requestId,
+      request_id: requestId2,
       status: 'confirmed',
-      mode: RP1createRequestParams.mode,
-      min_idp: RP1createRequestParams.min_idp,
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
       answered_idp_count: 1,
       closed: false,
       timed_out: false,
       service_list: [
         {
-          service_id: RP1createRequestParams.data_request_list[0].service_id,
-          min_as: RP1createRequestParams.data_request_list[0].min_as,
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
           received_data_count: 0,
         },
@@ -698,15 +694,14 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
 
   it('AS should receive data request', async function() {
     this.timeout(15000);
-    const dataRequest = await dataRequestReceivedPromise.promise;
+    const dataRequest = await dataRequestReceivedPromise2.promise;
     expect(dataRequest).to.deep.include({
-      request_id: requestId,
-      mode: RP1createRequestParams.mode,
+      request_id: requestId2,
+      mode: createRequestParams.mode,
       namespace,
       identifier,
-      service_id: RP1createRequestParams.data_request_list[0].service_id,
-      request_params:
-        RP1createRequestParams.data_request_list[0].request_params,
+      service_id: createRequestParams.data_request_list[0].service_id,
+      request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
       requester_node_id: 'rp1',
@@ -720,19 +715,19 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     this.timeout(15000);
     const response = await asApi.sendData('proxy1', {
       node_id: asNodeId,
-      requestId: requestId,
-      serviceId: RP1createRequestParams.data_request_list[0].service_id,
+      requestId: requestId2,
+      serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asReferenceId,
       callback_url: config.PROXY1_CALLBACK_URL,
       data,
     });
     expect(response.status).to.equal(202);
 
-    const sendDataResult = await sendDataResultPromise.promise;
+    const sendDataResult = await sendDataResultPromise2.promise;
     expect(sendDataResult).to.deep.include({
       node_id: asNodeId,
       reference_id: asReferenceId,
-      request_id: requestId,
+      request_id: requestId2,
       success: true,
     });
   });
@@ -742,17 +737,17 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       node_id: 'rp1',
-      request_id: requestId,
+      request_id: requestId2,
       status: 'completed',
-      mode: RP1createRequestParams.mode,
-      min_idp: RP1createRequestParams.min_idp,
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
       answered_idp_count: 1,
       closed: false,
       timed_out: false,
       service_list: [
         {
-          service_id: RP1createRequestParams.data_request_list[0].service_id,
-          min_as: RP1createRequestParams.data_request_list[0].min_as,
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
           received_data_count: 1,
         },
@@ -775,17 +770,17 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       node_id: 'rp1',
-      request_id: requestId,
+      request_id: requestId2,
       status: 'completed',
-      mode: RP1createRequestParams.mode,
-      min_idp: RP1createRequestParams.min_idp,
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
       answered_idp_count: 1,
       closed: true,
       timed_out: false,
       service_list: [
         {
-          service_id: RP1createRequestParams.data_request_list[0].service_id,
-          min_as: RP1createRequestParams.data_request_list[0].min_as,
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
           received_data_count: 1,
         },

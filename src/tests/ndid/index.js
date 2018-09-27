@@ -22,7 +22,8 @@ describe('NDID API tests (proxy)', function() {
       this.skip();
     }
   });
-  require('./proxy/add_and_remove_node_from_proxy_node');
+  require('./proxy/add_and_remove_RP_node_from_proxy_node');
+  require('./proxy/add_and_remove_IdP_node_from_proxy_node');
   require('./proxy/update_node_proxy_node');
   require('./proxy/error_response');
 });
