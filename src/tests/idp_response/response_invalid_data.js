@@ -169,7 +169,7 @@ describe('IdP response invalid ial test', function() {
   });
 });
 
-describe('IdP response invalid secret test', function() {
+/*describe('IdP response invalid secret test', function() {
   let namespace;
   let identifier;
 
@@ -332,4 +332,4 @@ describe('IdP response invalid secret test', function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
   });
-});
+});*/
