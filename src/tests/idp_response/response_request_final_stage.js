@@ -18,7 +18,7 @@ import {
   wait,
 } from '../../utils';
 import * as config from '../../config';
-import { as2Available, idp2Available } from '..';
+import { idp2Available } from '..';
 
 describe('IdP response request already confirmed test', function() {
   let namespace;
@@ -63,14 +63,6 @@ describe('IdP response request already confirmed test', function() {
         {
           service_id: 'bank_statement',
           as_id_list: ['as1'],
-          min_as: 1,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
-        },
-        {
-          service_id: 'customer_info',
-          as_id_list: as2Available ? ['as2'] : ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
             format: 'pdf',
@@ -251,14 +243,6 @@ describe('IdP response request already closed test', function() {
         {
           service_id: 'bank_statement',
           as_id_list: ['as1'],
-          min_as: 1,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
-        },
-        {
-          service_id: 'customer_info',
-          as_id_list: as2Available ? ['as2'] : ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
             format: 'pdf',
@@ -496,14 +480,6 @@ describe('IdP response request already timed out test', function() {
         {
           service_id: 'bank_statement',
           as_id_list: ['as1'],
-          min_as: 1,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
-        },
-        {
-          service_id: 'customer_info',
-          as_id_list: as2Available ? ['as2'] : ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
             format: 'pdf',
