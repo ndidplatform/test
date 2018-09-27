@@ -5,6 +5,7 @@ import * as commonApi from '../../../api/v2/common';
 import * as rpApi from '../../../api/v2/rp';
 import * as idpApi from '../../../api/v2/idp';
 import * as asApi from '../../../api/v2/as';
+import * as serverCommonApi from '../../../api/common';
 import { wait } from '../../../utils';
 
 import {
@@ -161,6 +162,13 @@ describe('NDID update RP node to other proxy node', function() {
     expect(responseBody.proxy.config).to.equal('KEY_ON_PROXY');
   });
 
+  if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
+    it('Re-initialize node keys on proxy2', async function() {
+      const response = await serverCommonApi.reinitNodeKeys('proxy2');
+      expect(response.status).to.equal(204);
+    });
+  }
+
   it('After update RP node (proxy1_rp4) to proxy2 should create a request successfully', async function() {
     this.timeout(10000);
     const response = await rpApi.createRequest('proxy2', createRequestParams);
@@ -228,7 +236,7 @@ describe('NDID update RP node to other proxy node', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -431,6 +439,13 @@ describe('NDID update IdP node to other proxy node', function() {
     expect(responseBody.proxy.config).to.equal('KEY_ON_PROXY');
   });
 
+  if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
+    it('Re-initialize node keys on proxy2', async function() {
+      const response = await serverCommonApi.reinitNodeKeys('proxy2');
+      expect(response.status).to.equal(204);
+    });
+  }
+
   it('RP should create a request successfully', async function() {
     this.timeout(10000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
@@ -497,7 +512,7 @@ describe('NDID update IdP node to other proxy node', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.proxy1Idp4Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -755,6 +770,13 @@ describe('NDID update AS node to other proxy node', function() {
     expect(responseBody.proxy.config).to.equal('KEY_ON_PROXY');
   });
 
+  if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
+    it('Re-initialize node keys on proxy2', async function() {
+      const response = await serverCommonApi.reinitNodeKeys('proxy2');
+      expect(response.status).to.equal(204);
+    });
+  }
+
   it('AS node (proxy1_as4) should add offered service (bank_statement) successfully', async function() {
     this.timeout(10000);
     const response = await asApi.addOrUpdateService('proxy2', {
@@ -836,7 +858,7 @@ describe('NDID update AS node to other proxy node', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -871,7 +893,7 @@ describe('NDID update AS node to other proxy node', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
