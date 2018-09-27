@@ -7,5 +7,5 @@ export function getInfo(nodeId) {
 
 export function reinitNodeKeys(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpGet(`${apiBaseUrl}/reinit_node_key`);
+  return httpGet(`${apiBaseUrl}/reinit_node_keys`);
 }
