@@ -70,6 +70,10 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
 
   before(async function() {
     this.timeout(10000);
+    if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }

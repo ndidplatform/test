@@ -69,6 +69,10 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
   });
 
   before(async function() {
+    if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
     this.timeout(10000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
