@@ -56,12 +56,12 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   const requestStatusUpdates = [];
 
   before(function() {
-    if (db.idp1Identities[0] == null || db.idp2Identities[0] == null) {
-      throw new Error('No created idp1Identity to use');
-    }
     if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
+    }
+    if (db.idp1Identities[0] == null || db.idp2Identities[0] == null) {
+      throw new Error('No created idp1Identity to use');
     }
 
     namespace = db.idp1Identities[0].namespace;
