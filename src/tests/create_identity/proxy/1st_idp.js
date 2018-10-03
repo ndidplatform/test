@@ -106,6 +106,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       accessor_id: accessorId,
       success: true,
     });
+    expect(createIdentityRequestResult.creation_block_height).to.be.a('number');
   });
 
   it('should receive accessor sign callback with correct data', async function() {

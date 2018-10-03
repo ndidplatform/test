@@ -367,6 +367,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
   });

@@ -118,6 +118,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
       accessor_id: accessorId,
       success: true,
     });
+    expect(createIdentityRequestResult.creation_block_height).to.be.a('number');
   });
 
   it('should receive accessor sign callback with correct data', async function() {
@@ -160,6 +161,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
       data_request_list: [],
     });
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('number');
     expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;

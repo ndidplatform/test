@@ -152,6 +152,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
+    expect(createRequestResult.creation_block_height).to.be.a('number');
   });
 
   it('RP should receive pending request status', async function() {
@@ -211,6 +212,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('number');
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;

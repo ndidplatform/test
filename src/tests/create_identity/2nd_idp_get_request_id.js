@@ -151,6 +151,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
       accessor_id: accessorId,
       success: true,
     });
+    expect(createIdentityRequestResult.creation_block_height).to.be.a('number');
   });
 
   it('1st IdP should receive accessor sign callback with correct data', async function() {
@@ -296,6 +297,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
       )
     );
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('number');
     expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;

@@ -57,12 +57,12 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   const requestStatusUpdates = [];
 
   before(function() {
-    if (db.idp1Identities[0] == null || db.idp2Identities[0] == null) {
-      throw new Error('No created idp1Identity to use');
-    }
     if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
+    }
+    if (db.idp1Identities[0] == null || db.idp2Identities[0] == null) {
+      throw new Error('No created idp1Identity to use');
     }
 
     namespace = db.idp1Identities[0].namespace;
@@ -181,6 +181,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
+    expect(createRequestResult.creation_block_height).to.be.a('number');
   });
 
   it('RP should receive pending request status', async function() {
@@ -242,6 +243,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(idp1IncomingRequest.request_message_salt).to.be.a('string').that.is
       .not.empty;
     expect(idp1IncomingRequest.creation_time).to.be.a('number');
+    expect(idp1IncomingRequest.creation_block_height).to.be.a('number');
 
     expect(idp2IncomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -263,6 +265,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(idp2IncomingRequest.request_message_salt).to.be.a('string').that.is
       .not.empty;
     expect(idp2IncomingRequest.creation_time).to.be.a('number');
+    expect(idp2IncomingRequest.creation_block_height).to.be.a('number');
 
     requestMessageSalt = idp1IncomingRequest.request_message_salt;
     requestMessageHash = idp1IncomingRequest.request_message_hash;
