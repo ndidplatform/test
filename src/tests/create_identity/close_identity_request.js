@@ -298,6 +298,7 @@ describe('2nd IdP close identity request test', function() {
       )
     );
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('number');
     expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
@@ -499,6 +500,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       accessor_id: accessorId,
       success: true,
     });
+    expect(createIdentityRequestResult.creation_block_height).to.be.a('number');
   });
 
   it('2nd IdP should receive accessor sign callback with correct data', async function() {
@@ -562,7 +564,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       )
     );
     expect(incomingRequest.creation_time).to.be.a('number');
-
+    expect(incomingRequest.creation_block_height).to.be.a('number');
     requestMessageHash = incomingRequest.request_message_hash;
   });
 

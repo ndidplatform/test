@@ -213,6 +213,7 @@ describe('1 IdP, 1 AS, mode 3, AS (proxy1_as4) behind proxy', function() {
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('number');
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;

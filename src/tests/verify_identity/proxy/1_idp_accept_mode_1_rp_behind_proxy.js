@@ -109,6 +109,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy1_rp4) behind proxy', function
       node_id: createRequestParams.node_id,
       success: true,
     });
+    expect(createRequestResult.creation_block_height).to.be.a('number');
   });
 
   it('RP should receive pending request status', async function() {
@@ -153,6 +154,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy1_rp4) behind proxy', function
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('number');
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;

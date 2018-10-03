@@ -173,6 +173,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
       )
     );
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
   });
@@ -429,6 +430,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('number');
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;
