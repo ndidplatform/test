@@ -386,37 +386,37 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
     });
   });
 
-  it('RP should receive request status with signed data count = 1', async function() {
-    this.timeout(15000);
-    const requestStatus = await requestStatusSignedDataPromise1.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'confirmed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
-        },
-      ],
-    });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
-  });
+  // it('RP should receive request status with signed data count = 1', async function() {
+  //   this.timeout(15000);
+  //   const requestStatus = await requestStatusSignedDataPromise1.promise;
+  //   expect(requestStatus).to.deep.include({
+  //     request_id: requestId,
+  //     status: 'confirmed',
+  //     mode: createRequestParams.mode,
+  //     min_idp: createRequestParams.min_idp,
+  //     answered_idp_count: 1,
+  //     closed: false,
+  //     timed_out: false,
+  //     service_list: [
+  //       {
+  //         service_id: createRequestParams.data_request_list[0].service_id,
+  //         min_as: createRequestParams.data_request_list[0].min_as,
+  //         signed_data_count: 1,
+  //         received_data_count: 0,
+  //       },
+  //     ],
+  //     response_valid_list: [
+  //       {
+  //         idp_id: 'idp1',
+  //         valid_signature: true,
+  //         valid_proof: true,
+  //         valid_ial: true,
+  //       },
+  //     ],
+  //   });
+  //   expect(requestStatus).to.have.property('block_height');
+  //   expect(requestStatus.block_height).is.a('number');
+  // });
 
   it('RP should receive request status with signed data count = 2', async function() {
     this.timeout(15000);
