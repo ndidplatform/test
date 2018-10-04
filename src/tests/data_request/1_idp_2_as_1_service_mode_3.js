@@ -55,7 +55,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
   let requestMessageSalt;
   let requestMessageHash;
 
-  const requestStatusUpdates = [];
+  // const requestStatusUpdates = [];
 
   before(function() {
     if (db.idp1Identities[0] == null) {
@@ -104,7 +104,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
-        requestStatusUpdates.push(callbackData);
+        // requestStatusUpdates.push(callbackData);
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
@@ -592,9 +592,9 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
     }
   });
 
-  it('RP should receive 7 request status updates', function() {
-    expect(requestStatusUpdates).to.have.lengthOf(7);
-  });
+  // it('RP should receive 7 request status updates', function() {
+  //   expect(requestStatusUpdates).to.have.lengthOf(7);
+  // });
 
   it('RP should have and able to get saved private messages', async function() {
     const response = await commonApi.getPrivateMessages('rp1', {
