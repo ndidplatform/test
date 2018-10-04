@@ -7,12 +7,11 @@ describe('NDID disable and enable tests', function() {
       this.skip();
     }
   });
-  
+  require('./disable_enable_node');
   require('./disable_namespace');
   require('./enable_namespace');
   require('./disable_service');
   require('./enable_service');
   require('./disable_service_destination');
   require('./enable_service_destination');
-  
 });
