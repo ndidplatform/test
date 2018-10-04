@@ -81,14 +81,14 @@ describe('RP create request errors', function() {
             format: 'pdf',
           }),
         },
-        {
-          service_id: 'customer_info',
-          as_id_list: ['as3'],
-          min_as: 1,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
-        },
+        // {
+        //   service_id: 'customer_info',
+        //   as_id_list: ['as3'],
+        //   min_as: 1,
+        //   request_params: JSON.stringify({
+        //     format: 'pdf',
+        //   }),
+        // },
       ],
       request_message: 'Test request message (error create request) (mode 3)',
       min_ial: 1.1,
