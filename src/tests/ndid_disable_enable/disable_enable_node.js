@@ -1234,7 +1234,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
   });
 
   before(async function() {
-    if (!ndidAvailable || !as1Available) {
+    if (!ndidAvailable || !as1Available || !proxy1Available) {
       this.skip();
     }
     if (db.idp1Identities[0] == null) {
@@ -1243,7 +1243,6 @@ describe('NDID disable proxy node and enable proxy node test', function() {
 
     namespace = db.idp1Identities[0].namespace;
     identifier = db.idp1Identities[0].identifier;
-
     createRequestParams = {
       node_id: 'proxy1_rp4',
       reference_id: rpReferenceId,
