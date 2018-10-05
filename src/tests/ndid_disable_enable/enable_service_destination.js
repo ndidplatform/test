@@ -33,6 +33,9 @@ describe('NDID enable service destination test', function() {
   const responseResultPromise = createEventPromise(); // IDP
   const dataRequestReceivedPromise = createEventPromise(); // AS
   const sendDataResultPromise = createEventPromise(); // AS
+  const requestStatusSignedDataPromise = createEventPromise(); // RP
+  const requestStatusCompletedPromise = createEventPromise(); // RP
+  const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
   let requestId;
@@ -73,6 +76,25 @@ describe('NDID enable service destination test', function() {
         callbackData.reference_id === rpReferenceId
       ) {
         createRequestResultPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'request_status' &&
+        callbackData.request_id === requestId
+      ) {
+        if (
+          callbackData.status === 'confirmed' &&
+          callbackData.service_list[0].signed_data_count === 1
+        ) {
+          requestStatusSignedDataPromise.resolve(callbackData);
+        } else if (
+          callbackData.status === 'completed' &&
+          callbackData.service_list[0].received_data_count === 1
+        ) {
+          if (callbackData.closed) {
+            requestClosedPromise.resolve(callbackData);
+          } else {
+            requestStatusCompletedPromise.resolve(callbackData);
+          }
+        }
       }
     });
 
@@ -147,7 +169,7 @@ describe('NDID enable service destination test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -214,7 +236,7 @@ describe('NDID enable service destination test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id:'rp1'
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -228,7 +250,7 @@ describe('NDID enable service destination test', function() {
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asServiceReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data: 'Test service is enabled destination by NDID ',
+      data: 'Test service is enabled destination by NDID',
     });
     expect(response.status).to.equal(202);
 
@@ -238,6 +260,120 @@ describe('NDID enable service destination test', function() {
       request_id: requestId,
       success: true,
     });
+  });
+
+  it('RP should receive request status with signed data count = 1', async function() {
+    this.timeout(15000);
+    const requestStatus = await requestStatusSignedDataPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'confirmed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 0,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('RP should receive completed request status with received data count = 1', async function() {
+    this.timeout(15000);
+    const requestStatus = await requestStatusCompletedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 1,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('RP should receive request closed status', async function() {
+    this.timeout(10000);
+    const requestStatus = await requestClosedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: true,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 1,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('RP should get the correct data received from AS', async function() {
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    const dataArr = await response.json();
+    expect(response.status).to.equal(200);
+
+    expect(dataArr).to.have.lengthOf(1);
+    expect(dataArr[0]).to.deep.include({
+      source_node_id: 'as1',
+      service_id: createRequestParams.data_request_list[0].service_id,
+      signature_sign_method: 'RSA-SHA256',
+      data: 'Test service is enabled destination by NDID',
+    });
+    expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
   });
 
   after(async function() {
