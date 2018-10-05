@@ -6,6 +6,11 @@ export function getRelevantIdpNodesBySid(nodeId, data) {
   return httpGet(`${apiBaseUrl}/utility/idp/${namespace}/${identifier}`);
 }
 
+export function getIdP(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  return httpGet(`${apiBaseUrl}/utility/idp`);
+}
+
 export function getRequest(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   const { requestId } = data;
