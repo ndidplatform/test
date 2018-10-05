@@ -6,4 +6,5 @@ describe('(RP) Create request tests', function() {
   require('./duplicate_reference_id');
   require('./get_request_id');
   require('./error_response');
+  require('./unqualified_to_response');
 });
