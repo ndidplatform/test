@@ -385,7 +385,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
         },
       ],
       request_message:
-        'Test request message (error callback response) (mode 3)',
+        'Test request message (error response) (mode 3)',
       min_ial: 2.3,
       min_aal: 3,
       min_idp: 1,
@@ -413,7 +413,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it("should get an error callback response when making a response with ial less than request's min_ial", async function() {
+  it("should get an error response when making a response with ial less than request's min_ial", async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
       identity =>
@@ -442,7 +442,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
     expect(responseBodyErrorCallback.error.code).to.equal(20055);
   });
 
-  it('After IdP get an error callback response, IdP should making a response again successfully', async function() {
+  it('After IdP get an error response, IdP should making a response again successfully', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
       identity =>
@@ -538,7 +538,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
         },
       ],
       request_message:
-        'Test request message (error callback response) (mode 3)',
+        'Test request message (error response) (mode 3)',
       min_ial: 2.3,
       min_aal: 3,
       min_idp: 1,
@@ -566,7 +566,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it("should get an error callback response when making a response with aal less than request's min_aal", async function() {
+  it("should get an error response when making a response with aal less than request's min_aal", async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
       identity =>
@@ -595,7 +595,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
     expect(responseBodyErrorCallback.error.code).to.equal(20056);
   });
 
-  it('After IdP get an error callback response, IdP should making a response again successfully', async function() {
+  it('After IdP get an error response, IdP should making a response again successfully', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
       identity =>
