@@ -5,7 +5,7 @@ import * as rpApi from '../../api/v2/rp';
 import * as ndidApi from '../../api/v2/ndid';
 import * as asApi from '../../api/v2/as';
 import * as commonApi from '../../api/v2/common';
-import { ndidAvailable } from '..';
+import { ndidAvailable, as2Available } from '..';
 import { generateReferenceId, createEventPromise, wait } from '../../utils';
 import { as1EventEmitter } from '../../callback_server';
 import * as config from '../../config';
@@ -147,6 +147,12 @@ describe('RP create request errors (unqualified to response)', function() {
     const addOrUpdateServiceBankStatementResultPromise = createEventPromise();
 
     before(function() {
+      this.timeout(5000);
+      if (!as2Available) {
+        this.test.parent.pending = true;
+        this.skip();
+      }
+
       as1EventEmitter.on('callback', function(callbackData) {
         if (callbackData.type === 'add_or_update_service_result') {
           if (callbackData.reference_id === bankStatementReferenceId) {
@@ -232,6 +238,12 @@ describe('RP create request errors (unqualified to response)', function() {
     const addOrUpdateServiceBankStatementResultPromise = createEventPromise();
 
     before(function() {
+      this.timeout(5000);
+      if (!as2Available) {
+        this.test.parent.pending = true;
+        this.skip();
+      }
+
       as1EventEmitter.on('callback', function(callbackData) {
         if (callbackData.type === 'add_or_update_service_result') {
           if (callbackData.reference_id === bankStatementReferenceId) {
