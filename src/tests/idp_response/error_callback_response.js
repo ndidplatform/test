@@ -12,6 +12,7 @@ import {
   hashRequestMessageForConsent,
   wait,
 } from '../../utils';
+import { ndidAvailable } from '..';
 import * as config from '../../config';
 
 describe('IdP error callback response tests', function() {
@@ -34,6 +35,11 @@ describe('IdP error callback response tests', function() {
 
     before(async function() {
       this.timeout(30000);
+
+      if (!ndidAvailable) {
+        this.test.parent.pending = true;
+        this.skip();
+      }
 
       rpEventEmitter.on('callback', function(callbackData) {
         if (
@@ -124,7 +130,7 @@ describe('IdP error callback response tests', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -200,6 +206,7 @@ describe('IdP error callback response tests', function() {
       await wait(3000);
     });
   });
+
   describe("IdP response aal is greater than IdP node's max_aal (mode 1)", function() {
     let namespace = 'citizen_id';
     let identifier = uuidv4();
@@ -219,6 +226,11 @@ describe('IdP error callback response tests', function() {
 
     before(async function() {
       this.timeout(30000);
+
+      if (!ndidAvailable) {
+        this.test.parent.pending = true;
+        this.skip();
+      }
 
       rpEventEmitter.on('callback', function(callbackData) {
         if (
@@ -309,7 +321,7 @@ describe('IdP error callback response tests', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
