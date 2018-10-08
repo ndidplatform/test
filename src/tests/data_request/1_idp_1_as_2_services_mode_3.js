@@ -354,10 +354,13 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
       max_ial: 2.3,
       max_aal: 3,
       requester_node_id: 'rp1',
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
       .empty;
+    expect(dataRequest.creation_time).to.be.a('number');
+    expect(dataRequest.creation_block_height).to.be.a('number');
   });
 
   it('AS should receive data request for "customer_info" service', async function() {
@@ -372,11 +375,14 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
       request_params: createRequestParams.data_request_list[1].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id:'rp1'
+      requester_node_id: 'rp1',
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
       .empty;
+    expect(dataRequest.creation_time).to.be.a('number');
+    expect(dataRequest.creation_block_height).to.be.a('number');
   });
 
   it('AS should send data successfully (bank_statement)', async function() {

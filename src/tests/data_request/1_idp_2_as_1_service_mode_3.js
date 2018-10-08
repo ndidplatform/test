@@ -221,7 +221,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -257,7 +257,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -334,10 +334,13 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
       max_ial: 2.3,
       max_aal: 3,
       requester_node_id: 'rp1',
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(as1DataRequest.response_signature_list).to.have.lengthOf(1);
     expect(as1DataRequest.response_signature_list[0]).to.be.a('string').that.is
       .not.empty;
+    expect(as1DataRequest.creation_time).to.be.a('number');
+    expect(as1DataRequest.creation_block_height).to.be.a('number');
 
     expect(as2DataRequest).to.deep.include({
       request_id: requestId,
@@ -349,10 +352,13 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
       max_ial: 2.3,
       max_aal: 3,
       requester_node_id: 'rp1',
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(as2DataRequest.response_signature_list).to.have.lengthOf(1);
     expect(as2DataRequest.response_signature_list[0]).to.be.a('string').that.is
       .not.empty;
+    expect(as2DataRequest.creation_time).to.be.a('number');
+    expect(as2DataRequest.creation_block_height).to.be.a('number');
   });
 
   it('Both AS (as1 and as2) should send data successfully', async function() {
