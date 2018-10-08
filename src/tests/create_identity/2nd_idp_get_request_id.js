@@ -124,7 +124,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('1st IdP should create identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -155,7 +155,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('1st IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const sid = `${namespace}:${identifier}`;
     const sid_hash = hash(sid);
 
@@ -175,7 +175,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('1st IdP Identity should be created successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
@@ -209,7 +209,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('2nd IdP should create identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp2', {
       reference_id: referenceIdIdp2,
       callback_url: config.IDP2_CALLBACK_URL,
@@ -250,7 +250,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('2nd IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const sid = `${namespace}:${identifier}`;
     const sid_hash = hash(sid);
 
@@ -270,7 +270,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('1st IdP should receive create identity request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 3,
@@ -304,7 +304,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('2nd IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.getRequestIdByReferenceId('idp2', {
       reference_id: referenceIdIdp2,
     });
@@ -317,7 +317,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('2nd IdP should close identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.closeIdentityRequest('idp2', {
       request_id: requestId2ndIdP,
       callback_url: config.IDP2_CALLBACK_URL,
@@ -347,7 +347,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.getRequestIdByReferenceId('idp2', {
       reference_id: referenceIdIdp2,
     });

@@ -31,7 +31,7 @@ describe('IdP response invalid ial test', function() {
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -94,7 +94,7 @@ describe('IdP response invalid ial test', function() {
   });
 
   it("IdP should create response (accept) with invalid ial (ial less than identity's ial) successfully", async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -127,7 +127,7 @@ describe('IdP response invalid ial test', function() {
   });
 
   it('RP should receive confirmed request status with valid_ial = false', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -186,7 +186,7 @@ describe('IdP response invalid ial test', function() {
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     if (!idp2Available) {
       this.skip();
     }
@@ -253,7 +253,7 @@ describe('IdP response invalid ial test', function() {
   });
 
   it('IdP should create response (accept) with invalid secret successfully', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -292,7 +292,7 @@ describe('IdP response invalid ial test', function() {
   });
 
   it('RP should receive confirmed request status with valid_proof = false', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,

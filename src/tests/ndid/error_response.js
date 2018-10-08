@@ -11,7 +11,7 @@ describe('NDID response errors', function() {
   });
 
   it('NDID should get an error when register namespace with reserved word (requests)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.registerNamespace('ndid1', {
       namespace: 'requests',
       description: 'test register namespace with reserved word (requests)',
@@ -25,7 +25,7 @@ describe('NDID response errors', function() {
   });
 
   it('NDID should get an error when register namespace with reserved word (housekeeping)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.registerNamespace('ndid1', {
       namespace: 'housekeeping',
       description: 'test register namespace with reserved word (housekeeping)',
@@ -39,7 +39,7 @@ describe('NDID response errors', function() {
   });
 
   it('NDID should get an error when set node token with not existing node id', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.setNodeToken('ndid1', {
       node_id: 'notExitingNodeId',
       amount: 100,
@@ -52,7 +52,7 @@ describe('NDID response errors', function() {
   });
 
   it('NDID should get an error when set node token with negative number', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.setNodeToken('ndid1', {
       node_id: 'rp1',
@@ -66,7 +66,7 @@ describe('NDID response errors', function() {
   });
 
   it('NDID should get an error when add node token with negative number', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.addNodeToken('ndid1', {
       node_id: 'rp1',
       amount: -1000,
@@ -79,7 +79,7 @@ describe('NDID response errors', function() {
   });
 
   it('NDID should get an error when reduce node token with negative number', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.reduceNodeToken('ndid1', {
       node_id: 'rp1',
       amount: -1000,
@@ -92,7 +92,7 @@ describe('NDID response errors', function() {
   });
 
   it('NDID should get an error when reduce node token greater than existing token (negative token value)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.reduceNodeToken('ndid1', {
       node_id: 'rp1',
       amount: 9999999,

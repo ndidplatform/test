@@ -19,7 +19,7 @@ describe('Set Add Reduce tokens tests', function() {
   });
 
   it('NDID should set node token successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.setNodeToken('ndid1', {
       node_id: 'rp1',
@@ -31,7 +31,7 @@ describe('Set Add Reduce tokens tests', function() {
   });
 
   it('Node token should be set successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await commonApi.getToken('rp1');
     const responseBody = await response.json();
@@ -41,7 +41,7 @@ describe('Set Add Reduce tokens tests', function() {
   });
 
   it('NDID should add node token successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.addNodeToken('ndid1', {
       node_id: 'rp1',
@@ -53,7 +53,7 @@ describe('Set Add Reduce tokens tests', function() {
   });
 
   it('Node token should be added successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await commonApi.getToken('rp1');
     const responseBody = await response.json();
@@ -63,7 +63,7 @@ describe('Set Add Reduce tokens tests', function() {
   });
 
   it('NDID should reduce node token successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.reduceNodeToken('ndid1', {
       node_id: 'rp1',
@@ -75,7 +75,7 @@ describe('Set Add Reduce tokens tests', function() {
   });
 
   it('Node token should be reduced successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await commonApi.getToken('rp1');
     const responseBody = await response.json();
@@ -85,7 +85,7 @@ describe('Set Add Reduce tokens tests', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     await ndidApi.setNodeToken('ndid1', {
       node_id: 'rp1',
       amount: nodeTokenBeforeTest,

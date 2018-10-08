@@ -34,7 +34,7 @@ describe('IdP error callback response tests', function() {
     let requestMessageSalt;
 
     before(async function() {
-      this.timeout(30000);
+      this.timeout(600000);
 
       if (!ndidAvailable) {
         this.test.parent.pending = true;
@@ -66,7 +66,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it("NDID should update IDP's max ial (2.3) successfully", async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await ndidApi.updateNode('ndid1', {
         node_id: 'idp1',
         max_ial: 2.3,
@@ -76,7 +76,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it("IDP's max ial should be updated successfully", async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await commonApi.getNodeInfo('idp1');
       const responseBody = await response.json();
       expect(responseBody.max_ial).to.equal(2.3);
@@ -85,7 +85,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it('RP should create a request successfully', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
 
       createRequestParams = {
         reference_id: rpReferenceId,
@@ -126,7 +126,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it('IdP should receive incoming request callback', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -165,7 +165,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it("IdP should get an error when create response (accept) with ial (3) is greater than IdP noded's max_ial", async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
@@ -189,7 +189,7 @@ describe('IdP error callback response tests', function() {
     });
 
     after(async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       await Promise.all([
         ndidApi.updateNode('ndid1', {
           node_id: 'idp1',
@@ -225,7 +225,7 @@ describe('IdP error callback response tests', function() {
     let requestMessageSalt;
 
     before(async function() {
-      this.timeout(30000);
+      this.timeout(600000);
 
       if (!ndidAvailable) {
         this.test.parent.pending = true;
@@ -257,7 +257,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it("NDID should update IDP's max aal (2.2) successfully", async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await ndidApi.updateNode('ndid1', {
         node_id: 'idp1',
         max_aal: 2.2,
@@ -267,7 +267,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it("IDP's max aal should be updated successfully", async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await commonApi.getNodeInfo('idp1');
       const responseBody = await response.json();
       expect(responseBody.max_aal).to.equal(2.2);
@@ -276,7 +276,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it('RP should create a request successfully', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
 
       createRequestParams = {
         reference_id: rpReferenceId,
@@ -317,7 +317,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it('IdP should receive incoming request callback', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -356,7 +356,7 @@ describe('IdP error callback response tests', function() {
     });
 
     it("IdP should get an error when create response (accept) with aal (3) is greater than IdP noded's max_ial", async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
@@ -380,7 +380,7 @@ describe('IdP error callback response tests', function() {
     });
 
     after(async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       await Promise.all([
         ndidApi.updateNode('ndid1', {
           node_id: 'idp1',

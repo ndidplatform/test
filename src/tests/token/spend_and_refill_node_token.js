@@ -52,7 +52,7 @@ describe('Spend and refill node token test', function() {
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(25000);
+    this.timeout(600000);
     if (!ndidAvailable || !idp1Available) {
       this.skip();
     }
@@ -139,7 +139,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('RP should be out of token', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     // flood 5 blocks for spend token
     for (let i of [1, 2, 3, 4]) {
       await createRequest('rp1', {
@@ -204,7 +204,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 1,
@@ -237,7 +237,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -268,7 +268,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('AS should receive data request for "bank_statement" service', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -289,7 +289,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('AS should send data successfully (bank_statement)', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: 'bank_statement',
@@ -315,7 +315,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('RP should get an error making a request when out of token', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
 
     const response = await createRequest('rp1', {
       reference_id: RequestOutOfTokenReferenceId,
@@ -353,7 +353,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('NDID should add node token successfully', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     await Promise.all([
       ndidApi.addNodeToken('ndid1', {
         node_id: 'rp1',
@@ -406,7 +406,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('RP should making request after add node token successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
 
     const response = await createRequest('rp1', {
       reference_id: RequestAfterAddNodeTokenReferenceId,
@@ -443,7 +443,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestAfterAddNodeTokenPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 1,
@@ -476,7 +476,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpAfterAddNodeTokenReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -499,7 +499,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('AS should receive data request for "bank_statement" service', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestAfterAddNodeTokenReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestIdAfterAddNodeToken,
@@ -520,7 +520,7 @@ describe('Spend and refill node token test', function() {
   });
 
   it('AS should send data successfully (bank_statement)', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId: requestIdAfterAddNodeToken,
       serviceId: 'bank_statement',
@@ -538,7 +538,7 @@ describe('Spend and refill node token test', function() {
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await Promise.all([
       ndidApi.setNodeToken('ndid1', {
         node_id: 'rp1',

@@ -126,7 +126,7 @@ describe('2nd IdP close identity request test', function() {
   });
 
   it('1st IdP should create identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -156,7 +156,7 @@ describe('2nd IdP close identity request test', function() {
   });
 
   it('1st IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const sid = `${namespace}:${identifier}`;
     const sid_hash = hash(sid);
 
@@ -176,7 +176,7 @@ describe('2nd IdP close identity request test', function() {
   });
 
   it('1st IdP Identity should be created successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
@@ -210,7 +210,7 @@ describe('2nd IdP close identity request test', function() {
   });
 
   it('2nd IdP should create identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp2', {
       reference_id: referenceIdIdp2,
       callback_url: config.IDP2_CALLBACK_URL,
@@ -251,7 +251,7 @@ describe('2nd IdP close identity request test', function() {
   });
 
   it('2nd IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const sid = `${namespace}:${identifier}`;
     const sid_hash = hash(sid);
 
@@ -271,7 +271,7 @@ describe('2nd IdP close identity request test', function() {
   });
 
   it('1st IdP should receive create identity request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 3,
@@ -305,7 +305,7 @@ describe('2nd IdP close identity request test', function() {
   });
 
   it('2nd IdP should close identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.closeIdentityRequest('idp2', {
       request_id: requestId2ndIdP,
       callback_url: config.IDP2_CALLBACK_URL,
@@ -333,7 +333,7 @@ describe('2nd IdP close identity request test', function() {
   });
 
   it('After 2nd IdP close identity request 1st IdP should create response (accept) unsuccessfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -371,7 +371,7 @@ describe('2nd IdP close identity request test', function() {
   });
 
   it('2nd IdP Identity should be created unsuccessfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await commonApi.getRelevantIdpNodesBySid('idp2', {
       namespace,
       identifier,
@@ -460,7 +460,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   });
 
   it('2nd IdP should create identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp2Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -504,7 +504,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   });
 
   it('2nd IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const sid = `${namespace}:${identifier}`;
     const sid_hash = hash(sid);
 
@@ -524,7 +524,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   });
 
   it('2nd IdP should get request_id for the unfinished (not closed or timed out) create identity request with reference_id', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.getRequestIdByReferenceId('idp2', {
       reference_id: referenceId,
     });
@@ -537,7 +537,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   });
 
   it('1st IdP should receive create identity request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 3,
@@ -569,7 +569,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   });
 
   it('1st IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -602,7 +602,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   });
 
   it('2nd IdP identity should be created successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
@@ -630,7 +630,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   });
 
   it('Special request status for create identity should be completed and closed', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     //wait for API close request
     await wait(3000);
     const response = await commonApi.getRequest('idp2', { requestId });

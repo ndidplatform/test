@@ -244,7 +244,7 @@ describe('DPKI callback setup', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
       //wait for register msq after set callback
       await wait(2000);

@@ -108,7 +108,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('proxy2', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -126,7 +126,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
       node_id: createRequestParams.node_id,
@@ -145,7 +145,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       node_id: idpNodeId,
@@ -174,7 +174,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createResponse('proxy1', {
       node_id: idpNodeId,
       reference_id: idpReferenceId,
@@ -199,7 +199,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   });
 
   it('RP should receive completed request status', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       node_id: createRequestParams.node_id,
@@ -225,7 +225,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       node_id: createRequestParams.node_id,

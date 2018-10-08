@@ -147,7 +147,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -162,7 +162,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -187,7 +187,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -225,7 +225,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -258,7 +258,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   });
 
   it('RP should receive confirmed request status with valid proofs', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -290,7 +290,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -309,7 +309,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   });
 
   it('AS should get error callback', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const error = await errorCallbackPromise.promise;
     expect(error).to.have.property('error');
     expect(error.error).to.deep.include({

@@ -61,7 +61,7 @@ describe('NDID enable namespace test', function() {
   });
 
   it('NDID should enable namespace (cid) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.enableNamespace('ndid1', {
       namespace: 'citizen_id',
@@ -72,7 +72,7 @@ describe('NDID enable namespace test', function() {
   });
 
   it('Namespace (cid) should be enabled successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const responseUtilityGetNamespaces = await commonApi.getNamespaces('ndid1');
     const responseBody = await responseUtilityGetNamespaces.json();
@@ -85,7 +85,7 @@ describe('NDID enable namespace test', function() {
   });
 
   it('should create identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -115,7 +115,7 @@ describe('NDID enable namespace test', function() {
   });
 
   it('should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const sid = `${namespace}:${identifier}`;
     const sid_hash = hash(sid);
 
@@ -135,7 +135,7 @@ describe('NDID enable namespace test', function() {
   });
 
   it('Identity should be created successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
@@ -156,7 +156,7 @@ describe('NDID enable namespace test', function() {
   });
 
   it('Special request status for create identity should be completed and closed', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     //wait for API close request
     await wait(3000);
     const response = await commonApi.getRequest('idp1', { requestId });

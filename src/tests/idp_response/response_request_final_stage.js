@@ -40,7 +40,7 @@ describe('IdP response request already confirmed test', function() {
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null || db.idp2Identities == null) {
       throw new Error('No created identity to use');
     }
@@ -114,7 +114,7 @@ describe('IdP response request already confirmed test', function() {
   });
 
   it('IdP (idp2) should create response (accept) successfully', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const idp2Identity = db.idp2Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -148,7 +148,7 @@ describe('IdP response request already confirmed test', function() {
   });
 
   it('IdP (idp1) should get an error callback response when making a response with request that already confirmed by idp2', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -186,7 +186,7 @@ describe('IdP response request already confirmed test', function() {
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await rpApi.closeRequest('rp1', {
       reference_id: uuidv4(),
       callback_url: config.RP_CALLBACK_URL,
@@ -220,7 +220,7 @@ describe('IdP response request already closed test', function() {
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null || db.idp2Identities == null) {
       throw new Error('No created identity to use');
     }
@@ -321,7 +321,7 @@ describe('IdP response request already closed test', function() {
   });
 
   it('IdP (idp2) should create response (accept) successfully', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const idp2Identity = db.idp2Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -355,7 +355,7 @@ describe('IdP response request already closed test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -374,7 +374,7 @@ describe('IdP response request already closed test', function() {
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -392,7 +392,7 @@ describe('IdP response request already closed test', function() {
   });
 
   it('IdP (idp1) should get an error callback response when making a response with request that already closed', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -430,7 +430,7 @@ describe('IdP response request already closed test', function() {
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await rpApi.closeRequest('rp1', {
       reference_id: uuidv4(),
       callback_url: config.RP_CALLBACK_URL,
@@ -461,7 +461,7 @@ describe('IdP response request already timed out test', function() {
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -530,7 +530,7 @@ describe('IdP response request already timed out test', function() {
   });
 
   it('IdP (idp1) should get an error callback response when making a response with request that already timed out', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier

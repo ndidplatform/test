@@ -77,7 +77,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
   });
 
   it('should create identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('proxy1', {
       node_id: nodeId,
       reference_id: referenceId,
@@ -110,7 +110,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
   });
 
   it('should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const sid = `${namespace}:${identifier}`;
     const sid_hash = hash(sid);
 
@@ -130,7 +130,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
   });
 
   it('Identity should be created successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       node_id: nodeId,
@@ -165,7 +165,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
   });
 
   it('Special request status for create identity should be completed and closed', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     //wait for API close request
     await wait(3000);
     const response = await commonApi.getRequest('proxy1', { requestId });
@@ -187,7 +187,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
   });
 
   it('Re-calculate secret should return same result', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.reCalculateSecret('proxy1', {
       node_id: nodeId,
       accessor_id: accessorId,

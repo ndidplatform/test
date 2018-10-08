@@ -40,7 +40,7 @@ describe('AS data response errors', function() {
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -136,7 +136,7 @@ describe('AS data response errors', function() {
   });
 
   it('should get an error when making a data response with non-existent request ID', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId: 'some-non-existent-request-id',
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -151,7 +151,7 @@ describe('AS data response errors', function() {
   });
 
   it('should get an error when making a data response with non-existent service ID', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: 'some-non-existent-service-id',
@@ -166,7 +166,7 @@ describe('AS data response errors', function() {
   });
 
   it('should get an error when making a data response with service ID which does not concern AS-1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: 'customer_info',

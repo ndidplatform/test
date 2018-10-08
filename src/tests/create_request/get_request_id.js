@@ -20,7 +20,7 @@ describe('RP get request_id by reference_id test', function() {
   let requestId;
 
   before(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -65,7 +65,7 @@ describe('RP get request_id by reference_id test', function() {
   });
 
   it('RP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.getRequestIdByReferenceId('rp1', {
       reference_id: rpReferenceId,
     });
@@ -75,7 +75,7 @@ describe('RP get request_id by reference_id test', function() {
   });
 
   it('RP should be able to close request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
       callback_url: config.RP_CALLBACK_URL,
@@ -93,7 +93,7 @@ describe('RP get request_id by reference_id test', function() {
   });
 
   it('RP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.getRequestIdByReferenceId('rp1', {
       reference_id: rpReferenceId,
     });

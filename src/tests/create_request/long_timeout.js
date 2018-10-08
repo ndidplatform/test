@@ -69,7 +69,7 @@ describe('Long timeout test (>2147483647 seconds or >24.8 days - greater than 32
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -83,7 +83,7 @@ describe('Long timeout test (>2147483647 seconds or >24.8 days - greater than 32
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -101,7 +101,7 @@ describe('Long timeout test (>2147483647 seconds or >24.8 days - greater than 32
   });
 
   it('Created request should not timeout within time limit', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await wait(7000);
     const response = await commonApi.getRequest('rp1', {
       requestId,

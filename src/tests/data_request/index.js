@@ -15,7 +15,7 @@ describe('Data request flow', function() {
   require('./2_idp_1_as_mode_3');
   require('./large_data_size');
   require('./large_data_size_response_through_callback');
-  require('./too_large_data_size_response_through_callback');
+  // require('./too_large_data_size_response_through_callback');
 });
 
 describe('Data request flow (Node behind proxy)', function() {

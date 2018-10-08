@@ -106,7 +106,7 @@ describe('NDID enable service test', function() {
   });
 
   it('NDID should enable service (test_disable_service) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.enableService('ndid1', {
       service_id: 'test_disable_service',
@@ -117,7 +117,7 @@ describe('NDID enable service test', function() {
   });
 
   it('Service (test_disable_service) should be enabled successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const responseAsGetService = await asApi.getService('as1', {
       serviceId: 'test_disable_service',
@@ -142,7 +142,7 @@ describe('NDID enable service test', function() {
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
 
@@ -156,7 +156,7 @@ describe('NDID enable service test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -192,7 +192,7 @@ describe('NDID enable service test', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -216,7 +216,7 @@ describe('NDID enable service test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -235,7 +235,7 @@ describe('NDID enable service test', function() {
   });
 
   it('AS should send data successfully (test_disable_service)', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,

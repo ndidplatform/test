@@ -99,7 +99,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   });
 
   it('should add accessor method successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.addAccessorMethod('idp1', {
       namespace: namespace,
       identifier: identifier,
@@ -127,7 +127,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   });
 
   it('should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const sid = `${namespace}:${identifier}`;
     const sid_hash = hash(sid);
 
@@ -147,7 +147,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   });
 
   it('2nd IdP should receive add accessor method request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 3,
@@ -180,7 +180,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   });
 
   it('2nd IdP should create response (accept) successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const identity = db.idp2Identities.find(
       (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -213,7 +213,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   });
 
   it('Accessor id should be added successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const addAccessorResult = await addAccessorResultPromise.promise;
     expect(addAccessorResult).to.deep.include({
       reference_id: referenceId,
@@ -238,7 +238,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   });
 
   it('Special request status for add accessor method should be completed and closed', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     //wait for API close request
     await wait(3000);
     const response = await commonApi.getRequest('idp1', { requestId });
@@ -387,7 +387,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -401,7 +401,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -438,7 +438,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   });
 
   it('IdP should create response (accept) with new accessor id successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -476,7 +476,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   });
 
   it('RP should receive confirmed request status with valid proofs', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -508,7 +508,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -527,7 +527,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -545,7 +545,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   });
 
   it('RP should receive request status with signed data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusSignedDataPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -577,7 +577,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -609,7 +609,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,

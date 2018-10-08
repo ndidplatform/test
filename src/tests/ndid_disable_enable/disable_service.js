@@ -78,7 +78,7 @@ describe('NDID disable service test', function() {
   });
 
   it('NDID should add new service (test_disable_service) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.addService('ndid1', {
       service_id: 'test_disable_service',
@@ -97,7 +97,7 @@ describe('NDID disable service test', function() {
   });
 
   it('Service (test_disable_service) should be added successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
@@ -112,7 +112,7 @@ describe('NDID disable service test', function() {
   });
 
   it('NDID should approve service (test_disable_service) for as1 successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.approveService('ndid1', {
       node_id: 'as1',
@@ -123,7 +123,7 @@ describe('NDID disable service test', function() {
   });
 
   it('AS should add offered service (test_disable_service) successfully', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const response = await asApi.addOrUpdateService('as1', {
       serviceId: 'test_disable_service',
       reference_id: testDisableServiceReferenceId,
@@ -142,7 +142,7 @@ describe('NDID disable service test', function() {
   });
 
   it('NDID should disable service (test_disable_service) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.disableService('ndid1', {
       service_id: 'test_disable_service',
@@ -153,7 +153,7 @@ describe('NDID disable service test', function() {
   });
 
   it('Service (test_disable_service) should be disabled successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const responseAsGetService = await asApi.getService('as1', {
       serviceId: 'test_disable_service',
@@ -172,7 +172,7 @@ describe('NDID disable service test', function() {
   });
 
   it('After NDID disabled service (test_disable_service) RP should create a request unsuccessfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -180,7 +180,7 @@ describe('NDID disable service test', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     await ndidApi.enableService('ndid1', {
       service_id: 'test_disable_service',
     });
@@ -276,7 +276,7 @@ describe('NDID disable service after RP create request test', function() {
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
 
@@ -290,7 +290,7 @@ describe('NDID disable service after RP create request test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -326,7 +326,7 @@ describe('NDID disable service after RP create request test', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -350,7 +350,7 @@ describe('NDID disable service after RP create request test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -369,7 +369,7 @@ describe('NDID disable service after RP create request test', function() {
   });
 
   it('NDID should disable service (test_disable_service) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.disableService('ndid1', {
       service_id: 'test_disable_service',
@@ -380,7 +380,7 @@ describe('NDID disable service after RP create request test', function() {
   });
 
   it('Service (test_disable_service) should be disabled successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const responseAsGetService = await asApi.getService('as1', {
       serviceId: 'test_disable_service',
@@ -399,7 +399,7 @@ describe('NDID disable service after RP create request test', function() {
   });
 
   it('AS should send data unsuccessfully (test_disable_service)', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -419,7 +419,7 @@ describe('NDID disable service after RP create request test', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     await ndidApi.enableService('ndid1', {
       service_id: 'test_disable_service',
     });
@@ -462,7 +462,7 @@ describe('NDID disable service before AS offered service test', function() {
   });
 
   it('NDID should add new service (test_disable_service_before_as_offered_service) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.addService('ndid1', {
       service_id: 'test_disable_service_before_as_offered_service',
@@ -481,7 +481,7 @@ describe('NDID disable service before AS offered service test', function() {
   });
 
   it('Service (test_disable_service_before_as_offered_service) should be added successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
@@ -497,7 +497,7 @@ describe('NDID disable service before AS offered service test', function() {
   });
 
   it('NDID should approve service (test_disable_service_before_as_offered_service) for as1 successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.approveService('ndid1', {
       node_id: 'as1',
@@ -508,7 +508,7 @@ describe('NDID disable service before AS offered service test', function() {
   });
 
   it('NDID should disable service (test_disable_service_before_as_offered_service) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.disableService('ndid1', {
       service_id: 'test_disable_service_before_as_offered_service',
@@ -519,7 +519,7 @@ describe('NDID disable service before AS offered service test', function() {
   });
 
   it('Service (test_disable_service_before_as_offered_service) should be disabled successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const responseAsGetService = await asApi.getService('as1', {
       serviceId: 'test_disable_service_before_as_offered_service',
@@ -539,7 +539,7 @@ describe('NDID disable service before AS offered service test', function() {
   });
 
   it('AS should add offered service (test_disable_service_before_as_offered_service) unsuccessfully', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const response = await asApi.addOrUpdateService('as1', {
       serviceId: 'test_disable_service_before_as_offered_service',
       reference_id: testDisableServiceBeforeASOfferredReferenceId,
@@ -559,7 +559,7 @@ describe('NDID disable service before AS offered service test', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     await ndidApi.enableService('ndid1', {
       service_id: 'test_disable_service_before_as_offered_service',
     });

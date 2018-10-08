@@ -27,7 +27,7 @@ describe('IdP update identity ial test', function() {
   let ialBeforeUpdate;
 
   before(async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     if (!idp1Available) {
       this.skip();
     }
@@ -59,7 +59,7 @@ describe('IdP update identity ial test', function() {
   });
 
   it('IdP should update identity ial successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await idpApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,
@@ -77,7 +77,7 @@ describe('IdP update identity ial test', function() {
   });
 
   it('Identity ial should be updated successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
 
     const response = await debugApi.query('idp1', {
       nodeId: 'idp1',
@@ -90,7 +90,7 @@ describe('IdP update identity ial test', function() {
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await idpApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,
@@ -113,7 +113,7 @@ describe("IdP update identity ial greater than node's max ial test", function() 
   let maxIalNodeBeforeUpdate;
 
   before(async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     if (!idp1Available || !ndidAvailable) {
       this.test.parent.pending = true;
       this.skip();
@@ -147,7 +147,7 @@ describe("IdP update identity ial greater than node's max ial test", function() 
   });
 
   it("IdP should update identity ial greater than node's max ial unsuccessfully", async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await idpApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,
@@ -162,7 +162,7 @@ describe("IdP update identity ial greater than node's max ial test", function() 
   });
 
   after(async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     await idpApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,

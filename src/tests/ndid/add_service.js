@@ -22,7 +22,7 @@ describe('NDID add new service test', function() {
   });
 
   it('NDID should add new service (test_add_new_service) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.addService('ndid1', {
       service_id: 'test_add_new_service',
@@ -40,7 +40,7 @@ describe('NDID add new service test', function() {
   });
 
   it('Service (test_add_new_service) should be added successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
@@ -64,7 +64,7 @@ describe('NDID add new service test', function() {
   });
 
   it('NDID should update service (test_add_new_service) name successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.updateService('ndid1', {
       service_id: 'test_add_new_service',
@@ -75,7 +75,7 @@ describe('NDID add new service test', function() {
   });
 
   it('Service (test_add_new_service) name should be updated successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(

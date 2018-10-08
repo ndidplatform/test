@@ -87,7 +87,7 @@ describe('Close request before IdP reponse', function() {
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -101,7 +101,7 @@ describe('Close request before IdP reponse', function() {
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -119,7 +119,7 @@ describe('Close request before IdP reponse', function() {
   });
 
   it('RP should be able to close request', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
       callback_url: config.RP_CALLBACK_URL,
@@ -136,7 +136,7 @@ describe('Close request before IdP reponse', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -164,7 +164,7 @@ describe('Close request before IdP reponse', function() {
   });
 
   it('IdP should not be able to response closed request', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const identity = db.idp1Identities.find(
       identity =>

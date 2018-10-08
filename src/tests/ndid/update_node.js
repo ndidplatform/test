@@ -20,7 +20,7 @@ describe('NDID update nodes', function() {
   });
 
   it("NDID should update RP's node name successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.updateNode('ndid1', {
       node_id: 'rp1',
       node_name: rp_node_name,
@@ -30,7 +30,7 @@ describe('NDID update nodes', function() {
   });
 
   it("RP's node name should be updated successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('rp1');
     const responseBody = await response.json();
     expect(responseBody.node_name).to.equal(rp_node_name);
@@ -39,7 +39,7 @@ describe('NDID update nodes', function() {
   });
 
   it("NDID should update IDP's node name successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.updateNode('ndid1', {
       node_id: 'idp1',
       node_name: idp_node_name,
@@ -49,7 +49,7 @@ describe('NDID update nodes', function() {
   });
 
   it("IDP's node name should be updated successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     expect(responseBody.node_name).to.equal(idp_node_name);
@@ -58,7 +58,7 @@ describe('NDID update nodes', function() {
   });
 
   it("NDID should update IDP's max ial successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.updateNode('ndid1', {
       node_id: 'idp1',
       max_ial: max_ial,
@@ -68,7 +68,7 @@ describe('NDID update nodes', function() {
   });
 
   it("IDP's max ial should be updated successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     expect(responseBody.max_ial).to.equal(max_ial);
@@ -77,7 +77,7 @@ describe('NDID update nodes', function() {
   });
 
   it("NDID should update IDP's max aal successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.updateNode('ndid1', {
       node_id: 'idp1',
       max_aal: max_aal,
@@ -87,7 +87,7 @@ describe('NDID update nodes', function() {
   });
 
   it("IDP's max aal should be updated successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     expect(responseBody.max_aal).to.equal(max_aal);
@@ -96,7 +96,7 @@ describe('NDID update nodes', function() {
   });
 
   it("NDID should update AS's node name successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.updateNode('ndid1', {
       node_id: 'as1',
       node_name: as_node_name,
@@ -106,7 +106,7 @@ describe('NDID update nodes', function() {
   });
 
   it("AS's node name should be updated successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('as1');
     const responseBody = await response.json();
     expect(responseBody.node_name).to.equal(as_node_name);
@@ -115,7 +115,7 @@ describe('NDID update nodes', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     await ndidApi.updateNode('ndid1', {
       node_id: 'idp1',
       max_aal: 3,

@@ -80,7 +80,7 @@ describe('NDID disable service destination test', function() {
   });
 
   it('NDID should add new service (test_disable_service_destination) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.addService('ndid1', {
       service_id: 'test_disable_service_destination',
@@ -99,7 +99,7 @@ describe('NDID disable service destination test', function() {
   });
 
   it('Service (test_disable_service_destination) should be added successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
@@ -114,7 +114,7 @@ describe('NDID disable service destination test', function() {
   });
 
   it('NDID should approve service (test_disable_service_destination) for as1 successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.approveService('ndid1', {
       node_id: 'as1',
@@ -124,7 +124,7 @@ describe('NDID disable service destination test', function() {
   });
 
   it('AS should add offered service (test_disable_service_destination) successfully', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const response = await asApi.addOrUpdateService('as1', {
       serviceId: 'test_disable_service_destination',
       reference_id: testDisableServiceDestinationReferenceId,
@@ -143,7 +143,7 @@ describe('NDID disable service destination test', function() {
   });
 
   it('NDID should disable service (test_disable_service_destination) destination successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.disableServiceDestination('ndid1', {
       node_id: 'as1',
@@ -155,7 +155,7 @@ describe('NDID disable service destination test', function() {
   });
 
   it('AS service (test_disable_service_destination) should be disabled service destination successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await asApi.getService('as1', {
       serviceId: 'test_disable_service_destination',
@@ -167,7 +167,7 @@ describe('NDID disable service destination test', function() {
   });
 
   it('After NDID disabled service (test_disable_service_destination) destination RP should create a request unsuccessfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -175,7 +175,7 @@ describe('NDID disable service destination test', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     await ndidApi.enableServiceDestination('ndid1', {
       node_id: 'as1',
       service_id: 'test_disable_service_destination',
@@ -272,7 +272,7 @@ describe('NDID disable service destination after RP create request test', functi
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
 
@@ -286,7 +286,7 @@ describe('NDID disable service destination after RP create request test', functi
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -322,7 +322,7 @@ describe('NDID disable service destination after RP create request test', functi
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -346,7 +346,7 @@ describe('NDID disable service destination after RP create request test', functi
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -365,7 +365,7 @@ describe('NDID disable service destination after RP create request test', functi
   });
 
   it('NDID should disable service (test_disable_service_destination) destination successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.disableServiceDestination('ndid1', {
       node_id: 'as1',
@@ -377,7 +377,7 @@ describe('NDID disable service destination after RP create request test', functi
   });
 
   it('AS service (test_disable_service_destination) should be disabled service destination successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await asApi.getService('as1', {
       serviceId: 'test_disable_service_destination',
@@ -389,7 +389,7 @@ describe('NDID disable service destination after RP create request test', functi
   });
 
   it('AS should send data unsuccessfully (test_disable_service_destination)', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -409,7 +409,7 @@ describe('NDID disable service destination after RP create request test', functi
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     await ndidApi.enableServiceDestination('ndid1', {
       node_id: 'as1',
       service_id: 'test_disable_service_destination',

@@ -122,7 +122,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -137,7 +137,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -155,7 +155,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   });
 
   it('IdP-1 should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await idp1IncomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -184,7 +184,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   });
 
   it('IdP-2 should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await idp2IncomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -213,7 +213,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   });
 
   it('IdP-1 should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -246,7 +246,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   });
 
   it('RP should receive confirmed request status with valid proofs', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -271,7 +271,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   });
 
   it('IdP-2 should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp2Identities.find(
       (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -304,7 +304,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   });
 
   it('RP should receive completed request status with valid proofs', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -335,7 +335,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,

@@ -56,7 +56,7 @@ describe("NDID update nodes's DPKI test", function() {
   });
 
   it("NDID should update node's master key and public key successfully", async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await dpkiApi.updateNode('ndid1', {
       reference_id: NDIDUpdateNodeReferenceId,
       callback_url: config.NDID_CALLBACK_URL,
@@ -76,7 +76,7 @@ describe("NDID update nodes's DPKI test", function() {
   });
 
   it("NDID node's master key and public key should be updated successfully", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('ndid1');
     const responseBody = await response.json();
     expect(responseBody.node_name).to.equal('NDID');
@@ -139,7 +139,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(35000);
+    this.timeout(600000);
 
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
@@ -236,7 +236,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it("RP should update node's master key and public key successfully", async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const response = await dpkiApi.updateNode('rp1', {
       reference_id: RPUpdateNodeReferenceId,
       callback_url: config.RP_CALLBACK_URL,
@@ -256,7 +256,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it("RP node's master key and public key should be updated successfully", async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('rp1');
     const responseBody = await response.json();
     expect(responseBody.role).to.equal('RP');
@@ -265,7 +265,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it("IdP should update node's master key and public key successfully", async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const response = await dpkiApi.updateNode('idp1', {
       reference_id: IdPUpdateNodeReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -285,7 +285,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it("IdP node's master key and public key should be updated successfully", async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     expect(responseBody.role).to.equal('IdP');
@@ -294,7 +294,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it("AS should update node's master key and public key successfully", async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     const response = await dpkiApi.updateNode('as1', {
       reference_id: ASUpdateNodeReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
@@ -314,7 +314,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it("AS node's master key and public key should be updated successfully", async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('as1');
     const responseBody = await response.json();
     expect(responseBody.role).to.equal('AS');
@@ -323,7 +323,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -337,7 +337,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -373,7 +373,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -406,7 +406,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -425,7 +425,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -443,7 +443,7 @@ describe("RP, IdP, AS update nodes's DPKI tests", function() {
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(25000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,

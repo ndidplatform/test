@@ -69,7 +69,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   before(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
       this.test.parent.pending = true;
       this.skip();
@@ -232,7 +232,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('NDID should add IdP node (idp1) to proxy1', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.addNodeToProxyNode('ndid1', {
       node_id: 'idp1',
       proxy_node_id: 'proxy1',
@@ -243,7 +243,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('IdP node (idp1) should add to proxy1 successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('proxy1', {
       node_id: 'idp1',
     });
@@ -254,7 +254,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams1);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -273,7 +273,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusPendingPromise1.promise;
     expect(requestStatus).to.deep.include({
       node_id: 'rp1',
@@ -299,7 +299,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('After add IdP node (idp1) to proxy1 it should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await ProxyIncomingRequestPromise.promise;
     const dataRequestListWithoutParams = createRequestParams1.data_request_list.map(
       dataRequest => {
@@ -336,7 +336,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -371,7 +371,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should receive confirmed request status with valid proofs', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusConfirmedPromise1.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId1,
@@ -403,7 +403,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise1.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId1,
@@ -422,7 +422,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('proxy1', {
       node_id: asNodeId,
       requestId: requestId1,
@@ -443,7 +443,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should receive completed request status with valid proofs', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise1.promise;
     expect(requestStatus).to.deep.include({
       node_id: 'rp1',
@@ -476,7 +476,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise1.promise;
     expect(requestStatus).to.deep.include({
       node_id: 'rp1',
@@ -509,7 +509,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('NDID should remove IdP node (idp1) from proxy1', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await ndidApi.removeNodeFromProxyNode('ndid1', {
       node_id: 'idp1',
     });
@@ -518,7 +518,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('IdP node (idp1) should remove from proxy1 successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     expect(responseBody.role).to.equal('IdP');
@@ -530,7 +530,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('Should set MQ addresses (use debug) for IdP node (idp1) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     await debugApi.transact('idp1', {
       nodeId: 'idp1',
@@ -542,7 +542,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('IdP node (idp1) should set MQ addresses successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     expect(responseBody.role).to.equal('IdP');
@@ -554,7 +554,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await rpApi.createRequest('rp1', createRequestParams2);
     const responseBody = await response.json();
@@ -574,7 +574,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusPendingPromise2.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId2,
@@ -599,7 +599,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('After remove IdP node (idp1) from proxy1 it should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
     const dataRequestListWithoutParams = createRequestParams1.data_request_list.map(
       dataRequest => {
@@ -635,7 +635,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -669,7 +669,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should receive confirmed request status with valid proofs', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusConfirmedPromise2.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId2,
@@ -701,7 +701,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise2.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId2,
@@ -720,7 +720,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('proxy1', {
       node_id: asNodeId,
       requestId: requestId2,
@@ -741,7 +741,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should receive completed request status with valid proofs', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise2.promise;
     expect(requestStatus).to.deep.include({
       node_id: 'rp1',
@@ -774,7 +774,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise2.promise;
     expect(requestStatus).to.deep.include({
       node_id: 'rp1',
@@ -807,7 +807,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     if (responseBody.proxy) {

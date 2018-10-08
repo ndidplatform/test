@@ -23,7 +23,7 @@ describe('NDID add new namespace test', function() {
   });
 
   it('NDID should add new namespace (test_add_new_namespace) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.registerNamespace('ndid1', {
       namespace: 'test_add_new_namespace',
@@ -42,7 +42,7 @@ describe('NDID add new namespace test', function() {
   });
 
   it('Namespace (test_add_new_namespace) should be added successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await commonApi.getNamespaces('ndid1');
     const responseBody = await response.json();

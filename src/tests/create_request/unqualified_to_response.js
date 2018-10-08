@@ -18,7 +18,7 @@ describe('RP create request errors (unqualified to response)', function() {
     const rpReferenceId = generateReferenceId();
 
     before(async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       if (!ndidAvailable) {
         this.test.parent.pending = true;
         this.skip();
@@ -33,7 +33,7 @@ describe('RP create request errors (unqualified to response)', function() {
     });
 
     it("NDID should update IDP's (idp3) max ial (1.1) successfully", async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await ndidApi.updateNode('ndid1', {
         node_id: 'idp3',
         max_ial: 1.1,
@@ -43,7 +43,7 @@ describe('RP create request errors (unqualified to response)', function() {
     });
 
     it('should get an error when creating a request with some IdP IDs in requested IdP ID list are unqualified to response', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -66,7 +66,7 @@ describe('RP create request errors (unqualified to response)', function() {
       expect(responseBody.error.code).to.equal(20058);
     });
     after(async function() {
-      this.timeout(5000);
+      this.timeout(600000);
       await ndidApi.updateNode('ndid1', {
         node_id: 'idp3',
         max_ial: 3,
@@ -81,7 +81,7 @@ describe('RP create request errors (unqualified to response)', function() {
     const rpReferenceId = generateReferenceId();
 
     before(async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       if (!ndidAvailable) {
         this.test.parent.pending = true;
         this.skip();
@@ -96,7 +96,7 @@ describe('RP create request errors (unqualified to response)', function() {
     });
 
     it("NDID should update IDP's (idp3) max aal (1) successfully", async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await ndidApi.updateNode('ndid1', {
         node_id: 'idp3',
         max_aal: 1,
@@ -106,7 +106,7 @@ describe('RP create request errors (unqualified to response)', function() {
     });
 
     it('should get an error when creating a request with some IdP IDs in requested IdP ID list are unqualified to response', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -129,7 +129,7 @@ describe('RP create request errors (unqualified to response)', function() {
       expect(responseBody.error.code).to.equal(20058);
     });
     after(async function() {
-      this.timeout(5000);
+      this.timeout(600000);
       await ndidApi.updateNode('ndid1', {
         node_id: 'idp3',
         max_aal: 3,
@@ -147,7 +147,7 @@ describe('RP create request errors (unqualified to response)', function() {
     const addOrUpdateServiceBankStatementResultPromise = createEventPromise();
 
     before(function() {
-      this.timeout(5000);
+      this.timeout(600000);
       if (!as2Available) {
         this.test.parent.pending = true;
         this.skip();
@@ -163,7 +163,7 @@ describe('RP create request errors (unqualified to response)', function() {
     });
 
     it('AS (as1) should add offered service (bank_statement) with min_ial = 3 successfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await asApi.addOrUpdateService('as1', {
         serviceId: 'bank_statement',
         reference_id: bankStatementReferenceId,
@@ -183,7 +183,7 @@ describe('RP create request errors (unqualified to response)', function() {
     });
 
     it('should get an error when creating a request with some services in data request list are unqualified to release data', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -215,7 +215,7 @@ describe('RP create request errors (unqualified to response)', function() {
       expect(responseBody.error.code).to.equal(20058);
     });
     after(async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       await asApi.addOrUpdateService('as1', {
         serviceId: 'bank_statement',
         reference_id: bankStatementReferenceId,
@@ -238,7 +238,7 @@ describe('RP create request errors (unqualified to response)', function() {
     const addOrUpdateServiceBankStatementResultPromise = createEventPromise();
 
     before(function() {
-      this.timeout(5000);
+      this.timeout(600000);
       if (!as2Available) {
         this.test.parent.pending = true;
         this.skip();
@@ -254,7 +254,7 @@ describe('RP create request errors (unqualified to response)', function() {
     });
 
     it('AS (as1) should add offered service (bank_statement) with min_aal = 3 successfully', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await asApi.addOrUpdateService('as1', {
         serviceId: 'bank_statement',
         reference_id: bankStatementReferenceId,
@@ -274,7 +274,7 @@ describe('RP create request errors (unqualified to response)', function() {
     });
 
     it('should get an error when creating a request with some services in data request list are unqualified to release data', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -306,7 +306,7 @@ describe('RP create request errors (unqualified to response)', function() {
       expect(responseBody.error.code).to.equal(20058);
     });
     after(async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       await asApi.addOrUpdateService('as1', {
         serviceId: 'bank_statement',
         reference_id: bankStatementReferenceId,

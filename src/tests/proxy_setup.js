@@ -94,7 +94,7 @@ describe('Proxy (proxy1) setup', function() {
     });
 
     it('should add offered service (bank_statement) successfully', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await asApi.addOrUpdateService('proxy1', {
         node_id: asNodeId,
         serviceId: 'bank_statement',
@@ -131,7 +131,7 @@ describe('Proxy (proxy1) setup', function() {
     });
 
     it('should add offered service (customer_info) successfully', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await asApi.addOrUpdateService('proxy1', {
         node_id: asNodeId,
         serviceId: 'customer_info',

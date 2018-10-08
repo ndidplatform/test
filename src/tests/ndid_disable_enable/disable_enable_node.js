@@ -145,7 +145,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('NDID should disable node RP (rp1) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -157,7 +157,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('After NDID disable node RP (rp1) should create a request unsuccessfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -175,7 +175,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('NDID should enable node (rp1) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -187,7 +187,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('After NDID enable node RP (rp1) should create a request successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -228,7 +228,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -265,7 +265,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -298,7 +298,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: enableNodeRequestId,
@@ -317,7 +317,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId: enableNodeRequestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -335,7 +335,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -367,7 +367,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -417,7 +417,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
       fnName: 'EnableNode',
@@ -543,7 +543,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('NDID should disable node IdP (idp1) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -555,7 +555,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('After NDID disable node IdP (idp1) RP should create a request to disabled IdP (idp1) unsuccessfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -563,7 +563,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('NDID should enable node (idp1) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -575,7 +575,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('After NDID enable node IdP (idp1) RP should create a request to idp1 successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -616,7 +616,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -653,7 +653,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -686,7 +686,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: enableNodeRequestId,
@@ -705,7 +705,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId: enableNodeRequestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -723,7 +723,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -755,7 +755,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -805,7 +805,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
       fnName: 'EnableNode',
@@ -931,7 +931,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('NDID should disable node AS (as1) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -943,7 +943,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('After NDID disable node AS (as1) RP should create a request with data request to disabled AS (as1) unsuccessfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -951,7 +951,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('NDID should enable node (as1) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -963,7 +963,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('After NDID enable node AS (as1) RP should create a request with data request to as1 successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -1004,7 +1004,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -1041,7 +1041,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -1074,7 +1074,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: enableNodeRequestId,
@@ -1093,7 +1093,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId: enableNodeRequestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -1111,7 +1111,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -1143,7 +1143,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -1193,7 +1193,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
       fnName: 'EnableNode',
@@ -1328,7 +1328,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('NDID should disable node proxy (proxy1) successfully (use debug api)', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
 
       const response = await debugApi.transact('ndid1', {
         nodeId: 'ndid1',
@@ -1340,7 +1340,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('After NDID disable node proxy (proxy1) RP (proxy1_rp4) behind proxy should create a request unsuccessfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await rpApi.createRequest('proxy1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -1358,7 +1358,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('NDID should enable node proxy (proxy1) successfully (use debug api)', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
 
       const response = await debugApi.transact('ndid1', {
         nodeId: 'ndid1',
@@ -1370,7 +1370,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('After NDID enable node proxy (proxy1) RP (proxy1_rp4) behind proxy should create a request successfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await rpApi.createRequest('proxy1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -1411,7 +1411,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('IdP should receive incoming request callback', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -1448,7 +1448,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const identity = db.idp1Identities.find(
         identity =>
           identity.namespace === namespace && identity.identifier === identifier
@@ -1481,7 +1481,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('AS should receive data request', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
         request_id: enableNodeRequestId,
@@ -1500,7 +1500,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('AS should send data successfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await asApi.sendData('as1', {
         requestId: enableNodeRequestId,
         serviceId: createRequestParams.data_request_list[0].service_id,
@@ -1518,7 +1518,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('RP should receive completed request status with received data count = 1', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const requestStatus = await requestStatusCompletedPromise.promise;
       expect(requestStatus).to.deep.include({
         request_id: enableNodeRequestId,
@@ -1550,7 +1550,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('RP should receive request closed status', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const requestStatus = await requestClosedPromise.promise;
       expect(requestStatus).to.deep.include({
         request_id: enableNodeRequestId,
@@ -1601,7 +1601,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     after(async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       await debugApi.transact('ndid1', {
         nodeId: 'ndid1',
         fnName: 'EnableNode',
@@ -1728,7 +1728,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('NDID should disable proxy node (proxy1) successfully (use debug api)', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
 
       const response = await debugApi.transact('ndid1', {
         nodeId: 'ndid1',
@@ -1740,7 +1740,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('After NDID disable proxy node (proxy1) RP should create a request to disabled proxy node (proxy1) unsuccessfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(400);
@@ -1748,7 +1748,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('NDID should enable proxy node (proxy1) successfully (use debug api)', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await debugApi.transact('ndid1', {
         nodeId: 'ndid1',
         fnName: 'EnableNode',
@@ -1759,7 +1759,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('After NDID enable proxy node (proxy1) RP should create a request to proxy1_idp4 successfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -1800,7 +1800,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('IdP should receive incoming request callback', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -1837,7 +1837,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const identity = db.proxy1Idp4Identities.find(
         identity =>
           identity.namespace === namespace && identity.identifier === identifier
@@ -1871,7 +1871,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('AS should receive data request', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
         request_id: enableNodeRequestId,
@@ -1890,7 +1890,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('AS should send data successfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await asApi.sendData('as1', {
         requestId: enableNodeRequestId,
         serviceId: createRequestParams.data_request_list[0].service_id,
@@ -1908,7 +1908,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('RP should receive completed request status with received data count = 1', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const requestStatus = await requestStatusCompletedPromise.promise;
       expect(requestStatus).to.deep.include({
         request_id: enableNodeRequestId,
@@ -1940,7 +1940,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('RP should receive request closed status', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const requestStatus = await requestClosedPromise.promise;
       expect(requestStatus).to.deep.include({
         request_id: enableNodeRequestId,
@@ -1990,7 +1990,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     after(async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       await debugApi.transact('ndid1', {
         nodeId: 'ndid1',
         fnName: 'EnableNode',
@@ -2115,7 +2115,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('NDID should disable proxy node (proxy1) successfully (use debug api)', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
 
       const response = await debugApi.transact('ndid1', {
         nodeId: 'ndid1',
@@ -2127,7 +2127,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('After NDID disable proxy node (proxy1) RP should create a request with data request to AS node behind disabled proxy node (proxy1_as4) unsuccessfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(400);
@@ -2135,7 +2135,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('NDID should enable proxy node (proxy1) successfully (use debug api)', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const response = await debugApi.transact('ndid1', {
         nodeId: 'ndid1',
         fnName: 'EnableNode',
@@ -2146,7 +2146,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('After NDID enable proxy node (proxy1) RP should create a request with data request to proxy1_as4 successfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -2187,7 +2187,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('IdP should receive incoming request callback', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -2224,7 +2224,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const identity = db.idp1Identities.find(
         identity =>
           identity.namespace === namespace && identity.identifier === identifier
@@ -2257,7 +2257,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('AS should receive data request', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
         request_id: enableNodeRequestId,
@@ -2276,7 +2276,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('AS should send data successfully', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const response = await asApi.sendData('proxy1', {
         node_id: 'proxy1_as4',
         requestId: enableNodeRequestId,
@@ -2295,7 +2295,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('RP should receive completed request status with received data count = 1', async function() {
-      this.timeout(15000);
+      this.timeout(600000);
       const requestStatus = await requestStatusCompletedPromise.promise;
       expect(requestStatus).to.deep.include({
         request_id: enableNodeRequestId,
@@ -2327,7 +2327,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     it('RP should receive request closed status', async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       const requestStatus = await requestClosedPromise.promise;
       expect(requestStatus).to.deep.include({
         request_id: enableNodeRequestId,
@@ -2377,7 +2377,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
 
     after(async function() {
-      this.timeout(10000);
+      this.timeout(600000);
       await debugApi.transact('ndid1', {
         nodeId: 'ndid1',
         fnName: 'EnableNode',
@@ -2513,7 +2513,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('NDID should disable node RP behind proxy (proxy1_rp4) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -2525,7 +2525,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('After NDID disable node RP behind proxy (proxy1_rp4) should create a request unsuccessfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -2543,7 +2543,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('NDID should enable node RP behind proxy (proxy1_rp4) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -2555,7 +2555,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('After NDID enable node RP behind proxy (proxy1_rp4) should create a request successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -2596,7 +2596,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -2633,7 +2633,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.proxy1Idp4Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -2667,7 +2667,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: enableNodeRequestId,
@@ -2686,7 +2686,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId: enableNodeRequestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -2704,7 +2704,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -2736,7 +2736,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -2787,7 +2787,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
       fnName: 'EnableNode',
@@ -2914,7 +2914,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('NDID should disable node IdP behind proxy (proxy1_idp4) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -2926,7 +2926,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('After NDID disable node IdP behind proxy (proxy1_idp4) should create a request to disabled IdP (proxy1_idp4) unsuccessfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -2934,7 +2934,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('NDID should enable node IdP behind proxy (proxy1_idp4) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
       fnName: 'EnableNode',
@@ -2945,7 +2945,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('After NDID enable node IdP behind proxy (proxy1_idp4) RP should create a request to proxy1_idp4 successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -2986,7 +2986,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -3023,7 +3023,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.proxy1Idp4Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -3057,7 +3057,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: enableNodeRequestId,
@@ -3076,7 +3076,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId: enableNodeRequestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -3094,7 +3094,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -3126,7 +3126,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -3177,7 +3177,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
       fnName: 'EnableNode',
@@ -3304,7 +3304,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('NDID should disable node AS behind proxy (proxy1_as4) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
@@ -3316,7 +3316,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('After NDID disable node AS behind proxy (proxy1_as4) RP should create a request with data request to disabled AS (proxy1_as4) unsuccessfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -3324,7 +3324,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('NDID should enable node behind proxy (proxy1_as4) successfully (use debug api)', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
       fnName: 'EnableNode',
@@ -3335,7 +3335,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('After NDID enable node AS behind proxy (proxy1_as4) RP should create a request with data request to proxy1_as4 successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -3376,7 +3376,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -3413,7 +3413,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -3446,7 +3446,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: enableNodeRequestId,
@@ -3465,7 +3465,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('proxy1', {
       node_id: 'proxy1_as4',
       requestId: enableNodeRequestId,
@@ -3484,7 +3484,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -3516,7 +3516,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -3567,7 +3567,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await debugApi.transact('ndid1', {
       nodeId: 'ndid1',
       fnName: 'EnableNode',

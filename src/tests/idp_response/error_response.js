@@ -31,7 +31,7 @@ describe('IdP response errors tests', function() {
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -310,7 +310,7 @@ describe('IdP response errors tests', function() {
   });
 
   it('should get an error when IdP update identity invalid ial (ial is not in enum)', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await idpApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,
@@ -324,7 +324,7 @@ describe('IdP response errors tests', function() {
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await rpApi.closeRequest('rp1', {
       reference_id: uuidv4(),
       callback_url: config.RP_CALLBACK_URL,
@@ -351,7 +351,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -414,7 +414,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
   });
 
   it("should get an error response when making a response with ial less than request's min_ial", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -443,7 +443,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
   });
 
   it('After IdP get an error response, IdP should making a response again successfully', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -477,7 +477,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
   });
 
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await rpApi.closeRequest('rp1', {
       reference_id: uuidv4(),
       callback_url: config.RP_CALLBACK_URL,
@@ -504,7 +504,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
   let requestMessageHash;
 
   before(async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -567,7 +567,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
   });
 
   it("should get an error response when making a response with aal less than request's min_aal", async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -596,7 +596,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
   });
 
   it('After IdP get an error response, IdP should making a response again successfully', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -628,7 +628,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
     });
   });
   after(async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     await rpApi.closeRequest('rp1', {
       reference_id: uuidv4(),
       callback_url: config.RP_CALLBACK_URL,

@@ -34,7 +34,7 @@ describe('Create identity errors', function() {
   });
 
   it('IdP should get an error when creating duplicate identity', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -51,7 +51,7 @@ describe('Create identity errors', function() {
   });
 
   it('IdP should get an error when creating identity with duplicate accessor_id', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -68,7 +68,7 @@ describe('Create identity errors', function() {
   });
 
   it('IdP should get an error when using namespace that is not registered by NDID', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const namespace = 'namespace_is_not_registered';
     const identifier = '1234';
     // const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -91,7 +91,7 @@ describe('Create identity errors', function() {
   });
 
   it('IdP should get an error when using invalid format accessor public key', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -108,7 +108,7 @@ describe('Create identity errors', function() {
   });
 
   it('IdP should get an mismatched type error when using accessor public key with wrong accessor_type', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const accessorPublicKey = `-----BEGIN PUBLIC KEY-----
 MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
 6KkEXSmW7kSHrAKXBCDTMVt5HpadpRQt8Qzc3xfSGunAxKS+lGloPw==
@@ -130,7 +130,7 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
   });
 
   it('IdP should get an error when using accessor public key with length shorter than 2048-bit', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     // const keypair = forge.pki.rsa.generateKeyPair(2047);
     // const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
     const response = await idpApi.createIdentity('idp1', {

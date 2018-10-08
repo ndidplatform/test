@@ -68,7 +68,7 @@ describe('Timeout test (3 seconds)', function() {
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -82,7 +82,7 @@ describe('Timeout test (3 seconds)', function() {
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -100,7 +100,7 @@ describe('Timeout test (3 seconds)', function() {
   });
 
   it('RP should receive request timed out status in time limit', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusTimedOutPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,

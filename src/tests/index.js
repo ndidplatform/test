@@ -48,7 +48,7 @@ async function checkForAvailableNodes() {
 
 describe('End-to-End NDID API test (API v2.1)', function() {
   before(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     startCallbackServers();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
       startDpkiCallbackServer();
@@ -66,16 +66,16 @@ describe('End-to-End NDID API test (API v2.1)', function() {
   require('./as_service_setup');
   require('./proxy_setup');
   require('./create_identity');
-  require('./ndid');
-  require('./dpki');
-  require('./add_accessor_method');
+  // require('./ndid');
+  // require('./dpki');
+  // require('./add_accessor_method');
   require('./verify_identity');
   require('./data_request');
-  require('./create_request');
-  require('./idp_response');
-  require('./as_data_response');
-  require('./token');
-  require('./ndid_disable_enable');
+  // require('./create_request');
+  // require('./idp_response');
+  // require('./as_data_response');
+  // require('./token');
+  // require('./ndid_disable_enable');
 
   after(function() {
     stopCallbackServers();

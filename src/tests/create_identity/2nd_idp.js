@@ -91,7 +91,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
   });
 
   it('should create identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp2', {
       reference_id: referenceId,
       callback_url: config.IDP2_CALLBACK_URL,
@@ -122,7 +122,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
   });
 
   it('should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const sid = `${namespace}:${identifier}`;
     const sid_hash = hash(sid);
 
@@ -142,7 +142,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
   });
 
   it('1st IdP should receive create identity request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 3,
@@ -168,7 +168,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
   });
 
   it('1st IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -201,7 +201,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
   });
 
   it('Identity should be created successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
@@ -235,7 +235,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
   });
 
   it('Special request status for create identity should be completed and closed', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     //wait for API close request
     await wait(3000);
     const response = await commonApi.getRequest('idp2', { requestId });

@@ -187,7 +187,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -202,7 +202,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -233,7 +233,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -271,7 +271,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const identity = db.idp1Identities.find(
       (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -304,7 +304,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('RP should receive confirmed request status with valid proofs', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -342,7 +342,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('AS should receive data request for "bank_statement" service', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestBankStatementReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -361,7 +361,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('AS should receive data request for "customer_info" service', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestCustomerInfoReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -380,7 +380,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('AS should send data successfully (bank_statement)', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -398,7 +398,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('RP should receive request status with signed data count = 1 for "bank_statement" service', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusSignedDataBankStatementPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -436,7 +436,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('RP should receive confirmed request status with received data count = 1 for "bank_statement" service', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusReceivedDataBankStatementPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -474,7 +474,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('AS should send data successfully (customer_info)', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[1].service_id,
@@ -492,7 +492,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('RP should receive request status with signed data count = 1 for "customer_info" service', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusSignedDataCustomerInfoPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -530,7 +530,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('RP should receive completed request status with received data count = 1 for "customer_info" service', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -568,7 +568,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,

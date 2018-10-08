@@ -14,7 +14,7 @@ describe('Use debug API to lock first IdP', function() {
   const identifier = uuidv4();
 
   before(async function() {
-    this.timeout(8000);
+    this.timeout(600000);
 
     if (!ndidAvailable) {
       this.test.parent.pending = true;
@@ -42,7 +42,7 @@ describe('Use debug API to lock first IdP', function() {
   });
 
   it('should see idp1 associated with user', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
@@ -59,7 +59,7 @@ describe('Use debug API to lock first IdP', function() {
   });
 
   it('idp1 should no longer associated after timed out', async function() {
-    this.timeout(30000);
+    this.timeout(600000);
     // flood 5 blocks
     for (let i = 0; i < 5; i++) {
       await createRequest('rp1', {
@@ -91,7 +91,7 @@ describe('Use debug API to lock first IdP', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(600000);
     await ndidApi.setTimeoutBlockRegisterIdentity('ndid1', {
       blocks_to_timeout: 500,
     });

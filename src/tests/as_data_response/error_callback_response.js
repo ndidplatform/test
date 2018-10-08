@@ -19,7 +19,7 @@ describe('AS error callback response tests', function() {
       this.skip();
     }
 
-    this.timeout(10000);
+    this.timeout(600000);
     as1EventEmitter.on('callback', function(callbackData) {
       if (callbackData.type === 'add_or_update_service_result') {
         if (callbackData.reference_id === customerAssetsInfoReferenceId) {
@@ -44,7 +44,7 @@ describe('AS error callback response tests', function() {
   });
 
   it('should get an error callback response when add offered service (customerAssets_Info) that NDID is not registered', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await asApi.addOrUpdateService('as1', {
       serviceId: 'customerAssets_Info',
       reference_id: customerAssetsInfoReferenceId,
@@ -68,7 +68,7 @@ describe('AS error callback response tests', function() {
       this.skip();
     }
 
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await asApi.addOrUpdateService('as1', {
       serviceId: 'disapproved_service',
       reference_id: disapprovedReferenceId,

@@ -118,7 +118,7 @@ describe('NDID disable namespace test', function() {
   });
 
   it('NDID should disable namespace (cid) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const response = await ndidApi.disableNamespace('ndid1', {
       namespace: 'citizen_id',
@@ -129,7 +129,7 @@ describe('NDID disable namespace test', function() {
   });
 
   it('Namespace (cid) should be disabled successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const responseUtilityGetNamespaces = await commonApi.getNamespaces('ndid1');
     const responseBody = await responseUtilityGetNamespaces.json();
@@ -142,7 +142,7 @@ describe('NDID disable namespace test', function() {
   });
 
   it('should create identity request unsuccessfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await idpApi.createIdentity('idp1', {
       reference_id: createIdentityreferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -159,7 +159,7 @@ describe('NDID disable namespace test', function() {
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
 
@@ -173,7 +173,7 @@ describe('NDID disable namespace test', function() {
   });
 
   it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -209,7 +209,7 @@ describe('NDID disable namespace test', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(600000);
 
     const identity = db.idp1Identities.find(
       (identity) =>
@@ -243,7 +243,7 @@ describe('NDID disable namespace test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -262,7 +262,7 @@ describe('NDID disable namespace test', function() {
   });
 
   it('AS should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,

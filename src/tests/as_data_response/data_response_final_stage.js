@@ -44,7 +44,7 @@ describe('AS response data request already closed test', function() {
   let requestId;
 
   before(async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -140,7 +140,7 @@ describe('AS response data request already closed test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -159,7 +159,7 @@ describe('AS response data request already closed test', function() {
   });
 
   it('RP should be able to close request successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
       callback_url: config.RP_CALLBACK_URL,
@@ -174,7 +174,7 @@ describe('AS response data request already closed test', function() {
   });
 
   it('AS should get an error response when send data with request that already closed', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -220,7 +220,7 @@ describe('AS response data request already timed out test', function() {
   let requestId;
 
   before(async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -322,7 +322,7 @@ describe('AS response data request already timed out test', function() {
   });
 
   it('AS should receive data request', async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -341,7 +341,7 @@ describe('AS response data request already timed out test', function() {
   });
 
   it('AS should get an error callback response when send data with request that already timed out', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -391,7 +391,7 @@ describe('AS response data request already completed test', function() {
   let requestId;
 
   before(async function() {
-    this.timeout(20000);
+    this.timeout(600000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -508,7 +508,7 @@ describe('AS response data request already completed test', function() {
   });
 
   it('AS (as1) should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await as1DataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -527,7 +527,7 @@ describe('AS response data request already completed test', function() {
   });
 
   it('AS (as2) should receive data request', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const dataRequest = await as2DataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestId,
@@ -546,7 +546,7 @@ describe('AS response data request already completed test', function() {
   });
 
   it('AS (as1) should send data successfully', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
@@ -566,7 +566,7 @@ describe('AS response data request already completed test', function() {
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -599,7 +599,7 @@ describe('AS response data request already completed test', function() {
   });
 
   it('AS (as2) should get an error response when send data with request that already completed', async function() {
-    this.timeout(15000);
+    this.timeout(600000);
     const response = await asApi.sendData('as2', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
