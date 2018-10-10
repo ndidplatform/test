@@ -10,7 +10,6 @@ import {
 } from '.';
 import * as debugApi from '../api/v2/debug';
 import * as dpkiApi from '../api/v2/dpki';
-import * as debugApi from '../api/v2/debug';
 import * as config from '../config';
 import { wait } from '../utils';
 
