@@ -1041,7 +1041,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(15000);
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -1143,7 +1143,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('RP should receive request closed status', async function() {
-    this.timeout(10000);
+    this.timeout(15000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: enableNodeRequestId,
@@ -1175,6 +1175,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   });
 
   it('RP should get the correct data received from AS', async function() {
+    this.timeout(15000);
     const response = await rpApi.getDataFromAS('rp1', {
       requestId: enableNodeRequestId,
     });
