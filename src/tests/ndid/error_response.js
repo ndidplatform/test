@@ -102,4 +102,56 @@ describe('NDID response errors', function() {
     expect(response.status).to.equal(400);
     expect(responseBody.error.code).to.equal(25007);
   });
+  it('NDID should get an error when add service with data_schema = {} (cannot JSON.parse())', async function() {
+    this.timeout(15000);
+    const response = await ndidApi.addService('ndid1', {
+      service_id: 'service_with_data_schema',
+      service_name: 'Test add new service with data schema',
+      data_schema: {},
+    });
+    expect(response.status).to.equal(500);
+    // const responseBody = await response.json();
+    // expect(responseBody.error.message).to.equal(
+    //   'Cannot validate data schema'
+    // );
+  });
+
+  it('NDID should get an error when add service with data_schema (cannot JSON.parse())', async function() {
+    this.timeout(15000);
+    const response = await ndidApi.addService('ndid1', {
+      service_id: 'service_with_data_schema',
+      service_name: 'Test add new service with data schema',
+      data_schema: {
+        // Not use JSON.stringify()
+        properties: {
+          namespace: { type: 'string', minLength: 1 },
+          identifier: { type: 'string', minLength: 1 },
+        },
+        required: ['namespace', 'identifier'],
+      },
+    });
+    expect(response.status).to.equal(500);
+    // const responseBody = await response.json();
+    // expect(responseBody.error.message).to.equal(
+    //   'Cannot validate data schema'
+    // );
+  });
+
+  it('NDID should get an error when add service with Invalid data schema (minLength: -1)', async function() {
+    this.timeout(15000);
+    const response = await ndidApi.addService('ndid1', {
+      service_id: 'service_with_data_schema',
+      service_name: 'Test add new service with data schema',
+      data_schema: JSON.stringify({
+        properties: {
+          namespace: { type: 'string', minLength: -1 }, //minLength: -1 (Invalid data schema)
+          identifier: { type: 'string', minLength: -1 },
+        },
+        required: ['namespace', 'identifier'],
+      }),
+    });
+    expect(response.status).to.equal(500);
+    const responseBody = await response.json();
+    expect(responseBody.error.message).to.equal('Invalid data schema schema');
+  });
 });

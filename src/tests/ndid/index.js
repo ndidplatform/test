@@ -11,6 +11,7 @@ describe('NDID API tests', function() {
 
   require('./add_namespace');
   require('./add_service');
+  require('./add_service_with_data_schema');
   require('./update_node');
   require('./error_response');
 });
