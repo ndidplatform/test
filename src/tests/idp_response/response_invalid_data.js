@@ -14,6 +14,7 @@ import {
 import * as config from '../../config';
 import { idp2Available } from '..';
 
+/* ============================== MOVE TO ./error_response =================================
 describe('IdP response invalid ial test', function() {
   let namespace;
   let identifier;
@@ -169,7 +170,7 @@ describe('IdP response invalid ial test', function() {
   });
 });
 
-/*describe('IdP response invalid secret test', function() {
+describe('IdP response invalid secret test', function() {
   let namespace;
   let identifier;
 
