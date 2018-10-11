@@ -8,6 +8,7 @@ import {
   ndidAvailable,
   proxy1Available,
 } from '.';
+import * as debugApi from '../api/v2/debug';
 import * as dpkiApi from '../api/v2/dpki';
 import * as config from '../config';
 import { wait } from '../utils';
@@ -18,9 +19,13 @@ describe('DPKI callback setup', function() {
       this.test.parent.pending = true;
       this.skip();
     } else {
-      const response = await dpkiApi.getCallbacks('idp1');
-      if (response.status === 404) {
-        exec('npm run reset-dev-key', (error, stdout, stderr) => {
+      const response = await debugApi.query('idp1', {
+        fnName: 'GetNodeInfo',
+        node_id: 'idp1',
+      });
+      const responseBody = await response.json();
+      if (responseBody.mq == null) {
+        exec('npm run reset-dev-key', error => {
           if (error) {
             console.error(`exec error: ${error}`);
             return;
