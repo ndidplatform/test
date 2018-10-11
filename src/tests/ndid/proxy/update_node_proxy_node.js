@@ -48,7 +48,7 @@ describe('NDID update node config', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(15000);
     await ndidApi.updateNodeProxyNode('ndid1', {
       node_id: 'proxy1_rp4',
       proxy_node_id: 'proxy1',
@@ -237,7 +237,7 @@ describe('NDID update RP node to other proxy node', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -325,7 +325,7 @@ describe('NDID update RP node to other proxy node', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(15000);
     await ndidApi.updateNodeProxyNode('ndid1', {
       node_id: 'proxy1_rp4',
       proxy_node_id: 'proxy1',
@@ -514,7 +514,7 @@ describe('NDID update IdP node to other proxy node', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.proxy1Idp4Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -603,7 +603,7 @@ describe('NDID update IdP node to other proxy node', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(15000);
     await ndidApi.updateNodeProxyNode('ndid1', {
       node_id: 'proxy1_idp4',
       proxy_node_id: 'proxy1',
@@ -860,7 +860,7 @@ describe('NDID update AS node to other proxy node', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -896,7 +896,7 @@ describe('NDID update AS node to other proxy node', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -1117,7 +1117,7 @@ describe('NDID update AS node to other proxy node', function() {
   });
 
   after(async function() {
-    this.timeout(5000);
+    this.timeout(15000);
     await ndidApi.updateNodeProxyNode('ndid1', {
       node_id: 'proxy1_as4',
       proxy_node_id: 'proxy1',
