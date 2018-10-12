@@ -13,7 +13,7 @@ import {
   wait,
 } from '../../utils';
 import * as config from '../../config';
-import { as2Available } from '..';
+import { idp2Available, as2Available } from '..';
 
 describe('IdP response errors tests', function() {
   let namespace;
@@ -333,13 +333,17 @@ describe('IdP response errors tests', function() {
       accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(400);
-    
+
     const responseBody = await response.json();
     expect(responseBody.error.code).to.equal(20060);
   });
 
   it('should get an error when making a response with invalid secret', async function() {
     this.timeout(20000);
+    
+    if (!idp2Available || db.idp2Identities.length === 0) {
+      this.skip();
+    }
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -446,8 +450,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
           }),
         },
       ],
-      request_message:
-        'Test request message (error response) (mode 3)',
+      request_message: 'Test request message (error response) (mode 3)',
       min_ial: 2.3,
       min_aal: 3,
       min_idp: 1,
@@ -599,8 +602,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
           }),
         },
       ],
-      request_message:
-        'Test request message (error response) (mode 3)',
+      request_message: 'Test request message (error response) (mode 3)',
       min_ial: 2.3,
       min_aal: 3,
       min_idp: 1,
