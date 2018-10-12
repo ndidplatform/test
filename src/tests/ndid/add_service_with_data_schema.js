@@ -242,6 +242,7 @@ describe('NDID add and update service with data_schema test', function() {
         reference_id: serviceWithDataSchemaReferenceId,
         success: true,
       });
+      await wait(5000);
     });
 
     it('RP should create a request successfully', async function() {
