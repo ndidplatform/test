@@ -154,4 +154,35 @@ describe('NDID response errors', function() {
     const responseBody = await response.json();
     expect(responseBody.error.message).to.equal('Invalid data schema schema');
   });
+
+  it('NDID should get an error when approve service with not existing node id', async function() {
+    this.timeout(15000);
+    const response = await ndidApi.approveService('ndid1', {
+      node_id: 'notExitingNodeId',
+      service_id: 'bank_statement',
+    });
+    expect(response.status).to.equal(204);
+    //TODO: Expect error code
+  });
+
+  it('NDID should get an error when approve service with not existing service_id', async function() {
+    this.timeout(15000);
+    const response = await ndidApi.approveService('ndid1', {
+      node_id: 'as1',
+      service_id: 'notExitingServiceId',
+    });
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(25018);
+  });
+
+  it("NDID should get an error when approve service with node's role is not AS", async function() {
+    this.timeout(15000);
+    const response = await ndidApi.approveService('ndid1', {
+      node_id: 'idp1',
+      service_id: 'bank_statement',
+    });
+    expect(response.status).to.equal(204);
+    //TODO: Expect error code
+  });
 });
