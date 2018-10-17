@@ -33,6 +33,15 @@ export function addAccessorMethod(nodeId, data) {
   );
 }
 
+export function revokeAccessorMethod(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/revoke`,
+    rest
+  );
+}
+
 export function updateIdentityIal(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   const { namespace, identifier, ...rest } = data;
