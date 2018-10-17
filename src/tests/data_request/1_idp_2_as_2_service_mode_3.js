@@ -567,7 +567,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
   // });
 
   it('RP should receive completed request status with both services (bank_statement and customer_info) received data count = 2', async function() {
-    this.timeout(15000);
+    this.timeout(25000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -733,7 +733,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
     expect(responseBody).to.be.an('array').that.is.empty;
   });
 
-  it('AS should have and able to get saved private messages', async function() {
+  it('AS (as1) should have and able to get saved private messages', async function() {
     const response = await commonApi.getPrivateMessages('as1', {
       request_id: requestId,
     });
@@ -742,14 +742,14 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
     expect(responseBody).to.be.an('array').that.is.not.empty;
   });
 
-  it('AS should remove saved private messages successfully', async function() {
+  it('AS (as1) should remove saved private messages successfully', async function() {
     const response = await commonApi.removePrivateMessages('as1', {
       request_id: requestId,
     });
     expect(response.status).to.equal(204);
   });
 
-  it('AS should have no saved private messages left after removal', async function() {
+  it('AS (as1) should have no saved private messages left after removal', async function() {
     const response = await commonApi.getPrivateMessages('as1', {
       request_id: requestId,
     });
@@ -758,7 +758,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
     expect(responseBody).to.be.an('array').that.is.empty;
   });
 
-  it('AS should have and able to get saved private messages', async function() {
+  it('AS (as2) should have and able to get saved private messages', async function() {
     const response = await commonApi.getPrivateMessages('as2', {
       request_id: requestId,
     });
@@ -767,14 +767,14 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
     expect(responseBody).to.be.an('array').that.is.not.empty;
   });
 
-  it('AS should remove saved private messages successfully', async function() {
+  it('AS (as2) should remove saved private messages successfully', async function() {
     const response = await commonApi.removePrivateMessages('as2', {
       request_id: requestId,
     });
     expect(response.status).to.equal(204);
   });
 
-  it('AS should have no saved private messages left after removal', async function() {
+  it('AS (as2) should have no saved private messages left after removal', async function() {
     const response = await commonApi.getPrivateMessages('as2', {
       request_id: requestId,
     });

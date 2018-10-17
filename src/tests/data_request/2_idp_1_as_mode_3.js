@@ -35,7 +35,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   const idp1ResponseResultPromise = createEventPromise(); // IDP
   const idp2IncomingRequestPromise = createEventPromise(); // IDP
   const idp2ResponseResultPromise = createEventPromise(); // IDP
-  const answer1RequestStatusConfirmedPromise = createEventPromise(); // RP
+  // const answer1RequestStatusConfirmedPromise = createEventPromise(); // RP
   const answer2RequestStatusConfirmedPromise = createEventPromise(); // RP
   const dataRequestReceivedPromise = createEventPromise(); // AS
   const sendDataResultPromise = createEventPromise(); // AS
@@ -111,7 +111,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
             requestStatusSignedDataPromise.resolve(callbackData);
           } else {
             if (callbackData.answered_idp_count === 1) {
-              answer1RequestStatusConfirmedPromise.resolve(callbackData);
+              // answer1RequestStatusConfirmedPromise.resolve(callbackData);
             } else if (callbackData.answered_idp_count === 2) {
               answer2RequestStatusConfirmedPromise.resolve(callbackData);
             }
@@ -336,33 +336,33 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     });
   });
 
-  it('RP should receive confirmed (answered_idp_count = 1) request status with valid proofs', async function() {
-    this.timeout(15000);
-    const requestStatus = await answer1RequestStatusConfirmedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'confirmed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-      ],
-    });
-    expect(requestStatus.response_valid_list).to.have.lengthOf(1);
-    expect(requestStatus.response_valid_list[0].valid_signature).to.be.true;
-    expect(requestStatus.response_valid_list[0].valid_proof).to.be.true;
-    expect(requestStatus.response_valid_list[0].valid_ial).to.be.true;
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
-  });
+  // it('RP should receive confirmed (answered_idp_count = 1) request status with valid proofs', async function() {
+  //   this.timeout(15000);
+  //   const requestStatus = await answer1RequestStatusConfirmedPromise.promise;
+  //   expect(requestStatus).to.deep.include({
+  //     request_id: requestId,
+  //     status: 'confirmed',
+  //     mode: createRequestParams.mode,
+  //     min_idp: createRequestParams.min_idp,
+  //     answered_idp_count: 1,
+  //     closed: false,
+  //     timed_out: false,
+  //     service_list: [
+  //       {
+  //         service_id: createRequestParams.data_request_list[0].service_id,
+  //         min_as: createRequestParams.data_request_list[0].min_as,
+  //         signed_data_count: 0,
+  //         received_data_count: 0,
+  //       },
+  //     ],
+  //   });
+  //   expect(requestStatus.response_valid_list).to.have.lengthOf(1);
+  //   expect(requestStatus.response_valid_list[0].valid_signature).to.be.true;
+  //   expect(requestStatus.response_valid_list[0].valid_proof).to.be.true;
+  //   expect(requestStatus.response_valid_list[0].valid_ial).to.be.true;
+  //   expect(requestStatus).to.have.property('block_height');
+  //   expect(requestStatus.block_height).is.a('number');
+  // });
 
   it('RP should receive confirmed (answered_idp_count = 2) request status with valid proofs', async function() {
     this.timeout(15000);

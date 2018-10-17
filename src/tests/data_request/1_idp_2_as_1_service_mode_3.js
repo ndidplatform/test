@@ -427,7 +427,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
   // });
 
   it('RP should receive request status with signed data count = 2', async function() {
-    this.timeout(15000);
+    this.timeout(20000);
     const requestStatus = await requestStatusSignedDataPromise2.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -491,7 +491,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
   // });
 
   it('RP should receive completed request status with received data count = 2', async function() {
-    this.timeout(15000);
+    this.timeout(20000);
     const requestStatus = await requestStatusCompletedPromise2.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
