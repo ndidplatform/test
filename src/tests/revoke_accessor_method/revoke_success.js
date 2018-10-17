@@ -579,7 +579,7 @@ describe('Revoked accessor must be unusable', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should not be able to create response (accept) with the revoked accessor', async function() {
+  it('IdP should still be able to create response (accept) with the revoked accessor', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
       (identity) =>
@@ -613,11 +613,11 @@ describe('Revoked accessor must be unusable', function() {
     expect(responseResult).to.deep.include({
       reference_id: idpReferenceId,
       request_id: requestId,
-      success: false,
+      success: true,
     });
   });
 
-  /*it('RP should receive confirmed request status with valid proofs', async function() {
+  it('RP should receive confirmed request status with invalid proofs and signature', async function() {
     this.timeout(15000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
@@ -639,8 +639,8 @@ describe('Revoked accessor must be unusable', function() {
       response_valid_list: [
         {
           idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
+          valid_signature: false,
+          valid_proof: false,
           valid_ial: true,
         },
       ],
@@ -649,7 +649,7 @@ describe('Revoked accessor must be unusable', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
-  it('AS should receive data request', async function() {
+  /*it('AS should receive data request', async function() {
     this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
