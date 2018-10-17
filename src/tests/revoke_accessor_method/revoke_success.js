@@ -51,10 +51,6 @@ describe('IdP (idp1) add accessor method for revoke success test', function() {
   });
 
   before(function() {
-    if (!idp2Available) {
-      this.test.parent.pending = true;
-      this.skip();
-    }
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -433,10 +429,6 @@ describe('Revoked accessor must be unusable', function() {
   let requestMessageHash;
 
   before(function() {
-    if (!idp2Available) {
-      this.test.parent.pending = true;
-      this.skip();
-    }
     if (!as1Available) {
       this.test.parent.pending = true;
       this.skip();
@@ -454,7 +446,7 @@ describe('Revoked accessor must be unusable', function() {
       mode: 3,
       namespace,
       identifier,
-      idp_id_list: [],
+      idp_id_list: ['idp1'],
       data_request_list: [
         {
           service_id: 'bank_statement',
@@ -579,7 +571,7 @@ describe('Revoked accessor must be unusable', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should still be able to create response (accept) with the revoked accessor', async function() {
+  it('IdP should should not be able to create response (accept) with the revoked accessor', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
       (identity) =>
@@ -607,17 +599,19 @@ describe('Revoked accessor must be unusable', function() {
       ),
       accessor_id: identity.accessors[latestAccessor].accessorId,
     });
-    expect(response.status).to.equal(202);
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20011);
 
-    const responseResult = await responseResultPromise.promise;
+    /*const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
-    });
+    });*/
   });
 
-  it('RP should receive confirmed request status with invalid proofs and signature', async function() {
+  /*it('RP should receive confirmed request status with invalid proofs and signature', async function() {
     this.timeout(15000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
@@ -649,7 +643,7 @@ describe('Revoked accessor must be unusable', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
-  /*it('AS should receive data request', async function() {
+  it('AS should receive data request', async function() {
     this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({

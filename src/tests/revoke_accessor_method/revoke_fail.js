@@ -359,7 +359,7 @@ describe('Accessor must still be usable', function() {
       mode: 3,
       namespace,
       identifier,
-      idp_id_list: [],
+      idp_id_list: ['idp1'],
       data_request_list: [
         {
           service_id: 'bank_statement',
