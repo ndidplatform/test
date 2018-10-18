@@ -16,7 +16,7 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('2nd IdP get request_id by reference_id test', function() {
+describe('2nd IdP create identity and close and get request_id by reference_id test', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
 
@@ -209,7 +209,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
   });
 
   it('2nd IdP should create identity request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(20000);
     const response = await idpApi.createIdentity('idp2', {
       reference_id: referenceIdIdp2,
       callback_url: config.IDP2_CALLBACK_URL,
@@ -343,7 +343,7 @@ describe('2nd IdP get request_id by reference_id test', function() {
       error: { code: 20025, message: 'Request is already closed' },
     });
 
-    await wait(3000);
+    await wait(3000); //wait for api clean up reference_id
   });
 
   it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
