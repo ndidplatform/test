@@ -161,7 +161,7 @@ describe('NDID response errors', function() {
       node_id: 'notExitingNodeId',
       service_id: 'bank_statement',
     });
-    expect(response.status).to.equal(204);
+    expect(response.status).to.equal(400);
     //TODO: Expect error code
   });
 
@@ -182,7 +182,7 @@ describe('NDID response errors', function() {
       node_id: 'idp1',
       service_id: 'bank_statement',
     });
-    expect(response.status).to.equal(204);
+    expect(response.status).to.equal(400);
     //TODO: Expect error code
   });
 });
