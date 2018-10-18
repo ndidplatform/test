@@ -41,7 +41,7 @@ describe('NDID response errors', function() {
   it('NDID should get an error when set node token with not existing node id', async function() {
     this.timeout(10000);
     const response = await ndidApi.setNodeToken('ndid1', {
-      node_id: 'notExitingNodeId',
+      node_id: 'notExistingNodeId',
       amount: 100,
     });
 
@@ -158,7 +158,7 @@ describe('NDID response errors', function() {
   it('NDID should get an error when approve service with not existing node id', async function() {
     this.timeout(15000);
     const response = await ndidApi.approveService('ndid1', {
-      node_id: 'notExitingNodeId',
+      node_id: 'notExistingNodeId',
       service_id: 'bank_statement',
     });
     expect(response.status).to.equal(400);
@@ -170,7 +170,7 @@ describe('NDID response errors', function() {
     this.timeout(15000);
     const response = await ndidApi.approveService('ndid1', {
       node_id: 'as1',
-      service_id: 'notExitingServiceId',
+      service_id: 'notExistingServiceId',
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
