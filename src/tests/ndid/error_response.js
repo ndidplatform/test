@@ -162,7 +162,8 @@ describe('NDID response errors', function() {
       service_id: 'bank_statement',
     });
     expect(response.status).to.equal(400);
-    //TODO: Expect error code
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(25015);
   });
 
   it('NDID should get an error when approve service with not existing service_id', async function() {
@@ -182,7 +183,9 @@ describe('NDID response errors', function() {
       node_id: 'idp1',
       service_id: 'bank_statement',
     });
-    expect(response.status).to.equal(400);
-    //TODO: Expect error code
+    expect(response.status).to.equal(500);
+    const responseBody = await response.json();
+    //TODO: Wait for api declare error code
+    //expect(responseBody.error.code).to.equal(25015);
   });
 });
