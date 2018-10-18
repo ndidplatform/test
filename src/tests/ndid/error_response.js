@@ -183,9 +183,8 @@ describe('NDID response errors', function() {
       node_id: 'idp1',
       service_id: 'bank_statement',
     });
-    expect(response.status).to.equal(500);
+    expect(response.status).to.equal(400);
     const responseBody = await response.json();
-    //TODO: Wait for api declare error code
-    //expect(responseBody.error.code).to.equal(25015);
+    expect(responseBody.error.code).to.equal(25053);
   });
 });
