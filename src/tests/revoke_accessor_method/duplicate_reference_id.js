@@ -26,12 +26,19 @@ describe('Revoke accessor with duplicate reference id test', function() {
 
   const referenceId = generateReferenceId();
   const idp1ReferenceId = generateReferenceId();
+  const idpReferenceIdCloseRevokeAccessor = generateReferenceId();
+  const idpReferenceIdRevoke = generateReferenceId();
 
   const addAccessorRequestResultPromise = createEventPromise();
   const addAccessorResultPromise = createEventPromise();
   const accessorSignPromise = createEventPromise();
   const incomingRequestPromise = createEventPromise();
   const responseResultPromise = createEventPromise();
+  const closeRevokeAccessorRequestResultPromise = createEventPromise();
+  const IdPRevokeAccessorResultPromise = createEventPromise();
+  const incomingRequestRevokeAccessorPromise = createEventPromise();
+
+  let requestId2ndRevokeAccessor;
 
   let requestId;
   let accessorId;
@@ -72,6 +79,25 @@ describe('Revoke accessor with duplicate reference id test', function() {
         callbackData.reference_id === referenceId
       ) {
         addAccessorResultPromise.resolve(callbackData);
+      }
+    });
+
+    idp1EventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId2ndRevokeAccessor
+      ) {
+        incomingRequestRevokeAccessorPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'close_request_result' &&
+        callbackData.reference_id === idpReferenceIdCloseRevokeAccessor
+      ) {
+        closeRevokeAccessorRequestResultPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'revoke_accessor_result' &&
+        callbackData.reference_id === idpReferenceIdRevoke
+      ) {
+        IdPRevokeAccessorResultPromise.resolve(callbackData);
       }
     });
 
@@ -259,292 +285,148 @@ describe('Revoke accessor with duplicate reference id test', function() {
     expect(response.status).to.equal(404);
   });
 
-  describe('Revoke accessor with duplicate reference id test', function() {
-    const idpReferenceIdCloseRevokeAccessor = generateReferenceId();
-    const idpReferenceIdRevoke = generateReferenceId();
+  it('IdP (idp1) should revoke accessor successfully', async function() {
+    this.timeout(15000);
 
-    const closeRevokeAccessorRequestResultPromise = createEventPromise();
-    const IdPRevokeAccessorResultPromise = createEventPromise();
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+    const latestAccessor = identity.accessors.length - 1;
+    accessorId = identity.accessors[latestAccessor].accessorId;
 
-    before(async function() {
-      this.timeout(15000);
+    const response = await idpApi.revokeAccessorMethod('idp1', {
+      reference_id: idpReferenceIdRevoke,
+      callback_url: config.IDP1_CALLBACK_URL,
+      namespace,
+      identifier,
+      accessor_id: accessorId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(202);
+    requestId = responseBody.request_id;
+    await wait(3000);
+  });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
-        if (
-          callbackData.type === 'close_request_result' &&
-          callbackData.reference_id === idpReferenceIdCloseRevokeAccessor
-        ) {
-          closeRevokeAccessorRequestResultPromise.resolve(callbackData);
-        } else if (
-          callbackData.type === 'revoke_accessor_result' &&
-          callbackData.reference_id === idpReferenceIdRevoke
-        ) {
-          IdPRevokeAccessorResultPromise.resolve(callbackData);
-        }
-      });
+  it('IdP (idp1) should revoke accessor with duplicate reference id unsuccessfully', async function() {
+    this.timeout(15000);
+
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    const latestAccessor = identity.accessors.length - 1;
+    accessorId = identity.accessors[latestAccessor].accessorId;
+
+    const response = await idpApi.revokeAccessorMethod('idp1', {
+      reference_id: idpReferenceIdRevoke,
+      callback_url: config.IDP1_CALLBACK_URL,
+      namespace,
+      identifier,
+      accessor_id: accessorId,
+    });
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20045);
+  });
+
+  it('IdP (idp1) should revoke accessor with duplicate reference id unsuccessfully', async function() {
+    this.timeout(15000);
+
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    const latestAccessor = identity.accessors.length - 1;
+    accessorId = identity.accessors[latestAccessor].accessorId;
+
+    const response = await idpApi.revokeAccessorMethod('idp1', {
+      reference_id: idpReferenceIdRevoke,
+      callback_url: config.IDP1_CALLBACK_URL,
+      namespace,
+      identifier,
+      accessor_id: accessorId,
+    });
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20045);
+  });
+
+  it('1st IdP should close revoke accessor request successfully', async function() {
+    this.timeout(25000);
+    const response = await idpApi.closeIdentityRequest('idp1', {
+      request_id: requestId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      reference_id: idpReferenceIdCloseRevokeAccessor,
     });
 
-    it('IdP (idp1) should revoke accessor successfully', async function() {
-      this.timeout(15000);
+    expect(response.status).to.equal(202);
 
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      const latestAccessor = identity.accessors.length - 1;
-      accessorId = identity.accessors[latestAccessor].accessorId;
-
-      const response = await idpApi.revokeAccessorMethod('idp1', {
-        reference_id: idpReferenceIdRevoke,
-        callback_url: config.IDP1_CALLBACK_URL,
-        namespace,
-        identifier,
-        accessor_id: accessorId,
-      });
-      const responseBody = await response.json();
-      expect(response.status).to.equal(202);
-      requestId = responseBody.request_id;
-      await wait(3000);
+    const closeRevokeAccessorRequestResult = await closeRevokeAccessorRequestResultPromise.promise;
+    expect(closeRevokeAccessorRequestResult).to.deep.include({
+      success: true,
+      reference_id: idpReferenceIdCloseRevokeAccessor,
+      request_id: requestId,
     });
 
-    it('IdP (idp1) should revoke accessor with duplicate reference id unsuccessfully', async function() {
-      this.timeout(15000);
-
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-
-      const latestAccessor = identity.accessors.length - 1;
-      accessorId = identity.accessors[latestAccessor].accessorId;
-
-      const response = await idpApi.revokeAccessorMethod('idp1', {
-        reference_id: idpReferenceIdRevoke,
-        callback_url: config.IDP1_CALLBACK_URL,
-        namespace,
-        identifier,
-        accessor_id: accessorId,
-      });
-      expect(response.status).to.equal(400);
-      const responseBody = await response.json();
-      expect(responseBody.error.code).to.equal(20045);
-    });
-
-    it('IdP (idp1) should revoke accessor with duplicate reference id unsuccessfully', async function() {
-      this.timeout(15000);
-
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-
-      const latestAccessor = identity.accessors.length - 1;
-      accessorId = identity.accessors[latestAccessor].accessorId;
-
-      const response = await idpApi.revokeAccessorMethod('idp1', {
-        reference_id: idpReferenceIdRevoke,
-        callback_url: config.IDP1_CALLBACK_URL,
-        namespace,
-        identifier,
-        accessor_id: accessorId,
-      });
-      expect(response.status).to.equal(400);
-      const responseBody = await response.json();
-      expect(responseBody.error.code).to.equal(20045);
-    });
-
-    after(async function() {
-      this.timeout(15000);
-      await idpApi.closeIdentityRequest('idp1', {
-        request_id: requestId,
-        callback_url: config.IDP1_CALLBACK_URL,
-        reference_id: idpReferenceIdCloseRevokeAccessor,
-      });
-      idp1EventEmitter.removeAllListeners('callback');
-      await wait(2000);
+    const IdPRevokeAccessorResult = await IdPRevokeAccessorResultPromise.promise;
+    expect(IdPRevokeAccessorResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'revoke_accessor_result',
+      success: false,
+      reference_id: idpReferenceIdRevoke,
+      request_id: requestId,
+      error: { code: 20025, message: 'Request is already closed' },
     });
   });
 
-  describe('Revoke accessor with duplicate reference id that is not in progress (closed) test', function() {
-    const idpReferenceIdCloseRevokeAccessor = generateReferenceId();
-    const idpReferenceIdRevoke = generateReferenceId();
+  it('After request duplicate reference id is not in progress (closed) IdP (idp1) should revoke accessor successfully', async function() {
+    this.timeout(15000);
 
-    const closeRevokeAccessorRequestResultPromise = createEventPromise();
-    const IdPRevokeAccessorResultPromise = createEventPromise();
-    const incomingRequestPromise = createEventPromise();
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+    const latestAccessor = identity.accessors.length - 1;
+    accessorId = identity.accessors[latestAccessor].accessorId;
 
-    let requestId2ndRevokeAccessor;
-
-    before(async function() {
-      this.timeout(15000);
-
-      idp1EventEmitter.on('callback', function(callbackData) {
-        if (
-          callbackData.type === 'incoming_request' &&
-          callbackData.request_id === requestId2ndRevokeAccessor
-        ) {
-          incomingRequestPromise.resolve(callbackData);
-        } else if (
-          callbackData.type === 'close_request_result' &&
-          callbackData.reference_id === idpReferenceIdCloseRevokeAccessor
-        ) {
-          closeRevokeAccessorRequestResultPromise.resolve(callbackData);
-        } else if (
-          callbackData.type === 'revoke_accessor_result' &&
-          callbackData.reference_id === idpReferenceIdRevoke
-        ) {
-          IdPRevokeAccessorResultPromise.resolve(callbackData);
-        }
-      });
+    const response = await idpApi.revokeAccessorMethod('idp1', {
+      reference_id: idpReferenceIdRevoke,
+      callback_url: config.IDP1_CALLBACK_URL,
+      namespace,
+      identifier,
+      accessor_id: accessorId,
     });
-
-    it('IdP (idp1) should revoke accessor successfully', async function() {
-      this.timeout(15000);
-
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      const latestAccessor = identity.accessors.length - 1;
-      accessorId = identity.accessors[latestAccessor].accessorId;
-
-      const response = await idpApi.revokeAccessorMethod('idp1', {
-        reference_id: idpReferenceIdRevoke,
-        callback_url: config.IDP1_CALLBACK_URL,
-        namespace,
-        identifier,
-        accessor_id: accessorId,
-      });
-      const responseBody = await response.json();
-      expect(response.status).to.equal(202);
-      requestId = responseBody.request_id;
-      await wait(3000);
-    });
-
-    it('IdP (idp1) should revoke accessor with duplicate reference id unsuccessfully', async function() {
-      this.timeout(15000);
-
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-
-      const latestAccessor = identity.accessors.length - 1;
-      accessorId = identity.accessors[latestAccessor].accessorId;
-
-      const response = await idpApi.revokeAccessorMethod('idp1', {
-        reference_id: idpReferenceIdRevoke,
-        callback_url: config.IDP1_CALLBACK_URL,
-        namespace,
-        identifier,
-        accessor_id: accessorId,
-      });
-      expect(response.status).to.equal(400);
-      const responseBody = await response.json();
-      expect(responseBody.error.code).to.equal(20045);
-    });
-
-    it('IdP (idp1) should revoke accessor with duplicate reference id unsuccessfully', async function() {
-      this.timeout(15000);
-
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-
-      const latestAccessor = identity.accessors.length - 1;
-      accessorId = identity.accessors[latestAccessor].accessorId;
-
-      const response = await idpApi.revokeAccessorMethod('idp1', {
-        reference_id: idpReferenceIdRevoke,
-        callback_url: config.IDP1_CALLBACK_URL,
-        namespace,
-        identifier,
-        accessor_id: accessorId,
-      });
-      expect(response.status).to.equal(400);
-      const responseBody = await response.json();
-      expect(responseBody.error.code).to.equal(20045);
-    });
-
-    it('1st IdP should close revoke accessor request successfully', async function() {
-      this.timeout(25000);
-      const response = await idpApi.closeIdentityRequest('idp1', {
-        request_id: requestId,
-        callback_url: config.IDP1_CALLBACK_URL,
-        reference_id: idpReferenceIdCloseRevokeAccessor,
-      });
-
-      expect(response.status).to.equal(202);
-
-      const closeRevokeAccessorRequestResult = await closeRevokeAccessorRequestResultPromise.promise;
-      expect(closeRevokeAccessorRequestResult).to.deep.include({
-        success: true,
-        reference_id: idpReferenceIdCloseRevokeAccessor,
-        request_id: requestId,
-      });
-
-      const IdPRevokeAccessorResult = await IdPRevokeAccessorResultPromise.promise;
-      expect(IdPRevokeAccessorResult).to.deep.include({
-        node_id: 'idp1',
-        type: 'revoke_accessor_result',
-        success: false,
-        reference_id: idpReferenceIdRevoke,
-        request_id: requestId,
-        error: { code: 20025, message: 'Request is already closed' },
-      });
-    });
-
-    it('After request duplicate reference id is not in progress (closed) IdP (idp1) should revoke accessor successfully', async function() {
-      this.timeout(15000);
-
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      const latestAccessor = identity.accessors.length - 1;
-      accessorId = identity.accessors[latestAccessor].accessorId;
-
-      const response = await idpApi.revokeAccessorMethod('idp1', {
-        reference_id: idpReferenceIdRevoke,
-        callback_url: config.IDP1_CALLBACK_URL,
-        namespace,
-        identifier,
-        accessor_id: accessorId,
-      });
-      const responseBody = await response.json();
-      expect(response.status).to.equal(202);
-      requestId2ndRevokeAccessor = responseBody.request_id;
-      await wait(3000);
-    });
-
-    it('Idp1 should get incoming request for revoke request', async function() {
-      this.timeout(15000);
-      const incomingRequest = await incomingRequestPromise.promise;
-      expect(incomingRequest).to.deep.include({
-        mode: 3,
-        request_id: requestId2ndRevokeAccessor,
-        namespace,
-        identifier,
-        requester_node_id: 'idp1',
-      });
-      expect(incomingRequest.creation_block_height).to.be.a('number');
-      requestMessageHash = incomingRequest.request_message_hash;
-    });
-
-    after(async function() {
-      this.timeout(15000);
-      await idpApi.closeIdentityRequest('idp1', {
-        request_id: requestId2ndRevokeAccessor,
-        callback_url: config.IDP1_CALLBACK_URL,
-        reference_id: idpReferenceIdCloseRevokeAccessor,
-      });
-      idp1EventEmitter.removeAllListeners('callback');
-      await wait(2000);
-    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(202);
+    requestId2ndRevokeAccessor = responseBody.request_id;
+    await wait(3000);
   });
 
-  after(function() {
+  it('Idp1 should get incoming request for revoke request', async function() {
+    this.timeout(15000);
+    const incomingRequest = await incomingRequestRevokeAccessorPromise.promise;
+    expect(incomingRequest).to.deep.include({
+      mode: 3,
+      request_id: requestId2ndRevokeAccessor,
+      namespace,
+      identifier,
+      requester_node_id: 'idp1',
+    });
+    expect(incomingRequest.creation_block_height).to.be.a('number');
+    requestMessageHash = incomingRequest.request_message_hash;
+  });
+
+  after(async function() {
+    this.timeout(15000);
+    await idpApi.closeIdentityRequest('idp1', {
+      request_id: requestId2ndRevokeAccessor,
+      callback_url: config.IDP1_CALLBACK_URL,
+      reference_id: idpReferenceIdCloseRevokeAccessor,
+    });
+    await wait(2000);
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_sign_callback');
   });
