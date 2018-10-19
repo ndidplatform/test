@@ -631,7 +631,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
 
   it('Special request status for create identity should be completed and closed', async function() {
     this.timeout(10000);
-    //wait for API close request
+    //wait for api close request
     await wait(3000);
     const response = await commonApi.getRequest('idp2', { requestId });
     const responseBody = await response.json();
@@ -648,6 +648,15 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       status: 'completed',
       requester_node_id: 'idp2',
     });
+    await wait(3000); //wait for api clean up reference id
+  });
+
+  it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+    this.timeout(10000);
+    const response = await idpApi.getRequestIdByReferenceId('idp2', {
+      reference_id: referenceId,
+    });
+    expect(response.status).to.equal(404);
   });
 
   after(function() {
