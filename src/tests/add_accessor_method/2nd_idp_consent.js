@@ -146,8 +146,21 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
     });
   });
 
+  it('1st IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+    this.timeout(10000);
+    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      reference_id: referenceId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      request_id: requestId,
+      accessor_id: accessorId,
+    });
+  });
+
   it('2nd IdP should receive add accessor method request', async function() {
-    this.timeout(15000);
+    this.timeout(20000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 3,
@@ -182,7 +195,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
   it('2nd IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp2Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -225,7 +238,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -239,7 +252,7 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
 
   it('Special request status for add accessor method should be completed and closed', async function() {
     this.timeout(10000);
-    //wait for API close request
+    //wait for api close request
     await wait(3000);
     const response = await commonApi.getRequest('idp1', { requestId });
     const responseBody = await response.json();
@@ -256,6 +269,15 @@ describe('IdP (idp1) add accessor method (providing accessor_id) and 2nd IdP (id
       status: 'completed',
       requester_node_id: 'idp1',
     });
+    await wait(3000); //wait for api clean up reference id
+  });
+
+  it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+    this.timeout(10000);
+    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      reference_id: referenceId,
+    });
+    expect(response.status).to.equal(404);
   });
 
   after(function() {
@@ -405,7 +427,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -440,7 +462,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   it('IdP should create response (accept) with new accessor id successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;
@@ -519,7 +541,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id:'rp1'
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
