@@ -7,7 +7,7 @@ describe('Create identity', function() {
   require('./lock_timeout');
   require('./update_identity_ial');
   require('./close_identity_request');
-  require('./2nd_idp_create_identity_and_close_and_get_request_id');
+  // require('./2nd_idp_create_identity_and_close_and_get_request_id'); // duplicate test case in close_identity_request
   require('./error_response');
 
   after(async function() {

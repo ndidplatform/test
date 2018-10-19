@@ -304,6 +304,19 @@ describe('2nd IdP close identity request test', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
+  it('2nd IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+    this.timeout(10000);
+    const response = await idpApi.getRequestIdByReferenceId('idp2', {
+      reference_id: referenceIdIdp2,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      request_id: requestId2ndIdP,
+      accessor_id: accessorId2ndIdP,
+    });
+  });
+
   it('2nd IdP should close identity request successfully', async function() {
     this.timeout(10000);
     const response = await idpApi.closeIdentityRequest('idp2', {
@@ -379,6 +392,15 @@ describe('2nd IdP close identity request test', function() {
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
     expect(idpNode).to.not.exist;
+  });
+
+  it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+    this.timeout(10000);
+    await wait(2000); //wait for api clean up reference id
+    const response = await idpApi.getRequestIdByReferenceId('idp2', {
+      reference_id: referenceIdIdp2,
+    });
+    expect(response.status).to.equal(404);
   });
 
   after(function() {
