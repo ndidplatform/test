@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import forge from 'node-forge';
 
-import { idp1Available, rpAvailable, as1Available, idp2Available } from '..';
+import { as1Available, idp2Available } from '..';
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
 import * as asApi from '../../api/v2/as';
@@ -95,7 +95,7 @@ describe('IdP (idp1) add accessor method for revoke fail test', function() {
   });
 
   it('should add accessor method successfully', async function() {
-    this.timeout(10000);
+    this.timeout(25000);
     const response = await idpApi.addAccessorMethod('idp1', {
       namespace: namespace,
       identifier: identifier,
@@ -144,6 +144,19 @@ describe('IdP (idp1) add accessor method for revoke fail test', function() {
     });
   });
 
+  it('1st IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+    this.timeout(10000);
+    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      reference_id: referenceId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      request_id: requestId,
+      accessor_id: accessorId,
+    });
+  });
+
   it('1st IdP should receive add accessor method request', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
@@ -171,9 +184,9 @@ describe('IdP (idp1) add accessor method for revoke fail test', function() {
   });
 
   it('1st IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(25000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -216,7 +229,7 @@ describe('IdP (idp1) add accessor method for revoke fail test', function() {
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -247,6 +260,15 @@ describe('IdP (idp1) add accessor method for revoke fail test', function() {
       status: 'completed',
       requester_node_id: 'idp1',
     });
+    await wait(3000) //wait for api clean up reference_id
+  });
+
+  it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+    this.timeout(10000);
+    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      reference_id: referenceId,
+    });
+    expect(response.status).to.equal(404);
   });
 
   after(function() {
@@ -270,13 +292,13 @@ describe('Revoke accessor by associated IDP but is not owner', function() {
     }
 
     let identity = db.idp2Identities.find(
-      (identity) =>
-        identity.namespace === db.idp1Identities[0].namespace && 
-          identity.identifier === db.idp1Identities[0].identifier
+      identity =>
+        identity.namespace === db.idp1Identities[0].namespace &&
+        identity.identifier === db.idp1Identities[0].identifier
     );
 
     //idp2 not associate
-    if(!identity) {
+    if (!identity) {
       this.test.parent.pending = true;
       this.skip();
     }
@@ -285,13 +307,12 @@ describe('Revoke accessor by associated IDP but is not owner', function() {
     identifier = identity.identifier;
 
     identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
     const latestAccessor = identity.accessors.length - 1;
     accessorId = identity.accessors[latestAccessor].accessorId;
-
   });
 
   it('Revoke accessor should fail', async function() {
@@ -452,7 +473,7 @@ describe('Accessor must still be usable', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -487,7 +508,7 @@ describe('Accessor must still be usable', function() {
   it('IdP should create response (accept) with new accessor id successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;

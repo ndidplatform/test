@@ -1,10 +1,9 @@
 import { expect } from 'chai';
 import forge from 'node-forge';
 
-import { idp1Available, rpAvailable, as1Available, idp2Available } from '..';
+import { as1Available } from '..';
 import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
 import * as commonApi from '../../api/v2/common';
 import {
   idp1EventEmitter,
@@ -140,6 +139,19 @@ describe('IdP (idp1) add accessor method for revoke success test', function() {
     });
   });
 
+  it('1st IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+    this.timeout(15000);
+    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      reference_id: referenceId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      request_id: requestId,
+      accessor_id: accessorId,
+    });
+  });
+
   it('1st IdP should receive add accessor method request', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
@@ -167,9 +179,9 @@ describe('IdP (idp1) add accessor method for revoke success test', function() {
   });
 
   it('1st IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(20000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -212,7 +224,7 @@ describe('IdP (idp1) add accessor method for revoke success test', function() {
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -225,8 +237,8 @@ describe('IdP (idp1) add accessor method for revoke success test', function() {
   });
 
   it('Special request status for add accessor method should be completed and closed', async function() {
-    this.timeout(10000);
-    //wait for API close request
+    this.timeout(25000);
+    //wait for api close request
     await wait(3000);
     const response = await commonApi.getRequest('idp1', { requestId });
     const responseBody = await response.json();
@@ -243,6 +255,15 @@ describe('IdP (idp1) add accessor method for revoke success test', function() {
       status: 'completed',
       requester_node_id: 'idp1',
     });
+    await wait(3000); //wait for api clean up refernece_id
+  });
+
+  it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+    this.timeout(10000);
+    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      reference_id: referenceId,
+    });
+    expect(response.status).to.equal(404);
   });
 
   after(function() {
@@ -269,12 +290,11 @@ describe('Revoke accessor by the owner', function() {
   let requestMessageHash;
 
   before(function() {
-
     namespace = db.idp1Identities[0].namespace;
     identifier = db.idp1Identities[0].identifier;
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -304,7 +324,6 @@ describe('Revoke accessor by the owner', function() {
         revokeResultPromise.resolve(callbackData);
       }
     });
-
   });
 
   it('Revoke accessor should success', async function() {
@@ -334,6 +353,19 @@ describe('Revoke accessor by the owner', function() {
     expect(revokeRequest.creation_block_height).to.be.a('number');
   });
 
+  it('1st IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+    this.timeout(15000);
+    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      reference_id: idpReferenceIdRevoke,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      request_id: requestId,
+      accessor_id: accessorId,
+    });
+  });
+
   it('Idp1 should get incoming request for revoke request', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
@@ -349,9 +381,9 @@ describe('Revoke accessor by the owner', function() {
   });
 
   it('Idp1 should response successfully', async function() {
-    this.timeout(25000);
+    this.timeout(15000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;
@@ -396,6 +428,36 @@ describe('Revoke accessor by the owner', function() {
       node_id: 'idp1',
       success: true,
     });
+  });
+
+  it('Special request status for add accessor method should be completed and closed', async function() {
+    this.timeout(25000);
+    //wait for api close request
+    await wait(3000);
+    const response = await commonApi.getRequest('idp1', { requestId });
+    const responseBody = await response.json();
+    expect(responseBody).to.deep.include({
+      request_id: requestId,
+      min_idp: 1,
+      min_aal: 1,
+      min_ial: 1.1,
+      request_timeout: 86400,
+      data_request_list: [],
+      closed: true,
+      timed_out: false,
+      mode: 3,
+      status: 'completed',
+      requester_node_id: 'idp1',
+    });
+    await wait(3000); //wait for api clean up refernece_id
+  });
+
+  it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+    this.timeout(10000);
+    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      reference_id: idpReferenceIdRevoke,
+    });
+    expect(response.status).to.equal(404);
   });
 });
 
@@ -539,7 +601,7 @@ describe('Revoked accessor must be unusable', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -571,10 +633,10 @@ describe('Revoked accessor must be unusable', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should should not be able to create response (accept) with the revoked accessor', async function() {
+  it('IdP should not be able to create response (accept) with the revoked accessor', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;
@@ -602,197 +664,7 @@ describe('Revoked accessor must be unusable', function() {
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
     expect(responseBody.error.code).to.equal(20011);
-
-    /*const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });*/
   });
-
-  /*it('RP should receive confirmed request status with invalid proofs and signature', async function() {
-    this.timeout(15000);
-    const requestStatus = await requestStatusConfirmedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'confirmed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: false,
-          valid_proof: false,
-          valid_ial: true,
-        },
-      ],
-    });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
-  });
-
-  it('AS should receive data request', async function() {
-    this.timeout(15000);
-    const dataRequest = await dataRequestReceivedPromise.promise;
-    expect(dataRequest).to.deep.include({
-      request_id: requestId,
-      mode: createRequestParams.mode,
-      namespace,
-      identifier,
-      service_id: createRequestParams.data_request_list[0].service_id,
-      request_params: createRequestParams.data_request_list[0].request_params,
-      max_ial: 2.3,
-      max_aal: 3,
-      requester_node_id: 'rp1',
-    });
-    expect(dataRequest.response_signature_list).to.have.lengthOf(1);
-    expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
-      .empty;
-  });
-
-  it('AS should send data successfully', async function() {
-    this.timeout(15000);
-    const response = await asApi.sendData('as1', {
-      requestId,
-      serviceId: createRequestParams.data_request_list[0].service_id,
-      reference_id: asReferenceId,
-      callback_url: config.AS1_CALLBACK_URL,
-      data,
-    });
-    expect(response.status).to.equal(202);
-
-    const sendDataResult = await sendDataResultPromise.promise;
-    expect(sendDataResult).to.deep.include({
-      reference_id: asReferenceId,
-      success: true,
-    });
-  });
-
-  it('RP should receive request status with signed data count = 1', async function() {
-    this.timeout(15000);
-    const requestStatus = await requestStatusSignedDataPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'confirmed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
-        },
-      ],
-    });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
-  });
-
-  it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
-        },
-      ],
-    });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
-  });
-
-  it('RP should receive request closed status', async function() {
-    this.timeout(10000);
-    const requestStatus = await requestClosedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: true,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_proof: true,
-          valid_ial: true,
-        },
-      ],
-    });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
-  });
-
-  it('RP should get the correct data received from AS', async function() {
-    const response = await rpApi.getDataFromAS('rp1', {
-      requestId,
-    });
-    const dataArr = await response.json();
-    expect(response.status).to.equal(200);
-
-    expect(dataArr).to.have.lengthOf(1);
-    expect(dataArr[0]).to.deep.include({
-      source_node_id: 'as1',
-      service_id: createRequestParams.data_request_list[0].service_id,
-      signature_sign_method: 'RSA-SHA256',
-      data,
-    });
-    expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
-    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
-  });*/
 
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
