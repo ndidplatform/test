@@ -12,7 +12,7 @@ import {
 } from '../../utils';
 import * as config from '../../config';
 
-describe('IdP (idp1) add accessor method (providing custom request_message and without providing accessor_id) and 1st IdP (idp1) consent test', function() {
+describe('Add accessor method with duplicate reference id test', function() {
   let namespace;
   let identifier;
   const addAccessorRequestMessage =
