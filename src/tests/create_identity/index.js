@@ -6,6 +6,7 @@ describe('Create identity', function() {
   require('./2nd_idp');
   require('./lock_timeout');
   require('./update_identity_ial');
+  require('./duplicate_reference_id');
   require('./close_identity_request');
   require('./error_response');
 
