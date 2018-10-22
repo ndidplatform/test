@@ -381,6 +381,25 @@ describe('Close Revoke accessor request test', function() {
     expect(responseBody.error.code).to.equal(20025);
   });
 
+  it('Special request status for revoke accessor should be closed', async function() {
+    this.timeout(10000);
+    const response = await commonApi.getRequest('idp1', { requestId });
+    const responseBody = await response.json();
+    expect(responseBody).to.deep.include({
+      request_id: requestId,
+      min_idp: 1,
+      min_aal: 1,
+      min_ial: 1.1,
+      request_timeout: 86400,
+      data_request_list: [],
+      closed: true,
+      timed_out: false,
+      mode: 3,
+      status: 'pending',
+      requester_node_id: 'idp1',
+    });
+  });
+
   after(async function() {
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_sign_callback');
