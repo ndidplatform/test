@@ -383,10 +383,12 @@ describe('Close Revoke accessor request test', function() {
 
   it('Special request status for revoke accessor should be closed', async function() {
     this.timeout(10000);
-    const response = await commonApi.getRequest('idp1', { requestId });
+    const response = await commonApi.getRequest('idp1', {
+      requestId: requestIdRevokeAccessor,
+    });
     const responseBody = await response.json();
     expect(responseBody).to.deep.include({
-      request_id: requestId,
+      request_id: requestIdRevokeAccessor,
       min_idp: 1,
       min_aal: 1,
       min_ial: 1.1,
