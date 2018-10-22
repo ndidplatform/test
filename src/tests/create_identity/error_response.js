@@ -33,7 +33,7 @@ describe('Create identity errors', function() {
     accessorId = db.idp1Identities[0].accessors[0].accessorId;
   });
 
-  it('IdP should get an error when creating duplicate identity', async function() {
+  it('IdP should get an error when creating duplicate identity (at IdP where already created an idenity for this user)', async function() {
     this.timeout(10000);
     const response = await idpApi.createIdentity('idp1', {
       reference_id: referenceId,
