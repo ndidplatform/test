@@ -394,6 +394,27 @@ describe('2nd IdP close identity request test', function() {
     expect(idpNode).to.not.exist;
   });
 
+  it('Special request status for create identity should be closed', async function() {
+    this.timeout(10000);
+    const response = await commonApi.getRequest('idp2', {
+      requestId: requestId2ndIdP,
+    });
+    const responseBody = await response.json();
+    expect(responseBody).to.deep.include({
+      request_id: requestId2ndIdP,
+      min_idp: 1,
+      min_aal: 1,
+      min_ial: 1.1,
+      request_timeout: 86400,
+      data_request_list: [],
+      closed: true,
+      timed_out: false,
+      mode: 3,
+      status: 'pending',
+      requester_node_id: 'idp2',
+    });
+  });
+
   it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
     this.timeout(10000);
     await wait(2000); //wait for api clean up reference id
