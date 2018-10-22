@@ -197,6 +197,7 @@ describe('Add accessor method with duplicate reference id test', function() {
       request_id: requestId,
       error: { code: 20025, message: 'Request is already closed' },
     });
+    await wait(2000);
   });
 
   it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
