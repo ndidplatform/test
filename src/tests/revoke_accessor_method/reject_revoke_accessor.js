@@ -382,7 +382,7 @@ describe('Reject revoke accessor test', function() {
       requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('Idp1 should response successfully', async function() {
+    it('Idp1 should response (reject) successfully', async function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         identity =>
