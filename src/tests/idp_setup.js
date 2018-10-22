@@ -8,6 +8,7 @@ describe('IdP (idp1) setup', function() {
   it('should set callbacks successfully', async function() {
     const response = await idpApi.setCallbacks('idp1', {
       incoming_request_url: config.IDP1_CALLBACK_URL,
+      incoming_request_status_update_url: config.IDP1_CALLBACK_URL,
       accessor_sign_url: config.IDP1_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.IDP1_CALLBACK_URL,
     });
@@ -20,6 +21,7 @@ describe('IdP (idp1) setup', function() {
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
       incoming_request_url: config.IDP1_CALLBACK_URL,
+      incoming_request_status_update_url: config.IDP1_CALLBACK_URL,
       accessor_sign_url: config.IDP1_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.IDP1_CALLBACK_URL,
     });
@@ -36,6 +38,7 @@ describe('IdP (idp2) setup', function() {
   it('should set callbacks successfully', async function() {
     const response = await idpApi.setCallbacks('idp2', {
       incoming_request_url: config.IDP2_CALLBACK_URL,
+      incoming_request_status_update_url: config.IDP2_CALLBACK_URL,
       accessor_sign_url: config.IDP2_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.IDP2_CALLBACK_URL,
     });
@@ -48,6 +51,7 @@ describe('IdP (idp2) setup', function() {
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
       incoming_request_url: config.IDP2_CALLBACK_URL,
+      incoming_request_status_update_url: config.IDP2_CALLBACK_URL,
       accessor_sign_url: config.IDP2_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.IDP2_CALLBACK_URL,
     });

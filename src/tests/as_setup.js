@@ -13,6 +13,7 @@ describe('AS (as1) setup', function() {
 
   it('should set callbacks successfully', async function() {
     const response = await asApi.setCallbacks('as1', {
+      incoming_request_status_update_url: config.AS1_CALLBACK_URL,
       error_url: config.AS1_CALLBACK_URL,
     });
     expect(response.status).to.equal(204);
@@ -23,6 +24,7 @@ describe('AS (as1) setup', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
+      incoming_request_status_update_url: config.AS1_CALLBACK_URL,
       error_url: config.AS1_CALLBACK_URL,
     });
   });
@@ -37,6 +39,7 @@ describe('AS (as2) setup', function() {
 
   it('should set callbacks successfully', async function() {
     const response = await asApi.setCallbacks('as2', {
+      incoming_request_status_update_url: config.AS2_CALLBACK_URL,
       error_url: config.AS2_CALLBACK_URL,
     });
     expect(response.status).to.equal(204);
@@ -47,6 +50,7 @@ describe('AS (as2) setup', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
+      incoming_request_status_update_url: config.AS2_CALLBACK_URL,
       error_url: config.AS2_CALLBACK_URL,
     });
   });

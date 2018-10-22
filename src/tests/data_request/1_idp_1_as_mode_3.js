@@ -37,6 +37,17 @@ describe('1 IdP, 1 AS, mode 3', function() {
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
+  const idp_requestStatusPendingPromise = createEventPromise();
+  const idp_requestStatusConfirmedPromise = createEventPromise();
+  const idp_requestStatusSignedDataPromise = createEventPromise();
+  const idp_requestStatusCompletedPromise = createEventPromise();
+  const idp_requestClosedPromise = createEventPromise();
+
+  const as_requestStatusConfirmedPromise = createEventPromise();
+  const as_requestStatusSignedDataPromise = createEventPromise();
+  const as_requestStatusCompletedPromise = createEventPromise();
+  const as_requestClosedPromise = createEventPromise();
+
   let createRequestParams;
   const data = JSON.stringify({
     test: 'test',
@@ -49,6 +60,8 @@ describe('1 IdP, 1 AS, mode 3', function() {
   let requestMessageHash;
 
   const requestStatusUpdates = [];
+  const idp_requestStatusUpdates = [];
+  const as_requestStatusUpdates = [];
 
   before(function() {
     if (db.idp1Identities[0] == null) {
@@ -122,6 +135,26 @@ describe('1 IdP, 1 AS, mode 3', function() {
         callbackData.reference_id === idpReferenceId
       ) {
         responseResultPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'request_status' &&
+        callbackData.request_id === requestId
+      ) {
+        idp_requestStatusUpdates.push(callbackData);
+        if (callbackData.status === 'pending') {
+          idp_requestStatusPendingPromise.resolve(callbackData);
+        } else if (callbackData.status === 'confirmed') {
+          if (callbackData.service_list[0].signed_data_count === 1) {
+            idp_requestStatusSignedDataPromise.resolve(callbackData);
+          } else {
+            idp_requestStatusConfirmedPromise.resolve(callbackData);
+          }
+        } else if (callbackData.status === 'completed') {
+          if (callbackData.closed) {
+            idp_requestClosedPromise.resolve(callbackData);
+          } else {
+            idp_requestStatusCompletedPromise.resolve(callbackData);
+          }
+        }
       }
     });
 
@@ -136,6 +169,24 @@ describe('1 IdP, 1 AS, mode 3', function() {
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'request_status' &&
+        callbackData.request_id === requestId
+      ) {
+        as_requestStatusUpdates.push(callbackData);
+        if (callbackData.status === 'confirmed') {
+          if (callbackData.service_list[0].signed_data_count === 1) {
+            as_requestStatusSignedDataPromise.resolve(callbackData);
+          } else {
+            as_requestStatusConfirmedPromise.resolve(callbackData);
+          }
+        } else if (callbackData.status === 'completed') {
+          if (callbackData.closed) {
+            as_requestClosedPromise.resolve(callbackData);
+          } else {
+            as_requestStatusCompletedPromise.resolve(callbackData);
+          }
+        }
       }
     });
   });
@@ -218,6 +269,32 @@ describe('1 IdP, 1 AS, mode 3', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
+  // IdP may or may not get this request status callback
+  // it('IdP should receive pending request status', async function() {
+  //   this.timeout(10000);
+  //   const requestStatus = await idp_requestStatusPendingPromise.promise;
+  //   expect(requestStatus).to.deep.include({
+  //     request_id: requestId,
+  //     status: 'pending',
+  //     mode: createRequestParams.mode,
+  //     min_idp: createRequestParams.min_idp,
+  //     answered_idp_count: 0,
+  //     closed: false,
+  //     timed_out: false,
+  //     service_list: [
+  //       {
+  //         service_id: createRequestParams.data_request_list[0].service_id,
+  //         min_as: createRequestParams.data_request_list[0].min_as,
+  //         signed_data_count: 0,
+  //         received_data_count: 0,
+  //       },
+  //     ],
+  //     response_valid_list: [],
+  //   });
+  //   expect(requestStatus).to.have.property('block_height');
+  //   expect(requestStatus.block_height).is.a('number');
+  // });
+
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
@@ -283,6 +360,38 @@ describe('1 IdP, 1 AS, mode 3', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
+  it('IdP should receive confirmed request status without proofs', async function() {
+    this.timeout(15000);
+    const requestStatus = await idp_requestStatusConfirmedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'confirmed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 0,
+          received_data_count: 0,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
   it('AS should receive data request', async function() {
     this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
@@ -304,6 +413,39 @@ describe('1 IdP, 1 AS, mode 3', function() {
     expect(dataRequest.creation_time).to.be.a('number');
     expect(dataRequest.creation_block_height).to.be.a('number');
   });
+
+  // AS may or may not get this request status callback
+  // it('AS should receive confirmed request status without proofs', async function() {
+  //   this.timeout(15000);
+  //   const requestStatus = await as_requestStatusConfirmedPromise.promise;
+  //   expect(requestStatus).to.deep.include({
+  //     request_id: requestId,
+  //     status: 'confirmed',
+  //     mode: createRequestParams.mode,
+  //     min_idp: createRequestParams.min_idp,
+  //     answered_idp_count: 1,
+  //     closed: false,
+  //     timed_out: false,
+  //     service_list: [
+  //       {
+  //         service_id: createRequestParams.data_request_list[0].service_id,
+  //         min_as: createRequestParams.data_request_list[0].min_as,
+  //         signed_data_count: 0,
+  //         received_data_count: 0,
+  //       },
+  //     ],
+  //     response_valid_list: [
+  //       {
+  //         idp_id: 'idp1',
+  //         valid_signature: null,
+  //         valid_proof: null,
+  //         valid_ial: null,
+  //       },
+  //     ],
+  //   });
+  //   expect(requestStatus).to.have.property('block_height');
+  //   expect(requestStatus.block_height).is.a('number');
+  // });
 
   it('AS should send data successfully', async function() {
     this.timeout(15000);
@@ -355,6 +497,70 @@ describe('1 IdP, 1 AS, mode 3', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
+  it('IdP should receive request status with signed data count = 1', async function() {
+    this.timeout(15000);
+    const requestStatus = await idp_requestStatusSignedDataPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'confirmed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 0,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('AS should receive request status with signed data count = 1', async function() {
+    this.timeout(15000);
+    const requestStatus = await as_requestStatusSignedDataPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'confirmed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 0,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
   it('RP should receive completed request status with received data count = 1', async function() {
     this.timeout(15000);
     const requestStatus = await requestStatusCompletedPromise.promise;
@@ -387,9 +593,137 @@ describe('1 IdP, 1 AS, mode 3', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
+  it('IdP should receive completed request status with received data count = 1', async function() {
+    this.timeout(15000);
+    const requestStatus = await idp_requestStatusCompletedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 1,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('AS should receive completed request status with received data count = 1', async function() {
+    this.timeout(15000);
+    const requestStatus = await as_requestStatusCompletedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 1,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
   it('RP should receive request closed status', async function() {
     this.timeout(10000);
     const requestStatus = await requestClosedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: true,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 1,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('IdP should receive request closed status', async function() {
+    this.timeout(10000);
+    const requestStatus = await idp_requestClosedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: true,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 1,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
+  it('AS should receive request closed status', async function() {
+    this.timeout(10000);
+    const requestStatus = await as_requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
       status: 'completed',
@@ -439,6 +773,14 @@ describe('1 IdP, 1 AS, mode 3', function() {
 
   it('RP should receive 5 request status updates', function() {
     expect(requestStatusUpdates).to.have.lengthOf(5);
+  });
+
+  it('IdP should receive 4 or 5 request status updates', function() {
+    expect(idp_requestStatusUpdates).to.have.length.within(4, 5);
+  });
+
+  it('AS should receive 3 or 4 request status updates', function() {
+    expect(as_requestStatusUpdates).to.have.length.within(3, 4);
   });
 
   it('RP should have and able to get saved private messages', async function() {

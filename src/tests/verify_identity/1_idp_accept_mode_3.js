@@ -27,6 +27,10 @@ describe('1 IdP, accept consent, mode 3', function() {
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
+  const idp_requestStatusPendingPromise = createEventPromise();
+  const idp_requestStatusCompletedPromise = createEventPromise();
+  const idp_requestClosedPromise = createEventPromise();
+
   let createRequestParams;
 
   let requestId;
@@ -34,6 +38,7 @@ describe('1 IdP, accept consent, mode 3', function() {
   let requestMessageHash;
 
   const requestStatusUpdates = [];
+  const idp_requestStatusUpdates = [];
 
   before(function() {
     if (db.idp1Identities[0] == null) {
@@ -90,6 +95,20 @@ describe('1 IdP, accept consent, mode 3', function() {
         incomingRequestPromise.resolve(callbackData);
       } else if (callbackData.type === 'response_result') {
         responseResultPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'request_status' &&
+        callbackData.request_id === requestId
+      ) {
+        idp_requestStatusUpdates.push(callbackData);
+        if (callbackData.status === 'pending') {
+          idp_requestStatusPendingPromise.resolve(callbackData);
+        } else if (callbackData.status === 'completed') {
+          if (callbackData.closed) {
+            idp_requestClosedPromise.resolve(callbackData);
+          } else {
+            idp_requestStatusCompletedPromise.resolve(callbackData);
+          }
+        }
       }
     });
   });
@@ -156,10 +175,29 @@ describe('1 IdP, accept consent, mode 3', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
+  // IdP may or may not get this request status callback
+  // it('IdP should receive pending request status', async function() {
+  //   this.timeout(10000);
+  //   const requestStatus = await idp_requestStatusPendingPromise.promise;
+  //   expect(requestStatus).to.deep.include({
+  //     request_id: requestId,
+  //     status: 'pending',
+  //     mode: createRequestParams.mode,
+  //     min_idp: createRequestParams.min_idp,
+  //     answered_idp_count: 0,
+  //     closed: false,
+  //     timed_out: false,
+  //     service_list: [],
+  //     response_valid_list: [],
+  //   });
+  //   expect(requestStatus).to.have.property('block_height');
+  //   expect(requestStatus.block_height).is.a('number');
+  // });
+
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -214,6 +252,31 @@ describe('1 IdP, accept consent, mode 3', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
+  it('IdP should receive completed request status without proofs', async function() {
+    this.timeout(15000);
+    const requestStatus = await idp_requestStatusCompletedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: null,
+          valid_proof: null,
+          valid_ial: null,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
   it('RP should receive request closed status', async function() {
     this.timeout(10000);
     const requestStatus = await requestClosedPromise.promise;
@@ -239,8 +302,37 @@ describe('1 IdP, accept consent, mode 3', function() {
     expect(requestStatus.block_height).is.a('number');
   });
 
+  it('IdP should receive request closed status', async function() {
+    this.timeout(10000);
+    const requestStatus = await idp_requestClosedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: true,
+      timed_out: false,
+      service_list: [],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_proof: true,
+          valid_ial: true,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('number');
+  });
+
   it('RP should receive 3 request status updates', function() {
     expect(requestStatusUpdates).to.have.lengthOf(3);
+  });
+
+  it('IdP should receive 2 or 3 request status updates', function() {
+    expect(idp_requestStatusUpdates).to.have.length.within(2, 3);
   });
 
   it('RP should have and able to get saved private messages', async function() {
@@ -443,7 +535,7 @@ describe('1 IdP, accept consent, mode 3 (without idp_id_list key and data_reques
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
