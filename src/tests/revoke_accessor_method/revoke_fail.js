@@ -260,7 +260,7 @@ describe('IdP (idp1) add accessor method for revoke fail test', function() {
       status: 'completed',
       requester_node_id: 'idp1',
     });
-    await wait(3000) //wait for api clean up reference_id
+    await wait(3000); //wait for api clean up reference_id
   });
 
   it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
