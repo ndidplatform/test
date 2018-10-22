@@ -433,7 +433,7 @@ describe('Reject revoke accessor test', function() {
       expect(revokeResult.error.code).to.equal(10016);
     });
 
-    it('Special request status for add accessor method should be completed and closed', async function() {
+    it('Special request status for add accessor method should be rejected and closed', async function() {
       this.timeout(25000);
       //wait for api close request
       await wait(3000);
