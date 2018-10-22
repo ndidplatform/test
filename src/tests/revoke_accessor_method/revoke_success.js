@@ -327,6 +327,7 @@ describe('Revoke accessor by the owner', function() {
   });
 
   it('Revoke accessor should success', async function() {
+    this.timeout(15000);
     const response = await idpApi.revokeAccessorMethod('idp1', {
       reference_id: idpReferenceIdRevoke,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -334,8 +335,8 @@ describe('Revoke accessor by the owner', function() {
       identifier,
       accessor_id: accessorId,
     });
-    const responseBody = await response.json();
     expect(response.status).to.equal(202);
+    const responseBody = await response.json();
     requestId = responseBody.request_id;
   });
 
