@@ -530,7 +530,7 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
   });
 
   it('Should set MQ addresses (use debug) for RP node (rp1) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(20000);
 
     await debugApi.transact('rp1', {
       nodeId: 'rp1',
