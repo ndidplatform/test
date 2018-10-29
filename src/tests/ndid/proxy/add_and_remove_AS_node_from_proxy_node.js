@@ -556,7 +556,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
   });
 
   it('Should set MQ addresses (use debug) for AS node (as1) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(20000);
 
     await debugApi.transact('as1', {
       nodeId: 'as1',

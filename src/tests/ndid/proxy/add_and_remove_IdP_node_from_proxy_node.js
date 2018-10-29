@@ -504,7 +504,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   });
 
   it('Should set MQ addresses (use debug) for IdP node (idp1) successfully', async function() {
-    this.timeout(10000);
+    this.timeout(20000);
 
     await debugApi.transact('idp1', {
       nodeId: 'idp1',
