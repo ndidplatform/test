@@ -94,3 +94,13 @@ export function removeNodeFromProxyNode(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/removeNodeFromProxyNode`, data);
 }
+
+export function enableNode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/enableNode`, data);
+}
+
+export function disableNode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/disableNode`, data);
+}
