@@ -118,7 +118,13 @@ describe('Reject IdP add accessor method test', function() {
         accessor_id: accessorId,
         success: true,
       });
-      expect(addAccessorRequestResult.creation_block_height).to.be.a('number');
+      expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('should receive accessor sign callback with correct data', async function() {
@@ -174,7 +180,13 @@ describe('Reject IdP add accessor method test', function() {
         data_request_list: [],
       });
       expect(incomingRequest.creation_time).to.be.a('number');
-      expect(incomingRequest.creation_block_height).to.be.a('number');
+      expect(incomingRequest.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(incomingRequest.request_timeout).to.be.a('number');
 
       requestMessageHash = incomingRequest.request_message_hash;
@@ -183,7 +195,7 @@ describe('Reject IdP add accessor method test', function() {
     it('1st IdP should create response (reject) successfully', async function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -400,7 +412,7 @@ describe('Reject IdP add accessor method test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -426,7 +438,13 @@ describe('Reject IdP add accessor method test', function() {
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
-      expect(incomingRequest.creation_block_height).to.be.a('number');
+      expect(incomingRequest.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
       requestMessageSalt = incomingRequest.request_message_salt;
       requestMessageHash = incomingRequest.request_message_hash;
@@ -435,7 +453,7 @@ describe('Reject IdP add accessor method test', function() {
     it('IdP should create response (accept) with new accessor id was rejected unsuccessfully', async function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace && identity.identifier === identifier
       );
       let latestAccessor;

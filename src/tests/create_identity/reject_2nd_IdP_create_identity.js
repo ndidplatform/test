@@ -155,7 +155,13 @@ describe('Reject 2nd IdP create identity test', function() {
       accessor_id: accessorId,
       success: true,
     });
-    expect(createIdentityRequestResult.creation_block_height).to.be.a('number');
+    expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('1st IdP should receive accessor sign callback with correct data', async function() {
@@ -195,7 +201,7 @@ describe('Reject 2nd IdP create identity test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.exist;
 
     db.idp1Identities.push({
@@ -296,7 +302,13 @@ describe('Reject 2nd IdP create identity test', function() {
       data_request_list: [],
     });
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
@@ -305,7 +317,7 @@ describe('Reject 2nd IdP create identity test', function() {
   it('1st IdP should create response (reject) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 

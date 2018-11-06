@@ -324,14 +324,18 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise1.promise;
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -367,7 +371,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -427,7 +431,11 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('AS should receive data request', async function() {
@@ -500,7 +508,11 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -533,7 +545,11 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('NDID should remove AS node (as1) from proxy1', async function() {
@@ -655,14 +671,18 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise2.promise;
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -697,7 +717,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -757,7 +777,11 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('AS should receive data request', async function() {
@@ -829,7 +853,11 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -862,7 +890,11 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   after(async function() {

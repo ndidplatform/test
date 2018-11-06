@@ -269,14 +269,18 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('After add IdP node (idp1) to proxy1 it should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await ProxyIncomingRequestPromise.promise;
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -312,7 +316,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -373,7 +377,11 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('AS should receive data request', async function() {
@@ -446,7 +454,11 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -479,7 +491,11 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('NDID should remove IdP node (idp1) from proxy1', async function() {
@@ -569,14 +585,18 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('After remove IdP node (idp1) from proxy1 it should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -611,7 +631,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -671,7 +691,11 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('AS should receive data request', async function() {
@@ -744,7 +768,11 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -777,7 +805,11 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   after(async function() {

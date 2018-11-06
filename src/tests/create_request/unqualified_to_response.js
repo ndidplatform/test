@@ -25,7 +25,7 @@ describe('RP create request errors (unqualified to response)', function() {
       }
       const response = await commonApi.getIdP('ndid1');
       const responseBody = await response.json();
-      let idp3 = responseBody.find(idp => idp.node_id === 'idp3');
+      let idp3 = responseBody.find((idp) => idp.node_id === 'idp3');
       if (!idp3) {
         this.test.parent.pending = true;
         this.skip();
@@ -88,7 +88,7 @@ describe('RP create request errors (unqualified to response)', function() {
       }
       const response = await commonApi.getIdP('ndid1');
       const responseBody = await response.json();
-      let idp3 = responseBody.find(idp => idp.node_id === 'idp3');
+      let idp3 = responseBody.find((idp) => idp.node_id === 'idp3');
       if (!idp3) {
         this.test.parent.pending = true;
         this.skip();

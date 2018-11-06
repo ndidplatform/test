@@ -135,7 +135,13 @@ describe('Revoke accessor with duplicate reference id test', function() {
       accessor_id: accessorId,
       success: true,
     });
-    expect(addAccessorRequestResult.creation_block_height).to.be.a('number');
+    expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('should receive accessor sign callback with correct data', async function() {
@@ -191,7 +197,13 @@ describe('Revoke accessor with duplicate reference id test', function() {
       data_request_list: [],
     });
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
@@ -200,7 +212,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -243,7 +255,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -289,7 +301,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const latestAccessor = identity.accessors.length - 1;
@@ -312,7 +324,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -335,7 +347,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -386,7 +398,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const latestAccessor = identity.accessors.length - 1;
@@ -415,7 +427,13 @@ describe('Revoke accessor with duplicate reference id test', function() {
       identifier,
       requester_node_id: 'idp1',
     });
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     requestMessageHash = incomingRequest.request_message_hash;
   });
 

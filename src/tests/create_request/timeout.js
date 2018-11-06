@@ -96,7 +96,11 @@ describe('Timeout test (3 seconds)', function() {
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request timed out status in time limit', async function() {
@@ -114,7 +118,11 @@ describe('Timeout test (3 seconds)', function() {
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive 2 request status updates', function() {

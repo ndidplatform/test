@@ -122,7 +122,13 @@ describe('IdP error callback response tests', function() {
 
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
-      expect(createRequestResult.creation_block_height).to.be.a('number');
+      expect(createRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('IdP should receive incoming request callback', async function() {
@@ -158,7 +164,13 @@ describe('IdP error callback response tests', function() {
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
-      expect(incomingRequest.creation_block_height).to.be.a('number');
+      expect(incomingRequest.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
       requestMessageSalt = incomingRequest.request_message_salt;
       requestMessageHash = incomingRequest.request_message_hash;
@@ -313,7 +325,13 @@ describe('IdP error callback response tests', function() {
 
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
-      expect(createRequestResult.creation_block_height).to.be.a('number');
+      expect(createRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('IdP should receive incoming request callback', async function() {
@@ -349,7 +367,13 @@ describe('IdP error callback response tests', function() {
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
-      expect(incomingRequest.creation_block_height).to.be.a('number');
+      expect(incomingRequest.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
       requestMessageSalt = incomingRequest.request_message_salt;
       requestMessageHash = incomingRequest.request_message_hash;

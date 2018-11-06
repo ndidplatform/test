@@ -17,7 +17,7 @@ describe('NDID add new service test', function() {
     const responseGetServices = await commonApi.getServices('ndid1');
     const responseBody = await responseGetServices.json();
     alreadyAddedService = responseBody.find(
-      service => service.service_id === 'test_add_new_service'
+      (service) => service.service_id === 'test_add_new_service'
     );
   });
 
@@ -45,7 +45,7 @@ describe('NDID add new service test', function() {
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(
-      service => service.service_id === 'test_add_new_service'
+      (service) => service.service_id === 'test_add_new_service'
     );
 
     if (alreadyAddedService) {
@@ -79,7 +79,7 @@ describe('NDID add new service test', function() {
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(
-      service => service.service_id === 'test_add_new_service'
+      (service) => service.service_id === 'test_add_new_service'
     );
 
     expect(service).to.deep.equal({

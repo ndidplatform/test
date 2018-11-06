@@ -156,7 +156,7 @@ describe('IdP response invalid ial test', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');const splittedBlockHeight = requestStatus.block_height.split(':');expect(splittedBlockHeight).to.have.lengthOf(2);expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   after(async function() {
@@ -321,7 +321,7 @@ describe('IdP response invalid secret test', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');const splittedBlockHeight = requestStatus.block_height.split(':');expect(splittedBlockHeight).to.have.lengthOf(2);expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   after(async function() {

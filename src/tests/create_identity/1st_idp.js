@@ -102,7 +102,13 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       accessor_id: accessorId,
       success: true,
     });
-    expect(createIdentityRequestResult.creation_block_height).to.be.a('number');
+    expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('should receive accessor sign callback with correct data', async function() {
@@ -142,7 +148,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.exist;
 
     db.idp1Identities.push({

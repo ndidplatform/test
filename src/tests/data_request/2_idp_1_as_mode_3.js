@@ -181,7 +181,13 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
-    expect(createRequestResult.creation_block_height).to.be.a('number');
+    expect(createRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive pending request status', async function() {
@@ -206,7 +212,11 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('Both IdP (idp1 and idp2) should receive incoming request callback', async function() {
@@ -243,7 +253,13 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(idp1IncomingRequest.request_message_salt).to.be.a('string').that.is
       .not.empty;
     expect(idp1IncomingRequest.creation_time).to.be.a('number');
-    expect(idp1IncomingRequest.creation_block_height).to.be.a('number');
+    expect(idp1IncomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight_idp1 = idp1IncomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight_idp1).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight_idp1[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight_idp1[1]).to.have.lengthOf.at.least(1);
 
     expect(idp2IncomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -265,7 +281,13 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(idp2IncomingRequest.request_message_salt).to.be.a('string').that.is
       .not.empty;
     expect(idp2IncomingRequest.creation_time).to.be.a('number');
-    expect(idp2IncomingRequest.creation_block_height).to.be.a('number');
+    expect(idp2IncomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight_idp2 = idp2IncomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight_idp2).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight_idp2[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight_idp2[1]).to.have.lengthOf.at.least(1);
 
     requestMessageSalt = idp1IncomingRequest.request_message_salt;
     requestMessageHash = idp1IncomingRequest.request_message_hash;
@@ -361,7 +383,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   //   expect(requestStatus.response_valid_list[0].valid_proof).to.be.true;
   //   expect(requestStatus.response_valid_list[0].valid_ial).to.be.true;
   //   expect(requestStatus).to.have.property('block_height');
-  //   expect(requestStatus.block_height).is.a('number');
+  //   expect(requestStatus.block_height).is.a('string');const splittedBlockHeight = requestStatus.block_height.split(':');expect(splittedBlockHeight).to.have.lengthOf(2);expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   // });
 
   it('RP should receive confirmed (answered_idp_count = 2) request status with valid proofs', async function() {
@@ -389,7 +411,11 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(requestStatus.response_valid_list[1].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_ial).to.be.true;
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('AS should receive data request', async function() {
@@ -413,7 +439,13 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(dataRequest.response_signature_list[1]).to.be.a('string').that.is.not
       .empty;
     expect(dataRequest.creation_time).to.be.a('number');
-    expect(dataRequest.creation_block_height).to.be.a('number');
+    expect(dataRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('AS should send data successfully', async function() {
@@ -464,7 +496,11 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(requestStatus.response_valid_list[1].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_ial).to.be.true;
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
@@ -495,7 +531,11 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(requestStatus.response_valid_list[1].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_ial).to.be.true;
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -526,7 +566,11 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(requestStatus.response_valid_list[1].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_ial).to.be.true;
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {

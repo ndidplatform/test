@@ -119,7 +119,13 @@ describe('Add accessor method with duplicate reference id test', function() {
       accessor_id: accessorId,
       success: true,
     });
-    expect(addAccessorRequestResult.creation_block_height).to.be.a('number');
+    expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     await wait(3000);
   });
 
@@ -235,7 +241,13 @@ describe('Add accessor method with duplicate reference id test', function() {
       accessor_id: accessorId,
       success: true,
     });
-    expect(addAccessorRequestResult.creation_block_height).to.be.a('number');
+    expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     await wait(3000);
   });
 
@@ -259,7 +271,13 @@ describe('Add accessor method with duplicate reference id test', function() {
       data_request_list: [],
     });
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;

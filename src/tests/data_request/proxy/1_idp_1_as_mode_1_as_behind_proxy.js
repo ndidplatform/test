@@ -177,7 +177,11 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -212,7 +216,13 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;
@@ -270,7 +280,11 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('AS should receive data request', async function() {
@@ -341,7 +355,11 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
@@ -373,7 +391,11 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -405,7 +427,11 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {

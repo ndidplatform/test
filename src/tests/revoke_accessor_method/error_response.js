@@ -20,7 +20,7 @@ describe('Revoke accessor error response tests', function() {
     identifier = db.idp1Identities[0].identifier;
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 

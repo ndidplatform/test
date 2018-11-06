@@ -169,7 +169,7 @@ describe('NDID enable service destination test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -195,7 +195,13 @@ describe('NDID enable service destination test', function() {
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
     requestMessageHash = incomingRequest.request_message_hash;
   });
@@ -291,7 +297,11 @@ describe('NDID enable service destination test', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
@@ -323,7 +333,11 @@ describe('NDID enable service destination test', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -355,7 +369,11 @@ describe('NDID enable service destination test', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {

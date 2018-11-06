@@ -225,7 +225,13 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
-    expect(createRequestResult.creation_block_height).to.be.a('number');
+    expect(createRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive pending request status', async function() {
@@ -256,7 +262,11 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
       response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -264,7 +274,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -291,7 +301,13 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;
@@ -300,7 +316,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -365,7 +381,11 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('Both AS (as1 and as2) should receive data request (bank_statement)', async function() {
@@ -563,7 +583,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
   //     ],
   //   });
   //   expect(requestStatus).to.have.property('block_height');
-  //   expect(requestStatus.block_height).is.a('number');
+  //   expect(requestStatus.block_height).is.a('string');const splittedBlockHeight = requestStatus.block_height.split(':');expect(splittedBlockHeight).to.have.lengthOf(2);expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   // });
 
   it('RP should receive completed request status with both services (bank_statement and customer_info) received data count = 2', async function() {
@@ -601,7 +621,11 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -639,7 +663,11 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {

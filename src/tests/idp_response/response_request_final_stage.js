@@ -116,7 +116,7 @@ describe('IdP response request already confirmed test', function() {
   it('IdP (idp2) should create response (accept) successfully', async function() {
     this.timeout(20000);
     const idp2Identity = db.idp2Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -150,7 +150,7 @@ describe('IdP response request already confirmed test', function() {
   it('IdP (idp1) should get an error callback response when making a response with request that already confirmed by idp2', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -323,7 +323,7 @@ describe('IdP response request already closed test', function() {
   it('IdP (idp2) should create response (accept) successfully', async function() {
     this.timeout(20000);
     const idp2Identity = db.idp2Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -394,7 +394,7 @@ describe('IdP response request already closed test', function() {
   it('IdP (idp1) should get an error callback response when making a response with request that already closed', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -532,7 +532,7 @@ describe('IdP response request already timed out test', function() {
   it('IdP (idp1) should get an error callback response when making a response with request that already timed out', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const response = await idpApi.createResponse('idp1', {

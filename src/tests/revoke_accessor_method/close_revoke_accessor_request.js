@@ -140,7 +140,13 @@ describe('Close Revoke accessor request test', function() {
       accessor_id: accessorId,
       success: true,
     });
-    expect(addAccessorRequestResult.creation_block_height).to.be.a('number');
+    expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('should receive accessor sign callback with correct data', async function() {
@@ -196,7 +202,13 @@ describe('Close Revoke accessor request test', function() {
       data_request_list: [],
     });
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
@@ -205,7 +217,7 @@ describe('Close Revoke accessor request test', function() {
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -248,7 +260,7 @@ describe('Close Revoke accessor request test', function() {
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -294,7 +306,7 @@ describe('Close Revoke accessor request test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const latestAccessor = identity.accessors.length - 1;
@@ -321,7 +333,13 @@ describe('Close Revoke accessor request test', function() {
       identifier,
       requester_node_id: 'idp1',
     });
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
@@ -356,7 +374,7 @@ describe('Close Revoke accessor request test', function() {
   it('After close revoke accessor request 1st IdP should create response (accept) unsuccessfully', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -544,7 +562,7 @@ describe('Accessor must still be usable', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -570,7 +588,13 @@ describe('Accessor must still be usable', function() {
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;
@@ -579,7 +603,7 @@ describe('Accessor must still be usable', function() {
   it('IdP should create response (accept) with new accessor id successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;
@@ -643,7 +667,11 @@ describe('Accessor must still be usable', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('AS should receive data request', async function() {
@@ -712,7 +740,11 @@ describe('Accessor must still be usable', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
@@ -744,7 +776,11 @@ describe('Accessor must still be usable', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -776,7 +812,11 @@ describe('Accessor must still be usable', function() {
       ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {

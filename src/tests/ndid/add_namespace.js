@@ -18,7 +18,7 @@ describe('NDID add new namespace test', function() {
     const response = await commonApi.getNamespaces('ndid1');
     const responseBody = await response.json();
     alreadyAddedNamespace = responseBody.find(
-      ns => ns.namespace === 'test_add_new_namespace'
+      (ns) => ns.namespace === 'test_add_new_namespace'
     );
   });
 
@@ -38,7 +38,6 @@ describe('NDID add new namespace test', function() {
       expect(response.status).to.equal(201);
     }
     await wait(1000);
-
   });
 
   it('Namespace (test_add_new_namespace) should be added successfully', async function() {
@@ -47,7 +46,7 @@ describe('NDID add new namespace test', function() {
     const response = await commonApi.getNamespaces('ndid1');
     const responseBody = await response.json();
     const namespace = responseBody.find(
-      ns => ns.namespace === 'test_add_new_namespace'
+      (ns) => ns.namespace === 'test_add_new_namespace'
     );
     expect(namespace).to.deep.equal({
       namespace: 'test_add_new_namespace',

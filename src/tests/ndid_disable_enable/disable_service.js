@@ -320,7 +320,13 @@ describe('NDID disable service after RP create request test', function() {
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
     requestMessageHash = incomingRequest.request_message_hash;
   });
@@ -361,7 +367,7 @@ describe('NDID disable service after RP create request test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id:'rp1'
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not

@@ -192,7 +192,7 @@ describe('2nd IdP close identity request test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.exist;
 
     db.idp1Identities.push({
@@ -298,7 +298,13 @@ describe('2nd IdP close identity request test', function() {
       )
     );
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     expect(incomingRequest.request_timeout).to.be.a('number');
 
     requestMessageHash = incomingRequest.request_message_hash;
@@ -348,7 +354,7 @@ describe('2nd IdP close identity request test', function() {
   it('After 2nd IdP close identity request 1st IdP should create response (accept) unsuccessfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;
@@ -390,7 +396,7 @@ describe('2nd IdP close identity request test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
     expect(idpNode).to.not.exist;
   });
 
@@ -505,7 +511,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   it('2nd IdP should create identity request successfully', async function() {
     this.timeout(10000);
     const identity = db.idp2Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const accessorPublicKey = identity.accessors[0].accessorPublicKey;
@@ -543,7 +549,13 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       accessor_id: accessorId,
       success: true,
     });
-    expect(createIdentityRequestResult.creation_block_height).to.be.a('number');
+    expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('2nd IdP should receive accessor sign callback with correct data', async function() {
@@ -607,14 +619,20 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       )
     );
     expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -661,11 +679,11 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
     expect(idpNode).to.exist;
 
     const identity = db.idp2Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 

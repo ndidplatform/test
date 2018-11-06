@@ -4,10 +4,7 @@ import * as rpApi from '../../api/v2/rp';
 import * as idpApi from '../../api/v2/idp';
 import * as asApi from '../../api/v2/as';
 // import * as commonApi from '../../api/v2/common';
-import {
-  idp1EventEmitter,
-  as1EventEmitter,
-} from '../../callback_server';
+import { idp1EventEmitter, as1EventEmitter } from '../../callback_server';
 import * as db from '../../db';
 import {
   createEventPromise,
@@ -127,7 +124,7 @@ describe('AS data response errors', function() {
       status: 'accept',
       signature: createResponseSignature(
         identity.accessors[0].accessorPrivateKey,
-        requestMessageHash,
+        requestMessageHash
       ),
       accessor_id: identity.accessors[0].accessorId,
     });

@@ -57,7 +57,6 @@ describe('NDID enable namespace test', function() {
         accessorSignPromise.resolve(callbackData);
       }
     });
-
   });
 
   it('NDID should enable namespace (cid) successfully', async function() {
@@ -78,7 +77,7 @@ describe('NDID enable namespace test', function() {
     const responseBody = await responseUtilityGetNamespaces.json();
 
     let namespace = responseBody.find(
-      namespace => namespace.namespace === 'citizen_id'
+      (namespace) => namespace.namespace === 'citizen_id'
     );
 
     expect(namespace).to.be.an('object');
@@ -151,7 +150,7 @@ describe('NDID enable namespace test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.exist;
   });
 

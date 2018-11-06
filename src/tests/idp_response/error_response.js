@@ -90,7 +90,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with non-existent request ID', async function() {
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -118,7 +118,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response without accessor ID (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -146,7 +146,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response without secret (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -174,7 +174,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response without signature (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -202,7 +202,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with non-existent accessor ID (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -230,7 +230,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -255,7 +255,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with invalid ial (ial is not in enum) (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -283,7 +283,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with invalid aal (aal is not in enum) (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -312,7 +312,7 @@ describe('IdP response errors tests', function() {
   it('should get an error when making a response with invalid ial (ial not match identity info) (mode 3)', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -340,16 +340,16 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with invalid secret', async function() {
     this.timeout(20000);
-    
+
     if (!idp2Available || db.idp2Identities.length === 0) {
       this.skip();
     }
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const identityIdP2 = db.idp2Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -481,7 +481,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
   it("should get an error response when making a response with ial less than request's min_ial", async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -510,7 +510,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
   it('After IdP get an error response, IdP should making a response again successfully', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -633,7 +633,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
   it("should get an error response when making a response with aal less than request's min_aal", async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -662,7 +662,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
   it('After IdP get an error response, IdP should making a response again successfully', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const response = await idpApi.createResponse('idp1', {

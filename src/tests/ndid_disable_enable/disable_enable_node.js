@@ -12,14 +12,14 @@ import {
   as1EventEmitter,
   idp1EventEmitter,
   rpEventEmitter,
-  proxy1EventEmitter
+  proxy1EventEmitter,
 } from '../../callback_server';
 import {
   createEventPromise,
   generateReferenceId,
   wait,
   hashRequestMessageForConsent,
-  createResponseSignature
+  createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
 
@@ -50,7 +50,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3]
+    arr: [1, 2, 3],
   });
 
   before(async function() {
@@ -77,16 +77,16 @@ describe('NDID disable RP node and enable RP node test', function() {
           as_id_list: ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
-            format: 'pdf'
-          })
-        }
+            format: 'pdf',
+          }),
+        },
       ],
       request_message:
         'Test request message (enable RP node and disable RP node test)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 86400
+      request_timeout: 86400,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -149,7 +149,7 @@ describe('NDID disable RP node and enable RP node test', function() {
     this.timeout(10000);
 
     const response = await ndidApi.disableNode('ndid1', {
-      node_id: 'rp1'
+      node_id: 'rp1',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -168,7 +168,7 @@ describe('NDID disable RP node and enable RP node test', function() {
       type: 'create_request_result',
       success: false,
       reference_id: createRequestParams.reference_id,
-      request_id: disableNodeRequestId
+      request_id: disableNodeRequestId,
     });
     expect(createRequestResult.error.code).to.equal(15022);
   });
@@ -177,7 +177,7 @@ describe('NDID disable RP node and enable RP node test', function() {
     this.timeout(10000);
 
     const response = await ndidApi.enableNode('ndid1', {
-      node_id: 'rp1'
+      node_id: 'rp1',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -196,7 +196,7 @@ describe('NDID disable RP node and enable RP node test', function() {
       type: 'create_request_result',
       success: true,
       reference_id: createRequestParams.reference_id,
-      request_id: enableNodeRequestId
+      request_id: enableNodeRequestId,
     });
   });
 
@@ -215,13 +215,17 @@ describe('NDID disable RP node and enable RP node test', function() {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
-          received_data_count: 0
-        }
+          received_data_count: 0,
+        },
       ],
-      response_valid_list: []
+      response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -229,10 +233,10 @@ describe('NDID disable RP node and enable RP node test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
-          ...dataRequestWithoutParams
+          ...dataRequestWithoutParams,
         };
       }
     );
@@ -251,7 +255,7 @@ describe('NDID disable RP node and enable RP node test', function() {
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
-      request_timeout: createRequestParams.request_timeout
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -264,7 +268,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -282,7 +286,7 @@ describe('NDID disable RP node and enable RP node test', function() {
         identity.accessors[0].accessorPrivateKey,
         requestMessageHash
       ),
-      accessor_id: identity.accessors[0].accessorId
+      accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(202);
 
@@ -290,7 +294,7 @@ describe('NDID disable RP node and enable RP node test', function() {
     expect(responseResult).to.deep.include({
       reference_id: idpReferenceId,
       request_id: enableNodeRequestId,
-      success: true
+      success: true,
     });
   });
 
@@ -306,7 +310,7 @@ describe('NDID disable RP node and enable RP node test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id: 'rp1'
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -320,14 +324,14 @@ describe('NDID disable RP node and enable RP node test', function() {
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data
+      data,
     });
     expect(response.status).to.equal(202);
 
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       reference_id: asReferenceId,
-      success: true
+      success: true,
     });
   });
 
@@ -347,20 +351,24 @@ describe('NDID disable RP node and enable RP node test', function() {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -379,25 +387,29 @@ describe('NDID disable RP node and enable RP node test', function() {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {
     const response = await rpApi.getDataFromAS('rp1', {
-      requestId: enableNodeRequestId
+      requestId: enableNodeRequestId,
     });
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
@@ -407,7 +419,7 @@ describe('NDID disable RP node and enable RP node test', function() {
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_sign_method: 'RSA-SHA256',
-      data
+      data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
@@ -416,7 +428,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   after(async function() {
     this.timeout(10000);
     await ndidApi.enableNode('ndid1', {
-      node_id: 'rp1'
+      node_id: 'rp1',
     });
     await wait(5000);
   });
@@ -447,7 +459,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3]
+    arr: [1, 2, 3],
   });
 
   before(async function() {
@@ -474,16 +486,16 @@ describe('NDID disable IdP node and enable IdP node test', function() {
           as_id_list: ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
-            format: 'pdf'
-          })
-        }
+            format: 'pdf',
+          }),
+        },
       ],
       request_message:
         'Test request message (enable IdP node and disable IdP node test)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 86400
+      request_timeout: 86400,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -541,7 +553,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     this.timeout(10000);
 
     const response = await ndidApi.disableNode('ndid1', {
-      node_id: 'idp1'
+      node_id: 'idp1',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -559,7 +571,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     this.timeout(10000);
 
     const response = await ndidApi.enableNode('ndid1', {
-      node_id: 'idp1'
+      node_id: 'idp1',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -578,7 +590,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
       type: 'create_request_result',
       success: true,
       reference_id: createRequestParams.reference_id,
-      request_id: enableNodeRequestId
+      request_id: enableNodeRequestId,
     });
   });
 
@@ -597,13 +609,17 @@ describe('NDID disable IdP node and enable IdP node test', function() {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
-          received_data_count: 0
-        }
+          received_data_count: 0,
+        },
       ],
-      response_valid_list: []
+      response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -611,10 +627,10 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
-          ...dataRequestWithoutParams
+          ...dataRequestWithoutParams,
         };
       }
     );
@@ -633,7 +649,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
-      request_timeout: createRequestParams.request_timeout
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -646,7 +662,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -664,7 +680,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
         identity.accessors[0].accessorPrivateKey,
         requestMessageHash
       ),
-      accessor_id: identity.accessors[0].accessorId
+      accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(202);
 
@@ -672,7 +688,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     expect(responseResult).to.deep.include({
       reference_id: idpReferenceId,
       request_id: enableNodeRequestId,
-      success: true
+      success: true,
     });
   });
 
@@ -688,7 +704,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id: 'rp1'
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -702,14 +718,14 @@ describe('NDID disable IdP node and enable IdP node test', function() {
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data
+      data,
     });
     expect(response.status).to.equal(202);
 
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       reference_id: asReferenceId,
-      success: true
+      success: true,
     });
   });
 
@@ -729,20 +745,24 @@ describe('NDID disable IdP node and enable IdP node test', function() {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -761,25 +781,29 @@ describe('NDID disable IdP node and enable IdP node test', function() {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {
     const response = await rpApi.getDataFromAS('rp1', {
-      requestId: enableNodeRequestId
+      requestId: enableNodeRequestId,
     });
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
@@ -789,7 +813,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_sign_method: 'RSA-SHA256',
-      data
+      data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
@@ -798,7 +822,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   after(async function() {
     this.timeout(10000);
     await ndidApi.enableNode('ndid1', {
-      node_id: 'idp1'
+      node_id: 'idp1',
     });
     await wait(5000);
   });
@@ -829,7 +853,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3]
+    arr: [1, 2, 3],
   });
 
   before(async function() {
@@ -856,16 +880,16 @@ describe('NDID disable AS node and enable AS node test', function() {
           as_id_list: ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
-            format: 'pdf'
-          })
-        }
+            format: 'pdf',
+          }),
+        },
       ],
       request_message:
         'Test request message (enable AS node and disable AS node test)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 86400
+      request_timeout: 86400,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -923,7 +947,7 @@ describe('NDID disable AS node and enable AS node test', function() {
     this.timeout(10000);
 
     const response = await ndidApi.disableNode('ndid1', {
-      node_id: 'as1'
+      node_id: 'as1',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -941,7 +965,7 @@ describe('NDID disable AS node and enable AS node test', function() {
     this.timeout(10000);
 
     const response = await ndidApi.enableNode('ndid1', {
-      node_id: 'as1'
+      node_id: 'as1',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -960,7 +984,7 @@ describe('NDID disable AS node and enable AS node test', function() {
       type: 'create_request_result',
       success: true,
       reference_id: createRequestParams.reference_id,
-      request_id: enableNodeRequestId
+      request_id: enableNodeRequestId,
     });
   });
 
@@ -979,13 +1003,17 @@ describe('NDID disable AS node and enable AS node test', function() {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
-          received_data_count: 0
-        }
+          received_data_count: 0,
+        },
       ],
-      response_valid_list: []
+      response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -993,10 +1021,10 @@ describe('NDID disable AS node and enable AS node test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
-          ...dataRequestWithoutParams
+          ...dataRequestWithoutParams,
         };
       }
     );
@@ -1015,7 +1043,7 @@ describe('NDID disable AS node and enable AS node test', function() {
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
-      request_timeout: createRequestParams.request_timeout
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -1028,7 +1056,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -1046,7 +1074,7 @@ describe('NDID disable AS node and enable AS node test', function() {
         identity.accessors[0].accessorPrivateKey,
         requestMessageHash
       ),
-      accessor_id: identity.accessors[0].accessorId
+      accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(202);
 
@@ -1054,7 +1082,7 @@ describe('NDID disable AS node and enable AS node test', function() {
     expect(responseResult).to.deep.include({
       reference_id: idpReferenceId,
       request_id: enableNodeRequestId,
-      success: true
+      success: true,
     });
   });
 
@@ -1070,7 +1098,7 @@ describe('NDID disable AS node and enable AS node test', function() {
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id: 'rp1'
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -1084,14 +1112,14 @@ describe('NDID disable AS node and enable AS node test', function() {
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data
+      data,
     });
     expect(response.status).to.equal(202);
 
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       reference_id: asReferenceId,
-      success: true
+      success: true,
     });
   });
 
@@ -1111,20 +1139,24 @@ describe('NDID disable AS node and enable AS node test', function() {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -1143,26 +1175,30 @@ describe('NDID disable AS node and enable AS node test', function() {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {
     this.timeout(15000);
     const response = await rpApi.getDataFromAS('rp1', {
-      requestId: enableNodeRequestId
+      requestId: enableNodeRequestId,
     });
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
@@ -1172,7 +1208,7 @@ describe('NDID disable AS node and enable AS node test', function() {
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_sign_method: 'RSA-SHA256',
-      data
+      data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
@@ -1181,7 +1217,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   after(async function() {
     this.timeout(10000);
     await ndidApi.enableNode('ndid1', {
-      node_id: 'as1'
+      node_id: 'as1',
     });
     await wait(5000);
   });
@@ -1215,7 +1251,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     const data = JSON.stringify({
       test: 'test',
       withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-      arr: [1, 2, 3]
+      arr: [1, 2, 3],
     });
 
     before(async function() {
@@ -1243,16 +1279,16 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             as_id_list: ['as1'],
             min_as: 1,
             request_params: JSON.stringify({
-              format: 'pdf'
-            })
-          }
+              format: 'pdf',
+            }),
+          },
         ],
         request_message:
           'Test request message (enable proxy node and disable proxy node test)',
         min_ial: 1.1,
         min_aal: 1,
         min_idp: 1,
-        request_timeout: 86400
+        request_timeout: 86400,
       };
 
       proxy1EventEmitter.on('callback', function(callbackData) {
@@ -1315,7 +1351,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       this.timeout(10000);
 
       const response = await ndidApi.disableNode('ndid1', {
-        node_id: 'proxy1'
+        node_id: 'proxy1',
       });
       expect(response.status).to.equal(200);
       await wait(5000);
@@ -1334,7 +1370,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         type: 'create_request_result',
         success: false,
         reference_id: createRequestParams.reference_id,
-        request_id: disableNodeRequestId
+        request_id: disableNodeRequestId,
       });
       expect(createRequestResult.error.code).to.equal(15026);
     });
@@ -1343,7 +1379,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       this.timeout(10000);
 
       const response = await ndidApi.enableNode('ndid1', {
-        node_id: 'proxy1'
+        node_id: 'proxy1',
       });
       expect(response.status).to.equal(200);
       await wait(5000);
@@ -1362,7 +1398,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         type: 'create_request_result',
         success: true,
         reference_id: createRequestParams.reference_id,
-        request_id: enableNodeRequestId
+        request_id: enableNodeRequestId,
       });
     });
 
@@ -1381,13 +1417,17 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             service_id: createRequestParams.data_request_list[0].service_id,
             min_as: createRequestParams.data_request_list[0].min_as,
             signed_data_count: 0,
-            received_data_count: 0
-          }
+            received_data_count: 0,
+          },
         ],
-        response_valid_list: []
+        response_valid_list: [],
       });
       expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('number');
+      expect(requestStatus.block_height).is.a('string');
+      const splittedBlockHeight = requestStatus.block_height.split(':');
+      expect(splittedBlockHeight).to.have.lengthOf(2);
+      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('IdP should receive incoming request callback', async function() {
@@ -1395,10 +1435,10 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
-            ...dataRequestWithoutParams
+            ...dataRequestWithoutParams,
           };
         }
       );
@@ -1417,7 +1457,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         min_ial: createRequestParams.min_ial,
         min_aal: createRequestParams.min_aal,
         data_request_list: dataRequestListWithoutParams,
-        request_timeout: createRequestParams.request_timeout
+        request_timeout: createRequestParams.request_timeout,
       });
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
@@ -1430,7 +1470,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -1448,7 +1488,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
           identity.accessors[0].accessorPrivateKey,
           requestMessageHash
         ),
-        accessor_id: identity.accessors[0].accessorId
+        accessor_id: identity.accessors[0].accessorId,
       });
       expect(response.status).to.equal(202);
 
@@ -1456,7 +1496,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(responseResult).to.deep.include({
         reference_id: idpReferenceId,
         request_id: enableNodeRequestId,
-        success: true
+        success: true,
       });
     });
 
@@ -1472,7 +1512,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         request_params: createRequestParams.data_request_list[0].request_params,
         max_ial: 2.3,
         max_aal: 3,
-        requester_node_id: createRequestParams.node_id
+        requester_node_id: createRequestParams.node_id,
       });
       expect(dataRequest.response_signature_list).to.have.lengthOf(1);
       expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is
@@ -1486,14 +1526,14 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         serviceId: createRequestParams.data_request_list[0].service_id,
         reference_id: asReferenceId,
         callback_url: config.AS1_CALLBACK_URL,
-        data
+        data,
       });
       expect(response.status).to.equal(202);
 
       const sendDataResult = await sendDataResultPromise.promise;
       expect(sendDataResult).to.deep.include({
         reference_id: asReferenceId,
-        success: true
+        success: true,
       });
     });
 
@@ -1513,20 +1553,24 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             service_id: createRequestParams.data_request_list[0].service_id,
             min_as: createRequestParams.data_request_list[0].min_as,
             signed_data_count: 1,
-            received_data_count: 1
-          }
+            received_data_count: 1,
+          },
         ],
         response_valid_list: [
           {
             idp_id: 'idp1',
             valid_signature: true,
             valid_proof: true,
-            valid_ial: true
-          }
-        ]
+            valid_ial: true,
+          },
+        ],
       });
       expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('number');
+      expect(requestStatus.block_height).is.a('string');
+      const splittedBlockHeight = requestStatus.block_height.split(':');
+      expect(splittedBlockHeight).to.have.lengthOf(2);
+      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('RP should receive request closed status', async function() {
@@ -1545,26 +1589,30 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             service_id: createRequestParams.data_request_list[0].service_id,
             min_as: createRequestParams.data_request_list[0].min_as,
             signed_data_count: 1,
-            received_data_count: 1
-          }
+            received_data_count: 1,
+          },
         ],
         response_valid_list: [
           {
             idp_id: 'idp1',
             valid_signature: true,
             valid_proof: true,
-            valid_ial: true
-          }
-        ]
+            valid_ial: true,
+          },
+        ],
       });
       expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('number');
+      expect(requestStatus.block_height).is.a('string');
+      const splittedBlockHeight = requestStatus.block_height.split(':');
+      expect(splittedBlockHeight).to.have.lengthOf(2);
+      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('RP should get the correct data received from AS', async function() {
       const response = await rpApi.getDataFromAS('proxy1', {
         node_id: createRequestParams.node_id,
-        requestId: enableNodeRequestId
+        requestId: enableNodeRequestId,
       });
       const dataArr = await response.json();
       expect(response.status).to.equal(200);
@@ -1574,7 +1622,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         source_node_id: 'as1',
         service_id: createRequestParams.data_request_list[0].service_id,
         signature_sign_method: 'RSA-SHA256',
-        data
+        data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
@@ -1583,7 +1631,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     after(async function() {
       this.timeout(10000);
       await ndidApi.enableNode('ndid1', {
-        node_id: 'proxy1'
+        node_id: 'proxy1',
       });
       await wait(5000);
     });
@@ -1614,7 +1662,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     const data = JSON.stringify({
       test: 'test',
       withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-      arr: [1, 2, 3]
+      arr: [1, 2, 3],
     });
 
     before(async function() {
@@ -1642,16 +1690,16 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             as_id_list: ['as1'],
             min_as: 1,
             request_params: JSON.stringify({
-              format: 'pdf'
-            })
-          }
+              format: 'pdf',
+            }),
+          },
         ],
         request_message:
           'Test request message (RP node outside proxy (rp1) making request to IdP node behind proxy (proxy1_idp4) test)',
         min_ial: 1.1,
         min_aal: 1,
         min_idp: 1,
-        request_timeout: 86400
+        request_timeout: 86400,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -1709,7 +1757,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       this.timeout(10000);
 
       const response = await ndidApi.disableNode('ndid1', {
-        node_id: 'proxy1'
+        node_id: 'proxy1',
       });
       expect(response.status).to.equal(200);
       await wait(5000);
@@ -1726,7 +1774,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     it('NDID should enable proxy node (proxy1) successfully', async function() {
       this.timeout(10000);
       const response = await ndidApi.enableNode('ndid1', {
-        node_id: 'proxy1'
+        node_id: 'proxy1',
       });
       expect(response.status).to.equal(200);
       await wait(5000);
@@ -1745,7 +1793,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         type: 'create_request_result',
         success: true,
         reference_id: createRequestParams.reference_id,
-        request_id: enableNodeRequestId
+        request_id: enableNodeRequestId,
       });
     });
 
@@ -1764,13 +1812,17 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             service_id: createRequestParams.data_request_list[0].service_id,
             min_as: createRequestParams.data_request_list[0].min_as,
             signed_data_count: 0,
-            received_data_count: 0
-          }
+            received_data_count: 0,
+          },
         ],
-        response_valid_list: []
+        response_valid_list: [],
       });
       expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('number');
+      expect(requestStatus.block_height).is.a('string');
+      const splittedBlockHeight = requestStatus.block_height.split(':');
+      expect(splittedBlockHeight).to.have.lengthOf(2);
+      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('IdP should receive incoming request callback', async function() {
@@ -1778,10 +1830,10 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
-            ...dataRequestWithoutParams
+            ...dataRequestWithoutParams,
           };
         }
       );
@@ -1800,7 +1852,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         min_ial: createRequestParams.min_ial,
         min_aal: createRequestParams.min_aal,
         data_request_list: dataRequestListWithoutParams,
-        request_timeout: createRequestParams.request_timeout
+        request_timeout: createRequestParams.request_timeout,
       });
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
@@ -1813,7 +1865,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
       const identity = db.proxy1Idp4Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -1832,7 +1884,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
           identity.accessors[0].accessorPrivateKey,
           requestMessageHash
         ),
-        accessor_id: identity.accessors[0].accessorId
+        accessor_id: identity.accessors[0].accessorId,
       });
       expect(response.status).to.equal(202);
 
@@ -1840,7 +1892,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(responseResult).to.deep.include({
         reference_id: idpReferenceId,
         request_id: enableNodeRequestId,
-        success: true
+        success: true,
       });
     });
 
@@ -1856,7 +1908,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         request_params: createRequestParams.data_request_list[0].request_params,
         max_ial: 2.3,
         max_aal: 3,
-        requester_node_id: 'rp1'
+        requester_node_id: 'rp1',
       });
       expect(dataRequest.response_signature_list).to.have.lengthOf(1);
       expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is
@@ -1870,14 +1922,14 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         serviceId: createRequestParams.data_request_list[0].service_id,
         reference_id: asReferenceId,
         callback_url: config.AS1_CALLBACK_URL,
-        data
+        data,
       });
       expect(response.status).to.equal(202);
 
       const sendDataResult = await sendDataResultPromise.promise;
       expect(sendDataResult).to.deep.include({
         reference_id: asReferenceId,
-        success: true
+        success: true,
       });
     });
 
@@ -1897,20 +1949,24 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             service_id: createRequestParams.data_request_list[0].service_id,
             min_as: createRequestParams.data_request_list[0].min_as,
             signed_data_count: 1,
-            received_data_count: 1
-          }
+            received_data_count: 1,
+          },
         ],
         response_valid_list: [
           {
             idp_id: 'proxy1_idp4',
             valid_signature: true,
             valid_proof: true,
-            valid_ial: true
-          }
-        ]
+            valid_ial: true,
+          },
+        ],
       });
       expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('number');
+      expect(requestStatus.block_height).is.a('string');
+      const splittedBlockHeight = requestStatus.block_height.split(':');
+      expect(splittedBlockHeight).to.have.lengthOf(2);
+      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('RP should receive request closed status', async function() {
@@ -1929,25 +1985,29 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             service_id: createRequestParams.data_request_list[0].service_id,
             min_as: createRequestParams.data_request_list[0].min_as,
             signed_data_count: 1,
-            received_data_count: 1
-          }
+            received_data_count: 1,
+          },
         ],
         response_valid_list: [
           {
             idp_id: 'proxy1_idp4',
             valid_signature: true,
             valid_proof: true,
-            valid_ial: true
-          }
-        ]
+            valid_ial: true,
+          },
+        ],
       });
       expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('number');
+      expect(requestStatus.block_height).is.a('string');
+      const splittedBlockHeight = requestStatus.block_height.split(':');
+      expect(splittedBlockHeight).to.have.lengthOf(2);
+      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('RP should get the correct data received from AS', async function() {
       const response = await rpApi.getDataFromAS('rp1', {
-        requestId: enableNodeRequestId
+        requestId: enableNodeRequestId,
       });
       const dataArr = await response.json();
       expect(response.status).to.equal(200);
@@ -1957,7 +2017,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         source_node_id: 'as1',
         service_id: createRequestParams.data_request_list[0].service_id,
         signature_sign_method: 'RSA-SHA256',
-        data
+        data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
@@ -1966,7 +2026,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     after(async function() {
       this.timeout(10000);
       await ndidApi.enableNode('ndid1', {
-        node_id: 'proxy1'
+        node_id: 'proxy1',
       });
       await wait(5000);
     });
@@ -1996,7 +2056,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     const data = JSON.stringify({
       test: 'test',
       withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-      arr: [1, 2, 3]
+      arr: [1, 2, 3],
     });
 
     before(async function() {
@@ -2023,16 +2083,16 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             as_id_list: ['proxy1_as4'],
             min_as: 1,
             request_params: JSON.stringify({
-              format: 'pdf'
-            })
-          }
+              format: 'pdf',
+            }),
+          },
         ],
         request_message:
           'Test request message (enable AS node and disable AS node test)',
         min_ial: 1.1,
         min_aal: 1,
         min_idp: 1,
-        request_timeout: 86400
+        request_timeout: 86400,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -2090,7 +2150,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       this.timeout(10000);
 
       const response = await ndidApi.disableNode('ndid1', {
-        node_id: 'proxy1'
+        node_id: 'proxy1',
       });
       expect(response.status).to.equal(200);
       await wait(5000);
@@ -2107,7 +2167,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     it('NDID should enable proxy node (proxy1) successfully', async function() {
       this.timeout(10000);
       const response = await ndidApi.enableNode('ndid1', {
-        node_id: 'proxy1'
+        node_id: 'proxy1',
       });
       expect(response.status).to.equal(200);
       await wait(5000);
@@ -2126,7 +2186,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         type: 'create_request_result',
         success: true,
         reference_id: createRequestParams.reference_id,
-        request_id: enableNodeRequestId
+        request_id: enableNodeRequestId,
       });
     });
 
@@ -2145,13 +2205,17 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             service_id: createRequestParams.data_request_list[0].service_id,
             min_as: createRequestParams.data_request_list[0].min_as,
             signed_data_count: 0,
-            received_data_count: 0
-          }
+            received_data_count: 0,
+          },
         ],
-        response_valid_list: []
+        response_valid_list: [],
       });
       expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('number');
+      expect(requestStatus.block_height).is.a('string');
+      const splittedBlockHeight = requestStatus.block_height.split(':');
+      expect(splittedBlockHeight).to.have.lengthOf(2);
+      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('IdP should receive incoming request callback', async function() {
@@ -2159,10 +2223,10 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
-            ...dataRequestWithoutParams
+            ...dataRequestWithoutParams,
           };
         }
       );
@@ -2181,7 +2245,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         min_ial: createRequestParams.min_ial,
         min_aal: createRequestParams.min_aal,
         data_request_list: dataRequestListWithoutParams,
-        request_timeout: createRequestParams.request_timeout
+        request_timeout: createRequestParams.request_timeout,
       });
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
@@ -2194,7 +2258,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -2212,7 +2276,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
           identity.accessors[0].accessorPrivateKey,
           requestMessageHash
         ),
-        accessor_id: identity.accessors[0].accessorId
+        accessor_id: identity.accessors[0].accessorId,
       });
       expect(response.status).to.equal(202);
 
@@ -2220,7 +2284,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(responseResult).to.deep.include({
         reference_id: idpReferenceId,
         request_id: enableNodeRequestId,
-        success: true
+        success: true,
       });
     });
 
@@ -2236,7 +2300,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         request_params: createRequestParams.data_request_list[0].request_params,
         max_ial: 2.3,
         max_aal: 3,
-        requester_node_id: 'rp1'
+        requester_node_id: 'rp1',
       });
       expect(dataRequest.response_signature_list).to.have.lengthOf(1);
       expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is
@@ -2251,14 +2315,14 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         serviceId: createRequestParams.data_request_list[0].service_id,
         reference_id: asReferenceId,
         callback_url: config.PROXY1_CALLBACK_URL,
-        data
+        data,
       });
       expect(response.status).to.equal(202);
 
       const sendDataResult = await sendDataResultPromise.promise;
       expect(sendDataResult).to.deep.include({
         reference_id: asReferenceId,
-        success: true
+        success: true,
       });
     });
 
@@ -2278,20 +2342,24 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             service_id: createRequestParams.data_request_list[0].service_id,
             min_as: createRequestParams.data_request_list[0].min_as,
             signed_data_count: 1,
-            received_data_count: 1
-          }
+            received_data_count: 1,
+          },
         ],
         response_valid_list: [
           {
             idp_id: 'idp1',
             valid_signature: true,
             valid_proof: true,
-            valid_ial: true
-          }
-        ]
+            valid_ial: true,
+          },
+        ],
       });
       expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('number');
+      expect(requestStatus.block_height).is.a('string');
+      const splittedBlockHeight = requestStatus.block_height.split(':');
+      expect(splittedBlockHeight).to.have.lengthOf(2);
+      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('RP should receive request closed status', async function() {
@@ -2310,25 +2378,29 @@ describe('NDID disable proxy node and enable proxy node test', function() {
             service_id: createRequestParams.data_request_list[0].service_id,
             min_as: createRequestParams.data_request_list[0].min_as,
             signed_data_count: 1,
-            received_data_count: 1
-          }
+            received_data_count: 1,
+          },
         ],
         response_valid_list: [
           {
             idp_id: 'idp1',
             valid_signature: true,
             valid_proof: true,
-            valid_ial: true
-          }
-        ]
+            valid_ial: true,
+          },
+        ],
       });
       expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('number');
+      expect(requestStatus.block_height).is.a('string');
+      const splittedBlockHeight = requestStatus.block_height.split(':');
+      expect(splittedBlockHeight).to.have.lengthOf(2);
+      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('RP should get the correct data received from AS', async function() {
       const response = await rpApi.getDataFromAS('rp1', {
-        requestId: enableNodeRequestId
+        requestId: enableNodeRequestId,
       });
       const dataArr = await response.json();
       expect(response.status).to.equal(200);
@@ -2338,7 +2410,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         source_node_id: 'proxy1_as4',
         service_id: createRequestParams.data_request_list[0].service_id,
         signature_sign_method: 'RSA-SHA256',
-        data
+        data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
@@ -2347,7 +2419,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     after(async function() {
       this.timeout(10000);
       await ndidApi.enableNode('ndid1', {
-        node_id: 'proxy1_as4'
+        node_id: 'proxy1_as4',
       });
       await wait(5000);
     });
@@ -2381,7 +2453,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3]
+    arr: [1, 2, 3],
   });
 
   before(async function() {
@@ -2410,16 +2482,16 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
           as_id_list: ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
-            format: 'pdf'
-          })
-        }
+            format: 'pdf',
+          }),
+        },
       ],
       request_message:
         'Test request message (enable proxy node and disable proxy node test)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 86400
+      request_timeout: 86400,
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {
@@ -2482,7 +2554,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     this.timeout(10000);
 
     const response = await ndidApi.disableNode('ndid1', {
-      node_id: 'proxy1_rp4'
+      node_id: 'proxy1_rp4',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -2501,7 +2573,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       type: 'create_request_result',
       success: false,
       reference_id: createRequestParams.reference_id,
-      request_id: disableNodeRequestId
+      request_id: disableNodeRequestId,
     });
     expect(createRequestResult.error.code).to.equal(15022);
   });
@@ -2510,7 +2582,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     this.timeout(10000);
 
     const response = await ndidApi.enableNode('ndid1', {
-      node_id: 'proxy1_rp4'
+      node_id: 'proxy1_rp4',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -2529,7 +2601,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       type: 'create_request_result',
       success: true,
       reference_id: createRequestParams.reference_id,
-      request_id: enableNodeRequestId
+      request_id: enableNodeRequestId,
     });
   });
 
@@ -2548,13 +2620,17 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
-          received_data_count: 0
-        }
+          received_data_count: 0,
+        },
       ],
-      response_valid_list: []
+      response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -2562,10 +2638,10 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
-          ...dataRequestWithoutParams
+          ...dataRequestWithoutParams,
         };
       }
     );
@@ -2584,7 +2660,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
-      request_timeout: createRequestParams.request_timeout
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -2597,7 +2673,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.proxy1Idp4Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -2616,7 +2692,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
         identity.accessors[0].accessorPrivateKey,
         requestMessageHash
       ),
-      accessor_id: identity.accessors[0].accessorId
+      accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(202);
 
@@ -2624,7 +2700,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     expect(responseResult).to.deep.include({
       reference_id: idpReferenceId,
       request_id: enableNodeRequestId,
-      success: true
+      success: true,
     });
   });
 
@@ -2640,7 +2716,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id: createRequestParams.node_id
+      requester_node_id: createRequestParams.node_id,
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -2654,14 +2730,14 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data
+      data,
     });
     expect(response.status).to.equal(202);
 
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       reference_id: asReferenceId,
-      success: true
+      success: true,
     });
   });
 
@@ -2681,20 +2757,24 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'proxy1_idp4',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -2713,26 +2793,30 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'proxy1_idp4',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {
     const response = await rpApi.getDataFromAS('proxy1', {
       node_id: createRequestParams.node_id,
-      requestId: enableNodeRequestId
+      requestId: enableNodeRequestId,
     });
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
@@ -2742,7 +2826,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_sign_method: 'RSA-SHA256',
-      data
+      data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
@@ -2751,7 +2835,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   after(async function() {
     this.timeout(10000);
     await ndidApi.enableNode('ndid1', {
-      node_id: 'proxy1_rp4'
+      node_id: 'proxy1_rp4',
     });
     await wait(5000);
   });
@@ -2782,7 +2866,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3]
+    arr: [1, 2, 3],
   });
 
   before(async function() {
@@ -2810,16 +2894,16 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
           as_id_list: ['as1'],
           min_as: 1,
           request_params: JSON.stringify({
-            format: 'pdf'
-          })
-        }
+            format: 'pdf',
+          }),
+        },
       ],
       request_message:
         'Test request message (enable IdP node and disable IdP node test)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 86400
+      request_timeout: 86400,
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {
@@ -2877,7 +2961,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     this.timeout(10000);
 
     const response = await ndidApi.disableNode('ndid1', {
-      node_id: 'proxy1_idp4'
+      node_id: 'proxy1_idp4',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -2894,7 +2978,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   it('NDID should enable node IdP behind proxy (proxy1_idp4) successfully', async function() {
     this.timeout(10000);
     const response = await ndidApi.enableNode('ndid1', {
-      node_id: 'proxy1_idp4'
+      node_id: 'proxy1_idp4',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -2913,7 +2997,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       type: 'create_request_result',
       success: true,
       reference_id: createRequestParams.reference_id,
-      request_id: enableNodeRequestId
+      request_id: enableNodeRequestId,
     });
   });
 
@@ -2932,13 +3016,17 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
-          received_data_count: 0
-        }
+          received_data_count: 0,
+        },
       ],
-      response_valid_list: []
+      response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -2946,10 +3034,10 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
-          ...dataRequestWithoutParams
+          ...dataRequestWithoutParams,
         };
       }
     );
@@ -2968,7 +3056,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
-      request_timeout: createRequestParams.request_timeout
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -2981,7 +3069,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.proxy1Idp4Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -3000,7 +3088,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
         identity.accessors[0].accessorPrivateKey,
         requestMessageHash
       ),
-      accessor_id: identity.accessors[0].accessorId
+      accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(202);
 
@@ -3008,7 +3096,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     expect(responseResult).to.deep.include({
       reference_id: idpReferenceId,
       request_id: enableNodeRequestId,
-      success: true
+      success: true,
     });
   });
 
@@ -3024,7 +3112,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id: createRequestParams.node_id
+      requester_node_id: createRequestParams.node_id,
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -3038,14 +3126,14 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      data
+      data,
     });
     expect(response.status).to.equal(202);
 
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       reference_id: asReferenceId,
-      success: true
+      success: true,
     });
   });
 
@@ -3065,20 +3153,24 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'proxy1_idp4',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -3097,26 +3189,30 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'proxy1_idp4',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {
     const response = await rpApi.getDataFromAS('proxy1', {
       node_id: createRequestParams.node_id,
-      requestId: enableNodeRequestId
+      requestId: enableNodeRequestId,
     });
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
@@ -3126,7 +3222,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_sign_method: 'RSA-SHA256',
-      data
+      data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
@@ -3135,7 +3231,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   after(async function() {
     this.timeout(10000);
     await ndidApi.enableNode('ndid1', {
-      node_id: 'proxy1_idp4'
+      node_id: 'proxy1_idp4',
     });
     await wait(5000);
   });
@@ -3166,7 +3262,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3]
+    arr: [1, 2, 3],
   });
 
   before(async function() {
@@ -3194,16 +3290,16 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
           as_id_list: ['proxy1_as4'],
           min_as: 1,
           request_params: JSON.stringify({
-            format: 'pdf'
-          })
-        }
+            format: 'pdf',
+          }),
+        },
       ],
       request_message:
         'Test request message (enable AS node and disable AS node test)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 86400
+      request_timeout: 86400,
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {
@@ -3261,7 +3357,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     this.timeout(10000);
 
     const response = await ndidApi.disableNode('ndid1', {
-      node_id: 'proxy1_as4'
+      node_id: 'proxy1_as4',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -3278,7 +3374,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   it('NDID should enable node behind proxy (proxy1_as4) successfully', async function() {
     this.timeout(10000);
     const response = await ndidApi.enableNode('ndid1', {
-      node_id: 'proxy1_as4'
+      node_id: 'proxy1_as4',
     });
     expect(response.status).to.equal(200);
     await wait(5000);
@@ -3297,7 +3393,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       type: 'create_request_result',
       success: true,
       reference_id: createRequestParams.reference_id,
-      request_id: enableNodeRequestId
+      request_id: enableNodeRequestId,
     });
   });
 
@@ -3316,13 +3412,17 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 0,
-          received_data_count: 0
-        }
+          received_data_count: 0,
+        },
       ],
-      response_valid_list: []
+      response_valid_list: [],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -3330,10 +3430,10 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
-          ...dataRequestWithoutParams
+          ...dataRequestWithoutParams,
         };
       }
     );
@@ -3352,7 +3452,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
-      request_timeout: createRequestParams.request_timeout
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
@@ -3365,7 +3465,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -3383,7 +3483,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
         identity.accessors[0].accessorPrivateKey,
         requestMessageHash
       ),
-      accessor_id: identity.accessors[0].accessorId
+      accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(202);
 
@@ -3391,7 +3491,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     expect(responseResult).to.deep.include({
       reference_id: idpReferenceId,
       request_id: enableNodeRequestId,
-      success: true
+      success: true,
     });
   });
 
@@ -3407,7 +3507,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id: createRequestParams.node_id
+      requester_node_id: createRequestParams.node_id,
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -3422,14 +3522,14 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asReferenceId,
       callback_url: config.PROXY1_CALLBACK_URL,
-      data
+      data,
     });
     expect(response.status).to.equal(202);
 
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       reference_id: asReferenceId,
-      success: true
+      success: true,
     });
   });
 
@@ -3449,20 +3549,24 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should receive request closed status', async function() {
@@ -3481,26 +3585,30 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
           signed_data_count: 1,
-          received_data_count: 1
-        }
+          received_data_count: 1,
+        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
           valid_proof: true,
-          valid_ial: true
-        }
-      ]
+          valid_ial: true,
+        },
+      ],
     });
     expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('number');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('RP should get the correct data received from AS', async function() {
     const response = await rpApi.getDataFromAS('proxy1', {
       node_id: createRequestParams.node_id,
-      requestId: enableNodeRequestId
+      requestId: enableNodeRequestId,
     });
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
@@ -3510,7 +3618,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       source_node_id: 'proxy1_as4',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_sign_method: 'RSA-SHA256',
-      data
+      data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
@@ -3519,7 +3627,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   after(async function() {
     this.timeout(10000);
     await ndidApi.enableNode('ndid1', {
-      node_id: 'proxy1_as4'
+      node_id: 'proxy1_as4',
     });
     await wait(5000);
   });
