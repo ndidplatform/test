@@ -309,71 +309,71 @@ describe('IdP response errors tests', function() {
     expect(responseBody.error.code).to.equal(20003);
   });
 
-  it('should get an error when making a response with invalid ial (ial not match identity info) (mode 3)', async function() {
-    this.timeout(20000);
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
+  // it('should get an error when making a response with invalid ial (ial not match identity info) (mode 3)', async function() {
+  //   this.timeout(20000);
+  //   const identity = db.idp1Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier
+  //   );
 
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      ial: 3,
-      aal: 3,
-      secret: identity.accessors[0].secret,
-      status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
-    });
-    expect(response.status).to.equal(400);
+  //   const response = await idpApi.createResponse('idp1', {
+  //     reference_id: idpReferenceId,
+  //     callback_url: config.IDP1_CALLBACK_URL,
+  //     request_id: requestId,
+  //     namespace: createRequestParams.namespace,
+  //     identifier: createRequestParams.identifier,
+  //     ial: 3,
+  //     aal: 3,
+  //     secret: identity.accessors[0].secret,
+  //     status: 'accept',
+  //     signature: createResponseSignature(
+  //       identity.accessors[0].accessorPrivateKey,
+  //       requestMessageHash
+  //     ),
+  //     accessor_id: identity.accessors[0].accessorId,
+  //   });
+  //   expect(response.status).to.equal(400);
 
-    const responseBody = await response.json();
-    expect(responseBody.error.code).to.equal(20060);
-  });
+  //   const responseBody = await response.json();
+  //   expect(responseBody.error.code).to.equal(20060);
+  // });
 
-  it('should get an error when making a response with invalid secret', async function() {
-    this.timeout(20000);
+  // it('should get an error when making a response with invalid secret', async function() {
+  //   this.timeout(20000);
     
-    if (!idp2Available || db.idp2Identities.length === 0) {
-      this.skip();
-    }
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-    const identityIdP2 = db.idp2Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
+  //   if (!idp2Available || db.idp2Identities.length === 0) {
+  //     this.skip();
+  //   }
+  //   const identity = db.idp1Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier
+  //   );
+  //   const identityIdP2 = db.idp2Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier
+  //   );
 
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      ial: 2.3,
-      aal: 3,
-      secret: identityIdP2.accessors[0].secret,
-      status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
-    });
-    expect(response.status).to.equal(400);
+  //   const response = await idpApi.createResponse('idp1', {
+  //     reference_id: idpReferenceId,
+  //     callback_url: config.IDP1_CALLBACK_URL,
+  //     request_id: requestId,
+  //     namespace: createRequestParams.namespace,
+  //     identifier: createRequestParams.identifier,
+  //     ial: 2.3,
+  //     aal: 3,
+  //     secret: identityIdP2.accessors[0].secret,
+  //     status: 'accept',
+  //     signature: createResponseSignature(
+  //       identity.accessors[0].accessorPrivateKey,
+  //       requestMessageHash
+  //     ),
+  //     accessor_id: identity.accessors[0].accessorId,
+  //   });
+  //   expect(response.status).to.equal(400);
 
-    const responseBody = await response.json();
-    expect(responseBody.error.code).to.equal(20027);
-  });
+  //   const responseBody = await response.json();
+  //   expect(responseBody.error.code).to.equal(20027);
+  // });
 
   it('should get an error when IdP update identity invalid ial (ial is not in enum)', async function() {
     this.timeout(15000);
