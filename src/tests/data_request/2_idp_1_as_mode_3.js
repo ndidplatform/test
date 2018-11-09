@@ -594,6 +594,21 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   // it('RP should receive 6 request status updates', function() {
   //   expect(requestStatusUpdates).to.have.lengthOf(6);
   // });
+  it('RP should remove data requested from AS successfully', async function() {
+    const response = await rpApi.removeDataRequestedFromAS('rp1', {
+      request_id: requestId,
+    });
+    expect(response.status).to.equal(204);
+  });
+
+  it('RP should have no saved data requested from AS left after removal', async function() {
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.be.an('array').that.is.empty;
+  });
 
   it('RP should have and able to get saved private messages', async function() {
     const response = await commonApi.getPrivateMessages('rp1', {

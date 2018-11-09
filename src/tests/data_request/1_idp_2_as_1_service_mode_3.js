@@ -231,7 +231,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -273,7 +273,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -645,6 +645,22 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
   // it('RP should receive 7 request status updates', function() {
   //   expect(requestStatusUpdates).to.have.lengthOf(7);
   // });
+
+  it('RP should remove data requested from AS successfully', async function() {
+    const response = await rpApi.removeDataRequestedFromAS('rp1', {
+      request_id: requestId,
+    });
+    expect(response.status).to.equal(204);
+  });
+
+  it('RP should have no saved data requested from AS left after removal', async function() {
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.be.an('array').that.is.empty;
+  });
 
   it('RP should have and able to get saved private messages', async function() {
     const response = await commonApi.getPrivateMessages('rp1', {

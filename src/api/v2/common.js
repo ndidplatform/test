@@ -56,7 +56,7 @@ export function removePrivateMessages(nodeId, data) {
     `${apiBaseUrl}/utility/private_messages/${request_id}/housekeeping${
       node_id ? `?node_id=${node_id}` : ''
     }`,
-    {}
+    node_id ? { node_id } : {}
   );
 }
 
@@ -67,6 +67,6 @@ export function removeAllPrivateMessages(nodeId, data) {
     `${apiBaseUrl}/utility/private_messages/housekeeping${
       node_id ? `?node_id=${node_id}` : ''
     }`,
-    {}
+    node_id ? { node_id } : {}
   );
 }

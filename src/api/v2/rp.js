@@ -38,3 +38,19 @@ export function getRequestIdByReferenceId(nodeId, data) {
   const { reference_id } = data;
   return httpGet(`${apiBaseUrl}/rp/requests/reference/${reference_id}`);
 }
+
+export function removeAllDataRequestedFromAS(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { node_id } = data;
+  return httpPost(
+    `${apiBaseUrl}/rp/requests/housekeeping/data${
+      node_id ? `?node_id=${node_id}` : ''
+    }`
+  );
+}
+
+export function removeDataRequestedFromAS(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { request_id } = data;
+  return httpPost(`${apiBaseUrl}/rp/requests/housekeeping/data/${request_id}`);
+}
