@@ -305,7 +305,8 @@ describe('Create request with duplicate reference id that is not in progress (ti
   });
 
   it('After request duplicate reference id is not in progress (timed out) RP should create a request successfully', async function() {
-    this.timeout(10000);
+    this.timeout(12000);
+    await wait(2000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
