@@ -188,7 +188,7 @@ describe('NDID add and update service with data_schema test', function() {
           data_schema: originalDataSchema,
           data_schema_version: '1',
         });
-        expect(response.status).to.equal(201);
+        expect(response.status).to.equal(204);
       } else {
         const response = await ndidApi.addService('ndid1', {
           service_id: 'service_with_data_schema',
@@ -196,7 +196,7 @@ describe('NDID add and update service with data_schema test', function() {
           data_schema: originalDataSchema,
           data_schema_version: '1',
         });
-        expect(response.status).to.equal(204);
+        expect(response.status).to.equal(201);
       }
       await wait(3000);
     });
@@ -745,7 +745,7 @@ describe('NDID add and update service with data_schema test', function() {
         }),
         data_schema_version: '1',
       });
-      expect(response.status).to.equal(201);
+      expect(response.status).to.equal(204);
       await wait(3000);
     });
 
@@ -1238,7 +1238,7 @@ describe('NDID add and update service with data_schema test', function() {
         data_schema: 'n/a',
         data_schema_version: 'n/a',
       });
-      expect(response.status).to.equal(201);
+      expect(response.status).to.equal(204);
       await wait(3000);
     });
 
