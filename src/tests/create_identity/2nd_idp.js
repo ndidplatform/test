@@ -195,7 +195,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -242,7 +242,7 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
     expect(idpNode).to.exist;
 
     db.idp2Identities.push({
@@ -278,6 +278,13 @@ describe('IdP (idp2) create identity (providing accessor_id and custom request_m
       status: 'completed',
       requester_node_id: 'idp2',
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     await wait(3000); //wait for api clean up reference id
   });
 

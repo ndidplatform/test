@@ -217,7 +217,7 @@ describe('Close Revoke accessor request test', function() {
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -260,7 +260,7 @@ describe('Close Revoke accessor request test', function() {
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -291,6 +291,13 @@ describe('Close Revoke accessor request test', function() {
       status: 'completed',
       requester_node_id: 'idp1',
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     await wait(3000); //wait for api clean up refernece_id
   });
 
@@ -306,7 +313,7 @@ describe('Close Revoke accessor request test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const latestAccessor = identity.accessors.length - 1;
@@ -374,7 +381,7 @@ describe('Close Revoke accessor request test', function() {
   it('After close revoke accessor request 1st IdP should create response (accept) unsuccessfully', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -418,6 +425,13 @@ describe('Close Revoke accessor request test', function() {
       status: 'pending',
       requester_node_id: 'idp1',
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   after(async function() {
@@ -562,7 +576,7 @@ describe('Accessor must still be usable', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -603,7 +617,7 @@ describe('Accessor must still be usable', function() {
   it('IdP should create response (accept) with new accessor id successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;

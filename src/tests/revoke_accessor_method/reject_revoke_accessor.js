@@ -194,7 +194,7 @@ describe('Reject revoke accessor test', function() {
     it('1st IdP should create response (accept) successfully', async function() {
       this.timeout(20000);
       const identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -237,7 +237,7 @@ describe('Reject revoke accessor test', function() {
       const secret = addAccessorResult.secret;
 
       const identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -268,6 +268,13 @@ describe('Reject revoke accessor test', function() {
         status: 'completed',
         requester_node_id: 'idp1',
       });
+      expect(responseBody.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
       await wait(3000); //wait for api clean up refernece_id
     });
 
@@ -308,7 +315,7 @@ describe('Reject revoke accessor test', function() {
       identifier = db.idp1Identities[0].identifier;
 
       let identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -409,7 +416,7 @@ describe('Reject revoke accessor test', function() {
     it('Idp1 should response (reject) successfully', async function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
       let latestAccessor;
@@ -476,6 +483,13 @@ describe('Reject revoke accessor test', function() {
         status: 'rejected',
         requester_node_id: 'idp1',
       });
+      expect(responseBody.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
       await wait(3000); //wait for api clean up refernece_id
     });
 
@@ -627,7 +641,7 @@ describe('Reject revoke accessor test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+        dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -668,14 +682,14 @@ describe('Reject revoke accessor test', function() {
     it('IdP should create response (accept) with new accessor id successfully', async function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
       let latestAccessor;
       if (identity) {
         latestAccessor = identity.accessors.findIndex(
           //Find index of accessor id that match test from above
-          (accessor) => accessor.accessorId === accessorId
+          accessor => accessor.accessorId === accessorId
         );
       } else {
         throw new Error('Identity not found');

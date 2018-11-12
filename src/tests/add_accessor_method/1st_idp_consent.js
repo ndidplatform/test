@@ -193,7 +193,7 @@ describe('IdP (idp1) add accessor method (providing custom request_message and w
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -236,7 +236,7 @@ describe('IdP (idp1) add accessor method (providing custom request_message and w
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -267,6 +267,14 @@ describe('IdP (idp1) add accessor method (providing custom request_message and w
       status: 'completed',
       requester_node_id: 'idp1',
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+
     await wait(3000); //wait for api clean up reference
   });
 
@@ -424,7 +432,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -465,7 +473,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
   it('IdP should create response (accept) with new accessor id successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;

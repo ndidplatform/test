@@ -212,7 +212,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -255,7 +255,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     const secret = addAccessorResult.secret;
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -286,6 +286,13 @@ describe('Revoke accessor with duplicate reference id test', function() {
       status: 'completed',
       requester_node_id: 'idp1',
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     await wait(3000); //wait for api clean up refernece_id
   });
 
@@ -301,7 +308,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const latestAccessor = identity.accessors.length - 1;
@@ -324,7 +331,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -347,7 +354,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -398,7 +405,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const latestAccessor = identity.accessors.length - 1;

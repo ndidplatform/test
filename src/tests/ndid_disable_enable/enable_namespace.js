@@ -77,7 +77,7 @@ describe('NDID enable namespace test', function() {
     const responseBody = await responseUtilityGetNamespaces.json();
 
     let namespace = responseBody.find(
-      (namespace) => namespace.namespace === 'citizen_id'
+      namespace => namespace.namespace === 'citizen_id'
     );
 
     expect(namespace).to.be.an('object');
@@ -150,7 +150,7 @@ describe('NDID enable namespace test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.exist;
   });
 
@@ -174,6 +174,13 @@ describe('NDID enable namespace test', function() {
       status: 'completed',
       requester_node_id: 'idp1',
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   after(function() {

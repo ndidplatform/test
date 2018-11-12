@@ -153,7 +153,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === nodeId);
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === nodeId);
     expect(idpNode).to.exist;
 
     db.proxy1Idp4Identities.push({
@@ -190,6 +190,13 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       status: 'completed',
       requester_node_id: nodeId,
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('Re-calculate secret should return same result', async function() {

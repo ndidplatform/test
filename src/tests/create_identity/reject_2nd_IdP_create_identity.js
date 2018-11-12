@@ -201,7 +201,7 @@ describe('Reject 2nd IdP create identity test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.exist;
 
     db.idp1Identities.push({
@@ -317,7 +317,7 @@ describe('Reject 2nd IdP create identity test', function() {
   it('1st IdP should create response (reject) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -379,6 +379,13 @@ describe('Reject 2nd IdP create identity test', function() {
       status: 'rejected',
       requester_node_id: 'idp2',
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     await wait(3000); //wait for api clean up refernece_id
   });
 

@@ -192,7 +192,7 @@ describe('2nd IdP close identity request test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.exist;
 
     db.idp1Identities.push({
@@ -354,7 +354,7 @@ describe('2nd IdP close identity request test', function() {
   it('After 2nd IdP close identity request 1st IdP should create response (accept) unsuccessfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     let latestAccessor;
@@ -396,7 +396,7 @@ describe('2nd IdP close identity request test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
     expect(idpNode).to.not.exist;
   });
 
@@ -419,6 +419,13 @@ describe('2nd IdP close identity request test', function() {
       status: 'pending',
       requester_node_id: 'idp2',
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
@@ -511,7 +518,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   it('2nd IdP should create identity request successfully', async function() {
     this.timeout(10000);
     const identity = db.idp2Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const accessorPublicKey = identity.accessors[0].accessorPublicKey;
@@ -632,7 +639,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   it('1st IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -679,11 +686,11 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
     expect(idpNode).to.exist;
 
     const identity = db.idp2Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -709,6 +716,13 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       status: 'completed',
       requester_node_id: 'idp2',
     });
+    expect(responseBody.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     await wait(3000); //wait for api clean up reference id
   });
 
