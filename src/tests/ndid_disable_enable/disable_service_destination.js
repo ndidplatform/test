@@ -93,7 +93,7 @@ describe('NDID disable service destination test', function() {
       expect(response.status).to.equal(400);
       expect(responseBody.error.code).to.equal(25005);
     } else {
-      expect(response.status).to.equal(201);
+      expect(response.status).to.equal(204);
     }
     await wait(3000);
   });
