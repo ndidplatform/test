@@ -34,7 +34,7 @@ describe('NDID add new service test', function() {
       expect(response.status).to.equal(400);
       expect(responseBody.error.code).to.equal(25005);
     } else {
-      expect(response.status).to.equal(204);
+      expect(response.status).to.equal(201);
     }
     await wait(1000);
   });
