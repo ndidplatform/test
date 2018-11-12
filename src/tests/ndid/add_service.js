@@ -76,7 +76,7 @@ describe('NDID add new service test', function() {
       service_id: 'test_add_new_service',
       service_name: 'Test update service name by ndid',
     });
-    expect(response.status).to.equal(201);
+    expect(response.status).to.equal(204);
     await wait(1000);
   });
 
