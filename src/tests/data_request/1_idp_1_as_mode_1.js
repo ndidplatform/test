@@ -52,6 +52,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
   let requestMessageHash;
 
   const requestStatusUpdates = [];
+  let lastStatusUpdateBlockHeight;
 
   before(function() {
     namespace = 'citizen_id';
@@ -158,6 +159,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
   });
 
   it('RP should receive pending request status', async function() {
@@ -187,6 +189,9 @@ describe('1 IdP, 1 AS, mode 1', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.equal(
+      lastStatusUpdateBlockHeight
+    );
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -194,7 +199,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -290,6 +295,10 @@ describe('1 IdP, 1 AS, mode 1', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.be.above(
+      lastStatusUpdateBlockHeight
+    );
+    lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
   });
 
   it('AS should receive data request', async function() {
@@ -372,6 +381,10 @@ describe('1 IdP, 1 AS, mode 1', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.be.above(
+      lastStatusUpdateBlockHeight
+    );
+    lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
@@ -408,6 +421,10 @@ describe('1 IdP, 1 AS, mode 1', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.be.above(
+      lastStatusUpdateBlockHeight
+    );
+    lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
   });
 
   it('RP should receive request closed status', async function() {
@@ -444,6 +461,9 @@ describe('1 IdP, 1 AS, mode 1', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.be.above(
+      lastStatusUpdateBlockHeight
+    );
   });
 
   it('RP should get the correct data received from AS', async function() {
@@ -742,7 +762,7 @@ describe('1 IdP, 1 AS, mode 1 (with as_id_list is empty array)', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -769,7 +789,7 @@ describe('1 IdP, 1 AS, mode 1 (with as_id_list is empty array)', function() {
 
     incomingRequest.data_request_list.forEach((incomingRequestData, index) => {
       let data_request_list = createRequestParams.data_request_list.find(
-        service => service.service_id === incomingRequestData.service_id
+        (service) => service.service_id === incomingRequestData.service_id
       );
       expect(incomingRequestData.service_id).to.equal(
         data_request_list.service_id
@@ -1302,7 +1322,7 @@ describe('1 IdP, 1 AS, mode 1 (without as_id_list key)', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -1329,7 +1349,7 @@ describe('1 IdP, 1 AS, mode 1 (without as_id_list key)', function() {
 
     incomingRequest.data_request_list.forEach((incomingRequestData, index) => {
       let data_request_list = createRequestParams.data_request_list.find(
-        service => service.service_id === incomingRequestData.service_id
+        (service) => service.service_id === incomingRequestData.service_id
       );
       expect(incomingRequestData.service_id).to.equal(
         data_request_list.service_id
@@ -1860,7 +1880,7 @@ describe('1 IdP, 1 AS, mode 1 (without request_params key)', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,

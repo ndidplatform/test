@@ -37,6 +37,8 @@ describe('1 IdP, accept consent, mode 3', function() {
   let requestMessageSalt;
   let requestMessageHash;
 
+  let lastStatusUpdateBlockHeight;
+
   const requestStatusUpdates = [];
   const idp_requestStatusUpdates = [];
 
@@ -132,6 +134,7 @@ describe('1 IdP, accept consent, mode 3', function() {
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
   });
 
   it('RP should receive pending request status', async function() {
@@ -154,6 +157,9 @@ describe('1 IdP, accept consent, mode 3', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.equal(
+      lastStatusUpdateBlockHeight
+    );
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -270,6 +276,10 @@ describe('1 IdP, accept consent, mode 3', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.be.above(
+      lastStatusUpdateBlockHeight
+    );
+    lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
   });
 
   it('IdP should receive completed request status without proofs', async function() {
@@ -299,6 +309,9 @@ describe('1 IdP, accept consent, mode 3', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.equal(
+      lastStatusUpdateBlockHeight
+    );
   });
 
   it('RP should receive request closed status', async function() {
@@ -328,6 +341,10 @@ describe('1 IdP, accept consent, mode 3', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.be.above(
+      lastStatusUpdateBlockHeight
+    );
+    lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
   });
 
   it('IdP should receive request closed status', async function() {
@@ -357,6 +374,9 @@ describe('1 IdP, accept consent, mode 3', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(parseInt(splittedBlockHeight[1])).to.equal(
+      lastStatusUpdateBlockHeight
+    );
   });
 
   it('RP should receive 3 request status updates', function() {
