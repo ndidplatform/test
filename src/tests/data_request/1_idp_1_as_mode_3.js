@@ -3810,7 +3810,7 @@ describe('1 IdP, 1 AS, mode 3 (without request_params key)', function() {
   });
 });
 
-describe('1 IdP, 1 AS, mode 3 (with empty string request_params)', function() {
+describe('1 IdP, 1 AS, mode 3 (with empty string request_params and request_message)', function() {
   let namespace;
   let identifier;
 
@@ -3878,7 +3878,7 @@ describe('1 IdP, 1 AS, mode 3 (with empty string request_params)', function() {
           request_params: '',
         },
       ],
-      request_message: 'Test request message (data request) (mode 3)',
+      request_message: '',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
