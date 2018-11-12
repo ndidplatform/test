@@ -17,7 +17,7 @@ describe('NDID add new service test', function() {
     const responseGetServices = await commonApi.getServices('ndid1');
     const responseBody = await responseGetServices.json();
     alreadyAddedService = responseBody.find(
-      (service) => service.service_id === 'test_add_new_service'
+      service => service.service_id === 'test_add_new_service'
     );
   });
 
@@ -45,22 +45,28 @@ describe('NDID add new service test', function() {
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(
-      (service) => service.service_id === 'test_add_new_service'
+      service => service.service_id === 'test_add_new_service'
     );
 
-    if (alreadyAddedService) {
-      expect(service).to.deep.equal({
-        service_id: 'test_add_new_service',
-        service_name: 'Test update service name by ndid',
-        active: true,
-      });
-    } else {
-      expect(service).to.deep.equal({
-        service_id: 'test_add_new_service',
-        service_name: 'Test add new service',
-        active: true,
-      });
-    }
+    expect(service).to.deep.equal({
+      service_id: 'test_add_new_service',
+      service_name: 'Test add new service',
+      active: true,
+    });
+
+    // if (alreadyAddedService) {
+    //   expect(service).to.deep.equal({
+    //     service_id: 'test_add_new_service',
+    //     service_name: 'Test update service name by ndid',
+    //     active: true,
+    //   });
+    // } else {
+    //   expect(service).to.deep.equal({
+    //     service_id: 'test_add_new_service',
+    //     service_name: 'Test add new service',
+    //     active: true,
+    //   });
+    // }
   });
 
   it('NDID should update service (test_add_new_service) name successfully', async function() {
@@ -79,7 +85,7 @@ describe('NDID add new service test', function() {
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(
-      (service) => service.service_id === 'test_add_new_service'
+      service => service.service_id === 'test_add_new_service'
     );
 
     expect(service).to.deep.equal({
@@ -87,5 +93,13 @@ describe('NDID add new service test', function() {
       service_name: 'Test update service name by ndid',
       active: true,
     });
+  });
+  after(async function() {
+    this.timeout(10000);
+    await ndidApi.updateService('ndid1', {
+      service_id: 'test_add_new_service',
+      service_name: 'Test add new service',
+    });
+    await wait(3000);
   });
 });
