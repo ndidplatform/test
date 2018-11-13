@@ -29,6 +29,12 @@ export function getServices(nodeId) {
   return httpGet(`${apiBaseUrl}/utility/services`);
 }
 
+export function getServiceDataSchema(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
+  const { serviceId } = data;
+  return httpGet(`${apiBaseUrl}/utility/services/${serviceId}`);
+}
+
 export function getToken(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
   return httpGet(`${apiBaseUrl}/utility/nodes/${nodeId}/token`);
@@ -54,17 +60,6 @@ export function removePrivateMessages(nodeId, data) {
   const { request_id, node_id } = data;
   return httpPost(
     `${apiBaseUrl}/utility/private_messages/${request_id}/housekeeping${
-      node_id ? `?node_id=${node_id}` : ''
-    }`,
-    node_id ? { node_id } : {}
-  );
-}
-
-export function removeAllPrivateMessages(nodeId, data) {
-  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v2';
-  const { node_id } = data;
-  return httpPost(
-    `${apiBaseUrl}/utility/private_messages/housekeeping${
       node_id ? `?node_id=${node_id}` : ''
     }`,
     node_id ? { node_id } : {}
