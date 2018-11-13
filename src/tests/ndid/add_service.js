@@ -69,6 +69,19 @@ describe('NDID add new service test', function() {
     // }
   });
 
+  it('Should get data schema service test_add_new_service successfully', async function() {
+    this.timeout(15000);
+    const response = await commonApi.getServiceDataSchema('ndid1', {
+      serviceId: 'test_add_new_service',
+    });
+    const responseBody = await response.json();
+    expect(responseBody).to.deep.equal({
+      service_id: 'test_add_new_service',
+      service_name: 'Test add new service',
+      active: true,
+    });
+  });
+
   it('NDID should update service (test_add_new_service) name successfully', async function() {
     this.timeout(10000);
 

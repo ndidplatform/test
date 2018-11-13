@@ -175,7 +175,7 @@ describe('NDID add and update service with data_schema test', function() {
       const responseGetServices = await commonApi.getServices('ndid1');
       const responseBody = await responseGetServices.json();
       alreadyAddedService = responseBody.find(
-        (service) => service.service_id === 'service_with_data_schema'
+        service => service.service_id === 'service_with_data_schema'
       );
     });
 
@@ -206,12 +206,27 @@ describe('NDID add and update service with data_schema test', function() {
       const response = await commonApi.getServices('ndid1');
       const responseBody = await response.json();
       const service = responseBody.find(
-        (service) => service.service_id === 'service_with_data_schema'
+        service => service.service_id === 'service_with_data_schema'
       );
       expect(service).to.deep.equal({
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
         active: true,
+      });
+    });
+
+    it('Data schema for service (service_with_data_schema) should be added successfully', async function() {
+      this.timeout(15000);
+      const response = await commonApi.getServiceDataSchema('ndid1', {
+        serviceId: 'service_with_data_schema',
+      });
+      const responseBody = await response.json();
+      expect(responseBody).to.deep.equal({
+        service_id: 'service_with_data_schema',
+        service_name: 'Test add new service with data schema',
+        active: true,
+        data_schema: originalDataSchema,
+        data_schema_version: '1',
       });
     });
 
@@ -271,7 +286,7 @@ describe('NDID add and update service with data_schema test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+        dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -313,7 +328,7 @@ describe('NDID add and update service with data_schema test', function() {
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -612,6 +627,26 @@ describe('NDID add and update service with data_schema test', function() {
 
     let createRequestParams;
 
+    const dataSchema = JSON.stringify({
+      properties: {
+        firstname: {
+          type: 'string',
+          maxLength: 100,
+        },
+        lastname: {
+          type: 'string',
+          maxLength: 100,
+        },
+        passport_no: {
+          type: 'integer',
+        },
+        citizen_id: {
+          type: 'integer',
+        },
+      },
+      required: ['firstname', 'lastname', 'citizen_id', 'passport_no'],
+    });
+
     before(async function() {
       this.timeout(15000);
       if (!ndidAvailable) {
@@ -715,7 +750,7 @@ describe('NDID add and update service with data_schema test', function() {
       const responseGetServices = await commonApi.getServices('ndid1');
       const responseBody = await responseGetServices.json();
       alreadyAddedService = responseBody.find(
-        (service) => service.service_id === 'service_with_data_schema'
+        service => service.service_id === 'service_with_data_schema'
       );
     });
 
@@ -724,29 +759,26 @@ describe('NDID add and update service with data_schema test', function() {
       const response = await ndidApi.updateService('ndid1', {
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
-        data_schema: JSON.stringify({
-          properties: {
-            firstname: {
-              type: 'string',
-              maxLength: 100,
-            },
-            lastname: {
-              type: 'string',
-              maxLength: 100,
-            },
-            passport_no: {
-              type: 'integer',
-            },
-            citizen_id: {
-              type: 'integer',
-            },
-          },
-          required: ['firstname', 'lastname', 'citizen_id', 'passport_no'],
-        }),
+        data_schema: dataSchema,
         data_schema_version: '1',
       });
       expect(response.status).to.equal(204);
       await wait(3000);
+    });
+
+    it('Data schema for service (service_with_data_schema) should be added successfully', async function() {
+      this.timeout(15000);
+      const response = await commonApi.getServiceDataSchema('ndid1', {
+        serviceId: 'service_with_data_schema',
+      });
+      const responseBody = await response.json();
+      expect(responseBody).to.deep.equal({
+        service_id: 'service_with_data_schema',
+        service_name: 'Test add new service with data schema',
+        active: true,
+        data_schema: dataSchema,
+        data_schema_version: '1',
+      });
     });
 
     it('RP should create a request successfully', async function() {
@@ -775,7 +807,7 @@ describe('NDID add and update service with data_schema test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+        dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -817,7 +849,7 @@ describe('NDID add and update service with data_schema test', function() {
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -1226,7 +1258,7 @@ describe('NDID add and update service with data_schema test', function() {
       const responseGetServices = await commonApi.getServices('ndid1');
       const responseBody = await responseGetServices.json();
       alreadyAddedService = responseBody.find(
-        (service) => service.service_id === 'service_with_data_schema'
+        service => service.service_id === 'service_with_data_schema'
       );
     });
 
@@ -1240,6 +1272,19 @@ describe('NDID add and update service with data_schema test', function() {
       });
       expect(response.status).to.equal(204);
       await wait(3000);
+    });
+
+    it('Data schema for service (service_with_data_schema) should be added successfully', async function() {
+      this.timeout(15000);
+      const response = await commonApi.getServiceDataSchema('ndid1', {
+        serviceId: 'service_with_data_schema',
+      });
+      const responseBody = await response.json();
+      expect(responseBody).to.deep.equal({
+        service_id: 'service_with_data_schema',
+        service_name: 'Test add new service with data schema',
+        active: true,
+      });
     });
 
     it('RP should create a request successfully', async function() {
@@ -1268,7 +1313,7 @@ describe('NDID add and update service with data_schema test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+        dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -1310,7 +1355,7 @@ describe('NDID add and update service with data_schema test', function() {
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
