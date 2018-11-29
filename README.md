@@ -37,7 +37,7 @@
     
     3.3 Run a MQ service server
     
-     - idp1
+    - idp1
     
       ```
       # from repository root directory
@@ -49,7 +49,8 @@
       npm start
       
       ```
-     - idp2
+      
+    - idp2
     
       ```
       # from repository root directory
@@ -62,7 +63,7 @@
       
       ```
       
-     - rp1
+    - rp1
     
       ```
       # from repository root directory
@@ -75,7 +76,7 @@
       
       ```
 
-     - as1
+    - as1
     
       ```
       # from repository root directory
@@ -88,7 +89,7 @@
       
       ```
       
-     - as2
+    - as2
     
       ```
       # from repository root directory
