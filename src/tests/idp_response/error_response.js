@@ -90,7 +90,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with non-existent request ID', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -118,7 +118,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response without accessor ID (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -146,7 +146,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response without secret (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -174,7 +174,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response without signature (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -202,7 +202,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with non-existent accessor ID (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -230,7 +230,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -255,7 +255,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with invalid ial (ial is not in enum) (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -283,7 +283,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with invalid aal (aal is not in enum) (mode 3)', async function() {
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -312,7 +312,7 @@ describe('IdP response errors tests', function() {
   it('should get an error when making a response with invalid ial (ial not match identity info) (mode 3)', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -345,11 +345,11 @@ describe('IdP response errors tests', function() {
       this.skip();
     }
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const identityIdP2 = db.idp2Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -481,7 +481,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
   it("should get an error response when making a response with ial less than request's min_ial", async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -510,7 +510,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
   it('After IdP get an error response, IdP should making a response again successfully', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -633,7 +633,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
   it("should get an error response when making a response with aal less than request's min_aal", async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -662,7 +662,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
   it('After IdP get an error response, IdP should making a response again successfully', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const response = await idpApi.createResponse('idp1', {
@@ -692,6 +692,120 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
     });
   });
 
+  after(async function() {
+    this.timeout(10000);
+    await rpApi.closeRequest('rp1', {
+      reference_id: uuidv4(),
+      callback_url: config.RP_CALLBACK_URL,
+      request_id: requestId,
+    });
+    idp1EventEmitter.removeAllListeners('callback');
+    await wait(3000);
+  });
+});
+
+describe('IdP making response with request does not concern IdP (mode 1)', function() {
+  let namespace;
+  let identifier;
+
+  const rpReferenceId = generateReferenceId();
+  const idpReferenceId = generateReferenceId(); //1st IDP
+
+  const incomingRequestPromise = createEventPromise(); // 1st IDP
+  const responseResultPromise = createEventPromise(); // 1st IDP
+
+  let createRequestParams;
+
+  let requestId;
+  let requestMessageHash;
+
+  before(async function() {
+    this.timeout(30000);
+
+    if (!idp2Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+
+    if (db.idp1Identities[0] == null) {
+      throw new Error('No created identity to use');
+    }
+
+    namespace = db.idp1Identities[0].namespace;
+    identifier = db.idp1Identities[0].identifier;
+
+    createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 1,
+      namespace,
+      identifier,
+      idp_id_list: ['idp1'],
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: ['as1'],
+          min_as: 1,
+          request_params: JSON.stringify({
+            format: 'pdf',
+          }),
+        },
+      ],
+      request_message: 'Test request message (error response) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 3,
+      min_idp: 1,
+      request_timeout: 86400,
+    };
+
+    idp1EventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId
+      ) {
+        incomingRequestPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'response_result' &&
+        callbackData.request_id === requestId
+      ) {
+        responseResultPromise.resolve(callbackData);
+      }
+    });
+
+    const responseRp = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBodyRp = await responseRp.json();
+    requestId = responseBodyRp.request_id;
+    const incomingRequest = await incomingRequestPromise.promise;
+    requestMessageHash = incomingRequest.request_message_hash;
+  });
+
+  it('should get an error when IdP making response with request does not concern IdP', async function() {
+    this.timeout(10000);
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    const response = await idpApi.createResponse('idp2', {
+      reference_id: idpReferenceId,
+      callback_url: config.IDP2_CALLBACK_URL,
+      request_id: requestId,
+      namespace: createRequestParams.namespace,
+      identifier: createRequestParams.identifier,
+      ial: 1.1,
+      aal: 3,
+      secret: identity.accessors[0].secret,
+      status: 'accept',
+      signature: createResponseSignature(
+        identity.accessors[0].accessorPrivateKey,
+        requestMessageHash
+      ),
+      accessor_id: identity.accessors[0].accessorId,
+    });
+    const responseBodyErrorCallback = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBodyErrorCallback.error.code).to.equal(20038);
+  });
   after(async function() {
     this.timeout(10000);
     await rpApi.closeRequest('rp1', {
