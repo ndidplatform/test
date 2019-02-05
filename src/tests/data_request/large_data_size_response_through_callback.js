@@ -201,7 +201,7 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -243,7 +243,7 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -356,7 +356,7 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
   // });
 
   it('RP should receive request status with signed data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(50000);
     const requestStatus = await requestStatusSignedDataPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,

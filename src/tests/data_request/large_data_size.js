@@ -349,7 +349,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
   });
 
   it('RP should receive request status with signed data count = 1', async function() {
-    this.timeout(15000);
+    this.timeout(50000);
     const requestStatus = await requestStatusSignedDataPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
