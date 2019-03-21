@@ -1,3 +1,5 @@
+import path from 'path';
+
 export const CALLBACK_IP = process.env.CALLBACK_IP || 'localhost';
 
 export const nodeIdMappingAddress = false;
@@ -40,3 +42,12 @@ export const USE_EXTERNAL_CRYPTO_SERVICE =
 export const DPKI_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/sign`;
 export const DPKI_MASTER_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/master/sign`;
 export const DPKI_DECRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/decrypt`;
+
+export const API_DIRECTORY_PATH = process.env.API_DIRECTORY_PATH;
+export const STDOUT_LOG_DIRECTORY_PATH =
+  process.env.LOG_DIRECTORY_PATH ||
+  path.join(__dirname, '..', 'logs', 'stdout');
+
+export const STDERR_LOG_DIRECTORY_PATH =
+  process.env.LOG_DIRECTORY_PATH ||
+  path.join(__dirname, '..', 'logs', 'stderr');

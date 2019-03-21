@@ -6,7 +6,8 @@
     "test": "mocha src/tests/index.js --require babel-core/register --require source-map-support/register",
     "test-with-dpki": "USE_EXTERNAL_CRYPTO_SERVICE=true npm run test-exit-on-error",
     "test-exit-on-error": "mocha src/tests/index.js --require babel-core/register --require source-map-support/register --bail",
-    "reset-dev-key": "find dev_key/ -maxdepth 1 -type f -delete && cp dev_key/original_dev_key/* dev_key/"
+    "reset-dev-key": "find dev_key/ -maxdepth 1 -type f -delete && cp dev_key/original_dev_key/* dev_key/",
+    "test-master-worker": "find logs/ -maxdepth 1 -type f -delete && MASTER_WORKER=true npm run test-exit-on-error"
   },
   "repository": {
     "type": "git",

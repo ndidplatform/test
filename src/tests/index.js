@@ -5,6 +5,7 @@ import {
 } from '../callback_server/dpki';
 import { isNodeAvailable } from '../helpers';
 import * as config from '../config';
+import * as process_utils from '../process_utils';
 
 export let ndidAvailable;
 export let rpAvailable;
@@ -48,11 +49,27 @@ async function checkForAvailableNodes() {
 
 describe('End-to-End NDID API test (API v2.1)', function() {
   before(async function() {
-    this.timeout(5000);
+    this.timeout(100000);
     startCallbackServers();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
       startDpkiCallbackServer();
     }
+    if (process.env.MASTER_WORKER) {
+      await process_utils.initDevKey();
+
+      await process_utils.startProcess('MASTER_RP');
+      await process_utils.startProcess('WORKER_RP1');
+      await process_utils.startProcess('WORKER_RP2');
+
+      await process_utils.startProcess('MASTER_IDP');
+      await process_utils.startProcess('WORKER_IDP1');
+      await process_utils.startProcess('WORKER_IDP2');
+
+      await process_utils.startProcess('MASTER_AS');
+      await process_utils.startProcess('WORKER_AS1');
+      await process_utils.startProcess('WORKER_AS2');
+    }
+
     await checkForAvailableNodes();
     if (!rpAvailable || !idp1Available) {
       throw new Error('Could not connect to RP and IdP-1 nodes');
@@ -82,10 +99,25 @@ describe('End-to-End NDID API test (API v2.1)', function() {
     require('./ndid_disable_enable');
   }
 
-  after(function() {
+  after(async function() {
+    this.timeout(60000);
     stopCallbackServers();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
       stopDpkiCallbackServer();
+    }
+    if (process.env.MASTER_WORKER) {
+      await process_utils.stopProcess('WORKER_RP1');
+      await process_utils.stopProcess('WORKER_RP2');
+
+      await process_utils.stopProcess('WORKER_AS1');
+      await process_utils.stopProcess('WORKER_AS2');
+
+      await process_utils.stopProcess('WORKER_IDP1');
+      await process_utils.stopProcess('WORKER_IDP2');
+
+      await process_utils.stopProcess('MASTER_RP');
+      await process_utils.stopProcess('MASTER_IDP');
+      await process_utils.stopProcess('MASTER_AS');
     }
   });
 });

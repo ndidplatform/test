@@ -1,34 +1,23 @@
 import { expect } from 'chai';
-import { exec } from 'child_process';
-import forge from 'node-forge';
 
 import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
 import * as commonApi from '../../api/v2/common';
+
 import {
   rpEventEmitter,
   idp1EventEmitter,
   as1EventEmitter,
 } from '../../callback_server';
-import * as db from '../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-  wait,
-} from '../../utils';
+
+import { createEventPromise, generateReferenceId } from '../../utils';
 import * as config from '../../config';
+import * as process_utils from '../../process_utils';
 
 describe('2 RP worker create request and timeout request test', function() {
   let namespace = 'citizen_id';
   let identifier = '1234567890123';
 
   let requests = {};
-  let requestId;
-  let lastStatusUpdateBlockHeight;
-
   let createRequestParams = {
     node_id: 'rp1',
     callback_url: config.RP_CALLBACK_URL,
@@ -170,7 +159,7 @@ describe('2 RP worker create request and timeout request test', function() {
     );
   });
 
-  it('All pending requests should timeout successfully', async function() {
+  it('RP should receive all pending requests timeout successfully', async function() {
     this.timeout(60000);
     await Promise.all(
       Object.keys(requests).map(async requestId => {
@@ -207,6 +196,39 @@ describe('2 RP worker create request and timeout request test', function() {
       })
     );
   });
+
+  it('All pending requests should timeout successfully', async function() {
+    this.timeout(60000);
+    await Promise.all(
+      Object.keys(requests).map(async requestId => {
+        const response = await commonApi.getRequest('rp1', {
+          requestId,
+        });
+        const responseBody = await response.json();
+        expect(responseBody).to.deep.include({
+          request_id: requestId,
+          min_idp: 1,
+          min_aal: 1,
+          min_ial: 1.1,
+          request_timeout: 10,
+          response_list: [],
+          closed: false,
+          timed_out: true,
+          mode: 1,
+          status: 'pending',
+          requester_node_id: 'rp1',
+        });
+        expect(responseBody.creation_block_height).to.be.a('string');
+        const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+          ':'
+        );
+        expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+        expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+        expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      })
+    );
+  });
+
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
@@ -218,15 +240,7 @@ describe('2 RP worker create request and timeout request (kill 1 rp worker) test
   let namespace = 'citizen_id';
   let identifier = '1234567890123';
 
-  const data = JSON.stringify({
-    test: 'test',
-    withEscapedChar: 'test|fff||ss\\|NN\\\\|',
-    arr: [1, 2, 3],
-  });
-
   let requests = {};
-  let requestId;
-  let lastStatusUpdateBlockHeight;
 
   let createRequestParams = {
     node_id: 'rp1',
@@ -275,7 +289,7 @@ describe('2 RP worker create request and timeout request (kill 1 rp worker) test
   });
 
   it('All RPs should create request successfully', async function() {
-    this.timeout(1000000);
+    this.timeout(60000);
     const createRequestPromises = [];
     Array.from({ length: 10 }).forEach(() => {
       const rpReferenceId = generateReferenceId();
@@ -369,15 +383,12 @@ describe('2 RP worker create request and timeout request (kill 1 rp worker) test
     );
   });
 
-  // it('Should kill 1 rp worker successfully', function() {
-  //   exec('npm run kill-rp-worker-1', error => {
-  //     if (error) {
-  //       throw Error(`Kill rp worker failed: ${error}`);
-  //     }
-  //   });
-  // });
+  it('Should kill 1 rp worker successfully', async function() {
+    this.timeout(30000);
+    await process_utils.stopProcess('WORKER_RP2');
+  });
 
-  it('All pending requests should timeout successfully', async function() {
+  it('RP should receive all pending requests timeout successfully', async function() {
     this.timeout(60000);
     await Promise.all(
       Object.keys(requests).map(async requestId => {
@@ -411,6 +422,38 @@ describe('2 RP worker create request and timeout request (kill 1 rp worker) test
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
           requests[requestId].createRequestResult.lastStatusUpdateBlockHeight
         );
+      })
+    );
+  });
+
+  it('All pending requests should timeout successfully', async function() {
+    this.timeout(60000);
+    await Promise.all(
+      Object.keys(requests).map(async requestId => {
+        const response = await commonApi.getRequest('rp1', {
+          requestId,
+        });
+        const responseBody = await response.json();
+        expect(responseBody).to.deep.include({
+          request_id: requestId,
+          min_idp: 1,
+          min_aal: 1,
+          min_ial: 1.1,
+          request_timeout: 10,
+          response_list: [],
+          closed: false,
+          timed_out: true,
+          mode: 1,
+          status: 'pending',
+          requester_node_id: 'rp1',
+        });
+        expect(responseBody.creation_block_height).to.be.a('string');
+        const splittedCreationBlockHeight = responseBody.creation_block_height.split(
+          ':'
+        );
+        expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+        expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+        expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
       })
     );
   });
