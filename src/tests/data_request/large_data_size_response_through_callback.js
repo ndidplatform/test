@@ -392,7 +392,7 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(50000);
+    this.timeout(70000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
