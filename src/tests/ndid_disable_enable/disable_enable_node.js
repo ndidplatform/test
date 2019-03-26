@@ -5,7 +5,7 @@ import * as rpApi from '../../api/v2/rp';
 import * as asApi from '../../api/v2/as';
 import * as idpApi from '../../api/v2/idp';
 import * as ndidApi from '../../api/v2/ndid';
-import * as debugApi from '../../api/v2/debug';
+import * as commonApi from '../../api/v2/common';
 import * as db from '../../db';
 import { ndidAvailable, proxy1Available } from '..';
 import {
@@ -233,7 +233,7 @@ describe('NDID disable RP node and enable RP node test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -268,7 +268,7 @@ describe('NDID disable RP node and enable RP node test', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -559,6 +559,14 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     await wait(5000);
   });
 
+  it('After NDID disable node IdP (idp1) RP should query idp1 not found', async function() {
+    this.timeout(15000);
+    const response = await commonApi.getIdP('rp1');
+    const responseBody = await response.json();
+    const foundIdp = responseBody.find(idp => idp.node_id === 'idp1');
+    expect(foundIdp).to.be.an('undefined');
+  });
+
   it('After NDID disable node IdP (idp1) RP should create a request to disabled IdP (idp1) unsuccessfully', async function() {
     this.timeout(15000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -575,6 +583,14 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     });
     expect(response.status).to.equal(200);
     await wait(5000);
+  });
+
+  it('After NDID enable node IdP (idp1) RP should query idp1 found', async function() {
+    this.timeout(15000);
+    const response = await commonApi.getIdP('rp1');
+    const responseBody = await response.json();
+    const foundIdp = responseBody.find(idp => idp.node_id === 'idp1');
+    expect(foundIdp).to.be.an('object');
   });
 
   it('After NDID enable node IdP (idp1) RP should create a request to idp1 successfully', async function() {
@@ -627,7 +643,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -662,7 +678,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -953,6 +969,14 @@ describe('NDID disable AS node and enable AS node test', function() {
     await wait(5000);
   });
 
+  it('After NDID disable node AS (as1) RP should query list of AS of all available as given service id not found as1', async function() {
+    this.timeout(15000);
+    const response = await commonApi.getASByServiceId('rp1', 'bank_statement');
+    const responseBody = await response.json();
+    const foundAS = responseBody.find(as => as.node_id === 'as1');
+    expect(foundAS).to.be.an('undefined');
+  });
+
   it('After NDID disable node AS (as1) RP should create a request with data request to disabled AS (as1) unsuccessfully', async function() {
     this.timeout(15000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -969,6 +993,14 @@ describe('NDID disable AS node and enable AS node test', function() {
     });
     expect(response.status).to.equal(200);
     await wait(5000);
+  });
+
+  it('After NDID enable node AS (as1) RP should query list of AS of all available as given service id found as1', async function() {
+    this.timeout(15000);
+    const response = await commonApi.getASByServiceId('rp1', 'bank_statement');
+    const responseBody = await response.json();
+    const foundAS = responseBody.find(as => as.node_id === 'as1');
+    expect(foundAS).to.be.an('object');
   });
 
   it('After NDID enable node AS (as1) RP should create a request with data request to as1 successfully', async function() {
@@ -1021,7 +1053,7 @@ describe('NDID disable AS node and enable AS node test', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -1056,7 +1088,7 @@ describe('NDID disable AS node and enable AS node test', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -1435,7 +1467,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+        dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -1470,7 +1502,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -1763,7 +1795,15 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       await wait(5000);
     });
 
-    it('After NDID disable proxy node (proxy1) RP should create a request to disabled proxy node (proxy1) unsuccessfully', async function() {
+    // it('After NDID disable proxy node (proxy1) RP should query IdP behind proxy node (proxy1_idp4) not found', async function() {
+    //   this.timeout(15000);
+    //   const response = await commonApi.getIdP('rp1');
+    //   const responseBody = await response.json();
+    //   const foundIdp = responseBody.find(idp => idp.node_id === 'proxy1_idp4');
+    //   expect(foundIdp).to.be.an('undefined');
+    // });
+
+    it('After NDID disable proxy node (proxy1) RP should create a request to idp (proxy1_idp4) behind disabled proxy node (proxy1) unsuccessfully', async function() {
       this.timeout(15000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
@@ -1778,6 +1818,14 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       });
       expect(response.status).to.equal(200);
       await wait(5000);
+    });
+
+    it('After NDID enable proxy node (proxy1) RP should query IdP behind proxy node (proxy1_idp4) found', async function() {
+      this.timeout(15000);
+      const response = await commonApi.getIdP('rp1');
+      const responseBody = await response.json();
+      const foundIdp = responseBody.find(idp => idp.node_id === 'proxy1_idp4');
+      expect(foundIdp).to.be.an('object');
     });
 
     it('After NDID enable proxy node (proxy1) RP should create a request to proxy1_idp4 successfully', async function() {
@@ -1830,7 +1878,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+        dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -1865,7 +1913,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
       const identity = db.proxy1Idp4Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -2156,6 +2204,17 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       await wait(5000);
     });
 
+    // it('After NDID disable proxy node (proxy1) RP should query list of AS behind disabled proxy node by service id not found', async function() {
+    //   this.timeout(15000);
+    //   const response = await commonApi.getASByServiceId(
+    //     'rp1',
+    //     'bank_statement'
+    //   );
+    //   const responseBody = await response.json();
+    //   const foundAS = responseBody.find(as => as.node_id === 'proxy1_as4');
+    //   expect(foundAS).to.be.an('undefined');
+    // });
+
     it('After NDID disable proxy node (proxy1) RP should create a request with data request to AS node behind disabled proxy node (proxy1_as4) unsuccessfully', async function() {
       this.timeout(15000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -2171,6 +2230,17 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       });
       expect(response.status).to.equal(200);
       await wait(5000);
+    });
+
+    it('After NDID enable proxy node (proxy1) RP should query list of AS behind disabled proxy node by service id found', async function() {
+      this.timeout(15000);
+      const response = await commonApi.getASByServiceId(
+        'rp1',
+        'bank_statement'
+      );
+      const responseBody = await response.json();
+      const foundAS = responseBody.find(as => as.node_id === 'proxy1_as4');
+      expect(foundAS).to.be.an('object');
     });
 
     it('After NDID enable proxy node (proxy1) RP should create a request with data request to proxy1_as4 successfully', async function() {
@@ -2223,7 +2293,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+        dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -2258,7 +2328,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
-        (identity) =>
+        identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
@@ -2638,7 +2708,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -2673,7 +2743,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.proxy1Idp4Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -2967,6 +3037,14 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     await wait(5000);
   });
 
+  it('After NDID disable node IdP (proxy1_idp4) RP should query proxy1_idp4 not found', async function() {
+    this.timeout(15000);
+    const response = await commonApi.getIdP('rp1');
+    const responseBody = await response.json();
+    const foundIdp = responseBody.find(idp => idp.node_id === 'proxy1_idp4');
+    expect(foundIdp).to.be.an('undefined');
+  });
+
   it('After NDID disable node IdP behind proxy (proxy1_idp4) should create a request to disabled IdP (proxy1_idp4) unsuccessfully', async function() {
     this.timeout(15000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
@@ -2982,6 +3060,14 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     });
     expect(response.status).to.equal(200);
     await wait(5000);
+  });
+
+  it('After NDID enable node IdP (proxy1_idp4) RP should query proxy1_idp4 found', async function() {
+    this.timeout(15000);
+    const response = await commonApi.getIdP('rp1');
+    const responseBody = await response.json();
+    const foundIdp = responseBody.find(idp => idp.node_id === 'proxy1_idp4');
+    expect(foundIdp).to.be.an('object');
   });
 
   it('After NDID enable node IdP behind proxy (proxy1_idp4) RP should create a request to proxy1_idp4 successfully', async function() {
@@ -3034,7 +3120,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -3069,7 +3155,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.proxy1Idp4Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -3363,6 +3449,14 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     await wait(5000);
   });
 
+  it('After NDID disable node AS (proxy1_as4) RP should query list of AS by service id not found', async function() {
+    this.timeout(15000);
+    const response = await commonApi.getASByServiceId('rp1', 'bank_statement');
+    const responseBody = await response.json();
+    const foundAS = responseBody.find(as => as.node_id === 'proxy1_as4');
+    expect(foundAS).to.be.an('undefined');
+  });
+
   it('After NDID disable node AS behind proxy (proxy1_as4) RP should create a request with data request to disabled AS (proxy1_as4) unsuccessfully', async function() {
     this.timeout(15000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
@@ -3378,6 +3472,14 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     });
     expect(response.status).to.equal(200);
     await wait(5000);
+  });
+
+  it('After NDID enable node AS (proxy1_as4) RP should query list of AS by service id found', async function() {
+    this.timeout(15000);
+    const response = await commonApi.getASByServiceId('rp1', 'bank_statement');
+    const responseBody = await response.json();
+    const foundAS = responseBody.find(as => as.node_id === 'proxy1_as4');
+    expect(foundAS).to.be.an('object');
   });
 
   it('After NDID enable node AS behind proxy (proxy1_as4) RP should create a request with data request to proxy1_as4 successfully', async function() {
@@ -3430,7 +3532,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -3465,7 +3567,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
