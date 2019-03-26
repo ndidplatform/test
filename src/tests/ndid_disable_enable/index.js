@@ -7,6 +7,7 @@ describe('NDID disable and enable tests', function() {
       this.skip();
     }
   });
+  require('./disable_first_idp');
   require('./disable_enable_node');
   require('./disable_namespace');
   require('./enable_namespace');
