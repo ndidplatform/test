@@ -46,7 +46,7 @@ async function checkForAvailableNodes() {
   proxy2Available = _proxy2Available;
 }
 
-describe('End-to-End NDID API test (API v2.1)', function() {
+describe('End-to-End NDID API test (API v3)', function() {
   before(async function() {
     this.timeout(5000);
     startCallbackServers();
