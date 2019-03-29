@@ -6,16 +6,16 @@ export function createIdentity(nodeId, data) {
   return httpPost(`${apiBaseUrl}/identity`, data);
 }
 
-export function getExistingIdentity(nodeId, data) {
+export function getIdentityInfo(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier } = data;
-  return httpGet(`${apiBaseUrl}/${namespace}/${identifier}`);
+  return httpGet(`${apiBaseUrl}/identity/${namespace}/${identifier}`);
 }
 
 export function getIdentityIal(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier } = data;
-  return httpGet(`${apiBaseUrl}/${namespace}/${identifier}`);
+  return httpGet(`${apiBaseUrl}/identity/${namespace}/${identifier}`);
 }
 
 //////////////////////////////////////////////////////////

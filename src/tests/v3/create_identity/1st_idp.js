@@ -46,6 +46,14 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
     });
   });
 
+  it('Before create identity this sid should not exist on platform ', async function() {
+    const response = await identityApi.getIdentityInfo('idp1', {
+      namespace,
+      identifier,
+    });
+    //expect(response.status).to.equal(404);
+  });
+
   it('Before create identity this sid should not associated with idp1 ', async function() {
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
@@ -54,7 +62,6 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
-    //expect(idpNode.mode_list).to.not.be.null.and.to.not.be.undefined;
   });
 
   it('Should create identity request (mode2) successfully', async function() {
@@ -182,6 +189,16 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('After create identity this sid should be existing on platform ', async function() {
+    const response = await identityApi.getIdentityInfo('idp1', {
+      namespace,
+      identifier,
+    });
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
+  });
+
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
   });
@@ -224,6 +241,14 @@ describe('IdP (idp1) create identity (with providing accessor_id) as 1st IdP', f
     });
   });
 
+  it('Before create identity this sid should not exist on platform ', async function() {
+    const response = await identityApi.getIdentityInfo('idp1', {
+      namespace,
+      identifier,
+    });
+    //expect(response.status).to.equal(404);
+  });
+
   it('Before create identity this sid should not associated with idp1 ', async function() {
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
@@ -232,7 +257,6 @@ describe('IdP (idp1) create identity (with providing accessor_id) as 1st IdP', f
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
-    //expect(idpNode.mode_list).to.not.be.null.and.to.not.be.undefined;
   });
 
   it('should create identity request (mode2) successfully', async function() {
@@ -313,7 +337,9 @@ describe('IdP (idp1) create identity (with providing accessor_id) as 1st IdP', f
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    //expect(idpNode.mode_list).to.not.be.null.and.to.not.be.undefined;
+    expect(idpNode.mode_list)
+      .to.be.an('array')
+      .that.include(2);
 
     db.idp1Identities.push({
       referenceGroupCode,
@@ -356,6 +382,16 @@ describe('IdP (idp1) create identity (with providing accessor_id) as 1st IdP', f
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('After create identity this sid should be existing on platform ', async function() {
+    const response = await identityApi.getIdentityInfo('idp1', {
+      namespace,
+      identifier,
+    });
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
   after(function() {
