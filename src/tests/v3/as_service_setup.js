@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { as1Available, as2Available } from '.';
+import { as1Available, as2Available } from '../';
 import * as asApi from '../../api/v3/as';
 import { as1EventEmitter, as2EventEmitter } from '../../callback_server';
 import { createEventPromise, generateReferenceId } from '../../utils';
@@ -40,6 +40,7 @@ describe('AS (as1) setup', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS1_CALLBACK_URL,
+      accepted_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -62,6 +63,7 @@ describe('AS (as1) setup', function() {
       url: config.AS1_CALLBACK_URL,
       active: true,
       suspended: false,
+      accepted_namespace_list: ['citizen_id'],
     });
   });
 
@@ -74,6 +76,7 @@ describe('AS (as1) setup', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS1_CALLBACK_URL,
+      accepted_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -96,6 +99,7 @@ describe('AS (as1) setup', function() {
       url: config.AS1_CALLBACK_URL,
       active: true,
       suspended: false,
+      accepted_namespace_list: ['citizen_id'],
     });
   });
 
@@ -138,6 +142,7 @@ describe('AS (as2) setup', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS2_CALLBACK_URL,
+      accepted_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -160,6 +165,7 @@ describe('AS (as2) setup', function() {
       url: config.AS2_CALLBACK_URL,
       active: true,
       suspended: false,
+      accepted_namespace_list: ['citizen_id'],
     });
   });
 
@@ -172,6 +178,7 @@ describe('AS (as2) setup', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS2_CALLBACK_URL,
+      accepted_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -194,6 +201,7 @@ describe('AS (as2) setup', function() {
       url: config.AS2_CALLBACK_URL,
       active: true,
       suspended: false,
+      accepted_namespace_list: ['citizen_id'],
     });
   });
 

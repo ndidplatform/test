@@ -135,7 +135,9 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    //expect(idpNode.mode_list).to.not.be.null.and.to.not.be.undefined;
+    expect(idpNode.mode_list)
+      .to.be.an('array')
+      .that.include(2);
 
     db.idp1Identities.push({
       referenceGroupCode,

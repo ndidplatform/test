@@ -76,6 +76,20 @@ idp1App.post('/idp/accessor/sign', async function(req, res) {
   });
 });
 
+idp1App.post('/idp/accessor/encrypt', async function(req, res) {
+  const callbackData = req.body;
+  idp1EventEmitter.emit('accessor_encrypt_callback', callbackData);
+  const reference = db.createResponseReferences.find(
+    ref => ref.referenceId === callbackData.reference_id
+  );
+  res.status(200).json({
+    signature: utils.createResponseSignature(
+      reference.accessorPrivateKey,
+      callbackData.request_message_padded_hash
+    ),
+  });
+});
+
 /*
   IdP-2
 */
@@ -191,7 +205,6 @@ proxy2App.post('/proxy/accessor/sign', async function(req, res) {
     ),
   });
 });
-
 
 export function startCallbackServers() {
   ndidServer = ndidApp.listen(config.NDID_CALLBACK_PORT);

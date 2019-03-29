@@ -51,23 +51,23 @@ export function getServices(nodeId) {
 //   return httpGet(`${apiBaseUrl}/utility/namespaces`);
 // }
 
-// export function getPrivateMessages(nodeId, data) {
-//   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
-//   const { request_id, node_id } = data;
-//   return httpGet(
-//     `${apiBaseUrl}/utility/private_messages/${request_id}${
-//       node_id ? `?node_id=${node_id}` : ''
-//     }`
-//   );
-// }
+export function getPrivateMessages(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { request_id, node_id } = data;
+  return httpGet(
+    `${apiBaseUrl}/utility/private_messages/${request_id}${
+      node_id ? `?node_id=${node_id}` : ''
+    }`
+  );
+}
 
-// export function removePrivateMessages(nodeId, data) {
-//   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
-//   const { request_id, node_id } = data;
-//   return httpPost(
-//     `${apiBaseUrl}/utility/private_messages/${request_id}/housekeeping${
-//       node_id ? `?node_id=${node_id}` : ''
-//     }`,
-//     node_id ? { node_id } : {}
-//   );
-// }
+export function removePrivateMessages(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { request_id, node_id } = data;
+  return httpPost(
+    `${apiBaseUrl}/utility/private_messages/${request_id}/housekeeping${
+      node_id ? `?node_id=${node_id}` : ''
+    }`,
+    node_id ? { node_id } : {}
+  );
+}
