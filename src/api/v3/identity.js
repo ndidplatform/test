@@ -15,7 +15,7 @@ export function getIdentityInfo(nodeId, data) {
 export function getIdentityIal(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier } = data;
-  return httpGet(`${apiBaseUrl}/identity/${namespace}/${identifier}`);
+  return httpGet(`${apiBaseUrl}/identity/${namespace}/${identifier}/ial`);
 }
 
 //////////////////////////////////////////////////////////

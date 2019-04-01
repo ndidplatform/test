@@ -9,7 +9,7 @@ import * as db from '../../../db';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
 
-describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP', function() {
+describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as 1st IdP', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -51,7 +51,7 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
       namespace,
       identifier,
     });
-    //expect(response.status).to.equal(404);
+    expect(response.status).to.equal(404);
   });
 
   it('Before create identity this sid should not associated with idp1 ', async function() {
@@ -62,6 +62,14 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
+  });
+
+  it('Before create identity should not get identity ial', async function() {
+    const response = await identityApi.getIdentityIal('idp1', {
+      namespace,
+      identifier,
+    });
+    expect(response.status).to.equal(404);
   });
 
   it('Should create identity request (mode2) successfully', async function() {
@@ -199,12 +207,22 @@ describe('IdP (idp1) create identity (without providing accessor_id) as 1st IdP'
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
+  it('After create identity should get identity ial successfully', async function() {
+    const response = await identityApi.getIdentityIal('idp1', {
+      namespace,
+      identifier,
+    });
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    expect(responseBody.ial).to.equal(2.3);
+  });
+
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
   });
 });
 
-describe('IdP (idp1) create identity (with providing accessor_id) as 1st IdP', function() {
+describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1st IdP', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -246,7 +264,7 @@ describe('IdP (idp1) create identity (with providing accessor_id) as 1st IdP', f
       namespace,
       identifier,
     });
-    //expect(response.status).to.equal(404);
+    expect(response.status).to.equal(404);
   });
 
   it('Before create identity this sid should not associated with idp1 ', async function() {
@@ -257,6 +275,14 @@ describe('IdP (idp1) create identity (with providing accessor_id) as 1st IdP', f
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
+  });
+
+  it('Before create identity should not get identity ial', async function() {
+    const response = await identityApi.getIdentityIal('idp1', {
+      namespace,
+      identifier,
+    });
+    expect(response.status).to.equal(404);
   });
 
   it('should create identity request (mode2) successfully', async function() {
@@ -392,6 +418,16 @@ describe('IdP (idp1) create identity (with providing accessor_id) as 1st IdP', f
     expect(response.status).to.equal(200);
     const responseBody = await response.json();
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
+  });
+
+  it('After create identity should get identity ial successfully', async function() {
+    const response = await identityApi.getIdentityIal('idp1', {
+      namespace,
+      identifier,
+    });
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    expect(responseBody.ial).to.equal(2.3);
   });
 
   after(function() {
