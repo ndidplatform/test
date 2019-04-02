@@ -186,7 +186,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       min_aal: 1,
       min_ial: 1.1,
       request_timeout: 86400,
-      idp_id_list:[],
+      idp_id_list: [],
       data_request_list: [],
       response_list: [],
       closed: true,
@@ -380,6 +380,7 @@ describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1s
 
     db.idp1Identities.push({
       referenceGroupCode,
+      mode: 2,
       namespace,
       identifier,
       accessors: [
@@ -404,7 +405,7 @@ describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1s
       min_aal: 1,
       min_ial: 1.1,
       request_timeout: 86400,
-      idp_id_list:[],
+      idp_id_list: [],
       data_request_list: [],
       response_list: [],
       closed: true,

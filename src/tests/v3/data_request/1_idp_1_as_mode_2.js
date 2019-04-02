@@ -66,8 +66,15 @@ describe('1 IdP, 1 AS, mode 2', function() {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    // const identity = db.idp1Identities.find(identity => {
+    //   return identity.mode === 2;
+    // });
+
+    // console.log(identity);
+    const identity = db.idp1Identities[0]
+
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -1039,8 +1046,12 @@ describe('1 IdP, 1 AS, mode 2 (as_id_list is empty array)', function() {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    const identity = db.idp1Identities.find(identity => {
+      return identity.mode === 2;
+    });
+
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -2025,8 +2036,12 @@ describe('1 IdP, 1 AS, mode 2 (without as_id_list key)', function() {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    const identity = db.idp1Identities.find(identity => {
+      return identity.mode === 2;
+    });
+
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -3010,8 +3025,12 @@ describe('1 IdP, 1 AS, mode 2 (without request_params key)', function() {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    const identity = db.idp1Identities.find(identity => {
+      return identity.mode === 2;
+    });
+
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -3980,8 +3999,12 @@ describe('1 IdP, 1 AS, mode 2 (with empty string request_params and request_mess
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    const identity = db.idp1Identities.find(identity => {
+      return identity.mode === 2;
+    });
+
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,

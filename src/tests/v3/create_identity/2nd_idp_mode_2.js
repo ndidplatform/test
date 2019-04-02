@@ -9,7 +9,7 @@ import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import { idp2Available } from '../../';
 import * as config from '../../../config';
 
-describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as 2st IdP', function() {
+describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as 2nd IdP', function() {
   let namespace;
   let identifier;
 
