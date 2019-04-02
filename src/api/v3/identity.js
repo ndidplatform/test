@@ -61,3 +61,12 @@ export function getRequestIdByReferenceId(nodeId, data) {
     }`
   );
 }
+
+export function addAccessor(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors`,
+    rest
+  );
+}
