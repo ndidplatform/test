@@ -25,10 +25,10 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
   let accessorId;
   let referenceGroupCode;
 
-  db.createIdentityReferences.push({
-    referenceId,
-    accessorPrivateKey,
-  });
+  // db.createIdentityReferences.push({
+  //   referenceId,
+  //   accessorPrivateKey,
+  // });
 
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -77,8 +77,12 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id,
@@ -147,6 +151,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       namespace,
       identifier,
     });
+
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
@@ -156,6 +161,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
 
     db.idp1Identities.push({
       referenceGroupCode,
+      mode: 2,
       namespace,
       identifier,
       accessors: [
@@ -180,6 +186,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       min_aal: 1,
       min_ial: 1.1,
       request_timeout: 86400,
+      idp_id_list:[],
       data_request_list: [],
       response_list: [],
       closed: true,
@@ -238,10 +245,10 @@ describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1s
   let requestId;
   let referenceGroupCode;
 
-  db.createIdentityReferences.push({
-    referenceId,
-    accessorPrivateKey,
-  });
+  // db.createIdentityReferences.push({
+  //   referenceId,
+  //   accessorPrivateKey,
+  // });
 
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -290,8 +297,12 @@ describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1s
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       accessor_id: accessorId,
@@ -393,6 +404,7 @@ describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1s
       min_aal: 1,
       min_ial: 1.1,
       request_timeout: 86400,
+      idp_id_list:[],
       data_request_list: [],
       response_list: [],
       closed: true,

@@ -49,20 +49,15 @@ export function updateIdentityIal(nodeId, data) {
 
 export function closeIdentityRequest(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  return httpPost(`${apiBaseUrl}/identity/requests/close`, data);
+  return httpPost(`${apiBaseUrl}/identity_request/request_close`, data);
 }
 
 export function getRequestIdByReferenceId(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { reference_id, node_id } = data;
   return httpGet(
-    `${apiBaseUrl}/identity/requests/reference/${reference_id}${
+    `${apiBaseUrl}/identity_request/request_references/${reference_id}${
       node_id ? `?node_id=${node_id}` : ''
     }`
   );
-}
-
-export function reCalculateSecret(nodeId, data) {
-  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  return httpPost(`${apiBaseUrl}/identity/secret`, data);
 }

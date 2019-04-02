@@ -304,10 +304,10 @@ describe('1 IdP, 1 AS, mode 2', function() {
 
     responseAccessorId = identity.accessors[0].accessorId;
 
-    db.createResponseReferences.push({
-      referenceId: idpReferenceId,
-      accessorPrivateKey: identity.accessors[0].accessorPrivateKey,
-    });
+    // db.createResponseReferences.push({
+    //   referenceId: idpReferenceId,
+    //   accessorPrivateKey: identity.accessors[0].accessorPrivateKey,
+    // });
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -1290,10 +1290,10 @@ describe('1 IdP, 1 AS, mode 2 (as_id_list is empty array)', function() {
 
     responseAccessorId = identity.accessors[0].accessorId;
 
-    db.createResponseReferences.push({
-      referenceId: idpReferenceId,
-      accessorPrivateKey: identity.accessors[0].accessorPrivateKey,
-    });
+    // db.createResponseReferences.push({
+    //   referenceId: idpReferenceId,
+    //   accessorPrivateKey: identity.accessors[0].accessorPrivateKey,
+    // });
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,

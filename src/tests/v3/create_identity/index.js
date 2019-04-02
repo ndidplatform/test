@@ -1,2 +1,4 @@
 require('./1st_idp_mode_2');
-//require('./1st_idp_mode_3');
+require('./2nd_idp_mode_2');
+require('./1st_idp_mode_3');
+require('./2nd_idp_mode_3');

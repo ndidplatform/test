@@ -61,13 +61,20 @@ export function getPrivateMessages(nodeId, data) {
   );
 }
 
+export function removeAllPrivateMessages(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { node_id } = data;
+  return httpPost(
+    `${apiBaseUrl}/utility/private_message_removal`,
+    node_id ? { node_id } : {}
+  );
+}
+
 export function removePrivateMessages(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { request_id, node_id } = data;
   return httpPost(
-    `${apiBaseUrl}/utility/private_messages/${request_id}/housekeeping${
-      node_id ? `?node_id=${node_id}` : ''
-    }`,
+    `${apiBaseUrl}/utility/private_message_removal/${request_id}`,
     node_id ? { node_id } : {}
   );
 }

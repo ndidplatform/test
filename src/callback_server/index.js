@@ -79,15 +79,28 @@ idp1App.post('/idp/accessor/sign', async function(req, res) {
 idp1App.post('/idp/accessor/encrypt', async function(req, res) {
   const callbackData = req.body;
   idp1EventEmitter.emit('accessor_encrypt_callback', callbackData);
-  const reference = db.createResponseReferences.find(
-    ref => ref.referenceId === callbackData.reference_id
-  );
+  let accessorPrivateKey;
+  db.idp1Identities.forEach(identity => {
+    identity.accessors.forEach(accessor => {
+      if (accessor.accessorId === callbackData.accessor_id) {
+        accessorPrivateKey = accessor.accessorPrivateKey;
+        return;
+      }
+      if (accessorPrivateKey) return;
+    });
+  });
   res.status(200).json({
     signature: utils.createResponseSignature(
-      reference.accessorPrivateKey,
+      accessorPrivateKey,
       callbackData.request_message_padded_hash
     ),
   });
+});
+
+idp1App.post('/idp/identity/notification', async function(req, res) {
+  const callbackData = req.body;
+  idp1EventEmitter.emit('identity_notification_callback', callbackData);
+  res.status(204).end();
 });
 
 /*
@@ -116,6 +129,12 @@ idp2App.post('/idp/accessor/sign', async function(req, res) {
       callbackData.sid
     ),
   });
+});
+
+idp2App.post('/idp/identity/notification', async function(req, res) {
+  const callbackData = req.body;
+  idp2EventEmitter.emit('identity_notification_callback', callbackData);
+  res.status(204).end();
 });
 
 /*
