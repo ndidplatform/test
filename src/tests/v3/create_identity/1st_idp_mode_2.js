@@ -6,7 +6,7 @@ import * as identityApi from '../../../api/v3/identity';
 import * as commonApi from '../../../api/v3/common';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
-import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { createEventPromise, generateReferenceId } from '../../../utils';
 import * as config from '../../../config';
 
 describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as 1st IdP', function() {
@@ -18,10 +18,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
 
   const referenceId = generateReferenceId();
 
-  const createIdentityRequestResultPromise = createEventPromise();
   const createIdentityResultPromise = createEventPromise();
 
-  let requestId;
   let accessorId;
   let referenceGroupCode;
 
@@ -33,11 +31,6 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
-        callbackData.type === 'create_identity_request_result' &&
-        callbackData.reference_id === referenceId
-      ) {
-        createIdentityRequestResultPromise.resolve(callbackData);
-      } else if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === referenceId
       ) {
@@ -91,55 +84,17 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
 
-    requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
-
-    const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
-    expect(createIdentityRequestResult).to.deep.include({
-      reference_id: referenceId,
-      request_id: requestId,
-      exist: false,
-      accessor_id: accessorId,
-      success: true,
-    });
-    expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
-
-  // it('should receive accessor sign callback with correct data', async function() {
-  //   this.timeout(15000);
-  //   const sid = `${namespace}:${identifier}`;
-  //   const sid_hash = hash(sid);
-
-  //   const accessorSignParams = await accessorSignPromise.promise;
-  //   expect(accessorSignParams).to.deep.equal({
-  //     type: 'accessor_sign',
-  //     node_id: 'idp1',
-  //     reference_id: referenceId,
-  //     accessor_id: accessorId,
-  //     sid,
-  //     sid_hash,
-  //     hash_method: 'SHA256',
-  //     key_type: 'RSA',
-  //     sign_method: 'RSA-SHA256',
-  //     padding: 'PKCS#1v1.5',
-  //   });
-  // });
 
   it('Identity should be created successfully', async function() {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
-      request_id: requestId,
       success: true,
     });
     expect(createIdentityResult.reference_group_code).to.be.a('string').that.is
@@ -172,36 +127,6 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         },
       ],
     });
-  });
-
-  it('Special request status for create identity (mode 2) should be completed and closed', async function() {
-    this.timeout(10000);
-    //wait for API close request
-    await wait(3000);
-    const response = await commonApi.getRequest('idp1', { requestId });
-    const responseBody = await response.json();
-    expect(responseBody).to.deep.include({
-      request_id: requestId,
-      min_idp: 0,
-      min_aal: 1,
-      min_ial: 1.1,
-      request_timeout: 86400,
-      idp_id_list: [],
-      data_request_list: [],
-      response_list: [],
-      closed: true,
-      timed_out: false,
-      mode: 2,
-      status: 'completed',
-      requester_node_id: 'idp1',
-    });
-    expect(responseBody.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('After create identity this sid should be existing on platform ', async function() {
@@ -239,25 +164,13 @@ describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1s
 
   const referenceId = generateReferenceId();
 
-  const createIdentityRequestResultPromise = createEventPromise();
   const createIdentityResultPromise = createEventPromise();
 
-  let requestId;
   let referenceGroupCode;
-
-  // db.createIdentityReferences.push({
-  //   referenceId,
-  //   accessorPrivateKey,
-  // });
 
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
-        callbackData.type === 'create_identity_request_result' &&
-        callbackData.reference_id === referenceId
-      ) {
-        createIdentityRequestResultPromise.resolve(callbackData);
-      } else if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === referenceId
       ) {
@@ -311,55 +224,14 @@ describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1s
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
-
-    requestId = responseBody.request_id;
-    //accessorId = responseBody.accessor_id;
-
-    const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
-    expect(createIdentityRequestResult).to.deep.include({
-      reference_id: referenceId,
-      request_id: requestId,
-      exist: false,
-      accessor_id: accessorId,
-      success: true,
-    });
-    expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
-
-  // it('should receive accessor sign callback with correct data', async function() {
-  //   this.timeout(15000);
-  //   const sid = `${namespace}:${identifier}`;
-  //   const sid_hash = hash(sid);
-
-  //   const accessorSignParams = await accessorSignPromise.promise;
-  //   expect(accessorSignParams).to.deep.equal({
-  //     type: 'accessor_sign',
-  //     node_id: 'idp1',
-  //     reference_id: referenceId,
-  //     accessor_id: accessorId,
-  //     sid,
-  //     sid_hash,
-  //     hash_method: 'SHA256',
-  //     key_type: 'RSA',
-  //     sign_method: 'RSA-SHA256',
-  //     padding: 'PKCS#1v1.5',
-  //   });
-  // });
 
   it('Identity should be created successfully', async function() {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
-      request_id: requestId,
       success: true,
     });
     expect(createIdentityResult.reference_group_code).to.be.a('string').that.is
@@ -391,36 +263,6 @@ describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1s
         },
       ],
     });
-  });
-
-  it('Special request status for create identity (mode 2) should be completed and closed', async function() {
-    this.timeout(10000);
-    //wait for API close request
-    await wait(3000);
-    const response = await commonApi.getRequest('idp1', { requestId });
-    const responseBody = await response.json();
-    expect(responseBody).to.deep.include({
-      request_id: requestId,
-      min_idp: 0,
-      min_aal: 1,
-      min_ial: 1.1,
-      request_timeout: 86400,
-      idp_id_list: [],
-      data_request_list: [],
-      response_list: [],
-      closed: true,
-      timed_out: false,
-      mode: 2,
-      status: 'completed',
-      requester_node_id: 'idp1',
-    });
-    expect(responseBody.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('After create identity this sid should be existing on platform ', async function() {

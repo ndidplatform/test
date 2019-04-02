@@ -18,10 +18,8 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
 
   const referenceId = generateReferenceId();
 
-  const createIdentityRequestResultPromise = createEventPromise();
   const createIdentityResultPromise = createEventPromise();
-
-  let requestId;
+  
   let accessorId;
   let referenceGroupCode;
 
@@ -33,11 +31,6 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
-        callbackData.type === 'create_identity_request_result' &&
-        callbackData.reference_id === referenceId
-      ) {
-        createIdentityRequestResultPromise.resolve(callbackData);
-      } else if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === referenceId
       ) {
@@ -91,27 +84,9 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
 
-    requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
-
-    const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
-    expect(createIdentityRequestResult).to.deep.include({
-      reference_id: referenceId,
-      request_id: requestId,
-      exist: false,
-      accessor_id: accessorId,
-      success: true,
-    });
-    expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   // it('should receive accessor sign callback with correct data', async function() {
@@ -139,7 +114,6 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
-      request_id: requestId,
       success: true,
     });
 
@@ -174,36 +148,6 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
     });
   });
 
-  it('Special request status for create identity should be completed and closed', async function() {
-    this.timeout(10000);
-    //wait for API close request
-    await wait(3000);
-    const response = await commonApi.getRequest('idp1', { requestId });
-    const responseBody = await response.json();
-    expect(responseBody).to.deep.include({
-      request_id: requestId,
-      min_idp: 0,
-      min_aal: 1,
-      min_ial: 1.1,
-      request_timeout: 86400,
-      idp_id_list:[],
-      data_request_list: [],
-      response_list: [],
-      closed: true,
-      timed_out: false,
-      mode: 3,
-      status: 'completed',
-      requester_node_id: 'idp1',
-    });
-    expect(responseBody.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-  });
-
   it('After create identity this sid should be existing on platform ', async function() {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
@@ -227,5 +171,4 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
   });
-  
 });

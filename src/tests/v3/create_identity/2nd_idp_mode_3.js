@@ -394,7 +394,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     idp2EventEmitter.removeAllListeners('callback');
   });
 
-  describe('Create request by use identity at 2nd IdP (idp2) (1 IdP, 1 AS, mode 3)', function() {
+  describe('Create request with identity at 2nd IdP (idp2) (1 IdP, 1 AS, mode 3)', function() {
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
