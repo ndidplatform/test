@@ -152,6 +152,12 @@ idp2App.post('/idp/accessor/encrypt', async function(req, res) {
   });
 });
 
+idp2App.post('/idp/identity/notification', async function(req, res) {
+  const callbackData = req.body;
+  idp1EventEmitter.emit('identity_notification_callback', callbackData);
+  res.status(204).end();
+});
+
 /*
   AS-1
 */
