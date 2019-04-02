@@ -66,12 +66,11 @@ describe('1 IdP, 1 AS, mode 2', function() {
       throw new Error('No created identity to use');
     }
 
-    // const identity = db.idp1Identities.find(identity => {
-    //   return identity.mode === 2;
-    // });
+    const identity = db.idp1Identities.find(identity => {
+      return identity.mode === 2;
+    });
 
-    // console.log(identity);
-    const identity = db.idp1Identities[0]
+    //const identity = db.idp1Identities[0]
 
     namespace = identity.namespace;
     identifier = identity.identifier;

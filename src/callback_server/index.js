@@ -131,10 +131,25 @@ idp2App.post('/idp/accessor/sign', async function(req, res) {
   });
 });
 
-idp2App.post('/idp/identity/notification', async function(req, res) {
+idp2App.post('/idp/accessor/encrypt', async function(req, res) {
   const callbackData = req.body;
-  idp2EventEmitter.emit('identity_notification_callback', callbackData);
-  res.status(204).end();
+  idp2EventEmitter.emit('accessor_encrypt_callback', callbackData);
+  let accessorPrivateKey;
+  db.idp2Identities.forEach(identity => {
+    identity.accessors.forEach(accessor => {
+      if (accessor.accessorId === callbackData.accessor_id) {
+        accessorPrivateKey = accessor.accessorPrivateKey;
+        return;
+      }
+      if (accessorPrivateKey) return;
+    });
+  });
+  res.status(200).json({
+    signature: utils.createResponseSignature(
+      accessorPrivateKey,
+      callbackData.request_message_padded_hash
+    ),
+  });
 });
 
 /*
