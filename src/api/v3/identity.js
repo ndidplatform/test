@@ -18,9 +18,7 @@ export function getIdentityIal(nodeId, data) {
   return httpGet(`${apiBaseUrl}/identity/${namespace}/${identifier}/ial`);
 }
 
-//////////////////////////////////////////////////////////
-
-export function addAccessorMethod(nodeId, data) {
+export function addAccessor(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier, ...rest } = data;
   return httpPost(
@@ -29,20 +27,11 @@ export function addAccessorMethod(nodeId, data) {
   );
 }
 
-export function revokeAccessorMethod(nodeId, data) {
+export function revokeAccessor(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier, ...rest } = data;
   return httpPost(
     `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors_revoke`,
-    rest
-  );
-}
-
-export function updateIdentityIal(nodeId, data) {
-  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  const { namespace, identifier, ...rest } = data;
-  return httpPost(
-    `${apiBaseUrl}/identity/${namespace}/${identifier}/ial`,
     rest
   );
 }
@@ -62,11 +51,15 @@ export function getRequestIdByReferenceId(nodeId, data) {
   );
 }
 
-export function addAccessor(nodeId, data) {
+//////////////////////////////////////////////////////////
+
+export function updateIdentityIal(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier, ...rest } = data;
   return httpPost(
-    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors`,
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/ial`,
     rest
   );
 }
+
+

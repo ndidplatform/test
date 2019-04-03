@@ -8,7 +8,7 @@
 //   require('./ndid');
 //   require('./dpki');
   require('./add_accessor');
-//   require('./revoke_accessor_method');
+  require('./revoke_accessor');
 //   require('./verify_identity');
   require('./data_request');
 //   require('./create_request');
