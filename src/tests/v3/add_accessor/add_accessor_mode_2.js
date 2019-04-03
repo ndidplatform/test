@@ -144,6 +144,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
+    idp2EventEmitter.removeAllListeners('identity_notification_callback');
   });
 
   describe('IdP (idp1) response with new accessor id test', function() {
@@ -1101,6 +1102,8 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
     after(function() {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+      idp2EventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
     });
   });
@@ -1230,6 +1233,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
 
   after(function() {
     idp2EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('identity_notification_callback');
   });
 
   describe('IdP (idp2) response with new accessor id test', function() {
