@@ -36,6 +36,15 @@ export function revokeAccessor(nodeId, data) {
   );
 }
 
+export function revokeIdentityAssociation(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/association_revoke`,
+    rest
+  );
+}
+
 export function closeIdentityRequest(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpPost(`${apiBaseUrl}/identity_request/request_close`, data);
@@ -61,5 +70,3 @@ export function updateIdentityIal(nodeId, data) {
     rest
   );
 }
-
-
