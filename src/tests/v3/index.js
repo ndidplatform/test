@@ -11,7 +11,7 @@
   require('./revoke_accessor');
 //   require('./verify_identity');
   require('./data_request');
-//   require('./create_request');
+  require('./create_request');
 //   require('./idp_response');
 //   require('./as_data_response');
 //   require('./token');

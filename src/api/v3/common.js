@@ -46,10 +46,10 @@ export function getServices(nodeId) {
 //   return httpGet(`${apiBaseUrl}/utility/nodes/${nodeId}/token`);
 // }
 
-// export function getNamespaces(nodeId) {
-//   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
-//   return httpGet(`${apiBaseUrl}/utility/namespaces`);
-// }
+export function getNamespaces(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  return httpGet(`${apiBaseUrl}/utility/namespaces`);
+}
 
 export function getPrivateMessages(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
