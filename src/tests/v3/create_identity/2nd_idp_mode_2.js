@@ -45,6 +45,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
 
   before(function() {
     if (!idp2Available) {
+      this.test.parent.pending = true;
       this.skip();
     }
     if (db.idp1Identities[0] == null) {
