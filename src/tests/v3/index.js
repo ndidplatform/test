@@ -11,6 +11,7 @@ require('./data_request');
 require('./add_accessor');
 require('./revoke_accessor');
 require('./revoke_identity_association');
+require('./ndid');
 //   require('./verify_identity');
 // require('./create_request');
 //   require('./idp_response');

@@ -104,3 +104,8 @@ export function disableNode(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/disableNode`, data);
 }
+
+export function setAllowedModeList(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/setAllowedModeList`, data);
+}
