@@ -139,6 +139,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
+    expect(responseBody.exist).to.equal(true);
 
     accessorId = responseBody.accessor_id;
   });
@@ -170,6 +171,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       reference_id: referenceId,
       success: true,
     });
+
     expect(createIdentityResult.reference_group_code).to.equal(
       referenceGroupCode
     );
@@ -297,9 +299,6 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
-
-      // console.log(identity);
-      // const identity = db.idp2Identities[0];
 
       namespace = identity.namespace;
       identifier = identity.identifier;
