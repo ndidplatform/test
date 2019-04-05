@@ -16,19 +16,26 @@ import * as db from '../../../db';
 import { createEventPromise, generateReferenceId, hash } from '../../../utils';
 import * as config from '../../../config';
 
-describe('IdP (idp1) revoke identity association (mode 2) test', function() {
+describe('IdP (idp1) revoke identity association (mode 3) test', function() {
   let namespace;
   let identifier;
   const requestMessage =
     'revoke identity association consent request custom message ข้อความสำหรับขอเพิกถอนความสัมพันธ์กับ idp1 บนระบบ';
 
   const referenceId = generateReferenceId();
+  const idp1ReferenceId = generateReferenceId();
 
-  const revokeIdentityResultPromise = createEventPromise();
+  const incomingRequestPromise = createEventPromise();
+  const idp2IncomingRequestPromise = createEventPromise();
+  const responseResultPromise = createEventPromise();
+  const accessorEncryptPromise = createEventPromise();
+  const revokeIdentityAssociationResultPromise = createEventPromise();
+  const revokeIdentityAssociationRequestResultPromise = createEventPromise();
   const notificationCreateIdentityPromise = createEventPromise();
 
+  let requestId;
   let referenceGroupCode;
-  let responseAccessorId;
+  let accessorId;
 
   before(function() {
     if (db.idp1Identities[0] == null) {
@@ -40,7 +47,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
       this.skip();
     }
 
-    const identity = db.idp1Identities.find(identity => identity.mode === 2);
+    const identity = db.idp1Identities.find(identity => identity.mode === 3);
 
     namespace = identity.namespace;
     identifier = identity.identifier;
@@ -48,10 +55,41 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
 
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId
+      ) {
+        incomingRequestPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'response_result' &&
+        callbackData.reference_id === idp1ReferenceId
+      ) {
+        responseResultPromise.resolve(callbackData);
+      }
+      if (
+        callbackData.type === 'revoke_identity_association_request_result' &&
+        callbackData.reference_id === referenceId
+      ) {
+        revokeIdentityAssociationRequestResultPromise.resolve(callbackData);
+      } else if (
         callbackData.type === 'revoke_identity_association_result' &&
         callbackData.reference_id === referenceId
       ) {
-        revokeIdentityResultPromise.resolve(callbackData);
+        revokeIdentityAssociationResultPromise.resolve(callbackData);
+      }
+    });
+
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        accessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
+    idp2EventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId
+      ) {
+        idp2IncomingRequestPromise.resolve(callbackData);
       }
     });
 
@@ -79,7 +117,25 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody).to.be.an('object').that.is.empty;
+    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+
+    requestId = responseBody.request_id;
+
+    const revokeIdentityAssociationRequestResult = await revokeIdentityAssociationRequestResultPromise.promise;
+    expect(revokeIdentityAssociationRequestResult).to.deep.include({
+      reference_id: referenceId,
+      request_id: requestId,
+      success: true,
+    });
+    expect(
+      revokeIdentityAssociationRequestResult.creation_block_height
+    ).to.be.a('string');
+    const splittedCreationBlockHeight = revokeIdentityAssociationRequestResult.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
@@ -89,12 +145,99 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(200);
-    expect(responseBody).to.be.an('object').that.is.empty;
+    expect(responseBody).to.deep.equal({
+      request_id: requestId,
+    });
+  });
+
+  it('idp1 should receive revoke identity association request', async function() {
+    this.timeout(15000);
+    const incomingRequest = await incomingRequestPromise.promise;
+    expect(incomingRequest).to.deep.include({
+      mode: 3,
+      request_id: requestId,
+      reference_group_code: referenceGroupCode,
+      request_message: requestMessage,
+      request_message_hash: hash(
+        requestMessage + incomingRequest.request_message_salt
+      ),
+      requester_node_id: 'idp1',
+      min_ial: 1.1,
+      min_aal: 1,
+      data_request_list: [],
+    });
+    expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(incomingRequest.request_timeout).to.be.a('number');
+  });
+
+  it('IdP should create response (accept) successfully', async function() {
+    this.timeout(10000);
+
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace &&
+        identity.identifier === identifier &&
+        identity.mode === 3
+    );
+
+    const accessor = identity.accessors.find(
+      accessor => accessor.revoked != true
+    );
+
+    accessorId = accessor.accessorId;
+
+    const response = await idpApi.createResponse('idp1', {
+      reference_id: idp1ReferenceId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      request_id: requestId,
+      ial: 2.3,
+      aal: 3,
+      status: 'accept',
+      accessor_id: accessorId,
+    });
+    expect(response.status).to.equal(202);
+  });
+
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await accessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: accessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idp1ReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idp1ReferenceId,
+      request_id: requestId,
+      success: true,
+    });
   });
 
   it('Identity association should be revoked successfully', async function() {
     this.timeout(10000);
-    const revokeIdentityAssociationResult = await revokeIdentityResultPromise.promise;
+    const revokeIdentityAssociationResult = await revokeIdentityAssociationResultPromise.promise;
     expect(revokeIdentityAssociationResult).to.deep.include({
       reference_id: referenceId,
       success: true,
@@ -104,7 +247,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
       identity =>
         identity.namespace === namespace &&
         identity.identifier === identifier &&
-        identity.mode === 2
+        identity.mode === 3
     );
 
     let identityIndex = db.idp1Identities.findIndex(item => item === identity);
@@ -115,7 +258,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
     };
   });
 
-  it('After revoke identity association IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
+  it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
     this.timeout(15000);
     const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
     expect(notificationCreateIdentity).to.deep.include({
@@ -136,10 +279,11 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     idp2EventEmitter.removeAllListeners('identity_notification_callback');
   });
 
-  describe('RP create request (mode 2) to idp that revoked identity association', function() {
+  describe('RP create request (mode 3) to idp that revoked identity association', function() {
     const rpReferenceId = generateReferenceId();
 
     const createRequestResultPromise = createEventPromise(); // RP
@@ -165,7 +309,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
         identity =>
           identity.namespace === namespace &&
           identity.identifier === identifier &&
-          identity.mode === 2 &&
+          identity.mode === 3 &&
           identity.revokeIdentityAssociation == true
       );
 
@@ -175,7 +319,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
-        mode: 2,
+        mode: 3,
         namespace,
         identifier,
         idp_id_list: ['idp1'],
@@ -239,7 +383,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
     });
   });
 
-  describe('RP create request (mode 2) and idp that revoked identity association response', function() {
+  describe('RP create request (mode 3) and idp that revoked identity association response', function() {
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
 
@@ -275,7 +419,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
         identity =>
           identity.namespace === namespace &&
           identity.identifier === identifier &&
-          identity.mode === 2 &&
+          identity.mode === 3 &&
           identity.revokeIdentityAssociation == true
       );
 
@@ -285,7 +429,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
-        mode: 2,
+        mode: 3,
         namespace,
         identifier,
         idp_id_list: [],
@@ -490,7 +634,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
         throw new Error('Identity not found');
       }
 
-      responseAccessorId = identity.accessors[latestAccessor].accessorId;
+      let responseAccessorId = identity.accessors[latestAccessor].accessorId;
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
@@ -552,7 +696,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
     });
 
     let requestId;
-
+    let responseAccessorId;
     const requestStatusUpdates = [];
     const idp_requestStatusUpdates = [];
     const as_requestStatusUpdates = [];
@@ -576,7 +720,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
-        mode: 2,
+        mode: 3,
         namespace,
         identifier,
         idp_id_list: [],
