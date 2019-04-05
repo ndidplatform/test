@@ -209,3 +209,29 @@ describe('AS (as2) setup', function() {
     as2EventEmitter.removeAllListeners('callback');
   });
 });
+
+describe('AS should add offered service (bank_statement) with accepted_namespace_list that ndid does not registered unsuccessfully', function() {
+  before(function() {
+    if (!as1Available) {
+      this.skip();
+    }
+  });
+
+  const bankStatementReferenceId = generateReferenceId();
+
+  it('should add offered service (bank_statement) unsuccessfully', async function() {
+    this.timeout(10000);
+    const response = await asApi.addOrUpdateService('as1', {
+      serviceId: 'bank_statement',
+      reference_id: bankStatementReferenceId,
+      callback_url: config.AS1_CALLBACK_URL,
+      min_ial: 1.1,
+      min_aal: 1,
+      url: config.AS1_CALLBACK_URL,
+      accepted_namespace_list: ['invalid_namespace'],
+    });
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20013);
+  });
+});
