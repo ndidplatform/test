@@ -7,7 +7,6 @@ import * as idpApi from '../../../api/v3/idp';
 import * as asApi from '../../../api/v3/as';
 import * as commonApi from '../../../api/v3/common';
 import * as identityApi from '../../../api/v3/identity';
-import * as debugApi from '../../../api/v3/debug';
 import {
   idp1EventEmitter,
   rpEventEmitter,
@@ -26,134 +25,135 @@ import * as config from '../../../config';
 describe('IdP (idp1) revoke accessor (mode 2) test', function() {
   let namespace;
   let identifier;
-  const addAccessorRequestMessage =
-    'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
-
-  const referenceId = generateReferenceId();
-
-  const addAccessorResultPromise = createEventPromise();
-  const notificationCreateIdentityPromise = createEventPromise();
-
   let accessorId;
   let referenceGroupCode;
   let responseAccessorId;
+  describe('Idp (idp1) should add accessor (mode 2) successfully', function() {
+    const addAccessorRequestMessage =
+      'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
+    const keypair = forge.pki.rsa.generateKeyPair(2048);
+    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
+    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
-  before(function() {
-    if (db.idp1Identities[0] == null) {
-      throw new Error('No created identity to use');
-    }
+    const referenceId = generateReferenceId();
 
-    if (!idp2Available) {
-      this.test.parent.pending = true;
-      this.skip();
-    }
+    const addAccessorResultPromise = createEventPromise();
+    const notificationCreateIdentityPromise = createEventPromise();
 
-    const identity = db.idp1Identities.find(identity => identity.mode === 2);
-
-    namespace = identity.namespace;
-    identifier = identity.identifier;
-    referenceGroupCode = identity.referenceGroupCode;
-
-    idp1EventEmitter.on('callback', function(callbackData) {
-      if (
-        callbackData.type === 'add_accessor_result' &&
-        callbackData.reference_id === referenceId
-      ) {
-        addAccessorResultPromise.resolve(callbackData);
+    before(function() {
+      if (db.idp1Identities[0] == null) {
+        throw new Error('No created identity to use');
       }
-    });
 
-    idp2EventEmitter.on('identity_notification_callback', function(
-      callbackData
-    ) {
-      if (
-        callbackData.type === 'identity_change_notification' &&
-        callbackData.reference_group_code === referenceGroupCode &&
-        callbackData.action === 'add_accessor'
-      ) {
-        notificationCreateIdentityPromise.resolve(callbackData);
+      if (!idp2Available) {
+        this.test.parent.pending = true;
+        this.skip();
       }
+
+      const identity = db.idp1Identities.find(identity => identity.mode === 2);
+
+      namespace = identity.namespace;
+      identifier = identity.identifier;
+      referenceGroupCode = identity.referenceGroupCode;
+
+      idp1EventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'add_accessor_result' &&
+          callbackData.reference_id === referenceId
+        ) {
+          addAccessorResultPromise.resolve(callbackData);
+        }
+      });
+
+      idp2EventEmitter.on('identity_notification_callback', function(
+        callbackData
+      ) {
+        if (
+          callbackData.type === 'identity_change_notification' &&
+          callbackData.reference_group_code === referenceGroupCode &&
+          callbackData.action === 'add_accessor'
+        ) {
+          notificationCreateIdentityPromise.resolve(callbackData);
+        }
+      });
+    });
+
+    it('Should add accessor successfully', async function() {
+      this.timeout(10000);
+      const response = await identityApi.addAccessor('idp1', {
+        namespace: namespace,
+        identifier: identifier,
+        reference_id: referenceId,
+        callback_url: config.IDP1_CALLBACK_URL,
+        accessor_type: 'RSA',
+        accessor_public_key: accessorPublicKey,
+        //accessor_id: accessorId,
+        request_message: addAccessorRequestMessage,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(202);
+      expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
+      accessorId = responseBody.accessor_id;
+    });
+
+    it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+      this.timeout(10000);
+      const response = await identityApi.getRequestIdByReferenceId('idp1', {
+        reference_id: referenceId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.deep.equal({
+        accessor_id: accessorId,
+      });
+    });
+
+    it('Accessor id should be added successfully', async function() {
+      this.timeout(10000);
+      const addAccessorResult = await addAccessorResultPromise.promise;
+      expect(addAccessorResult).to.deep.include({
+        reference_id: referenceId,
+        success: true,
+      });
+
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+
+      identity.accessors.push({
+        accessorId,
+        accessorPrivateKey,
+        accessorPublicKey,
+      });
+    });
+
+    it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
+      this.timeout(15000);
+      const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+      expect(notificationCreateIdentity).to.deep.include({
+        node_id: 'idp2',
+        type: 'identity_change_notification',
+        reference_group_code: referenceGroupCode,
+        action: 'add_accessor',
+      });
+    });
+
+    it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+      this.timeout(10000);
+      const response = await identityApi.getRequestIdByReferenceId('idp1', {
+        reference_id: referenceId,
+      });
+      expect(response.status).to.equal(404);
+    });
+
+    after(function() {
+      idp1EventEmitter.removeAllListeners('callback');
+      idp2EventEmitter.removeAllListeners('identity_notification_callback');
     });
   });
 
-  it('Should add accessor successfully', async function() {
-    this.timeout(10000);
-    const response = await identityApi.addAccessor('idp1', {
-      namespace: namespace,
-      identifier: identifier,
-      reference_id: referenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      accessor_type: 'RSA',
-      accessor_public_key: accessorPublicKey,
-      //accessor_id: accessorId,
-      request_message: addAccessorRequestMessage,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(202);
-    expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
-    accessorId = responseBody.accessor_id;
-  });
-
-  it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
-    this.timeout(10000);
-    const response = await identityApi.getRequestIdByReferenceId('idp1', {
-      reference_id: referenceId,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.deep.equal({
-      accessor_id: accessorId,
-    });
-  });
-
-  it('Accessor id should be added successfully', async function() {
-    this.timeout(10000);
-    const addAccessorResult = await addAccessorResultPromise.promise;
-    expect(addAccessorResult).to.deep.include({
-      reference_id: referenceId,
-      success: true,
-    });
-
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-
-    identity.accessors.push({
-      accessorId,
-      accessorPrivateKey,
-      accessorPublicKey,
-    });
-  });
-
-  it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
-    this.timeout(15000);
-    const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
-    expect(notificationCreateIdentity).to.deep.include({
-      node_id: 'idp2',
-      type: 'identity_change_notification',
-      reference_group_code: referenceGroupCode,
-      action: 'add_accessor',
-    });
-  });
-
-  it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
-    this.timeout(10000);
-    const response = await identityApi.getRequestIdByReferenceId('idp1', {
-      reference_id: referenceId,
-    });
-    expect(response.status).to.equal(404);
-  });
-
-  after(function() {
-    idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('identity_notification_callback');
-  });
-
-  describe('IdP (idp1) response with new accessor id test', function() {
+  describe('IdP (idp1) should response with new accessor id (mode 2 ) successfully', function() {
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
@@ -1113,7 +1113,7 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
     });
   });
 
-  describe('IdP (idp1) revoke accessor (mode 2)', function() {
+  describe('IdP (idp1) should revoke accessor (mode 2) successfully', function() {
     const revokeAccessorRequestMessage =
       'Revoke accessor consent request custom message ข้อความสำหรับขอเพิกถอน accessor บนระบบ';
 
@@ -1234,7 +1234,7 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
     });
   });
 
-  describe('IdP (idp1) response with revoked accessor id test', function() {
+  describe('IdP (idp1) should response with revoked accessor id unsuccessfully', function() {
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();

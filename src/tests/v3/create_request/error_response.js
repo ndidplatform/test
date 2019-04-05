@@ -820,7 +820,7 @@ describe('RP create request errors', function() {
     });
   });
 
-  describe('RP create request (mode 2) with service in data request does not accepted namespace', async function() {
+  describe('RP create request (mode 2) with service in data request list does not accepted namespace', async function() {
     before(function() {
       if (!as1Available) {
         this.skip();
@@ -956,7 +956,7 @@ describe('RP create request errors', function() {
         reference_id: generateReferenceId(),
         callback_url: config.RP_CALLBACK_URL,
         mode: 2,
-        namespace,
+        namespace, // citizen_id
         identifier,
         idp_id_list: [],
         data_request_list: [
@@ -991,7 +991,7 @@ describe('RP create request errors', function() {
         reference_id: generateReferenceId(),
         callback_url: config.RP_CALLBACK_URL,
         mode: 3,
-        namespace,
+        namespace, //citizen_id
         identifier,
         idp_id_list: [],
         data_request_list: [
