@@ -97,7 +97,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       callbackData
     ) {
       if (
-        callbackData.type === 'identity_change_notification' &&
+        callbackData.type === 'identity_modification_notification' &&
         callbackData.reference_group_code === referenceGroupCode &&
         callbackData.action === 'revoke_identity_association'
       ) {
@@ -263,7 +263,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
     expect(notificationCreateIdentity).to.deep.include({
       node_id: 'idp2',
-      type: 'identity_change_notification',
+      type: 'identity_modification_notification',
       reference_group_code: referenceGroupCode,
       action: 'revoke_identity_association',
     });

@@ -179,7 +179,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
         callbackData
       ) {
         if (
-          callbackData.type === 'identity_change_notification' &&
+          callbackData.type === 'identity_modification_notification' &&
           callbackData.reference_group_code === referenceGroupCode &&
           callbackData.action === 'create_identity'
         ) {
@@ -284,7 +284,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp2',
-        type: 'identity_change_notification',
+        type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'create_identity',
       });

@@ -308,11 +308,6 @@ describe('1 IdP, 1 AS, mode 3', function() {
 
     responseAccessorId = identity.accessors[0].accessorId;
 
-    // db.createResponseReferences.push({
-    //   referenceId: idpReferenceId,
-    //   accessorPrivateKey: identity.accessors[0].accessorPrivateKey,
-    // });
-
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,

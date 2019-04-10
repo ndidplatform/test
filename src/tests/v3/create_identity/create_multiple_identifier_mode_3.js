@@ -649,7 +649,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           callbackData
         ) {
           if (
-            callbackData.type === 'identity_change_notification' &&
+            callbackData.type === 'identity_modification_notification' &&
             callbackData.action === 'create_identity'
           ) {
             notificationCreateIdentityPromise.resolve(callbackData);
@@ -885,7 +885,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
         expect(notificationCreateIdentity).to.deep.include({
           node_id: 'idp1',
-          type: 'identity_change_notification',
+          type: 'identity_modification_notification',
           reference_group_code: referenceGroupCode,
           action: 'create_identity',
         });

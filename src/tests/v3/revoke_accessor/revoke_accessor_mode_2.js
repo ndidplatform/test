@@ -69,7 +69,7 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
         callbackData
       ) {
         if (
-          callbackData.type === 'identity_change_notification' &&
+          callbackData.type === 'identity_modification_notification' &&
           callbackData.reference_group_code === referenceGroupCode &&
           callbackData.action === 'add_accessor'
         ) {
@@ -133,7 +133,7 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
       const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp2',
-        type: 'identity_change_notification',
+        type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'add_accessor',
       });
@@ -1149,7 +1149,7 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
         callbackData
       ) {
         if (
-          callbackData.type === 'identity_change_notification' &&
+          callbackData.type === 'identity_modification_notification' &&
           callbackData.reference_group_code === referenceGroupCode &&
           callbackData.action === 'revoke_accessor'
         ) {
@@ -1214,7 +1214,7 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
       const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp2',
-        type: 'identity_change_notification',
+        type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'revoke_accessor',
       });
