@@ -1,4 +1,4 @@
-require('./dpki_setup');
+require('./node_setup');
 require('./rp_setup');
 require('./idp_setup');
 require('./as_setup');
