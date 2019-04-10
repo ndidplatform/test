@@ -257,7 +257,6 @@ describe('1 IdP, reject consent, mode 3', function() {
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -299,7 +298,6 @@ describe('1 IdP, reject consent, mode 3', function() {
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
