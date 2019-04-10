@@ -109,3 +109,9 @@ export function setAllowedModeList(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/setAllowedModeList`, data);
 }
+
+export function updateNamespace(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  const { namespace } = data;
+  return httpPost(`${apiBaseUrl}/ndid/namespaces/${namespace}`, data);
+}
