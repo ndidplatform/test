@@ -986,6 +986,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });

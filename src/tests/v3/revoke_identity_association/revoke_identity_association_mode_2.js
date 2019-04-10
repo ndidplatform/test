@@ -509,7 +509,6 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
     after(function() {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
-      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
     });
@@ -1415,7 +1414,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
     after(function() {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
-      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+      idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
     });

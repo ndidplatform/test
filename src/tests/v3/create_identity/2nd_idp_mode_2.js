@@ -1218,6 +1218,8 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     after(function() {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
+      idp2EventEmitter.removeAllListeners('callback');
+      idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
       as1EventEmitter.removeAllListeners('callback');
     });
   });

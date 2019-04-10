@@ -23,11 +23,6 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
   let accessorId;
   let referenceGroupCode;
 
-  // db.createIdentityReferences.push({
-  //   referenceId,
-  //   accessorPrivateKey,
-  // });
-
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
       if (

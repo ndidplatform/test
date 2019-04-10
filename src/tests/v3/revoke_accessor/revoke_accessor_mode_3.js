@@ -1265,6 +1265,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
     after(function() {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       as1EventEmitter.removeAllListeners('callback');
       idp2EventEmitter.removeAllListeners('callback');
     });
@@ -1879,6 +1880,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
     after(function() {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       as1EventEmitter.removeAllListeners('callback');
       idp2EventEmitter.removeAllListeners('callback');
     });

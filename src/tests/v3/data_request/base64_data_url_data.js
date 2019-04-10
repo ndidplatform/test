@@ -766,7 +766,6 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
         {
           idp_id: 'idp1',
           valid_signature: true,
-
           valid_ial: true,
         },
       ],
@@ -806,7 +805,6 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
         {
           idp_id: 'idp1',
           valid_signature: true,
-
           valid_ial: true,
         },
       ],
@@ -845,7 +843,6 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
         {
           idp_id: 'idp1',
           valid_signature: true,
-
           valid_ial: true,
         },
       ],
@@ -985,6 +982,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });
