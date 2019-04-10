@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
 import * as commonApi from '../../../api/v3/common';
 import * as identityApi from '../../../api/v3/identity';
 import {
@@ -31,6 +32,9 @@ describe('Create request tests', function() {
 
   const createIdentityResultPromise = createEventPromise();
   const idp2CreateIdentityResultPromise = createEventPromise();
+
+  let accessorIdMode3;
+  let accessorIdMode2;
 
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -74,7 +78,7 @@ describe('Create request tests', function() {
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.exist).to.equal(false);
 
-    //accessorId = responseBody.accessor_id;
+    accessorIdMode3 = responseBody.accessor_id;
 
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -124,7 +128,7 @@ describe('Create request tests', function() {
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.exist).to.equal(true);
 
-    //accessorId = responseBody.accessor_id;
+    accessorIdMode2 = responseBody.accessor_id;
 
     const createIdentityResult = await idp2CreateIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -536,6 +540,24 @@ describe('Create request tests', function() {
       // requestMessageSalt = incomingRequest.request_message_salt;
       // requestMessageHash = incomingRequest.request_message_hash;
     });
+
+    it('IdP (mode 2) should create response (accept) unsuccessfully', async function() {
+      this.timeout(10000);
+
+      const response = await idpApi.createResponse('idp2', {
+        reference_id: idpReferenceId,
+        callback_url: config.IDP2_CALLBACK_URL,
+        request_id: requestId,
+        ial: 2.3,
+        aal: 3,
+        status: 'accept',
+        accessor_id: accessorIdMode2,
+      });
+      expect(response.status).to.equal(400);
+      const responseBody = await response.json();
+      expect(responseBody.error.code).to.equal(20038);
+    });
+
     after(function() {
       idp1EventEmitter.removeAllListeners('callback');
       rpEventEmitter.removeAllListeners('callback');
