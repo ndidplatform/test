@@ -1,30 +1,25 @@
 import { expect } from 'chai';
-import { idp2Available } from '..';
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
 
+import { idp2Available } from '../..';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+// import * as commonApi from '../../api/v2/common';
 import {
   rpEventEmitter,
   idp1EventEmitter,
   idp2EventEmitter,
-} from '../../callback_server';
-import * as db from '../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+} from '../../../callback_server';
+import * as db from '../../../db';
+import { createEventPromise, generateReferenceId, hash } from '../../../utils';
+import * as config from '../../../config';
 
-describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mode 3', function() {
+describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
   let namespace;
   let identifier;
 
   const rpReferenceId = generateReferenceId();
   const idp1ReferenceId = generateReferenceId();
   const idp2ReferenceId = generateReferenceId();
-  const rpCloseRequestReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
@@ -32,9 +27,10 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
   const idp1ResponseResultPromise = createEventPromise(); // IdP-1
   const idp2IncomingRequestPromise = createEventPromise(); // IdP-2
   const idp2ResponseResultPromise = createEventPromise(); // IdP-2
+  const idp1AccessorEncryptPromise = createEventPromise(); // IdP-1
+  const idp2AccessorEncryptPromise = createEventPromise(); // IdP-2
   const requestStatusConfirmedPromise = createEventPromise(); // RP
-  const requestStatusComplicatedPromise = createEventPromise(); // RP
-  const closeRequestResultPromise = createEventPromise(); // RP
+  const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
@@ -42,6 +38,8 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
   let requestId;
   let requestMessageSalt;
   let requestMessageHash;
+  let idp1ResponseAccessorId;
+  let idp2ResponseAccessorId;
 
   const requestStatusUpdates = [];
 
@@ -49,15 +47,25 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
     if (!idp2Available) {
       this.skip();
     }
-    if (db.idp1Identities[0] == null) {
+
+    let idp1Identity = db.idp1Identities.find(identity => identity.mode === 3);
+    let idp2Identity = db.idp2Identities.find(
+      identity =>
+        identity.namespace === idp1Identity.namespace &&
+        identity.identifier === idp1Identity.identifier &&
+        identity.mode === 3
+    );
+
+    if (!idp1Identity) {
       throw new Error('No created identity to use on IdP-1');
     }
-    if (db.idp2Identities[0] == null) {
+
+    if (!idp2Identity) {
       throw new Error('No created identity to use on IdP-2');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = idp1Identity.namespace;
+    identifier = idp1Identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -89,18 +97,13 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
           requestStatusConfirmedPromise.resolve(callbackData);
-        } else if (callbackData.status === 'complicated') {
+        } else if (callbackData.status === 'completed') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
           } else {
-            requestStatusComplicatedPromise.resolve(callbackData);
+            requestStatusCompletedPromise.resolve(callbackData);
           }
         }
-      } else if (
-        callbackData.type === 'close_request_result' &&
-        callbackData.reference_id === rpCloseRequestReferenceId
-      ) {
-        closeRequestResultPromise.resolve(callbackData);
       }
     });
 
@@ -115,6 +118,12 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       }
     });
 
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        idp1AccessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
     idp2EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
@@ -123,6 +132,12 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
         idp2IncomingRequestPromise.resolve(callbackData);
       } else if (callbackData.type === 'response_result') {
         idp2ResponseResultPromise.resolve(callbackData);
+      }
+    });
+
+    idp2EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        idp2AccessorEncryptPromise.resolve(callbackData);
       }
     });
   });
@@ -176,13 +191,10 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -190,6 +202,8 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       data_request_list: createRequestParams.data_request_list,
       request_timeout: createRequestParams.request_timeout,
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
@@ -211,13 +225,10 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -225,6 +236,8 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       data_request_list: createRequestParams.data_request_list,
       request_timeout: createRequestParams.request_timeout,
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
@@ -243,30 +256,51 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
   it('IdP-1 should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
+
+    idp1ResponseAccessorId = identity.accessors[0].accessorId;
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idp1ReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      // signature: createResponseSignature(
+      //   identity.accessors[0].accessorPrivateKey,
+      //   requestMessageHash
+      // ),
+      accessor_id: idp1ResponseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await idp1AccessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: idp1ResponseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idp1ReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await idp1ResponseResultPromise.promise;
     expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
       reference_id: idp1ReferenceId,
       request_id: requestId,
       success: true,
@@ -289,7 +323,6 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -302,45 +335,68 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP-2 should create response (reject) successfully', async function() {
+  it('IdP-2 should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp2Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
+
+    idp2ResponseAccessorId = identity.accessors[0].accessorId;
 
     const response = await idpApi.createResponse('idp2', {
       reference_id: idp2ReferenceId,
       callback_url: config.IDP2_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
+      // namespace: createRequestParams.namespace,
+      // identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
-      status: 'reject',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      status: 'accept',
+      // signature: createResponseSignature(
+      //   identity.accessors[0].accessorPrivateKey,
+      //   requestMessageHash
+      // ),
+      accessor_id: idp2ResponseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await idp2AccessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp2',
+      type: 'accessor_encrypt',
+      accessor_id: idp2ResponseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idp2ReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await idp2ResponseResultPromise.promise;
     expect(responseResult).to.deep.include({
+      node_id: 'idp2',
+      type: 'response_result',
       reference_id: idp2ReferenceId,
       request_id: requestId,
       success: true,
     });
   });
 
-  it('RP should receive complicated request status with valid proofs', async function() {
+  it('RP should receive completed request status with valid proofs', async function() {
     this.timeout(15000);
-    const requestStatus = await requestStatusComplicatedPromise.promise;
+    const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
-      status: 'complicated',
+      status: 'completed',
       mode: createRequestParams.mode,
       min_idp: createRequestParams.min_idp,
       answered_idp_count: 2,
@@ -351,13 +407,11 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
         {
           idp_id: 'idp2',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -370,24 +424,12 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should be able to close request', async function() {
-    this.timeout(10000);
-    const response = await rpApi.closeRequest('rp1', {
-      reference_id: rpCloseRequestReferenceId,
-      callback_url: config.RP_CALLBACK_URL,
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(202);
-    const closeRequestResult = await closeRequestResultPromise.promise;
-    expect(closeRequestResult.success).to.equal(true);
-  });
-
   it('RP should receive request closed status', async function() {
     this.timeout(10000);
     const requestStatus = await requestClosedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
-      status: 'complicated',
+      status: 'completed',
       mode: createRequestParams.mode,
       min_idp: createRequestParams.min_idp,
       answered_idp_count: 2,
@@ -398,13 +440,11 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
         {
           idp_id: 'idp2',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
