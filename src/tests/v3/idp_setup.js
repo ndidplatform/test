@@ -10,7 +10,8 @@ describe('IdP (idp1) setup', function() {
       incoming_request_url: config.IDP1_CALLBACK_URL,
       incoming_request_status_update_url: config.IDP1_CALLBACK_URL,
       // accessor_sign_url: config.IDP1_ACCESSOR_SIGN_CALLBACK_URL,
-      identity_change_notification_url: config.IDP1_NOTIFICATION_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.IDP1_NOTIFICATION_CALLBACK_URL,
       accessor_encrypt_url: config.IDP1_ACCESSOR_ENCRYPT_CALLBACK_URL,
       error_url: config.IDP1_CALLBACK_URL,
     });
@@ -24,7 +25,8 @@ describe('IdP (idp1) setup', function() {
       incoming_request_url: config.IDP1_CALLBACK_URL,
       incoming_request_status_update_url: config.IDP1_CALLBACK_URL,
       // accessor_sign_url: config.IDP1_ACCESSOR_SIGN_CALLBACK_URL,
-      identity_change_notification_url: config.IDP1_NOTIFICATION_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.IDP1_NOTIFICATION_CALLBACK_URL,
       accessor_encrypt_url: config.IDP1_ACCESSOR_ENCRYPT_CALLBACK_URL,
       error_url: config.IDP1_CALLBACK_URL,
     });
@@ -43,7 +45,8 @@ describe('IdP (idp2) setup', function() {
       incoming_request_url: config.IDP2_CALLBACK_URL,
       incoming_request_status_update_url: config.IDP2_CALLBACK_URL,
       // accessor_sign_url: config.IDP2_ACCESSOR_SIGN_CALLBACK_URL,
-      identity_change_notification_url: config.IDP2_NOTIFICATION_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.IDP2_NOTIFICATION_CALLBACK_URL,
       accessor_encrypt_url: config.IDP2_ACCESSOR_ENCRYPT_CALLBACK_URL,
       error_url: config.IDP2_CALLBACK_URL,
     });
@@ -58,7 +61,8 @@ describe('IdP (idp2) setup', function() {
       incoming_request_url: config.IDP2_CALLBACK_URL,
       incoming_request_status_update_url: config.IDP2_CALLBACK_URL,
       // accessor_sign_url: config.IDP2_ACCESSOR_SIGN_CALLBACK_URL,
-      identity_change_notification_url: config.IDP2_NOTIFICATION_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.IDP2_NOTIFICATION_CALLBACK_URL,
       accessor_encrypt_url: config.IDP2_ACCESSOR_ENCRYPT_CALLBACK_URL,
       error_url: config.IDP2_CALLBACK_URL,
     });
