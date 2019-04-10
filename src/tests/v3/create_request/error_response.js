@@ -6,23 +6,25 @@ import * as commonApi from '../../../api/v3/common';
 import * as asApi from '../../../api/v3/as';
 import * as db from '../../../db';
 import { generateReferenceId, wait, createEventPromise } from '../../../utils';
-import { as1Available, ndidAvailable } from '../../';
+import { as1Available, ndidAvailable, as2Available } from '../../';
 import { as1EventEmitter, as2EventEmitter } from '../../../callback_server';
 import * as config from '../../../config';
 
 describe('RP create request errors', function() {
   let namespace;
   let identifier;
+  let identityMode2;
+  let identityMode3;
 
   const rpReferenceId = generateReferenceId();
 
   before(function() {
-    if (db.idp1Identities[0] == null) {
+    identityMode2 = db.idp1Identities.find(identity => identity.mode === 2);
+    identityMode3 = db.idp2Identities.find(identity => identity.mode === 3);
+
+    if (db.idp1Identities[0] == null || !identityMode2 || !identityMode3) {
       throw new Error('No created identity to use');
     }
-
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
   });
 
   it('should get an error when creating a request without IdP ID list in mode 1', async function() {
@@ -30,8 +32,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
-      namespace,
-      identifier,
+      namespace: identityMode2.namespace,
+      identifier: identityMode2.identifier,
       // idp_id_list: [],
       data_request_list: [],
       request_message: 'Test request message (error create request) (mode 3)',
@@ -52,8 +54,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
-      namespace,
-      identifier,
+      namespace: identityMode2.namespace,
+      identifier: identityMode2.identifier,
       idp_id_list: [],
       data_request_list: [],
       request_message: 'Test request message (error create request) (mode 3)',
@@ -74,8 +76,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -113,8 +115,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -144,8 +146,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -183,8 +185,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -222,8 +224,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -253,8 +255,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -284,8 +286,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -311,16 +313,12 @@ describe('RP create request errors', function() {
   });
 
   it("should get an error when creating a request with min_ial (3) greater than identity's ial (2.3) ", async function() {
-    let identity = db.idp1Identities.find(identity => identity.mode === 3);
-    namespace = identity.namespace;
-    identifier = identity.identifier;
-
     const createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -350,8 +348,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -380,8 +378,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -410,8 +408,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -440,8 +438,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -470,8 +468,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -500,8 +498,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -528,8 +526,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
-      namespace,
-      identifier,
+      namespace: identityMode2.namespace,
+      identifier: identityMode2.identifier,
       idp_id_list: [''],
       data_request_list: [
         {
@@ -559,8 +557,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [''],
       data_request_list: [
         {
@@ -590,8 +588,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -621,8 +619,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      namespace,
-      identifier,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -681,6 +679,7 @@ describe('RP create request errors', function() {
 
   it('RP create request (mode 1) with does not have services that accepted this namespace (min_ial or min_aal is invalid but min_as is valid)', async function() {
     this.timeout(50000);
+    if (!as2Available) this.skip();
     //potential as_id_list min_as is valid
     //but some service in request min_ial or min_aal too low
     const responseUpdateService = await asApi.addOrUpdateService('as1', {
@@ -736,8 +735,8 @@ describe('RP create request errors', function() {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
-      namespace,
-      identifier,
+      namespace: identityMode2.namespace,
+      identifier: identityMode2.identifier,
       idp_id_list: ['idp1'],
       data_request_list: [
         {
@@ -822,10 +821,7 @@ describe('RP create request errors', function() {
 
   describe('RP create request (mode 2) with service in data request list does not accepted namespace', async function() {
     before(function() {
-      if (!as1Available) {
-        this.skip();
-      }
-      if (!ndidAvailable) {
+      if (!as2Available || !ndidAvailable) {
         this.skip();
       }
     });
@@ -932,6 +928,7 @@ describe('RP create request errors', function() {
     });
 
     it('AS (as2) should have offered service (update accepted_namespace_list bank_statement)', async function() {
+      this.timeout(10000);
       const response = await asApi.getService('as2', {
         serviceId: 'bank_statement',
       });
@@ -945,6 +942,7 @@ describe('RP create request errors', function() {
         suspended: false,
         accepted_namespace_list: ['TEST_NAMESPACE'],
       });
+      await wait(3000);
     });
 
     it('RP should create request (mode 2 provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
@@ -1099,7 +1097,7 @@ describe('RP create request errors', function() {
       await asApi.addOrUpdateService('as2', {
         serviceId: 'bank_statement',
         reference_id: bankStatementReferenceId,
-        callback_url: config.AS1_CALLBACK_URL,
+        callback_url: config.AS2_CALLBACK_URL,
         accepted_namespace_list: ['citizen_id'],
       });
 
