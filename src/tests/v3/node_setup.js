@@ -7,7 +7,7 @@ import {
   as2Available,
   ndidAvailable,
   proxy1Available,
-} from '../';
+} from '..';
 import * as debugApi from '../../api/v3/debug';
 import * as nodeApi from '../../api/v3/node';
 import * as config from '../../config';
