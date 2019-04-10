@@ -60,8 +60,6 @@ export function getRequestIdByReferenceId(nodeId, data) {
   );
 }
 
-//////////////////////////////////////////////////////////
-
 export function updateIdentityIal(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier, ...rest } = data;
