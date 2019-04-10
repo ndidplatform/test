@@ -879,12 +879,12 @@ describe('RP create request errors', function() {
       await wait(1000);
     });
 
-    it('AS should add offered service (update accepted_namespace_list bank_statement) successfully', async function() {
+    it('AS should add offered service (update supported_namespace_list bank_statement) successfully', async function() {
       const responseUpdateService = await asApi.addOrUpdateService('as1', {
         serviceId: 'bank_statement',
         reference_id: bankStatementReferenceId,
         callback_url: config.AS1_CALLBACK_URL,
-        accepted_namespace_list: ['TEST_NAMESPACE'],
+        supported_namespace_list: ['TEST_NAMESPACE'],
       });
       expect(responseUpdateService.status).to.equal(202);
 
@@ -895,7 +895,7 @@ describe('RP create request errors', function() {
       });
     });
 
-    it('AS should have offered service (update accepted_namespace_list bank_statement)', async function() {
+    it('AS should have offered service (update supported_namespace_list bank_statement)', async function() {
       const response = await asApi.getService('as1', {
         serviceId: 'bank_statement',
       });
@@ -907,16 +907,16 @@ describe('RP create request errors', function() {
         url: config.AS1_CALLBACK_URL,
         active: true,
         suspended: false,
-        accepted_namespace_list: ['TEST_NAMESPACE'],
+        supported_namespace_list: ['TEST_NAMESPACE'],
       });
     });
 
-    it('AS (as2) should add offered service (update accepted_namespace_list bank_statement) successfully', async function() {
+    it('AS (as2) should add offered service (update supported_namespace_list bank_statement) successfully', async function() {
       const responseUpdateService = await asApi.addOrUpdateService('as2', {
         serviceId: 'bank_statement',
         reference_id: as2BankStatementReferenceId,
         callback_url: config.AS2_CALLBACK_URL,
-        accepted_namespace_list: ['TEST_NAMESPACE'],
+        supported_namespace_list: ['TEST_NAMESPACE'],
       });
       expect(responseUpdateService.status).to.equal(202);
 
@@ -927,7 +927,7 @@ describe('RP create request errors', function() {
       });
     });
 
-    it('AS (as2) should have offered service (update accepted_namespace_list bank_statement)', async function() {
+    it('AS (as2) should have offered service (update supported_namespace_list bank_statement)', async function() {
       this.timeout(10000);
       const response = await asApi.getService('as2', {
         serviceId: 'bank_statement',
@@ -940,7 +940,7 @@ describe('RP create request errors', function() {
         url: config.AS2_CALLBACK_URL,
         active: true,
         suspended: false,
-        accepted_namespace_list: ['TEST_NAMESPACE'],
+        supported_namespace_list: ['TEST_NAMESPACE'],
       });
       await wait(3000);
     });
@@ -1091,14 +1091,14 @@ describe('RP create request errors', function() {
         serviceId: 'bank_statement',
         reference_id: bankStatementReferenceId,
         callback_url: config.AS1_CALLBACK_URL,
-        accepted_namespace_list: ['citizen_id'],
+        supported_namespace_list: ['citizen_id'],
       });
 
       await asApi.addOrUpdateService('as2', {
         serviceId: 'bank_statement',
         reference_id: bankStatementReferenceId,
         callback_url: config.AS2_CALLBACK_URL,
-        accepted_namespace_list: ['citizen_id'],
+        supported_namespace_list: ['citizen_id'],
       });
 
       await wait(3000);

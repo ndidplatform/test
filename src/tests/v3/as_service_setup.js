@@ -40,7 +40,7 @@ describe('AS (as1) setup', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS1_CALLBACK_URL,
-      accepted_namespace_list: ['citizen_id'],
+      supported_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -63,7 +63,7 @@ describe('AS (as1) setup', function() {
       url: config.AS1_CALLBACK_URL,
       active: true,
       suspended: false,
-      accepted_namespace_list: ['citizen_id'],
+      supported_namespace_list: ['citizen_id'],
     });
   });
 
@@ -76,7 +76,7 @@ describe('AS (as1) setup', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS1_CALLBACK_URL,
-      accepted_namespace_list: ['citizen_id'],
+      supported_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -99,7 +99,7 @@ describe('AS (as1) setup', function() {
       url: config.AS1_CALLBACK_URL,
       active: true,
       suspended: false,
-      accepted_namespace_list: ['citizen_id'],
+      supported_namespace_list: ['citizen_id'],
     });
   });
 
@@ -142,7 +142,7 @@ describe('AS (as2) setup', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS2_CALLBACK_URL,
-      accepted_namespace_list: ['citizen_id'],
+      supported_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -165,7 +165,7 @@ describe('AS (as2) setup', function() {
       url: config.AS2_CALLBACK_URL,
       active: true,
       suspended: false,
-      accepted_namespace_list: ['citizen_id'],
+      supported_namespace_list: ['citizen_id'],
     });
   });
 
@@ -178,7 +178,7 @@ describe('AS (as2) setup', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS2_CALLBACK_URL,
-      accepted_namespace_list: ['citizen_id'],
+      supported_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -201,7 +201,7 @@ describe('AS (as2) setup', function() {
       url: config.AS2_CALLBACK_URL,
       active: true,
       suspended: false,
-      accepted_namespace_list: ['citizen_id'],
+      supported_namespace_list: ['citizen_id'],
     });
   });
 
@@ -210,7 +210,7 @@ describe('AS (as2) setup', function() {
   });
 });
 
-describe('AS should add offered service (bank_statement) with accepted_namespace_list that ndid does not registered unsuccessfully', function() {
+describe('AS should add offered service (bank_statement) with supported_namespace_list that ndid does not registered unsuccessfully', function() {
   before(function() {
     if (!as1Available) {
       this.skip();
@@ -228,7 +228,7 @@ describe('AS should add offered service (bank_statement) with accepted_namespace
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS1_CALLBACK_URL,
-      accepted_namespace_list: ['invalid_namespace'],
+      supported_namespace_list: ['invalid_namespace'],
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
