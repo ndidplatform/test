@@ -1,17 +1,16 @@
 import { expect } from 'chai';
 import forge from 'node-forge';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
 // import * as commonApi from '../../api/v2/common';
-import { rpEventEmitter, idp1EventEmitter } from '../../callback_server';
+import { rpEventEmitter, idp1EventEmitter } from '../../../callback_server';
 import {
   createEventPromise,
   generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+  hash
+} from '../../../utils';
+import * as config from '../../../config';
 
 describe('1 IdP, reject consent, mode 1', function() {
   let namespace;
@@ -151,10 +150,9 @@ describe('1 IdP, reject consent, mode 1', function() {
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -188,7 +186,7 @@ describe('1 IdP, reject consent, mode 1', function() {
       ial: 2.3,
       aal: 3,
       status: 'reject',
-      signature: createResponseSignature(userPrivateKey, requestMessageHash),
+      //signature: createResponseSignature(userPrivateKey, requestMessageHash),
     });
     expect(response.status).to.equal(202);
 
@@ -216,7 +214,6 @@ describe('1 IdP, reject consent, mode 1', function() {
         {
           idp_id: 'idp1',
           valid_signature: null,
-          valid_proof: null,
           valid_ial: null,
         },
       ],
@@ -258,7 +255,6 @@ describe('1 IdP, reject consent, mode 1', function() {
         {
           idp_id: 'idp1',
           valid_signature: null,
-          valid_proof: null,
           valid_ial: null,
         },
       ],
