@@ -410,7 +410,7 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
   });
 
   it('RP should receive completed request status with received data count = 1', async function() {
-    this.timeout(100000);
+    this.timeout(150000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -480,7 +480,7 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
   });
 
   it('RP should get the correct data received from AS', async function() {
-    this.timeout(100000);
+    this.timeout(150000);
     const response = await rpApi.getDataFromAS('rp1', {
       requestId,
     });
