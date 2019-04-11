@@ -7,6 +7,7 @@ import * as commonApi from '../../../api/v3/common';
 import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { idp2Available } from '../../';
 import * as config from '../../../config';
 
 describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as 1st IdP', function() {
@@ -29,6 +30,11 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
   });
 
   before(function() {
+    if (!idp2Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+
     idp2EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
@@ -53,7 +59,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
     expect(idpNode).to.be.an.undefined;
   });
 
@@ -108,7 +114,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')
@@ -258,7 +264,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       });
 
       const idpNodes = await response.json();
-      const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+      const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
       expect(idpNode).to.not.be.undefined;
       expect(idpNode.mode_list)
         .to.be.an('array')

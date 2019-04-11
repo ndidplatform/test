@@ -13,8 +13,9 @@ import * as config from '../../../config';
 import * as db from '../../../db';
 
 describe('Create identity with same namespace and multiple identifier (mode 3) tests', function() {
-  before(async function() {
+  before(function() {
     if (!ndidAvailable) {
+      this.test.parent.pending = true;
       this.skip();
     }
   });

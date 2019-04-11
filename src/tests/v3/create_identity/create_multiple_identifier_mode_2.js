@@ -11,8 +11,9 @@ import { wait, generateReferenceId, createEventPromise } from '../../../utils';
 import * as config from '../../../config';
 
 describe('Create identity with same namespace and multiple identifier (mode 2) tests', function() {
-  before(async function() {
+  before(function() {
     if (!ndidAvailable) {
+      this.test.parent.pending = true;
       this.skip();
     }
   });
