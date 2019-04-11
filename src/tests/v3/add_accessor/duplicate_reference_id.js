@@ -1,20 +1,23 @@
 import { expect } from 'chai';
 import forge from 'node-forge';
 
-import * as idpApi from '../../api/v2/idp';
-import { idp1EventEmitter } from '../../callback_server';
-import * as db from '../../db';
+import * as idpApi from '../../../api/v3/idp';
+import * as identityApi from '../../../api/v3/identity';
+import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
   wait,
-  hashRequestMessageForConsent,
-} from '../../utils';
-import * as config from '../../config';
+  hash,
+} from '../../../utils';
+import * as config from '../../../config';
 
-describe('Add accessor method with duplicate reference id test', function() {
+describe('Add accessor with duplicate reference id test', function() {
   let namespace;
   let identifier;
+  let referenceGroupCode;
+
   const addAccessorRequestMessage =
     'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -29,6 +32,7 @@ describe('Add accessor method with duplicate reference id test', function() {
   const addAccessorResultPromise = createEventPromise();
   const accessorSignPromise = createEventPromise();
   const incomingRequestPromise = createEventPromise();
+  const idp2IncomingRequestPromise = createEventPromise();
   const responseResultPromise = createEventPromise();
   const closeAddAccessorRequestResultPromise = createEventPromise();
   const addAccessorRequestResult2ndPromise = createEventPromise();
@@ -38,18 +42,16 @@ describe('Add accessor method with duplicate reference id test', function() {
   let requestId2ndAddAccessor;
   let requestMessageHash;
 
-  db.createIdentityReferences.push({
-    referenceId,
-    accessorPrivateKey,
-  });
-
   before(function() {
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+
+    namespace = identity.namespace;
+    identifier = identity.identifier;
+    referenceGroupCode = identity.referenceGroupCode;
 
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
@@ -85,16 +87,19 @@ describe('Add accessor method with duplicate reference id test', function() {
       }
     });
 
-    idp1EventEmitter.on('accessor_sign_callback', function(callbackData) {
-      if (callbackData.reference_id === referenceId) {
-        accessorSignPromise.resolve(callbackData);
+    idp2EventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId2ndAddAccessor
+      ) {
+        idp2IncomingRequestPromise.resolve(callbackData);
       }
     });
   });
 
-  it('should add accessor method successfully', async function() {
+  it('should add accessor successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.addAccessorMethod('idp1', {
+    const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: referenceId,
@@ -129,9 +134,9 @@ describe('Add accessor method with duplicate reference id test', function() {
     await wait(3000);
   });
 
-  it('should add accessor method with duplicate reference id unsuccessfully', async function() {
+  it('should add accessor with duplicate reference id unsuccessfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.addAccessorMethod('idp1', {
+    const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: referenceId,
@@ -147,9 +152,9 @@ describe('Add accessor method with duplicate reference id test', function() {
     expect(responseBody.error.code).to.equal(20045);
   });
 
-  it('should add accessor method with duplicate reference id unsuccessfully', async function() {
+  it('should add accessor with duplicate reference id unsuccessfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.addAccessorMethod('idp1', {
+    const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: referenceId,
@@ -166,7 +171,7 @@ describe('Add accessor method with duplicate reference id test', function() {
 
   it('1st IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+    const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
     });
     const responseBody = await response.json();
@@ -177,9 +182,9 @@ describe('Add accessor method with duplicate reference id test', function() {
     });
   });
 
-  it('1st IdP should close add accessor method request successfully', async function() {
+  it('IdP should close add accessor request successfully', async function() {
     this.timeout(25000);
-    const response = await idpApi.closeIdentityRequest('idp1', {
+    const response = await identityApi.closeIdentityRequest('idp1', {
       request_id: requestId,
       callback_url: config.IDP1_CALLBACK_URL,
       reference_id: idpReferenceIdCloseAddAccessor,
@@ -206,17 +211,17 @@ describe('Add accessor method with duplicate reference id test', function() {
     await wait(2000);
   });
 
-  it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+  it('dP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
     this.timeout(10000);
-    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+    const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
     });
     expect(response.status).to.equal(404);
   });
 
-  it('After request duplicate reference id is not in progress (closed) should add accessor method successfully', async function() {
+  it('After request duplicate reference id is not in progress (closed) should add accessor successfully', async function() {
     this.timeout(20000);
-    const response = await idpApi.addAccessorMethod('idp1', {
+    const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: referenceId,
@@ -251,19 +256,45 @@ describe('Add accessor method with duplicate reference id test', function() {
     await wait(3000);
   });
 
-  it('1st IdP should receive add accessor method request', async function() {
+  it('IdP (idp1) should receive add accessor request', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 3,
       request_id: requestId2ndAddAccessor,
-      namespace,
-      identifier,
       request_message: addAccessorRequestMessage,
-      request_message_hash: hashRequestMessageForConsent(
-        addAccessorRequestMessage,
-        incomingRequest.initial_salt,
-        requestId2ndAddAccessor
+      reference_group_code: referenceGroupCode,
+      request_message_hash: hash(
+        addAccessorRequestMessage + incomingRequest.request_message_salt
+      ),
+      requester_node_id: 'idp1',
+      min_ial: 1.1,
+      min_aal: 1,
+      data_request_list: [],
+    });
+    expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    expect(incomingRequest.request_timeout).to.be.a('number');
+
+    requestMessageHash = incomingRequest.request_message_hash;
+  });
+
+  it('IdP (idp2) should receive add accessor request', async function() {
+    this.timeout(15000);
+    const incomingRequest = await idp2IncomingRequestPromise.promise;
+    expect(incomingRequest).to.deep.include({
+      mode: 3,
+      request_id: requestId2ndAddAccessor,
+      request_message: addAccessorRequestMessage,
+      reference_group_code: referenceGroupCode,
+      request_message_hash: hash(
+        addAccessorRequestMessage + incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -285,13 +316,13 @@ describe('Add accessor method with duplicate reference id test', function() {
 
   after(async function() {
     this.timeout(15000);
-    await idpApi.closeIdentityRequest('idp1', {
+    await identityApi.closeIdentityRequest('idp1', {
       request_id: requestId2ndAddAccessor,
       callback_url: config.IDP1_CALLBACK_URL,
       reference_id: idpReferenceIdCloseAddAccessor,
     });
     idp1EventEmitter.removeAllListeners('callback');
-    idp1EventEmitter.removeAllListeners('accessor_sign_callback');
+    idp2EventEmitter.removeAllListeners('callback');
     await wait(2000);
   });
 });

@@ -2,30 +2,30 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as commonApi from '../../api/v2/common';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as identityApi from '../../../api/v3/identity';
+import * as commonApi from '../../../api/v3/common';
 import {
   idp1EventEmitter,
   rpEventEmitter,
   as1EventEmitter,
-} from '../../callback_server';
-import * as db from '../../db';
+} from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
   hash,
   wait,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+} from '../../../utils';
+import * as config from '../../../config';
 
 const accessorId = uuidv4();
+let namespace;
+let identifier;
+let referenceGroupCode;
 
-describe('Close add accessor method request (providing accessor id) test', function() {
-  let namespace;
-  let identifier;
+describe('Close add accessor request (mode 3) (providing accessor id) test', function() {
   const addAccessorRequestMessage =
     'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -38,7 +38,6 @@ describe('Close add accessor method request (providing accessor id) test', funct
 
   const addAccessorRequestResultPromise = createEventPromise();
   const addAccessorResultPromise = createEventPromise();
-  const accessorSignPromise = createEventPromise();
   const incomingRequestPromise = createEventPromise();
   const responseResultPromise = createEventPromise();
   const closeAddAccessorRequestResultPromise = createEventPromise();
@@ -47,18 +46,16 @@ describe('Close add accessor method request (providing accessor id) test', funct
   //let accessorId;
   let requestMessageHash;
 
-  db.createIdentityReferences.push({
-    referenceId,
-    accessorPrivateKey,
-  });
-
   before(function() {
-    if (db.idp1Identities[0] == null) {
+    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity.namespace;
+    identifier = identity.identifier;
+    referenceGroupCode = identity.referenceGroupCode;
 
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
@@ -89,17 +86,11 @@ describe('Close add accessor method request (providing accessor id) test', funct
         closeAddAccessorRequestResultPromise.resolve(callbackData);
       }
     });
-
-    idp1EventEmitter.on('accessor_sign_callback', function(callbackData) {
-      if (callbackData.reference_id === referenceId) {
-        accessorSignPromise.resolve(callbackData);
-      }
-    });
   });
 
-  it('should add accessor method successfully', async function() {
+  it('should add accessor successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.addAccessorMethod('idp1', {
+    const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: referenceId,
@@ -133,29 +124,9 @@ describe('Close add accessor method request (providing accessor id) test', funct
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
-    const sid = `${namespace}:${identifier}`;
-    const sid_hash = hash(sid);
-
-    const accessorSignParams = await accessorSignPromise.promise;
-    expect(accessorSignParams).to.deep.equal({
-      type: 'accessor_sign',
-      node_id: 'idp1',
-      reference_id: referenceId,
-      accessor_id: accessorId,
-      sid,
-      sid_hash,
-      hash_method: 'SHA256',
-      key_type: 'RSA',
-      sign_method: 'RSA-SHA256',
-      padding: 'PKCS#1v1.5',
-    });
-  });
-
-  it('1st IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+  it('IdP (idp1) should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+    const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
     });
     const responseBody = await response.json();
@@ -166,19 +137,16 @@ describe('Close add accessor method request (providing accessor id) test', funct
     });
   });
 
-  it('1st IdP should receive add accessor method request', async function() {
+  it('IdP (idp1) should receive add accessor request', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 3,
       request_id: requestId,
-      namespace,
-      identifier,
       request_message: addAccessorRequestMessage,
-      request_message_hash: hashRequestMessageForConsent(
-        addAccessorRequestMessage,
-        incomingRequest.initial_salt,
-        requestId
+      reference_group_code: referenceGroupCode,
+      request_message_hash: hash(
+        addAccessorRequestMessage + incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -198,9 +166,9 @@ describe('Close add accessor method request (providing accessor id) test', funct
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('1st IdP should close add accessor method request successfully', async function() {
+  it('IdP (idp1) should close add accessor request successfully', async function() {
     this.timeout(25000);
-    const response = await idpApi.closeIdentityRequest('idp1', {
+    const response = await identityApi.closeIdentityRequest('idp1', {
       request_id: requestId,
       callback_url: config.IDP1_CALLBACK_URL,
       reference_id: idpReferenceIdCloseAddAccessor,
@@ -227,15 +195,15 @@ describe('Close add accessor method request (providing accessor id) test', funct
     await wait(2000);
   });
 
-  it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+  it('IdP (idp1) should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
     this.timeout(10000);
-    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+    const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
     });
     expect(response.status).to.equal(404);
   });
 
-  it('After close add accessor method request 1st IdP should create response (accept) unsuccessfully', async function() {
+  it('After close add accessor request IdP (idp1) should create response (accept) unsuccessfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
       identity =>
@@ -249,12 +217,7 @@ describe('Close add accessor method request (providing accessor id) test', funct
       identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
 
@@ -291,14 +254,10 @@ describe('Close add accessor method request (providing accessor id) test', funct
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
-    idp1EventEmitter.removeAllListeners('accessor_sign_callback');
   });
 });
 
 describe('IdP (idp1) response with new accessor id test', function() {
-  let namespace;
-  let identifier;
-
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
 
@@ -317,12 +276,9 @@ describe('IdP (idp1) response with new accessor id test', function() {
   let requestMessageHash;
 
   before(function() {
-    if (db.idp1Identities[0] == null) {
+    if (!namespace || !identifier) {
       throw new Error('No created identity to use');
     }
-
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -419,13 +375,11 @@ describe('IdP (idp1) response with new accessor id test', function() {
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
+      reference_group_code: referenceGroupCode,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -449,30 +403,14 @@ describe('IdP (idp1) response with new accessor id test', function() {
 
   it('IdP should create response (accept) with new accessor id (accessor id from add new accessor request that already closed) unsuccessfully', async function() {
     this.timeout(15000);
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-    let latestAccessor;
-    if (identity) {
-      latestAccessor = identity.accessors.length - 1;
-    } else {
-      throw new Error('Identity not found');
-    }
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[latestAccessor].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[latestAccessor].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: accessorId, //acessor id from add new accessor request that already closed
     });
     expect(response.status).to.equal(400);
