@@ -123,7 +123,10 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
           } else {
             if (callbackData.answered_idp_count === 1) {
               // answer1RequestStatusConfirmedPromise.resolve(callbackData);
-            } else if (callbackData.answered_idp_count === 2) {
+            } else if (
+              callbackData.answered_idp_count === 2 &&
+              callbackData.service_list.length === 2
+            ) {
               answer2RequestStatusConfirmedPromise.resolve(callbackData);
             }
           }
