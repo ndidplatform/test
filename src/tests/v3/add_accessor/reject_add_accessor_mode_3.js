@@ -2,31 +2,32 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import { as1Available } from '..';
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as commonApi from '../../api/v2/common';
+import { as1Available } from '../..';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as identityApi from '../../../api/v3/identity';
+import * as commonApi from '../../../api/v3/common';
 import {
   idp1EventEmitter,
   rpEventEmitter,
   as1EventEmitter,
-} from '../../callback_server';
-import * as db from '../../db';
+  idp2EventEmitter,
+} from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
   hash,
   wait,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
-describe('Reject IdP add accessor method test', function() {
+} from '../../../utils';
+import * as config from '../../../config';
+describe('Reject IdP add accessor (mode 3) test', function() {
   let accessorId;
+  let namespace;
+  let identifier;
+  let referenceGroupCode;
 
   describe('IdP (idp1) add accessor method (providing custom request_message and without providing accessor_id) and 1st IdP (idp1) reject consent test', function() {
-    let namespace;
-    let identifier;
     const addAccessorRequestMessage =
       'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
     const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -38,26 +39,25 @@ describe('Reject IdP add accessor method test', function() {
 
     const addAccessorRequestResultPromise = createEventPromise();
     const addAccessorResultPromise = createEventPromise();
-    const accessorSignPromise = createEventPromise();
     const incomingRequestPromise = createEventPromise();
+    const idp2IncomingRequestPromise = createEventPromise();
     const responseResultPromise = createEventPromise();
+    const accessorEncryptPromise = createEventPromise();
 
     let requestId;
-
     let requestMessageHash;
-
-    db.createIdentityReferences.push({
-      referenceId,
-      accessorPrivateKey,
-    });
+    let responseAccessorId;
 
     before(function() {
       if (db.idp1Identities[0] == null) {
         throw new Error('No created identity to use');
       }
 
-      namespace = db.idp1Identities[0].namespace;
-      identifier = db.idp1Identities[0].identifier;
+      const identity = db.idp1Identities.find(identity => identity.mode === 3);
+
+      namespace = identity.namespace;
+      identifier = identity.identifier;
+      referenceGroupCode = identity.referenceGroupCode;
 
       idp1EventEmitter.on('callback', function(callbackData) {
         if (
@@ -84,16 +84,25 @@ describe('Reject IdP add accessor method test', function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_sign_callback', function(callbackData) {
-        if (callbackData.reference_id === referenceId) {
-          accessorSignPromise.resolve(callbackData);
+      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+        if (callbackData.request_id === requestId) {
+          accessorEncryptPromise.resolve(callbackData);
+        }
+      });
+
+      idp2EventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'incoming_request' &&
+          callbackData.request_id === requestId
+        ) {
+          idp2IncomingRequestPromise.resolve(callbackData);
         }
       });
     });
 
-    it('should add accessor method successfully', async function() {
+    it('Idp (idp1) should add accessor successfully', async function() {
       this.timeout(10000);
-      const response = await idpApi.addAccessorMethod('idp1', {
+      const response = await identityApi.addAccessor('idp1', {
         namespace: namespace,
         identifier: identifier,
         reference_id: referenceId,
@@ -125,31 +134,13 @@ describe('Reject IdP add accessor method test', function() {
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      accessorId = addAccessorRequestResult.accessor_id;
     });
 
-    it('should receive accessor sign callback with correct data', async function() {
-      this.timeout(15000);
-      const sid = `${namespace}:${identifier}`;
-      const sid_hash = hash(sid);
-
-      const accessorSignParams = await accessorSignPromise.promise;
-      expect(accessorSignParams).to.deep.equal({
-        type: 'accessor_sign',
-        node_id: 'idp1',
-        reference_id: referenceId,
-        accessor_id: accessorId,
-        sid,
-        sid_hash,
-        hash_method: 'SHA256',
-        key_type: 'RSA',
-        sign_method: 'RSA-SHA256',
-        padding: 'PKCS#1v1.5',
-      });
-    });
-
-    it('1st IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+    it('IdP (idp1) should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
       this.timeout(10000);
-      const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      const response = await identityApi.getRequestIdByReferenceId('idp1', {
         reference_id: referenceId,
       });
       const responseBody = await response.json();
@@ -160,19 +151,16 @@ describe('Reject IdP add accessor method test', function() {
       });
     });
 
-    it('1st IdP should receive add accessor method request', async function() {
+    it('IdP (idp1) should receive add accessor request', async function() {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
       expect(incomingRequest).to.deep.include({
         mode: 3,
         request_id: requestId,
-        namespace,
-        identifier,
+        reference_group_code: referenceGroupCode,
         request_message: addAccessorRequestMessage,
-        request_message_hash: hashRequestMessageForConsent(
-          addAccessorRequestMessage,
-          incomingRequest.initial_salt,
-          requestId
+        request_message_hash: hash(
+          addAccessorRequestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -192,40 +180,86 @@ describe('Reject IdP add accessor method test', function() {
       requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('1st IdP should create response (reject) successfully', async function() {
+    it('IdP (idp2) should receive add accessor request', async function() {
+      this.timeout(15000);
+      const incomingRequest = await idp2IncomingRequestPromise.promise;
+      expect(incomingRequest).to.deep.include({
+        mode: 3,
+        request_id: requestId,
+        reference_group_code: referenceGroupCode,
+        request_message: addAccessorRequestMessage,
+        request_message_hash: hash(
+          addAccessorRequestMessage + incomingRequest.request_message_salt
+        ),
+        requester_node_id: 'idp1',
+        min_ial: 1.1,
+        min_aal: 1,
+        data_request_list: [],
+      });
+      expect(incomingRequest.creation_time).to.be.a('number');
+      expect(incomingRequest.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      expect(incomingRequest.request_timeout).to.be.a('number');
+    });
+
+    it('IdP (idp1) should create response (reject) successfully', async function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
         identity =>
           identity.namespace === namespace && identity.identifier === identifier
       );
 
+      responseAccessorId = identity.accessors[0].accessorId;
+
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: requestId,
-        namespace,
-        identifier,
         ial: 2.3,
         aal: 3,
-        secret: identity.accessors[0].secret,
         status: 'reject',
-        signature: createResponseSignature(
-          identity.accessors[0].accessorPrivateKey,
-          requestMessageHash
-        ),
-        accessor_id: identity.accessors[0].accessorId,
+        accessor_id: responseAccessorId,
       });
       expect(response.status).to.equal(202);
+    });
 
+    it('IdP should receive accessor encrypt callback with correct data', async function() {
+      this.timeout(15000);
+
+      const accessorEncryptParams = await accessorEncryptPromise.promise;
+      expect(accessorEncryptParams).to.deep.include({
+        node_id: 'idp1',
+        type: 'accessor_encrypt',
+        accessor_id: responseAccessorId,
+        key_type: 'RSA',
+        padding: 'none',
+        reference_id: idp1ReferenceId,
+        request_id: requestId,
+      });
+
+      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+        'string'
+      ).that.is.not.empty;
+    });
+
+    it('IdP shoud receive callback create response result with success = true', async function() {
+      this.timeout(15000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
+        node_id: 'idp1',
+        type: 'response_result',
         reference_id: idp1ReferenceId,
         request_id: requestId,
         success: true,
       });
     });
 
-    it('1st IdP (idp1) should receive add accessor method result with success false', async function() {
+    it('IdP (idp1) should receive add accessor result with success false', async function() {
       this.timeout(10000);
       const addAccessorResult = await addAccessorResultPromise.promise;
       expect(addAccessorResult).to.deep.include({
@@ -267,7 +301,7 @@ describe('Reject IdP add accessor method test', function() {
 
     it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
       this.timeout(10000);
-      const response = await idpApi.getRequestIdByReferenceId('idp1', {
+      const response = await identityApi.getRequestIdByReferenceId('idp1', {
         reference_id: referenceId,
       });
       expect(response.status).to.equal(404);
@@ -275,14 +309,12 @@ describe('Reject IdP add accessor method test', function() {
 
     after(function() {
       idp1EventEmitter.removeAllListeners('callback');
-      idp1EventEmitter.removeAllListeners('accessor_sign_callback');
+      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+      idp2EventEmitter.removeAllListeners('callback');
     });
   });
 
   describe('IdP (idp1) response with new accessor id was rejected test', function() {
-    let namespace;
-    let identifier;
-
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
@@ -316,9 +348,6 @@ describe('Reject IdP add accessor method test', function() {
       if (db.idp1Identities[0] == null) {
         throw new Error('No created identity to use');
       }
-
-      namespace = db.idp1Identities[0].namespace;
-      identifier = db.idp1Identities[0].identifier;
 
       createRequestParams = {
         reference_id: rpReferenceId,
@@ -429,13 +458,11 @@ describe('Reject IdP add accessor method test', function() {
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
+        reference_group_code: referenceGroupCode,
         request_message: createRequestParams.request_message,
-        request_message_hash: hashRequestMessageForConsent(
-          createRequestParams.request_message,
-          incomingRequest.initial_salt,
-          requestId
+        request_message_hash: hash(
+          createRequestParams.request_message +
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -459,30 +486,14 @@ describe('Reject IdP add accessor method test', function() {
 
     it('IdP should create response (accept) with new accessor id was rejected unsuccessfully', async function() {
       this.timeout(15000);
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      let latestAccessor;
-      if (identity) {
-        latestAccessor = identity.accessors.length - 1;
-      } else {
-        throw new Error('Identity not found');
-      }
+
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: requestId,
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
         ial: 2.3,
         aal: 3,
-        secret: identity.accessors[latestAccessor].secret,
         status: 'accept',
-        signature: createResponseSignature(
-          identity.accessors[latestAccessor].accessorPrivateKey,
-          requestMessageHash
-        ),
         accessor_id: accessorId,
       });
       expect(response.status).to.equal(400);
