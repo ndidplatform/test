@@ -1,54 +1,43 @@
 import { expect } from 'chai';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
-import * as commonApi from '../../api/v2/common';
-import { as2Available } from '..';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
+import * as commonApi from '../../../api/v3/common';
+import { as2Available } from '../..';
 import {
   rpEventEmitter,
   idp1EventEmitter,
   as1EventEmitter,
   as2EventEmitter,
-} from '../../callback_server';
-import * as db from '../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+} from '../../../callback_server';
+import * as db from '../../../db';
+import { createEventPromise, generateReferenceId, hash } from '../../../utils';
+import * as config from '../../../config';
 
-describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
+describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
   let namespace;
   let identifier;
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
-  const as1BankStatementReferenceId = generateReferenceId();
-  const as1CustomerInfoReferenceId = generateReferenceId();
-  const as2BankStatementReferenceId = generateReferenceId();
-  const as2CustomerInfoReferenceId = generateReferenceId();
+  const as1ReferenceId = generateReferenceId();
+  const as2ReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
+  const accessorEncryptPromise = createEventPromise(); // IDP
   const requestStatusConfirmedPromise = createEventPromise(); // RP
-
-  const as1DataRequestBankStatementPromise = createEventPromise(); // AS
-  const as1DataRequestCustomerInfoPromise = createEventPromise(); // AS
-  const as1SendDataBankStatementResultPromise = createEventPromise(); // AS
-  const as1SendDataCustomerInfoResultPromise = createEventPromise(); // AS
-
-  const as2DataRequestBankStatementPromise = createEventPromise(); // AS
-  const as2DataRequestCustomerInfoPromise = createEventPromise(); // AS
-  const as2SendDataBankStatementResultPromise = createEventPromise(); // AS
-  const as2SendDataCustomerInfoResultPromise = createEventPromise(); // AS
-
-  const requestStatusSignedDataPromise = createEventPromise(); // RP
-  const requestStatusCompletedPromise = createEventPromise(); // RP
+  const as1DataRequestReceivedPromise = createEventPromise(); // AS
+  const as1SendDataResultPromise = createEventPromise(); // AS
+  const as2DataRequestReceivedPromise = createEventPromise(); // AS
+  const as2SendDataResultPromise = createEventPromise(); // AS
+  const requestStatusSignedDataPromise1 = createEventPromise(); // RP
+  const requestStatusSignedDataPromise2 = createEventPromise(); // RP
+  const requestStatusReceiveDataCountPromise1 = createEventPromise(); // RP
+  const requestStatusCompletedPromise2 = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
@@ -61,6 +50,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
   let requestId;
   let requestMessageSalt;
   let requestMessageHash;
+  let responseAccessorId;
 
   // const requestStatusUpdates = [];
 
@@ -69,13 +59,14 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
       this.test.parent.pending = true;
       this.skip();
     }
+    const identity = db.idp1Identities.find(identity => identity.mode === 3);
 
-    if (db.idp1Identities[0] == null) {
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -93,17 +84,9 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
             format: 'pdf',
           }),
         },
-        {
-          service_id: 'customer_info',
-          as_id_list: ['as1', 'as2'],
-          min_as: 2,
-          request_params: JSON.stringify({
-            format: 'pdf',
-          }),
-        },
       ],
       request_message:
-        'Test request message (data request 1 IdP, 2 AS (min_as = 2), 2 Services) (mode 3)',
+        'Test request message (data request 1 IdP, 2 AS, 1 Service) (mode 3)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
@@ -120,27 +103,30 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
+        // requestStatusUpdates.push(callbackData);
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
-          if (
+          if (callbackData.service_list[0].signed_data_count === 1) {
+            requestStatusSignedDataPromise1.resolve(callbackData);
+          } else if (
             callbackData.service_list[0].signed_data_count === 2 &&
-            callbackData.service_list[0].received_data_count === 0 &&
-            callbackData.service_list[1].signed_data_count === 2 &&
-            callbackData.service_list[1].received_data_count === 0
+            callbackData.service_list[0].received_data_count === 0
           ) {
-            requestStatusSignedDataPromise.resolve(callbackData);
+            requestStatusSignedDataPromise2.resolve(callbackData);
+          } else if (
+            callbackData.service_list[0].signed_data_count === 2 &&
+            callbackData.service_list[0].received_data_count === 1
+          ) {
+            requestStatusReceiveDataCountPromise1.resolve(callbackData);
           } else {
             requestStatusConfirmedPromise.resolve(callbackData);
           }
         } else if (callbackData.status === 'completed') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
-          } else if (
-            callbackData.service_list[0].received_data_count === 2 &&
-            callbackData.service_list[1].received_data_count === 2
-          ) {
-            requestStatusCompletedPromise.resolve(callbackData);
+          } else if (callbackData.service_list[0].received_data_count === 2) {
+            requestStatusCompletedPromise2.resolve(callbackData);
           }
         }
       }
@@ -160,61 +146,43 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
       }
     });
 
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        accessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
     as1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'data_request' &&
-        callbackData.request_id === requestId &&
-        callbackData.service_id === 'bank_statement'
+        callbackData.request_id === requestId
       ) {
-        as1DataRequestBankStatementPromise.resolve(callbackData);
-      } else if (
-        callbackData.type === 'data_request' &&
-        callbackData.request_id === requestId &&
-        callbackData.service_id === 'customer_info'
-      ) {
-        as1DataRequestCustomerInfoPromise.resolve(callbackData);
+        as1DataRequestReceivedPromise.resolve(callbackData);
       } else if (
         callbackData.type === 'send_data_result' &&
-        callbackData.reference_id === as1BankStatementReferenceId
+        callbackData.reference_id === as1ReferenceId
       ) {
-        as1SendDataBankStatementResultPromise.resolve(callbackData);
-      } else if (
-        callbackData.type === 'send_data_result' &&
-        callbackData.reference_id === as1CustomerInfoReferenceId
-      ) {
-        as1SendDataCustomerInfoResultPromise.resolve(callbackData);
+        as1SendDataResultPromise.resolve(callbackData);
       }
     });
 
     as2EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'data_request' &&
-        callbackData.request_id === requestId &&
-        callbackData.service_id === 'bank_statement'
+        callbackData.request_id === requestId
       ) {
-        as2DataRequestBankStatementPromise.resolve(callbackData);
-      } else if (
-        callbackData.type === 'data_request' &&
-        callbackData.request_id === requestId &&
-        callbackData.service_id === 'customer_info'
-      ) {
-        as2DataRequestCustomerInfoPromise.resolve(callbackData);
+        as2DataRequestReceivedPromise.resolve(callbackData);
       } else if (
         callbackData.type === 'send_data_result' &&
-        callbackData.reference_id === as2BankStatementReferenceId
+        callbackData.reference_id === as2ReferenceId
       ) {
-        as2SendDataBankStatementResultPromise.resolve(callbackData);
-      } else if (
-        callbackData.type === 'send_data_result' &&
-        callbackData.reference_id === as2CustomerInfoReferenceId
-      ) {
-        as2SendDataCustomerInfoResultPromise.resolve(callbackData);
+        as2SendDataResultPromise.resolve(callbackData);
       }
     });
   });
 
   it('RP should create a request successfully', async function() {
-    this.timeout(15000);
+    this.timeout(10000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -235,7 +203,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(15000);
+    this.timeout(10000);
     const requestStatus = await requestStatusPendingPromise.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
@@ -249,12 +217,6 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
         {
           service_id: createRequestParams.data_request_list[0].service_id,
           min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
           signed_data_count: 0,
           received_data_count: 0,
         },
@@ -284,13 +246,10 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -298,6 +257,8 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
       data_request_list: dataRequestListWithoutParams,
       request_timeout: createRequestParams.request_timeout,
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
@@ -320,26 +281,43 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
         identity.namespace === namespace && identity.identifier === identifier
     );
 
+    responseAccessorId = identity.accessors[0].accessorId;
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await accessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: responseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
@@ -364,18 +342,11 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
           signed_data_count: 0,
           received_data_count: 0,
         },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -388,169 +359,96 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('Both AS (as1 and as2) should receive data request (bank_statement)', async function() {
-    this.timeout(20000);
-
-    const [
-      as1DataRequestBankStatement,
-      as2DataRequestBankStatement,
-    ] = await Promise.all([
-      as1DataRequestBankStatementPromise.promise,
-      as2DataRequestBankStatementPromise.promise,
-    ]);
-
-    expect(as1DataRequestBankStatement).to.deep.include({
-      request_id: requestId,
-      mode: createRequestParams.mode,
-      namespace,
-      identifier,
-      service_id: createRequestParams.data_request_list[0].service_id,
-      request_params: createRequestParams.data_request_list[0].request_params,
-      max_ial: 2.3,
-      max_aal: 3,
-      requester_node_id: 'rp1',
-    });
-    expect(
-      as1DataRequestBankStatement.response_signature_list
-    ).to.have.lengthOf(1);
-    expect(as1DataRequestBankStatement.response_signature_list[0]).to.be.a(
-      'string'
-    ).that.is.not.empty;
-
-    expect(as2DataRequestBankStatement).to.deep.include({
-      request_id: requestId,
-      mode: createRequestParams.mode,
-      namespace,
-      identifier,
-      service_id: createRequestParams.data_request_list[0].service_id,
-      request_params: createRequestParams.data_request_list[0].request_params,
-      max_ial: 2.3,
-      max_aal: 3,
-      requester_node_id: 'rp1',
-    });
-    expect(
-      as2DataRequestBankStatement.response_signature_list
-    ).to.have.lengthOf(1);
-    expect(as2DataRequestBankStatement.response_signature_list[0]).to.be.a(
-      'string'
-    ).that.is.not.empty;
-  });
-
-  it('Both AS (as1 and as2) should receive data request (customer_info)', async function() {
+  it('Both AS (as1 and as2) should receive data request', async function() {
     this.timeout(15000);
+    const as1DataRequest = await as1DataRequestReceivedPromise.promise;
+    const as2DataRequest = await as2DataRequestReceivedPromise.promise;
 
-    const [
-      as1DataRequestCustomerInfo,
-      as2DataRequestCustomerInfo,
-    ] = await Promise.all([
-      as1DataRequestCustomerInfoPromise.promise,
-      as2DataRequestCustomerInfoPromise.promise,
-    ]);
-
-    expect(as1DataRequestCustomerInfo).to.deep.include({
+    expect(as1DataRequest).to.deep.include({
       request_id: requestId,
       mode: createRequestParams.mode,
       namespace,
       identifier,
-      service_id: createRequestParams.data_request_list[1].service_id,
-      request_params: createRequestParams.data_request_list[1].request_params,
+      service_id: createRequestParams.data_request_list[0].service_id,
+      request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
       requester_node_id: 'rp1',
+      request_timeout: createRequestParams.request_timeout,
     });
-    expect(as1DataRequestCustomerInfo.response_signature_list).to.have.lengthOf(
-      1
+    expect(as1DataRequest.response_signature_list).to.have.lengthOf(1);
+    expect(as1DataRequest.response_signature_list[0]).to.be.a('string').that.is
+      .not.empty;
+    expect(as1DataRequest.creation_time).to.be.a('number');
+    expect(as1DataRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight_as1 = as1DataRequest.creation_block_height.split(
+      ':'
     );
-    expect(as1DataRequestCustomerInfo.response_signature_list[0]).to.be.a(
-      'string'
-    ).that.is.not.empty;
+    expect(splittedCreationBlockHeight_as1).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight_as1[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight_as1[1]).to.have.lengthOf.at.least(1);
 
-    expect(as2DataRequestCustomerInfo).to.deep.include({
+    expect(as2DataRequest).to.deep.include({
       request_id: requestId,
       mode: createRequestParams.mode,
       namespace,
       identifier,
-      service_id: createRequestParams.data_request_list[1].service_id,
-      request_params: createRequestParams.data_request_list[1].request_params,
+      service_id: createRequestParams.data_request_list[0].service_id,
+      request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
       requester_node_id: 'rp1',
+      request_timeout: createRequestParams.request_timeout,
     });
-    expect(as2DataRequestCustomerInfo.response_signature_list).to.have.lengthOf(
-      1
+    expect(as2DataRequest.response_signature_list).to.have.lengthOf(1);
+    expect(as2DataRequest.response_signature_list[0]).to.be.a('string').that.is
+      .not.empty;
+    expect(as2DataRequest.creation_time).to.be.a('number');
+    expect(as2DataRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight_as2 = as2DataRequest.creation_block_height.split(
+      ':'
     );
-    expect(as2DataRequestCustomerInfo.response_signature_list[0]).to.be.a(
-      'string'
-    ).that.is.not.empty;
+    expect(splittedCreationBlockHeight_as2).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight_as2[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight_as2[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('Both AS (as1 and as2) should send data successfully (send data bank_statement and customer_info at the same time)', async function() {
-    this.timeout(20000);
-
-    asApi.sendData('as1', {
+  it('Both AS (as1 and as2) should send data successfully', async function() {
+    this.timeout(15000);
+    const as1Response = asApi.sendData('as1', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
-      reference_id: as1BankStatementReferenceId,
+      reference_id: as1ReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
       data,
     });
+    //expect(as1Response.status).to.equal(202);
 
-    asApi.sendData('as1', {
-      requestId,
-      serviceId: createRequestParams.data_request_list[1].service_id,
-      reference_id: as1CustomerInfoReferenceId,
-      callback_url: config.AS1_CALLBACK_URL,
-      data,
-    });
-
-    asApi.sendData('as2', {
+    const as2Response = asApi.sendData('as2', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
-      reference_id: as2BankStatementReferenceId,
+      reference_id: as2ReferenceId,
       callback_url: config.AS2_CALLBACK_URL,
       data,
     });
+    //expect(as2Response.status).to.equal(202);
 
-    asApi.sendData('as2', {
-      requestId,
-      serviceId: createRequestParams.data_request_list[1].service_id,
-      reference_id: as2CustomerInfoReferenceId,
-      callback_url: config.AS2_CALLBACK_URL,
-      data,
+    const as1SendDataResult = await as1SendDataResultPromise.promise;
+    expect(as1SendDataResult).to.deep.include({
+      reference_id: as1ReferenceId,
+      success: true,
     });
 
-    const [
-      as1SendDataBankStatementResult,
-      as1SendDataCustomerInfoResult,
-      as2SendDataBankStatementResult,
-      as2SendDataCustomerInfoResult,
-    ] = await Promise.all([
-      as1SendDataBankStatementResultPromise.promise,
-      as1SendDataCustomerInfoResultPromise.promise,
-      as2SendDataBankStatementResultPromise.promise,
-      as2SendDataCustomerInfoResultPromise.promise,
-    ]);
-    expect(as1SendDataBankStatementResult).to.deep.include({
-      reference_id: as1BankStatementReferenceId,
-      success: true,
-    });
-    expect(as1SendDataCustomerInfoResult).to.deep.include({
-      reference_id: as1CustomerInfoReferenceId,
-      success: true,
-    });
-    expect(as2SendDataBankStatementResult).to.deep.include({
-      reference_id: as2BankStatementReferenceId,
-      success: true,
-    });
-    expect(as2SendDataCustomerInfoResult).to.deep.include({
-      reference_id: as2CustomerInfoReferenceId,
+    const as2SendDataResult = await as2SendDataResultPromise.promise;
+    expect(as2SendDataResult).to.deep.include({
+      reference_id: as2ReferenceId,
       success: true,
     });
   });
 
-  // it('RP should receive request status with both services (bank_statement and customer_info) signed data count = 2', async function() {
-  //   this.timeout(25000);
-  //   const requestStatus = await requestStatusSignedDataPromise.promise;
+  // it('RP should receive request status with signed data count = 1', async function() {
+  //   this.timeout(15000);
+  //   const requestStatus = await requestStatusSignedDataPromise1.promise;
   //   expect(requestStatus).to.deep.include({
   //     request_id: requestId,
   //     status: 'confirmed',
@@ -563,13 +461,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
   //       {
   //         service_id: createRequestParams.data_request_list[0].service_id,
   //         min_as: createRequestParams.data_request_list[0].min_as,
-  //         signed_data_count: 2,
-  //         received_data_count: 0,
-  //       },
-  //       {
-  //         service_id: createRequestParams.data_request_list[1].service_id,
-  //         min_as: createRequestParams.data_request_list[1].min_as,
-  //         signed_data_count: 2,
+  //         signed_data_count: 1,
   //         received_data_count: 0,
   //       },
   //     ],
@@ -586,9 +478,76 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
   //   expect(requestStatus.block_height).is.a('string');const splittedBlockHeight = requestStatus.block_height.split(':');expect(splittedBlockHeight).to.have.lengthOf(2);expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   // });
 
-  it('RP should receive completed request status with both services (bank_statement and customer_info) received data count = 2', async function() {
-    this.timeout(25000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
+  it('RP should receive request status with signed data count = 2', async function() {
+    this.timeout(20000);
+    const requestStatus = await requestStatusSignedDataPromise2.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'confirmed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 2,
+          received_data_count: 0,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_ial: true,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  // it('RP should receive completed request status with received data count = 1', async function() {
+  //   this.timeout(15000);
+  //   const requestStatus = await requestStatusReceiveDataCountPromise1.promise;
+  //   expect(requestStatus).to.deep.include({
+  //     request_id: requestId,
+  //     status: 'confirmed',
+  //     mode: createRequestParams.mode,
+  //     min_idp: createRequestParams.min_idp,
+  //     answered_idp_count: 1,
+  //     closed: false,
+  //     timed_out: false,
+  //     service_list: [
+  //       {
+  //         service_id: createRequestParams.data_request_list[0].service_id,
+  //         min_as: createRequestParams.data_request_list[0].min_as,
+  //         signed_data_count: 2,
+  //         received_data_count: 1,
+  //       },
+  //     ],
+  //     response_valid_list: [
+  //       {
+  //         idp_id: 'idp1',
+  //         valid_signature: true,
+  //         valid_proof: true,
+  //         valid_ial: true,
+  //       },
+  //     ],
+  //   });
+  //   expect(requestStatus).to.have.property('block_height');
+  //   expect(requestStatus.block_height).is.a('string');const splittedBlockHeight = requestStatus.block_height.split(':');expect(splittedBlockHeight).to.have.lengthOf(2);expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  // });
+
+  it('RP should receive completed request status with received data count = 2', async function() {
+    this.timeout(20000);
+    const requestStatus = await requestStatusCompletedPromise2.promise;
     expect(requestStatus).to.deep.include({
       request_id: requestId,
       status: 'completed',
@@ -604,18 +563,11 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
           signed_data_count: 2,
           received_data_count: 2,
         },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
-          signed_data_count: 2,
-          received_data_count: 2,
-        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -646,18 +598,11 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
           signed_data_count: 2,
           received_data_count: 2,
         },
-        {
-          service_id: createRequestParams.data_request_list[1].service_id,
-          min_as: createRequestParams.data_request_list[1].min_as,
-          signed_data_count: 2,
-          received_data_count: 2,
-        },
       ],
       response_valid_list: [
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -676,40 +621,47 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
     });
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
-    expect(dataArr).to.have.lengthOf(4);
-
-    expect(dataArr[0].source_node_id).to.be.a('string').that.is.not.empty;
-    expect(dataArr[0].service_id).to.be.a('string').that.is.not.empty;
-    expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
-    expect(dataArr[0].signature_sign_method).to.be.a('string').that.is.not
-      .empty;
-    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
-    expect(dataArr[0].data).to.equal(data);
-
-    expect(dataArr[1].source_node_id).to.be.a('string').that.is.not.empty;
-    expect(dataArr[1].service_id).to.be.a('string').that.is.not.empty;
-    expect(dataArr[1].source_signature).to.be.a('string').that.is.not.empty;
-    expect(dataArr[1].signature_sign_method).to.be.a('string').that.is.not
-      .empty;
-    expect(dataArr[1].data_salt).to.be.a('string').that.is.not.empty;
-    expect(dataArr[1].data).to.equal(data);
-
-    expect(dataArr[2].source_node_id).to.be.a('string').that.is.not.empty;
-    expect(dataArr[2].service_id).to.be.a('string').that.is.not.empty;
-    expect(dataArr[2].source_signature).to.be.a('string').that.is.not.empty;
-    expect(dataArr[2].signature_sign_method).to.be.a('string').that.is.not
-      .empty;
-    expect(dataArr[2].data_salt).to.be.a('string').that.is.not.empty;
-    expect(dataArr[2].data).to.equal(data);
-
-    expect(dataArr[3].source_node_id).to.be.a('string').that.is.not.empty;
-    expect(dataArr[3].service_id).to.be.a('string').that.is.not.empty;
-    expect(dataArr[3].source_signature).to.be.a('string').that.is.not.empty;
-    expect(dataArr[3].signature_sign_method).to.be.a('string').that.is.not
-      .empty;
-    expect(dataArr[3].data_salt).to.be.a('string').that.is.not.empty;
-    expect(dataArr[3].data).to.equal(data);
+    expect(dataArr).to.have.lengthOf(2);
+    if (dataArr[0].source_node_id === 'as1') {
+      expect(dataArr[0]).to.deep.include({
+        source_node_id: 'as1',
+        service_id: createRequestParams.data_request_list[0].service_id,
+        signature_sign_method: 'RSA-SHA256',
+        data,
+      });
+      expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+      expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
+      expect(dataArr[1]).to.deep.include({
+        source_node_id: 'as2',
+        service_id: createRequestParams.data_request_list[0].service_id,
+        signature_sign_method: 'RSA-SHA256',
+        data,
+      });
+      expect(dataArr[1].source_signature).to.be.a('string').that.is.not.empty;
+      expect(dataArr[1].data_salt).to.be.a('string').that.is.not.empty;
+    } else {
+      expect(dataArr[0]).to.deep.include({
+        source_node_id: 'as2',
+        service_id: createRequestParams.data_request_list[0].service_id,
+        signature_sign_method: 'RSA-SHA256',
+        data,
+      });
+      expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+      expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
+      expect(dataArr[1]).to.deep.include({
+        source_node_id: 'as1',
+        service_id: createRequestParams.data_request_list[0].service_id,
+        signature_sign_method: 'RSA-SHA256',
+        data,
+      });
+      expect(dataArr[1].source_signature).to.be.a('string').that.is.not.empty;
+      expect(dataArr[1].data_salt).to.be.a('string').that.is.not.empty;
+    }
   });
+
+  // it('RP should receive 7 request status updates', function() {
+  //   expect(requestStatusUpdates).to.have.lengthOf(7);
+  // });
 
   it('RP should remove data requested from AS successfully', async function() {
     const response = await rpApi.removeDataRequestedFromAS('rp1', {
@@ -830,6 +782,7 @@ describe('1 IdP, 2 AS (min_as = 2), 2 Services, mode 3', function() {
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });

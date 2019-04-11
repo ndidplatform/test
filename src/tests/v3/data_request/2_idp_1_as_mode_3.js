@@ -1,24 +1,19 @@
 import { expect } from 'chai';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
-import * as commonApi from '../../api/v2/common';
-import { idp2Available } from '..';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
+import * as commonApi from '../../../api/v3/common';
+import { idp2Available } from '../..';
 import {
   rpEventEmitter,
   idp1EventEmitter,
   idp2EventEmitter,
   as1EventEmitter,
-} from '../../callback_server';
-import * as db from '../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+} from '../../../callback_server';
+import * as db from '../../../db';
+import { createEventPromise, generateReferenceId, hash } from '../../../utils';
+import * as config from '../../../config';
 
 describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   let namespace;
@@ -35,6 +30,8 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   const idp1ResponseResultPromise = createEventPromise(); // IDP
   const idp2IncomingRequestPromise = createEventPromise(); // IDP
   const idp2ResponseResultPromise = createEventPromise(); // IDP
+  const idp1AccessorEncryptPromise = createEventPromise(); // IdP-1
+  const idp2AccessorEncryptPromise = createEventPromise(); // IdP-2
   // const answer1RequestStatusConfirmedPromise = createEventPromise(); // RP
   const answer2RequestStatusConfirmedPromise = createEventPromise(); // RP
   const dataRequestReceivedPromise = createEventPromise(); // AS
@@ -53,20 +50,34 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   let requestId;
   let requestMessageSalt;
   let requestMessageHash;
+  let idp1ResponseAccessorId;
+  let idp2ResponseAccessorId;
 
   //const requestStatusUpdates = [];
 
   before(function() {
     if (!idp2Available) {
-      this.test.parent.pending = true;
       this.skip();
     }
-    if (db.idp1Identities[0] == null || db.idp2Identities[0] == null) {
-      throw new Error('No created idp1Identity to use');
+
+    let idp1Identity = db.idp1Identities.find(identity => identity.mode === 3);
+    let idp2Identity = db.idp2Identities.find(
+      identity =>
+        identity.namespace === idp1Identity.namespace &&
+        identity.identifier === idp1Identity.identifier &&
+        identity.mode === 3
+    );
+
+    if (!idp1Identity) {
+      throw new Error('No created identity to use on IdP-1');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    if (!idp2Identity) {
+      throw new Error('No created identity to use on IdP-2');
+    }
+
+    namespace = idp1Identity.namespace;
+    identifier = idp1Identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -140,6 +151,12 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
       }
     });
 
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        idp1AccessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
     idp2EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
@@ -151,6 +168,12 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
         callbackData.reference_id === idp2ReferenceId
       ) {
         idp2ResponseResultPromise.resolve(callbackData);
+      }
+    });
+
+    idp2EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        idp2AccessorEncryptPromise.resolve(callbackData);
       }
     });
 
@@ -225,7 +248,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     const idp2IncomingRequest = await idp2IncomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -236,13 +259,10 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(idp1IncomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        idp1IncomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          idp1IncomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -250,6 +270,8 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
       data_request_list: dataRequestListWithoutParams,
       request_timeout: createRequestParams.request_timeout,
     });
+    expect(idp1IncomingRequest.reference_group_code).to.be.a('string').that.is
+      .not.empty;
     expect(idp1IncomingRequest.request_message_salt).to.be.a('string').that.is
       .not.empty;
     expect(idp1IncomingRequest.creation_time).to.be.a('number');
@@ -264,13 +286,10 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(idp2IncomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        idp2IncomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          idp2IncomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -278,6 +297,8 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
       data_request_list: dataRequestListWithoutParams,
       request_timeout: createRequestParams.request_timeout,
     });
+    expect(idp2IncomingRequest.reference_group_code).to.be.a('string').that.is
+      .not.empty;
     expect(idp2IncomingRequest.request_message_salt).to.be.a('string').that.is
       .not.empty;
     expect(idp2IncomingRequest.creation_time).to.be.a('number');
@@ -296,32 +317,37 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   it('Both IdP (idp1 and idp2) should create idp1Response (accept) successfully', async function() {
     this.timeout(20000);
     const idp1Identity = db.idp1Identities.find(
-      (idp1Identity) =>
+      idp1Identity =>
         idp1Identity.namespace === namespace &&
         idp1Identity.identifier === identifier
     );
+
+    idp1ResponseAccessorId = idp1Identity.accessors[0].accessorId;
+
     const idp2Identity = db.idp2Identities.find(
-      (idp2Identity) =>
+      idp2Identity =>
         idp2Identity.namespace === namespace &&
         idp2Identity.identifier === identifier
     );
+
+    idp2ResponseAccessorId = idp2Identity.accessors[0].accessorId;
 
     //idp1 and idp2 create response at the same time (not use await)
     const idp1Response = idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
+      // namespace: createRequestParams.namespace,
+      // identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: idp1Identity.accessors[0].secret,
+      // secret: idp1Identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        idp1Identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: idp1Identity.accessors[0].accessorId,
+      // signature: createResponseSignature(
+      //   idp1Identity.accessors[0].accessorPrivateKey,
+      //   requestMessageHash
+      // ),
+      accessor_id: idp1ResponseAccessorId,
     });
     //expect(idp1Response.status).to.equal(202);
 
@@ -329,29 +355,73 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
       reference_id: idp2ReferenceId,
       callback_url: config.IDP2_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
+      // namespace: createRequestParams.namespace,
+      // identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: idp2Identity.accessors[0].secret,
+      // secret: idp2Identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        idp2Identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: idp2Identity.accessors[0].accessorId,
+      // signature: createResponseSignature(
+      //   idp2Identity.accessors[0].accessorPrivateKey,
+      //   requestMessageHash
+      // ),
+      accessor_id: idp2ResponseAccessorId,
     });
     //expect(idp2Response.status).to.equal(202);
+  });
 
-    const idp1ResponseResult = await idp1ResponseResultPromise.promise;
-    expect(idp1ResponseResult).to.deep.include({
+  it('IdP (idp1) should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await idp1AccessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: idp1ResponseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP (idp1) shoud receive callback create response result with success = true', async function() {
+    const responseResult = await idp1ResponseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
     });
+  });
 
-    const idp2ResponseResult = await idp2ResponseResultPromise.promise;
-    expect(idp2ResponseResult).to.deep.include({
+  it('IdP (idp2) should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await idp2AccessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp2',
+      type: 'accessor_encrypt',
+      accessor_id: idp2ResponseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idp2ReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP (idp2) shoud receive callback create response result with success = true', async function() {
+    const responseResult = await idp2ResponseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp2',
+      type: 'response_result',
       reference_id: idp2ReferenceId,
       request_id: requestId,
       success: true,
@@ -408,7 +478,6 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     });
     expect(requestStatus.response_valid_list).to.have.lengthOf(2);
     expect(requestStatus.response_valid_list[1].valid_signature).to.be.true;
-    expect(requestStatus.response_valid_list[1].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_ial).to.be.true;
     expect(requestStatus).to.have.property('block_height');
     expect(requestStatus.block_height).is.a('string');
@@ -490,10 +559,8 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     });
     expect(requestStatus.response_valid_list).to.have.lengthOf(2);
     expect(requestStatus.response_valid_list[0].valid_signature).to.be.true;
-    expect(requestStatus.response_valid_list[0].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[0].valid_ial).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_signature).to.be.true;
-    expect(requestStatus.response_valid_list[1].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_ial).to.be.true;
     expect(requestStatus).to.have.property('block_height');
     expect(requestStatus.block_height).is.a('string');
@@ -525,10 +592,8 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     });
     expect(requestStatus.response_valid_list).to.have.lengthOf(2);
     expect(requestStatus.response_valid_list[0].valid_signature).to.be.true;
-    expect(requestStatus.response_valid_list[0].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[0].valid_ial).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_signature).to.be.true;
-    expect(requestStatus.response_valid_list[1].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_ial).to.be.true;
     expect(requestStatus).to.have.property('block_height');
     expect(requestStatus.block_height).is.a('string');
@@ -560,10 +625,8 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     });
     expect(requestStatus.response_valid_list).to.have.lengthOf(2);
     expect(requestStatus.response_valid_list[0].valid_signature).to.be.true;
-    expect(requestStatus.response_valid_list[0].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[0].valid_ial).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_signature).to.be.true;
-    expect(requestStatus.response_valid_list[1].valid_proof).to.be.true;
     expect(requestStatus.response_valid_list[1].valid_ial).to.be.true;
     expect(requestStatus).to.have.property('block_height');
     expect(requestStatus.block_height).is.a('string');
@@ -713,6 +776,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });

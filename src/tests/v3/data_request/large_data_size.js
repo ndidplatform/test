@@ -1,26 +1,20 @@
 import crypto from 'crypto';
 import { expect } from 'chai';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
 // import * as commonApi from '../../api/v2/common';
 import {
   rpEventEmitter,
   idp1EventEmitter,
   as1EventEmitter,
-  setAsSendDataThroughCallback,
-} from '../../callback_server';
-import * as db from '../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+} from '../../../callback_server';
+import * as db from '../../../db';
+import { createEventPromise, generateReferenceId, hash } from '../../../utils';
+import * as config from '../../../config';
 
-describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3', function() {
+describe('Large AS data size, 1 IdP, 1 AS, mode 3', function() {
   let namespace;
   let identifier;
 
@@ -32,30 +26,36 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
+  const accessorEncryptPromise = createEventPromise(); // IDP
   const requestStatusConfirmedPromise = createEventPromise(); // RP
   const dataRequestReceivedPromise = createEventPromise(); // AS
-  const errorCallbackPromise = createEventPromise(); // AS
   const sendDataResultPromise = createEventPromise(); // AS
   const requestStatusSignedDataPromise = createEventPromise(); // RP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
   let createRequestParams;
-  const data = crypto.randomBytes(2499995).toString('hex'); // 4999990 bytes in hex string
+  const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
 
   let requestId;
   let requestMessageSalt;
   let requestMessageHash;
+  let responseAccessorId;
 
   const requestStatusUpdates = [];
 
   before(function() {
-    if (db.idp1Identities[0] == null) {
+    // TODO: need to silence logger in api process to not go over test timeout limit
+    //this.skip();
+
+    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -80,8 +80,6 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       min_idp: 1,
       request_timeout: 86400,
     };
-
-    setAsSendDataThroughCallback(true);
 
     rpEventEmitter.on('callback', function(callbackData) {
       if (
@@ -126,22 +124,23 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       }
     });
 
-    as1EventEmitter.on('callback', function(callbackData, sendData) {
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        accessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
+    as1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === requestId
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
-        sendData({
-          data,
-        });
       } else if (
         callbackData.type === 'send_data_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);
-      } else if (callbackData.type === 'error') {
-        errorCallbackPromise.resolve(callbackData);
       }
     });
   });
@@ -152,7 +151,6 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
-    expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
 
@@ -201,7 +199,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -211,13 +209,10 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -225,6 +220,8 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       data_request_list: dataRequestListWithoutParams,
       request_timeout: createRequestParams.request_timeout,
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
@@ -243,30 +240,47 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
+
+    responseAccessorId = identity.accessors[0].accessorId;
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await accessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: responseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
@@ -296,7 +310,6 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -322,25 +335,171 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       max_ial: 2.3,
       max_aal: 3,
       requester_node_id: 'rp1',
+      request_timeout: createRequestParams.request_timeout,
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
       .empty;
+    expect(dataRequest.creation_time).to.be.a('number');
+    expect(dataRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
+      ':'
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('AS should get error callback', async function() {
-    this.timeout(10000);
-    const error = await errorCallbackPromise.promise;
-    expect(error).to.have.property('error');
-    expect(error.error).to.deep.include({
-      code: 20036,
+  it('AS should send data successfully', async function() {
+    this.timeout(35000);
+    const response = await asApi.sendData('as1', {
+      requestId,
+      serviceId: createRequestParams.data_request_list[0].service_id,
+      reference_id: asReferenceId,
+      callback_url: config.AS1_CALLBACK_URL,
+      data,
+    });
+    expect(response.status).to.equal(202);
+
+    const sendDataResult = await sendDataResultPromise.promise;
+    expect(sendDataResult).to.deep.include({
+      reference_id: asReferenceId,
+      success: true,
     });
   });
 
+  it('RP should receive request status with signed data count = 1', async function() {
+    this.timeout(50000);
+    const requestStatus = await requestStatusSignedDataPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'confirmed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 0,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_ial: true,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('RP should receive completed request status with received data count = 1', async function() {
+    this.timeout(150000);
+    const requestStatus = await requestStatusCompletedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: false,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 1,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_ial: true,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('RP should receive request closed status', async function() {
+    this.timeout(10000);
+    const requestStatus = await requestClosedPromise.promise;
+    expect(requestStatus).to.deep.include({
+      request_id: requestId,
+      status: 'completed',
+      mode: createRequestParams.mode,
+      min_idp: createRequestParams.min_idp,
+      answered_idp_count: 1,
+      closed: true,
+      timed_out: false,
+      service_list: [
+        {
+          service_id: createRequestParams.data_request_list[0].service_id,
+          min_as: createRequestParams.data_request_list[0].min_as,
+          signed_data_count: 1,
+          received_data_count: 1,
+        },
+      ],
+      response_valid_list: [
+        {
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_ial: true,
+        },
+      ],
+    });
+    expect(requestStatus).to.have.property('block_height');
+    expect(requestStatus.block_height).is.a('string');
+    const splittedBlockHeight = requestStatus.block_height.split(':');
+    expect(splittedBlockHeight).to.have.lengthOf(2);
+    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('RP should get the correct data received from AS', async function() {
+    this.timeout(100000);
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    const dataArr = await response.json();
+    expect(response.status).to.equal(200);
+
+    expect(dataArr).to.have.lengthOf(1);
+    expect(dataArr[0]).to.deep.include({
+      source_node_id: 'as1',
+      service_id: createRequestParams.data_request_list[0].service_id,
+      signature_sign_method: 'RSA-SHA256',
+      data,
+    });
+    expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
+  });
+
+  it('RP should receive 5 request status updates', function() {
+    expect(requestStatusUpdates).to.have.lengthOf(5);
+  });
+
   after(function() {
-    setAsSendDataThroughCallback(false);
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });

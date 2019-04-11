@@ -1,22 +1,17 @@
 import { expect } from 'chai';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
 // import * as commonApi from '../../api/v2/common';
 import {
   rpEventEmitter,
   idp1EventEmitter,
   as1EventEmitter,
-} from '../../callback_server';
-import * as db from '../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+} from '../../../callback_server';
+import * as db from '../../../db';
+import { createEventPromise, generateReferenceId, hash } from '../../../utils';
+import * as config from '../../../config';
 
 describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   let namespace;
@@ -31,6 +26,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
+  const accessorEncryptPromise = createEventPromise(); // IDP
   const requestStatusConfirmedPromise = createEventPromise(); // RP
   const dataRequestBankStatementReceivedPromise = createEventPromise(); // AS
   const dataRequestCustomerInfoReceivedPromise = createEventPromise(); // AS
@@ -59,17 +55,19 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   let requestId;
   let requestMessageSalt;
   let requestMessageHash;
+  let responseAccessorId;
 
   const requestStatusUpdates = [];
 
   before(function() {
-    if (db.idp1Identities[0] == null) {
+    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
-
+    namespace = identity.namespace;
+    identifier = identity.identifier;
     createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
@@ -161,6 +159,12 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         callbackData.reference_id === idpReferenceId
       ) {
         responseResultPromise.resolve(callbackData);
+      }
+    });
+
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        accessorEncryptPromise.resolve(callbackData);
       }
     });
 
@@ -257,13 +261,10 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -271,6 +272,8 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
       data_request_list: dataRequestListWithoutParams,
       request_timeout: createRequestParams.request_timeout,
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
@@ -293,26 +296,50 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         identity.namespace === namespace && identity.identifier === identifier
     );
 
+    responseAccessorId = identity.accessors[0].accessorId;
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
+      // namespace: createRequestParams.namespace,
+      // identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
+      //secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      // signature: createResponseSignature(
+      //   identity.accessors[0].accessorPrivateKey,
+      //   requestMessageHash
+      // ),
+      accessor_id: responseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await accessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: responseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
@@ -348,7 +375,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -464,7 +490,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -506,7 +531,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -566,7 +590,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -608,7 +631,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -650,7 +672,6 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -712,6 +733,7 @@ describe('1 IdP, 1 AS, mode 3, 2 services', function() {
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });

@@ -1964,6 +1964,7 @@ describe('1 IdP, 1 AS, mode 3 (as_id_list is empty array)', function() {
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });
@@ -2947,6 +2948,7 @@ describe('1 IdP, 1 AS, mode 3 (without as_id_list key)', function() {
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });
@@ -3914,6 +3916,7 @@ describe('1 IdP, 1 AS, mode 2 (without request_params key)', function() {
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });
@@ -4882,6 +4885,7 @@ describe('1 IdP, 1 AS, mode 2 (with empty string request_params and request_mess
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });
