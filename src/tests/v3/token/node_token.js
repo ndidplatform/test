@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 
-import * as ndidApi from '../../api/v2/ndid';
-import * as commonApi from '../../api/v2/common';
-import { wait } from '../../utils';
-import { ndidAvailable, rpAvailable } from '..';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as commonApi from '../../../api/v3/common';
+import { wait } from '../../../utils';
+import { ndidAvailable, rpAvailable } from '../..';
 
 describe('Set Add Reduce tokens tests', function() {
   let nodeTokenBeforeTest = 0;

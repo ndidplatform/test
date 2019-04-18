@@ -41,10 +41,10 @@ export function getServices(nodeId) {
 //   return httpGet(`${apiBaseUrl}/utility/services/${serviceId}`);
 // }
 
-// export function getToken(nodeId) {
-//   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
-//   return httpGet(`${apiBaseUrl}/utility/nodes/${nodeId}/token`);
-// }
+export function getToken(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
+  return httpGet(`${apiBaseUrl}/utility/nodes/${nodeId}/token`);
+}
 
 export function getNamespaces(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;

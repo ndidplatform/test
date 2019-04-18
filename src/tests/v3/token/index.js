@@ -1,5 +1,5 @@
-import { ndidAvailable } from '..';
-import { wait } from '../../utils';
+import { ndidAvailable } from '../..';
+import { wait } from '../../../utils';
 
 describe('Token tests', async function() {
   this.timeout(10000);

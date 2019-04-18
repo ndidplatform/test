@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import forge from 'node-forge';
 
-import * as ndidApi from '../../api/v2/ndid';
-import * as commonApi from '../../api/v2/common';
-import * as debugApi from '../../api/v2/debug';
-import { wait } from '../../utils';
-import { ndidAvailable, idp1Available } from '..';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as commonApi from '../../../api/v3/common';
+import * as debugApi from '../../../api/v3/debug';
+import { wait } from '../../../utils';
+import { ndidAvailable, idp1Available } from '../..';
 
 describe('Reduce node token when tx fail test', function() {
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -38,9 +38,12 @@ describe('Reduce node token when tx fail test', function() {
     for (let i of [1, 2, 3, 4, 5]) {
       await debugApi.transact('idp1', {
         nodeId: 'idp1',
-        fnName: 'AddAccessorMethod',
+        fnName: 'AddAccessor',
+        reference_group_code: 'aaaaa-bbbbb-ccccc-ddddd',
+        identity_namespace: 'citizenId',
+        identity_identifier_hash:
+          'c765a80f1ee71299c361c1b4cb4d9c36b44061a526348a71287ea0a97cea80f6',
         request_id: 'request_id test',
-        accessor_group_id: 'accessor_group_id test',
         accessor_type: 'accessor_type test',
         accessor_id: 'accessor_id test',
         accessor_public_key: 'Invalid key format',
@@ -63,9 +66,12 @@ describe('Reduce node token when tx fail test', function() {
     for (let i of [1, 2, 3, 4, 5]) {
       await debugApi.transact('idp1', {
         nodeId: 'idp1',
-        fnName: 'AddAccessorMethod',
+        fnName: 'AddAccessor',
+        reference_group_code: 'aaaaa-bbbbb-ccccc-ddddd',
+        identity_namespace: 'citizenId',
+        identity_identifier_hash:
+          'c765a80f1ee71299c361c1b4cb4d9c36b44061a526348a71287ea0a97cea80f6',
         request_id: 'request_id test',
-        accessor_group_id: 'accessor_group_id test',
         accessor_type: 'accessor_type test',
         accessor_id: 'accessor_id test',
         accessor_public_key: accessorPublicKey,

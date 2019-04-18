@@ -1,4 +1,4 @@
-import { getApiAddressUrl, httpPost } from '../helpers';
+import { getApiAddressUrl, httpPost, httpGet } from '../helpers';
 
 export function registerNamespace(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
@@ -114,4 +114,19 @@ export function updateNamespace(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   const { namespace } = data;
   return httpPost(`${apiBaseUrl}/ndid/namespaces/${namespace}`, data);
+}
+
+export function setAllowedMinIalForRegisterIdentityAtFirstIdp(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/setAllowedMinIalForRegisterIdentityAtFirstIdp`,
+    data
+  );
+}
+
+export function getAllowedMinIalForRegisterIdentityAtFirstIdp(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpGet(
+    `${apiBaseUrl}/ndid/allowedMinIalForRegisterIdentityAtFirstIdp`
+  );
 }

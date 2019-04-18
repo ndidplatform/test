@@ -1,25 +1,25 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
-import * as ndidApi from '../../api/v2/ndid';
-import * as commonApi from '../../api/v2/common';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
-import { createRequest } from '../../api/v2/rp';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as commonApi from '../../../api/v3/common';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
+import { createRequest } from '../../../api/v3/rp';
 import {
   wait,
   generateReferenceId,
   createEventPromise,
-  hashRequestMessageForConsent,
-} from '../../utils';
-import { ndidAvailable, idp1Available } from '..';
-import { RP_CALLBACK_URL } from '../../config';
+  hash,
+} from '../../../utils';
+import { ndidAvailable, idp1Available } from '../..';
+import { RP_CALLBACK_URL } from '../../../config';
 import {
   rpEventEmitter,
   idp1EventEmitter,
   as1EventEmitter,
-} from '../../callback_server';
-import * as config from '../../config';
+} from '../../../callback_server';
+import * as config from '../../../config';
 
 describe('Spend and refill node token test', function() {
   let rpNodeTokenBeforeTest = 0;
@@ -138,7 +138,7 @@ describe('Spend and refill node token test', function() {
     await wait(5000);
   });
 
-  it('RP should be out of token', async function() {
+  it('RP create request and should be out of token', async function() {
     this.timeout(30000);
     // flood 5 blocks for spend token
     for (let i of [1, 2, 3, 4]) {
@@ -212,10 +212,8 @@ describe('Spend and refill node token test', function() {
       namespace: namespace,
       identifier: identifier,
       request_message: 'Spend Token #5',
-      request_message_hash: hashRequestMessageForConsent(
-        'Spend Token #5',
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        'Spend Token #5' + incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: 1.1,
@@ -457,10 +455,9 @@ describe('Spend and refill node token test', function() {
       namespace: namespace,
       identifier: identifier,
       request_message: 'Test making a request after add node token',
-      request_message_hash: hashRequestMessageForConsent(
-        'Test making a request after add node token',
-        incomingRequest.initial_salt,
-        requestIdAfterAddNodeToken
+      request_message_hash: hash(
+        'Test making a request after add node token' +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: 1.1,
