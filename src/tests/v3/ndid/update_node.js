@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 
-import * as ndidApi from '../../api/v2/ndid';
-import * as commonApi from '../../api/v2/common';
-import { wait } from '../../utils';
-import { ndidAvailable } from '..';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as commonApi from '../../../api/v3/common';
+import { wait } from '../../../utils';
+import { ndidAvailable } from '../..';
 
 describe('NDID update nodes', function() {
   const max_ial = 1.1;

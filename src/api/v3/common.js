@@ -35,11 +35,11 @@ export function getServices(nodeId) {
 //   return httpGet(`${apiBaseUrl}/utility/as/${serviceId}`);
 // }
 
-// export function getServiceDataSchema(nodeId, data) {
-//   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
-//   const { serviceId } = data;
-//   return httpGet(`${apiBaseUrl}/utility/services/${serviceId}`);
-// }
+export function getServiceDataSchema(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
+  const { serviceId } = data;
+  return httpGet(`${apiBaseUrl}/utility/services/${serviceId}`);
+}
 
 export function getToken(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';

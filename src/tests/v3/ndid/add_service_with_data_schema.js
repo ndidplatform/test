@@ -1,25 +1,24 @@
 import { expect } from 'chai';
 
-import * as ndidApi from '../../api/v2/ndid';
-import * as commonApi from '../../api/v2/common';
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
-import { ndidAvailable } from '..';
-import * as db from '../../db';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as commonApi from '../../../api/v3/common';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
+import { ndidAvailable } from '../..';
+import * as db from '../../../db';
 import {
   as1EventEmitter,
   idp1EventEmitter,
   rpEventEmitter,
-} from '../../callback_server';
+} from '../../../callback_server';
 import {
   createEventPromise,
   generateReferenceId,
-  hashRequestMessageForConsent,
   wait,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+  hash,
+} from '../../../utils';
+import * as config from '../../../config';
 
 describe('NDID add and update service with data_schema test', function() {
   const originalDataSchema = JSON.stringify({
@@ -63,6 +62,7 @@ describe('NDID add and update service with data_schema test', function() {
     const createRequestResultPromise = createEventPromise(); // RP
     const incomingRequestPromise = createEventPromise(); // IDP
     const responseResultPromise = createEventPromise(); // IDP
+    const accessorEncryptPromise = createEventPromise(); // IDP
     const dataRequestReceivedPromise = createEventPromise(); // AS
     const sendDataResultPromise = createEventPromise(); // AS
     const requestStatusSignedDataPromise = createEventPromise(); // RP
@@ -73,6 +73,7 @@ describe('NDID add and update service with data_schema test', function() {
     let requestId;
     let requestMessageSalt;
     let requestMessageHash;
+    let responseAccessorId;
 
     let createRequestParams;
 
@@ -83,12 +84,16 @@ describe('NDID add and update service with data_schema test', function() {
         this.skip();
       }
 
-      if (db.idp1Identities[0] == null) {
+      let identity = db.idp1Identities.filter(
+        identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+      );
+
+      if (identity.length === 0) {
         throw new Error('No created identity to use');
       }
 
-      namespace = db.idp1Identities[0].namespace;
-      identifier = db.idp1Identities[0].identifier;
+      namespace = identity[0].namespace;
+      identifier = identity[0].identifier;
 
       createRequestParams = {
         reference_id: rpReferenceId,
@@ -150,6 +155,12 @@ describe('NDID add and update service with data_schema test', function() {
           callbackData.reference_id === idpReferenceId
         ) {
           responseResultPromise.resolve(callbackData);
+        }
+      });
+
+      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+        if (callbackData.request_id === requestId) {
+          accessorEncryptPromise.resolve(callbackData);
         }
       });
 
@@ -249,6 +260,7 @@ describe('NDID add and update service with data_schema test', function() {
         min_ial: 1.1,
         min_aal: 1,
         url: config.AS1_CALLBACK_URL,
+        supported_namespace_list: ['citizen_id'],
       });
       expect(response.status).to.equal(202);
 
@@ -296,13 +308,10 @@ describe('NDID add and update service with data_schema test', function() {
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
         request_message: createRequestParams.request_message,
-        request_message_hash: hashRequestMessageForConsent(
-          createRequestParams.request_message,
-          incomingRequest.initial_salt,
-          requestId
+        request_message_hash: hash(
+          createRequestParams.request_message +
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -310,6 +319,8 @@ describe('NDID add and update service with data_schema test', function() {
         data_request_list: dataRequestListWithoutParams,
         request_timeout: createRequestParams.request_timeout,
       });
+      expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+        .empty;
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
@@ -332,26 +343,44 @@ describe('NDID add and update service with data_schema test', function() {
           identity.namespace === namespace && identity.identifier === identifier
       );
 
+      responseAccessorId = identity.accessors[0].accessorId;
+
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: requestId,
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
         ial: 2.3,
         aal: 3,
-        secret: identity.accessors[0].secret,
         status: 'accept',
-        signature: createResponseSignature(
-          identity.accessors[0].accessorPrivateKey,
-          requestMessageHash
-        ),
-        accessor_id: identity.accessors[0].accessorId,
+        accessor_id: responseAccessorId,
       });
       expect(response.status).to.equal(202);
+    });
 
+    it('IdP should receive accessor encrypt callback with correct data', async function() {
+      this.timeout(15000);
+
+      const accessorEncryptParams = await accessorEncryptPromise.promise;
+      expect(accessorEncryptParams).to.deep.include({
+        node_id: 'idp1',
+        type: 'accessor_encrypt',
+        accessor_id: responseAccessorId,
+        key_type: 'RSA',
+        padding: 'none',
+        reference_id: idpReferenceId,
+        request_id: requestId,
+      });
+
+      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+        'string'
+      ).that.is.not.empty;
+    });
+
+    it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
+        node_id: 'idp1',
+        type: 'response_result',
         reference_id: idpReferenceId,
         request_id: requestId,
         success: true,
@@ -486,7 +515,6 @@ describe('NDID add and update service with data_schema test', function() {
           {
             idp_id: 'idp1',
             valid_signature: true,
-            valid_proof: true,
             valid_ial: true,
           },
         ],
@@ -522,7 +550,6 @@ describe('NDID add and update service with data_schema test', function() {
           {
             idp_id: 'idp1',
             valid_signature: true,
-            valid_proof: true,
             valid_ial: true,
           },
         ],
@@ -558,7 +585,6 @@ describe('NDID add and update service with data_schema test', function() {
           {
             idp_id: 'idp1',
             valid_signature: true,
-            valid_proof: true,
             valid_ial: true,
           },
         ],
@@ -613,6 +639,7 @@ describe('NDID add and update service with data_schema test', function() {
     const requestStatusPendingPromise = createEventPromise(); // RP
     const incomingRequestPromise = createEventPromise(); // IDP
     const responseResultPromise = createEventPromise(); // IDP
+    const accessorEncryptPromise = createEventPromise(); // IDP
     const requestStatusConfirmedPromise = createEventPromise(); // RP
     const dataRequestReceivedPromise = createEventPromise(); // AS
     const sendDataResultPromise = createEventPromise(); // AS
@@ -624,6 +651,7 @@ describe('NDID add and update service with data_schema test', function() {
     let requestId;
     let requestMessageSalt;
     let requestMessageHash;
+    let responseAccessorId;
 
     let createRequestParams;
 
@@ -654,12 +682,16 @@ describe('NDID add and update service with data_schema test', function() {
         this.skip();
       }
 
-      if (db.idp1Identities[0] == null) {
+      let identity = db.idp1Identities.filter(
+        identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+      );
+
+      if (identity.length === 0) {
         throw new Error('No created identity to use');
       }
 
-      namespace = db.idp1Identities[0].namespace;
-      identifier = db.idp1Identities[0].identifier;
+      namespace = identity[0].namespace;
+      identifier = identity[0].identifier;
 
       createRequestParams = {
         reference_id: rpReferenceId,
@@ -725,6 +757,12 @@ describe('NDID add and update service with data_schema test', function() {
           callbackData.reference_id === idpReferenceId
         ) {
           responseResultPromise.resolve(callbackData);
+        }
+      });
+
+      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+        if (callbackData.request_id === requestId) {
+          accessorEncryptPromise.resolve(callbackData);
         }
       });
 
@@ -817,13 +855,10 @@ describe('NDID add and update service with data_schema test', function() {
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
         request_message: createRequestParams.request_message,
-        request_message_hash: hashRequestMessageForConsent(
-          createRequestParams.request_message,
-          incomingRequest.initial_salt,
-          requestId
+        request_message_hash: hash(
+          createRequestParams.request_message +
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -831,6 +866,8 @@ describe('NDID add and update service with data_schema test', function() {
         data_request_list: dataRequestListWithoutParams,
         request_timeout: createRequestParams.request_timeout,
       });
+      expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+        .empty;
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
@@ -853,26 +890,44 @@ describe('NDID add and update service with data_schema test', function() {
           identity.namespace === namespace && identity.identifier === identifier
       );
 
+      responseAccessorId = identity.accessors[0].accessorId;
+
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: requestId,
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
         ial: 2.3,
         aal: 3,
-        secret: identity.accessors[0].secret,
         status: 'accept',
-        signature: createResponseSignature(
-          identity.accessors[0].accessorPrivateKey,
-          requestMessageHash
-        ),
-        accessor_id: identity.accessors[0].accessorId,
+        accessor_id: responseAccessorId,
       });
       expect(response.status).to.equal(202);
+    });
 
+    it('IdP should receive accessor encrypt callback with correct data', async function() {
+      this.timeout(15000);
+
+      const accessorEncryptParams = await accessorEncryptPromise.promise;
+      expect(accessorEncryptParams).to.deep.include({
+        node_id: 'idp1',
+        type: 'accessor_encrypt',
+        accessor_id: responseAccessorId,
+        key_type: 'RSA',
+        padding: 'none',
+        reference_id: idpReferenceId,
+        request_id: requestId,
+      });
+
+      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+        'string'
+      ).that.is.not.empty;
+    });
+
+    it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
+        node_id: 'idp1',
+        type: 'response_result',
         reference_id: idpReferenceId,
         request_id: requestId,
         success: true,
@@ -1006,7 +1061,6 @@ describe('NDID add and update service with data_schema test', function() {
           {
             idp_id: 'idp1',
             valid_signature: true,
-            valid_proof: true,
             valid_ial: true,
           },
         ],
@@ -1042,7 +1096,6 @@ describe('NDID add and update service with data_schema test', function() {
           {
             idp_id: 'idp1',
             valid_signature: true,
-            valid_proof: true,
             valid_ial: true,
           },
         ],
@@ -1078,7 +1131,6 @@ describe('NDID add and update service with data_schema test', function() {
           {
             idp_id: 'idp1',
             valid_signature: true,
-            valid_proof: true,
             valid_ial: true,
           },
         ],
@@ -1141,6 +1193,7 @@ describe('NDID add and update service with data_schema test', function() {
     const requestStatusPendingPromise = createEventPromise(); // RP
     const incomingRequestPromise = createEventPromise(); // IDP
     const responseResultPromise = createEventPromise(); // IDP
+    const accessorEncryptPromise = createEventPromise(); // IDP
     const requestStatusConfirmedPromise = createEventPromise(); // RP
     const dataRequestReceivedPromise = createEventPromise(); // AS
     const sendDataResultPromise = createEventPromise(); // AS
@@ -1152,6 +1205,7 @@ describe('NDID add and update service with data_schema test', function() {
     let requestId;
     let requestMessageSalt;
     let requestMessageHash;
+    let responseAccessorId;
 
     let createRequestParams;
 
@@ -1162,12 +1216,16 @@ describe('NDID add and update service with data_schema test', function() {
         this.skip();
       }
 
-      if (db.idp1Identities[0] == null) {
+      let identity = db.idp1Identities.filter(
+        identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+      );
+
+      if (identity.length === 0) {
         throw new Error('No created identity to use');
       }
 
-      namespace = db.idp1Identities[0].namespace;
-      identifier = db.idp1Identities[0].identifier;
+      namespace = identity[0].namespace;
+      identifier = identity[0].identifier;
 
       createRequestParams = {
         reference_id: rpReferenceId,
@@ -1233,6 +1291,12 @@ describe('NDID add and update service with data_schema test', function() {
           callbackData.reference_id === idpReferenceId
         ) {
           responseResultPromise.resolve(callbackData);
+        }
+      });
+
+      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+        if (callbackData.request_id === requestId) {
+          accessorEncryptPromise.resolve(callbackData);
         }
       });
 
@@ -1323,13 +1387,10 @@ describe('NDID add and update service with data_schema test', function() {
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
         request_message: createRequestParams.request_message,
-        request_message_hash: hashRequestMessageForConsent(
-          createRequestParams.request_message,
-          incomingRequest.initial_salt,
-          requestId
+        request_message_hash: hash(
+          createRequestParams.request_message +
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1337,6 +1398,8 @@ describe('NDID add and update service with data_schema test', function() {
         data_request_list: dataRequestListWithoutParams,
         request_timeout: createRequestParams.request_timeout,
       });
+      expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+        .empty;
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
@@ -1359,26 +1422,44 @@ describe('NDID add and update service with data_schema test', function() {
           identity.namespace === namespace && identity.identifier === identifier
       );
 
+      responseAccessorId = identity.accessors[0].accessorId;
+
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: requestId,
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
         ial: 2.3,
         aal: 3,
-        secret: identity.accessors[0].secret,
         status: 'accept',
-        signature: createResponseSignature(
-          identity.accessors[0].accessorPrivateKey,
-          requestMessageHash
-        ),
-        accessor_id: identity.accessors[0].accessorId,
+        accessor_id: responseAccessorId,
       });
       expect(response.status).to.equal(202);
+    });
 
+    it('IdP should receive accessor encrypt callback with correct data', async function() {
+      this.timeout(15000);
+
+      const accessorEncryptParams = await accessorEncryptPromise.promise;
+      expect(accessorEncryptParams).to.deep.include({
+        node_id: 'idp1',
+        type: 'accessor_encrypt',
+        accessor_id: responseAccessorId,
+        key_type: 'RSA',
+        padding: 'none',
+        reference_id: idpReferenceId,
+        request_id: requestId,
+      });
+
+      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+        'string'
+      ).that.is.not.empty;
+    });
+
+    it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
+        node_id: 'idp1',
+        type: 'response_result',
         reference_id: idpReferenceId,
         request_id: requestId,
         success: true,
@@ -1458,7 +1539,6 @@ describe('NDID add and update service with data_schema test', function() {
           {
             idp_id: 'idp1',
             valid_signature: true,
-            valid_proof: true,
             valid_ial: true,
           },
         ],
@@ -1494,7 +1574,6 @@ describe('NDID add and update service with data_schema test', function() {
           {
             idp_id: 'idp1',
             valid_signature: true,
-            valid_proof: true,
             valid_ial: true,
           },
         ],
@@ -1530,7 +1609,6 @@ describe('NDID add and update service with data_schema test', function() {
           {
             idp_id: 'idp1',
             valid_signature: true,
-            valid_proof: true,
             valid_ial: true,
           },
         ],

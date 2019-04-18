@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 
-import * as ndidApi from '../../api/v2/ndid';
-import * as commonApi from '../../api/v2/common';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as commonApi from '../../../api/v3/common';
 
-import { ndidAvailable } from '..';
-import { wait } from '../../utils';
+import { ndidAvailable } from '../..';
+import { wait } from '../../../utils';
 
 describe('NDID add new service test', function() {
   let alreadyAddedService = false;
