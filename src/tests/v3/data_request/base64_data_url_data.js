@@ -11,7 +11,12 @@ import {
   as1EventEmitter,
 } from '../../../callback_server';
 import * as db from '../../../db';
-import { createEventPromise, generateReferenceId, hash } from '../../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  hash,
+  wait,
+} from '../../../utils';
 import * as config from '../../../config';
 
 describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2', function() {
@@ -53,6 +58,10 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
   let createRequestParams;
   const data =
     'data:application/pdf;base64,dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=';
+  const correct_request_message =
+    'data:application/pdf;base64,dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=';
+  const wrong_type_request_message =
+    'data:aaaa/bbbb;base64,dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=';
 
   let requestId;
   let requestMessageSalt;
@@ -70,7 +79,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       throw new Error('No created identity to use');
     }
 
-    const identity = db.idp1Identities.find((identity) => {
+    const identity = db.idp1Identities.find(identity => {
       return identity.mode === 2;
     });
 
@@ -97,7 +106,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
         },
       ],
       request_message:
-        'data:application/pdf;base64,dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=',
+        'data:application/pdf;base64, dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc= ',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
@@ -225,10 +234,39 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     if (!updateNodeResult.success) {
       throw new Error('Unable to update node');
     }
+   await wait(3000);
+  });
+
+  it('RP should create a request with request_message has whitespace unsuccessfully', async function() {
+    this.timeout(10000);
+
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20070);
+  });
+
+  it('RP should create a request with wrong type request_message unsuccessfully', async function() {
+    this.timeout(10000);
+
+    createRequestParams = {
+      ...createRequestParams,
+      request_message: wrong_type_request_message,
+    };
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20005);
   });
 
   it('RP should create a request successfully', async function() {
     this.timeout(10000);
+
+    createRequestParams = {
+      ...createRequestParams,
+      request_message: correct_request_message,
+    };
+
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -238,6 +276,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     requestId = responseBody.request_id;
 
     const createRequestResult = await createRequestResultPromise.promise;
+
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
@@ -287,7 +326,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -330,7 +369,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
