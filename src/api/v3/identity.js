@@ -6,6 +6,12 @@ export function createIdentity(nodeId, data) {
   return httpPost(`${apiBaseUrl}/identity`, data);
 }
 
+export function addIdentity(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(`${apiBaseUrl}/identity/${namespace}/${identifier}`, rest);
+}
+
 export function getIdentityInfo(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier } = data;

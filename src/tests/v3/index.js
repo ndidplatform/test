@@ -9,6 +9,8 @@ require('./data_request');
 require('./add_accessor');
 require('./revoke_accessor');
 require('./revoke_identity_association');
+require('./add_identity');
 require('./create_request');
 require('./ndid');
-
+// require('./dpki');
+require('./token');
