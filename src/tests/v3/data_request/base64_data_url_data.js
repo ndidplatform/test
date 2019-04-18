@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import * as rpApi from '../../../api/v3/rp';
 import * as idpApi from '../../../api/v3/idp';
 import * as asApi from '../../../api/v3/as';
+import * as nodeApi from '../../../api/v3/node';
 import * as commonApi from '../../../api/v3/common';
 import {
   rpEventEmitter,
@@ -16,6 +17,11 @@ import * as config from '../../../config';
 describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2', function() {
   let namespace;
   let identifier;
+
+  const updateNodeReferenceId_before = generateReferenceId();
+  const updateNodeReferenceId_after = generateReferenceId();
+  const idp_updateNodeResultPromise_before = createEventPromise();
+  const idp_updateNodeResultPromise_after = createEventPromise();
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
@@ -45,7 +51,8 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
   const as_requestClosedPromise = createEventPromise();
 
   let createRequestParams;
-  const data = 'data:text/plain;base64,dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=';
+  const data =
+    'data:application/pdf;base64,dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=';
 
   let requestId;
   let requestMessageSalt;
@@ -57,7 +64,8 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
   const as_requestStatusUpdates = [];
   let lastStatusUpdateBlockHeight;
 
-  before(function() {
+  before(async function() {
+    this.timeout(10000);
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -89,7 +97,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
         },
       ],
       request_message:
-        ' data: text/plain ;  base64 \r\n   ,   dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=',
+        'data:application/pdf;base64,dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
@@ -157,6 +165,13 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
           }
         }
       }
+
+      if (callbackData.reference_id === updateNodeReferenceId_before) {
+        idp_updateNodeResultPromise_before.resolve(callbackData);
+      }
+      if (callbackData.reference_id === updateNodeReferenceId_after) {
+        idp_updateNodeResultPromise_after.resolve(callbackData);
+      }
     });
 
     idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
@@ -196,6 +211,20 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
         }
       }
     });
+
+    // Set supported data URL type on IdP
+    const response = await nodeApi.updateNode('idp1', {
+      reference_id: updateNodeReferenceId_before,
+      callback_url: config.IDP1_CALLBACK_URL,
+      supported_request_message_data_url_type_list: ['application/pdf'],
+    });
+    if (response.status !== 202) {
+      throw new Error('Unable to update node');
+    }
+    const updateNodeResult = await idp_updateNodeResultPromise_before.promise;
+    if (!updateNodeResult.success) {
+      throw new Error('Unable to update node');
+    }
   });
 
   it('RP should create a request successfully', async function() {
@@ -979,7 +1008,21 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     expect(responseBody).to.be.an('array').that.is.empty;
   });
 
-  after(function() {
+  after(async function() {
+    // Restore IdP node settings
+    const response = await nodeApi.updateNode('idp1', {
+      reference_id: updateNodeReferenceId_after,
+      callback_url: config.IDP1_CALLBACK_URL,
+      supported_request_message_data_url_type_list: [],
+    });
+    if (response.status !== 202) {
+      throw new Error('Unable to update node');
+    }
+    const updateNodeResult = await idp_updateNodeResultPromise_after.promise;
+    if (!updateNodeResult.success) {
+      throw new Error('Unable to update node');
+    }
+
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
