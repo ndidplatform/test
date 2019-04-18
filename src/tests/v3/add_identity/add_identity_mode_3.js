@@ -2024,7 +2024,7 @@ describe('Add identity (mode 3) tests', function() {
           createRequestParams = {
             reference_id: rpReferenceId,
             callback_url: config.RP_CALLBACK_URL,
-            mode: 2,
+            mode: 3,
             namespace,
             identifier: identifier2AtIdP2,
             idp_id_list: [],
