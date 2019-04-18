@@ -1,12 +1,13 @@
 import { expect } from 'chai';
 
-import * as rpApi from '../../api/v2/rp';
-import { rpEventEmitter } from '../../callback_server';
-import * as db from '../../db';
-import { createEventPromise, generateReferenceId } from '../../utils';
-import * as config from '../../config';
+import * as rpApi from '../../../api/v3/rp';
+import * as commonApi from '../../../api/v3/common';
+import { rpEventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
+import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import * as config from '../../../config';
 
-describe('Timeout test (3 seconds)', function() {
+describe('Long timeout test (>2147483647 seconds or >24.8 days - greater than 32-bit integer)', function() {
   let namespace;
   let identifier;
 
@@ -23,13 +24,17 @@ describe('Timeout test (3 seconds)', function() {
   const requestStatusUpdates = [];
 
   before(function() {
-    if (db.idp1Identities[0] == null) {
+    let identity = db.idp1Identities.filter(
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+    );
+
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
-
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
+    
     createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
@@ -42,7 +47,7 @@ describe('Timeout test (3 seconds)', function() {
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 3, // seconds
+      request_timeout: 9947483647, // seconds
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -103,30 +108,20 @@ describe('Timeout test (3 seconds)', function() {
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should receive request timed out status in time limit', async function() {
+  it('Created request should not timeout within time limit', async function() {
     this.timeout(10000);
-    const requestStatus = await requestStatusTimedOutPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: true,
-      service_list: [],
-      response_valid_list: [],
+    await wait(7000);
+    const response = await commonApi.getRequest('rp1', {
+      requestId,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+
+    expect(responseBody.timed_out).to.equal(false);
   });
 
-  it('RP should receive 2 request status updates', function() {
-    expect(requestStatusUpdates).to.have.lengthOf(2);
+  it('RP should receive 1 request status update', function() {
+    expect(requestStatusUpdates).to.have.lengthOf(1);
   });
 
   after(function() {

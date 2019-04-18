@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 
-import * as rpApi from '../../api/v2/rp';
-import { rpEventEmitter } from '../../callback_server';
-import * as db from '../../db';
-import { createEventPromise, generateReferenceId, wait } from '../../utils';
-import * as config from '../../config';
+import * as rpApi from '../../../api/v3/rp';
+import { rpEventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
+import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import * as config from '../../../config';
 
 describe('RP get request_id by reference_id test', function() {
   let namespace;
@@ -21,12 +21,17 @@ describe('RP get request_id by reference_id test', function() {
 
   before(async function() {
     this.timeout(10000);
-    if (db.idp1Identities[0] == null) {
+
+    let identity = db.idp1Identities.filter(
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+    );
+
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,

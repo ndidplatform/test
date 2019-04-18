@@ -1,12 +1,12 @@
 import { expect } from 'chai';
 
-import * as rpApi from '../../api/v2/rp';
-import { rpEventEmitter } from '../../callback_server';
-import * as db from '../../db';
-import { createEventPromise, generateReferenceId } from '../../utils';
-import * as config from '../../config';
+import * as rpApi from '../../../api/v3/rp';
+import { rpEventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
+import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import * as config from '../../../config';
 
-describe('Short timeout test (1 second)', function() {
+describe('Timeout test (3 seconds)', function() {
   let namespace;
   let identifier;
 
@@ -22,13 +22,20 @@ describe('Short timeout test (1 second)', function() {
 
   const requestStatusUpdates = [];
 
-  before(function() {
-    if (db.idp1Identities[0] == null) {
+  before(async function() {
+    this.timeout(10000);
+    let identity = db.idp1Identities.filter(
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+    );
+
+    await wait(1000);
+
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -42,7 +49,7 @@ describe('Short timeout test (1 second)', function() {
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
-      request_timeout: 1, // second
+      request_timeout: 3, // seconds
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

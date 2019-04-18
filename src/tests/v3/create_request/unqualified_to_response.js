@@ -1,14 +1,14 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
-import * as rpApi from '../../api/v2/rp';
-import * as ndidApi from '../../api/v2/ndid';
-import * as asApi from '../../api/v2/as';
-import * as commonApi from '../../api/v2/common';
-import { ndidAvailable, as2Available } from '..';
-import { generateReferenceId, createEventPromise, wait } from '../../utils';
-import { as1EventEmitter } from '../../callback_server';
-import * as config from '../../config';
+import * as rpApi from '../../../api/v3/rp';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as asApi from '../../../api/v3/as';
+import * as commonApi from '../../../api/v3/common';
+import { ndidAvailable, as2Available } from '../..';
+import { generateReferenceId, createEventPromise, wait } from '../../../utils';
+import { as1EventEmitter } from '../../../callback_server';
+import * as config from '../../../config';
 
 describe('RP create request errors (unqualified to response)', function() {
   describe('IdP ID list are unqualified to response (max_ial) test', function() {
@@ -25,7 +25,7 @@ describe('RP create request errors (unqualified to response)', function() {
       }
       const response = await commonApi.getIdP('ndid1');
       const responseBody = await response.json();
-      let idp3 = responseBody.find((idp) => idp.node_id === 'idp3');
+      let idp3 = responseBody.find(idp => idp.node_id === 'idp3');
       if (!idp3) {
         this.test.parent.pending = true;
         this.skip();
@@ -88,7 +88,7 @@ describe('RP create request errors (unqualified to response)', function() {
       }
       const response = await commonApi.getIdP('ndid1');
       const responseBody = await response.json();
-      let idp3 = responseBody.find((idp) => idp.node_id === 'idp3');
+      let idp3 = responseBody.find(idp => idp.node_id === 'idp3');
       if (!idp3) {
         this.test.parent.pending = true;
         this.skip();
