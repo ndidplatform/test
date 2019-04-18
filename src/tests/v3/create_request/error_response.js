@@ -20,7 +20,7 @@ describe('RP create request errors', function() {
 
   before(function() {
     identityMode2 = db.idp1Identities.find(identity => identity.mode === 2);
-    identityMode3 = db.idp2Identities.find(identity => identity.mode === 3);
+    identityMode3 = db.idp1Identities.find(identity => identity.mode === 3);
 
     if (db.idp1Identities[0] == null || !identityMode2 || !identityMode3) {
       throw new Error('No created identity to use');
