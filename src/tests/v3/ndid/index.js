@@ -12,5 +12,5 @@ describe('NDID tests', function() {
   require('./update_node');
   require('./set_allowed_min_ial_for_register_identity_at_first_idp');
   require('./set_allowed_mode_list_for_create_request');
-  // require('./error_response');
+  require('./error_response');
 });

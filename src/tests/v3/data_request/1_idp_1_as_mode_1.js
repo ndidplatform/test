@@ -10,11 +10,7 @@ import {
   idp1EventEmitter,
   as1EventEmitter,
 } from '../../../callback_server';
-import {
-  createEventPromise,
-  generateReferenceId,
-  hash,
-} from '../../../utils';
+import { createEventPromise, generateReferenceId, hash } from '../../../utils';
 import * as config from '../../../config';
 
 describe('1 IdP, 1 AS, mode 1', function() {
@@ -242,8 +238,8 @@ describe('1 IdP, 1 AS, mode 1', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
+      // namespace: createRequestParams.namespace,
+      // identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
       status: 'accept',

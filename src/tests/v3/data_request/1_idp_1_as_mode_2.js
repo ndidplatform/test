@@ -62,16 +62,11 @@ describe('1 IdP, 1 AS, mode 2', function() {
   let lastStatusUpdateBlockHeight;
 
   before(function() {
-    if (db.idp1Identities[0] == null) {
+    const identity = db.idp1Identities.find(identity => identity.mode === 2);
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
-
-    const identity = db.idp1Identities.find(identity => {
-      return identity.mode === 2;
-    });
-
-    //const identity = db.idp1Identities[0]
-
     namespace = identity.namespace;
     identifier = identity.identifier;
 
@@ -988,7 +983,7 @@ describe('1 IdP, 1 AS, mode 2', function() {
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback')
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
   });
 });

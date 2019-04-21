@@ -85,7 +85,10 @@ describe('NDID add and update service with data_schema test', function() {
       }
 
       let identity = db.idp1Identities.filter(
-        identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+        identity =>
+          identity.namespace === 'citizen_id' &&
+          identity.mode === 3 &&
+          !identity.revokeIdentityAssociation
       );
 
       if (identity.length === 0) {
