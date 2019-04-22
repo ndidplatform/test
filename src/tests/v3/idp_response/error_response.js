@@ -1,15 +1,17 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
+import forge from 'node-forge';
 
+import { setIdPSignInvalidSignature } from '../../../callback_server';
 import * as rpApi from '../../../api/v3/rp';
 import * as idpApi from '../../../api/v3/idp';
+import * as identityApi from '../../../api/v3/identity';
 // import * as commonApi from '../../api/v2/common';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  createResponseSignature,
   wait,
 } from '../../../utils';
 import * as config from '../../../config';
@@ -19,11 +21,18 @@ describe('IdP response errors tests', function() {
   let namespace;
   let identifier;
 
+  const keypair = forge.pki.rsa.generateKeyPair(2048);
+  const invalidAccessorPrivateKey = forge.pki.privateKeyToPem(
+    keypair.privateKey
+  );
+  //const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const updateIalReferenceId = generateReferenceId();
 
   const incomingRequestPromise = createEventPromise(); // IDP
+  const responseResultPromise = createEventPromise();
 
   let createRequestParams;
 
@@ -32,7 +41,7 @@ describe('IdP response errors tests', function() {
 
   before(async function() {
     this.timeout(30000);
-
+    await wait(2000);
     let identity = db.idp1Identities.filter(
       identity =>
         identity.namespace === 'citizen_id' &&
@@ -85,6 +94,11 @@ describe('IdP response errors tests', function() {
         callbackData.request_id === requestId
       ) {
         incomingRequestPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'response_result' &&
+        callbackData.request_id === requestId
+      ) {
+        responseResultPromise.resolve(callbackData);
       }
     });
 
@@ -215,30 +229,40 @@ describe('IdP response errors tests', function() {
     expect(responseBody.error.code).to.equal(20011);
   });
 
-  // it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
-  //   const identity = db.idp1Identities.find(
-  //     identity =>
-  //       identity.namespace === namespace && identity.identifier === identifier
-  //   );
+  it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
+    this.timeout(25000);
+    setIdPSignInvalidSignature(true, invalidAccessorPrivateKey);
+    await wait(2000);
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
 
-  //   const response = await idpApi.createResponse('idp1', {
-  //     reference_id: idpReferenceId,
-  //     callback_url: config.IDP1_CALLBACK_URL,
-  //     request_id: requestId,
-  //     namespace: createRequestParams.namespace,
-  //     identifier: createRequestParams.identifier,
-  //     ial: 2.3,
-  //     aal: 3,
-  //     secret: identity.accessors[0].secret,
-  //     status: 'accept',
-  //     signature: 'some-invalid-signature',
-  //     accessor_id: identity.accessors[0].accessorId,
-  //   });
-  //   const responseBody = await response.json();
+    const response = await idpApi.createResponse('idp1', {
+      reference_id: idpReferenceId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      request_id: requestId,
+      ial: 2.3,
+      aal: 3,
+      status: 'accept',
+      accessor_id: identity.accessors[0].accessorId,
+    });
+    // const responseBody = await response.json();
 
-  //   expect(response.status).to.equal(400);
-  //   expect(responseBody.error.code).to.equal(20028);
-  // });
+    expect(response.status).to.equal(202);
+
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: false,
+    });
+    expect(responseResult.error.code).to.equal(10014);
+    setIdPSignInvalidSignature(false);
+    await wait(2000);
+  });
 
   it('should get an error when making a response with invalid ial (ial is not in enum) (mode 3)', async function() {
     const identity = db.idp1Identities.find(
@@ -250,16 +274,9 @@ describe('IdP response errors tests', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 5,
       aal: 1,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
     const responseBody = await response.json();
@@ -278,16 +295,9 @@ describe('IdP response errors tests', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 5,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
     const responseBody = await response.json();
@@ -357,7 +367,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when IdP update identity invalid ial (ial is not in enum)', async function() {
     this.timeout(15000);
-    const response = await idpApi.updateIdentityIal('idp1', {
+    const response = await identityApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: updateIalReferenceId,

@@ -1,19 +1,19 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as ndidApi from '../../api/v2/ndid';
-import * as commonApi from '../../api/v2/common';
-import { rpEventEmitter, idp1EventEmitter } from '../../callback_server';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as commonApi from '../../../api/v3/common';
+import { rpEventEmitter, idp1EventEmitter } from '../../../callback_server';
 import {
   createEventPromise,
   generateReferenceId,
   hashRequestMessageForConsent,
   wait,
-} from '../../utils';
-import { ndidAvailable } from '..';
-import * as config from '../../config';
+} from '../../../utils';
+import { ndidAvailable } from '../..';
+import * as config from '../../../config';
 
 describe('IdP error callback response tests', function() {
   describe("IdP response ial is greater than IdP node's max_ial (mode 1)", function() {
@@ -136,7 +136,7 @@ describe('IdP error callback response tests', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+        dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -339,7 +339,7 @@ describe('IdP error callback response tests', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+        dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,

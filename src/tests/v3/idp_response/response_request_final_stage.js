@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
 import {
   rpEventEmitter,
   idp1EventEmitter,
@@ -11,12 +11,7 @@ import {
   as1EventEmitter,
 } from '../../../callback_server';
 import * as db from '../../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  createResponseSignature,
-  wait,
-} from '../../../utils';
+import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
 
@@ -51,11 +46,21 @@ describe('IdP response request already confirmed test', function() {
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation &&
+        identity.willCreateOnIdP2
     );
 
-    if (!identity) {
-      throw new Error('No created identity to use');
+    let identityOnIdp2 = db.idp2Identities.filter(
+      identityIdP2 =>
+        identityIdP2.namespace === identity[0].namespace &&
+        identityIdP2.identifier === identity[0].identifier &&
+        identityIdP2.mode === identity[0].mode
+    );
+
+    if (identity.length === 0 || identityOnIdp2.length === 0) {
+      //throw new Error('No created identity to use');
+      this.test.parent.pending = true;
+      this.skip();
     }
 
     namespace = identity[0].namespace;
@@ -226,11 +231,21 @@ describe('IdP response request already closed test', function() {
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation &&
+        identity.willCreateOnIdP2
     );
 
-    if (!identity) {
-      throw new Error('No created identity to use');
+    let identityOnIdp2 = db.idp2Identities.filter(
+      identityIdP2 =>
+        identityIdP2.namespace === identity[0].namespace &&
+        identityIdP2.identifier === identity[0].identifier &&
+        identityIdP2.mode === identity[0].mode
+    );
+
+    if (identity.length === 0 || identityOnIdp2.length === 0) {
+      //throw new Error('No created identity to use');
+      this.test.parent.pending = true;
+      this.skip();
     }
 
     namespace = identity[0].namespace;

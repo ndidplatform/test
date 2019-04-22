@@ -17,9 +17,21 @@ export const proxy1EventEmitter = new EventEmitter();
 export const proxy2EventEmitter = new EventEmitter();
 
 export let asSendDataThroughCallback = false;
+export let idpSignInvalidSignature = false;
+let invalidPrivateKey;
+let a =
+  'Z557rgt9ZdGitBeoKm8eKjGEPEi4tt+GHID/At8asX+YWQGhJiHWjOXEe0VBXgmZdWz4qfYBXqwVaT8BhBtaEX0ussYWnTXxjFr6ifDbuJERLtZCIqPPpCmQxcByRvtTJl/RjswzHRqFqD/qMMrH2QIrO3FElcd5fhyGsHwZKmfy5eRQSsN7esiR0ncQCjiBWkQVg4n6LU4ofGpFUgta5NO6uc4wxuumN+hfnuznGdMsc4f6VhnTSr++kCvod1G6SMsViPnuZmSg4hO4T5pK8rnRMas3wLY/JsgArM5aPuw0zYWMEwBWpFgiVBqgyLS4U3kL9pGbsd7Z98v1Bh+ZYw==';
 
 export function setAsSendDataThroughCallback(sendThroughCallback) {
   asSendDataThroughCallback = sendThroughCallback;
+}
+
+export function setIdPSignInvalidSignature(
+  signInvalidSignature,
+  privateKey = null
+) {
+  idpSignInvalidSignature = signInvalidSignature;
+  invalidPrivateKey = privateKey;
 }
 
 /*
@@ -89,12 +101,21 @@ idp1App.post('/idp/accessor/encrypt', async function(req, res) {
       if (accessorPrivateKey) return;
     });
   });
-  res.status(200).json({
-    signature: utils.createResponseSignature(
-      accessorPrivateKey,
-      callbackData.request_message_padded_hash
-    ),
-  });
+  if (idpSignInvalidSignature) {
+    res.status(200).json({
+      signature: utils.createResponseSignature(
+        invalidPrivateKey,
+        callbackData.request_message_padded_hash
+      ),
+    });
+  } else {
+    res.status(200).json({
+      signature: utils.createResponseSignature(
+        accessorPrivateKey,
+        callbackData.request_message_padded_hash
+      ),
+    });
+  }
 });
 
 idp1App.post('/idp/identity/notification', async function(req, res) {
