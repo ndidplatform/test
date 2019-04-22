@@ -2,21 +2,19 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import { idp2Available } from '..';
-import * as idpApi from '../../api/v2/idp';
-import * as commonApi from '../../api/v2/common';
-import { idp1EventEmitter, idp2EventEmitter } from '../../callback_server';
-import * as db from '../../db';
+import { idp2Available } from '../..';
+import * as identityApi from '../../../api/v3/identity';
+import * as commonApi from '../../../api/v3/common';
+import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
 import {
   createEventPromise,
   generateReferenceId,
-  hash,
-  hashRequestMessageForConsent,
   wait,
-} from '../../utils';
-import * as config from '../../config';
+  hash,
+} from '../../../utils';
+import * as config from '../../../config';
 
-describe('Create identity request with duplicate reference id test', function() {
+describe('Create identity request (mode 3) with duplicate reference id test', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
 
@@ -48,6 +46,7 @@ describe('Create identity request with duplicate reference id test', function() 
   //1st IdP
   let requestId;
   let accessorId;
+  let referenceGroupCode;
 
   //2nd IdP
   let requestId2ndIdP;
@@ -59,24 +58,12 @@ describe('Create identity request with duplicate reference id test', function() 
   let requestMessageSalt;
   let requestMessageHash;
 
-  db.createIdentityReferences.push({
-    referenceId,
-    accessorPrivateKey,
-  });
-
-  db.createIdentityReferences.push({
-    referenceId: referenceIdIdp2,
-    accessorPrivateKey: accessorPrivateKey2,
-  });
-
   before(function() {
     if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
     }
-    if (db.idp1Identities[0] == null) {
-      throw new Error('No created identity to use');
-    }
+
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
@@ -142,61 +129,46 @@ describe('Create identity request with duplicate reference id test', function() 
     });
   });
 
-  it('1st IdP should create identity request successfully', async function() {
+  it('1st IdP should create identity request (mode 3) successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.createIdentity('idp1', {
+    const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    // expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
 
-    requestId = responseBody.request_id;
+    // requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
 
-    const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
-    expect(createIdentityRequestResult).to.deep.include({
-      reference_id: referenceId,
-      request_id: requestId,
-      exist: false,
-      accessor_id: accessorId,
-      success: true,
-    });
-    expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-  });
-
-  it('1st IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
-    const sid = `${namespace}:${identifier}`;
-    const sid_hash = hash(sid);
-
-    const accessorSignParams = await accessorSignPromise.promise;
-    expect(accessorSignParams).to.deep.equal({
-      type: 'accessor_sign',
-      node_id: 'idp1',
-      reference_id: referenceId,
-      accessor_id: accessorId,
-      sid,
-      sid_hash,
-      hash_method: 'SHA256',
-      key_type: 'RSA',
-      sign_method: 'RSA-SHA256',
-      padding: 'PKCS#1v1.5',
-    });
+    // const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
+    // expect(createIdentityRequestResult).to.deep.include({
+    //   reference_id: referenceId,
+    //   request_id: requestId,
+    //   exist: false,
+    //   accessor_id: accessorId,
+    //   success: true,
+    // });
+    // expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
+    // const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
+    //   ':'
+    // );
+    // expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    // expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('1st IdP Identity should be created successfully', async function() {
@@ -204,46 +176,56 @@ describe('Create identity request with duplicate reference id test', function() 
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
-      request_id: requestId,
       success: true,
     });
-    expect(createIdentityResult.secret).to.be.a('string').that.is.not.empty;
+    expect(createIdentityResult.reference_group_code).to.be.a('string').that.is
+      .not.empty;
 
-    const secret = createIdentityResult.secret;
+    referenceGroupCode = createIdentityResult.reference_group_code;
 
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
     });
-    const idpNodes = await response.json();
-    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
-    expect(idpNode).to.exist;
 
-    db.idp1Identities.push({
-      namespace,
-      identifier,
-      accessors: [
-        {
-          accessorId,
-          accessorPrivateKey,
-          accessorPublicKey,
-          secret,
-        },
-      ],
-    });
+    const idpNodes = await response.json();
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    expect(idpNode).to.not.be.undefined;
+    expect(idpNode.mode_list)
+      .to.be.an('array')
+      .that.include(2);
+
+    // db.idp1Identities.push({
+    //   referenceGroupCode,
+    //   mode: 3,
+    //   namespace,
+    //   identifier,
+    //   accessors: [
+    //     {
+    //       accessorId,
+    //       accessorPrivateKey,
+    //       accessorPublicKey,
+    //     },
+    //   ],
+    // });
   });
 
   it('2nd IdP should create identity request successfully', async function() {
     this.timeout(20000);
-    const response = await idpApi.createIdentity('idp2', {
+    const response = await identityApi.createIdentity('idp2', {
       reference_id: referenceIdIdp2,
       callback_url: config.IDP2_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -263,37 +245,17 @@ describe('Create identity request with duplicate reference id test', function() 
     });
   });
 
-  it('2nd IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
-    const sid = `${namespace}:${identifier}`;
-    const sid_hash = hash(sid);
-
-    const accessorSignParams = await accessorSignPromise2.promise;
-    expect(accessorSignParams).to.deep.equal({
-      type: 'accessor_sign',
-      node_id: 'idp2',
-      reference_id: referenceIdIdp2,
-      accessor_id: accessorId2ndIdP,
-      sid,
-      sid_hash,
-      hash_method: 'SHA256',
-      key_type: 'RSA',
-      sign_method: 'RSA-SHA256',
-      padding: 'PKCS#1v1.5',
-    });
-  });
-
   it('2nd IdP should create identity request with duplicate reference id unsuccessfully', async function() {
     this.timeout(20000);
-    const response = await idpApi.createIdentity('idp2', {
+    const response = await identityApi.createIdentity('idp2', {
       reference_id: referenceIdIdp2,
       callback_url: config.IDP2_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [{ namespace, identifier }],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      mode: 3,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -302,15 +264,20 @@ describe('Create identity request with duplicate reference id test', function() 
 
   it('2nd IdP should create identity request with duplicate reference id unsuccessfully', async function() {
     this.timeout(20000);
-    const response = await idpApi.createIdentity('idp2', {
+    const response = await identityApi.createIdentity('idp2', {
       reference_id: referenceIdIdp2,
       callback_url: config.IDP2_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      mode: 3,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -319,7 +286,7 @@ describe('Create identity request with duplicate reference id test', function() 
 
   it('2nd IdP should close identity request successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.closeIdentityRequest('idp2', {
+    const response = await identityApi.closeIdentityRequest('idp2', {
       request_id: requestId2ndIdP,
       callback_url: config.IDP2_CALLBACK_URL,
       reference_id: closeIdentityRequestReferenceId,
@@ -347,15 +314,22 @@ describe('Create identity request with duplicate reference id test', function() 
 
   it('After request duplicate reference id is not in progress (closed) 2nd IdP should create identity request successfully', async function() {
     this.timeout(20000);
-    const response = await idpApi.createIdentity('idp2', {
+    const response = await identityApi.createIdentity('idp2', {
       reference_id: referenceIdIdp2,
       callback_url: config.IDP2_CALLBACK_URL,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       namespace,
       identifier,
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -381,13 +355,13 @@ describe('Create identity request with duplicate reference id test', function() 
     expect(incomingRequest).to.deep.include({
       mode: 3,
       request_id: requestIdAfterCloseRequest,
-      namespace,
-      identifier,
       requester_node_id: 'idp2',
       min_ial: 1.1,
       min_aal: 1,
       data_request_list: [],
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
     expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
       .empty;
@@ -396,11 +370,7 @@ describe('Create identity request with duplicate reference id test', function() 
     requestMessageSalt = incomingRequest.request_message_salt;
 
     expect(incomingRequest.request_message_hash).to.equal(
-      hashRequestMessageForConsent(
-        requestMessage,
-        incomingRequest.initial_salt,
-        incomingRequest.request_id
-      )
+      hash(requestMessage + incomingRequest.request_message_salt)
     );
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
@@ -414,9 +384,10 @@ describe('Create identity request with duplicate reference id test', function() 
 
     requestMessageHash = incomingRequest.request_message_hash;
   });
+
   after(async function() {
     this.timeout(15000);
-    await idpApi.closeIdentityRequest('idp2', {
+    await identityApi.closeIdentityRequest('idp2', {
       request_id: requestIdAfterCloseRequest,
       callback_url: config.IDP2_CALLBACK_URL,
       reference_id: closeIdentityRequestReferenceId,

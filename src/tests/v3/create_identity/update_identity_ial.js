@@ -1,20 +1,21 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
-import { ndidAvailable, idp1Available } from '..';
-import * as idpApi from '../../api/v2/idp';
-import * as ndidApi from '../../api/v2/ndid';
-import * as commonApi from '../../api/v2/common';
-import * as debugApi from '../../api/v2/debug';
-import { idp1EventEmitter } from '../../callback_server';
-import * as db from '../../db';
+import { ndidAvailable, idp1Available } from '../..';
+import * as idpApi from '../../../api/v3/idp';
+import * as identityApi from '../../../api/v3/identity';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as commonApi from '../../../api/v3/common';
+// import * as debugApi from '../../../api/v3/debug';
+import { idp1EventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
   hash,
   wait,
-} from '../../utils';
-import * as config from '../../config';
+} from '../../../utils';
+import * as config from '../../../config';
 
 describe('IdP update identity ial test', function() {
   let namespace;
@@ -31,18 +32,21 @@ describe('IdP update identity ial test', function() {
     if (!idp1Available) {
       this.skip();
     }
-    if (db.idp1Identities[0] == null) {
+
+    const identity = db.idp1Identities.filter(
+      identity => identity.namespace === 'citizen_id' && identity.mode === 3
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
-    const response = await debugApi.query('idp1', {
-      nodeId: 'idp1',
-      fnName: 'GetIdentityInfo',
-      hash_id: hash(namespace + ':' + identifier),
-      node_id: 'idp1',
+    const response = await identityApi.getIdentityIal('idp1', {
+      namespace,
+      identifier,
     });
 
     const responseBody = await response.json();
@@ -60,7 +64,7 @@ describe('IdP update identity ial test', function() {
 
   it('IdP should update identity ial successfully', async function() {
     this.timeout(15000);
-    const response = await idpApi.updateIdentityIal('idp1', {
+    const response = await identityApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: updateIalReferenceId,
@@ -79,19 +83,17 @@ describe('IdP update identity ial test', function() {
   it('Identity ial should be updated successfully', async function() {
     this.timeout(15000);
 
-    const response = await debugApi.query('idp1', {
-      nodeId: 'idp1',
-      fnName: 'GetIdentityInfo',
-      hash_id: hash(namespace + ':' + identifier),
-      node_id: 'idp1',
+    const response = await identityApi.getIdentityIal('idp1', {
+      namespace,
+      identifier,
     });
     const responseBody = await response.json();
     expect(responseBody.ial).to.equal(3);
   });
-
+1
   after(async function() {
     this.timeout(10000);
-    await idpApi.updateIdentityIal('idp1', {
+    await identityApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: uuidv4(),
@@ -125,14 +127,12 @@ describe("IdP update identity ial greater than node's max ial test", function() 
     namespace = db.idp1Identities[0].namespace;
     identifier = db.idp1Identities[0].identifier;
 
-    const responseIdentityInfo = await debugApi.query('idp1', {
-      nodeId: 'idp1',
-      fnName: 'GetIdentityInfo',
-      hash_id: hash(namespace + ':' + identifier),
-      node_id: 'idp1',
+    const response = await identityApi.getIdentityIal('idp1', {
+      namespace,
+      identifier,
     });
 
-    const responseBodyIdentityInfo = await responseIdentityInfo.json();
+    const responseBodyIdentityInfo = await response.json();
     ialBeforeUpdate = responseBodyIdentityInfo.ial;
 
     const responseNodeInfo = await commonApi.getNodeInfo('idp1');
@@ -148,7 +148,7 @@ describe("IdP update identity ial greater than node's max ial test", function() 
 
   it("IdP should update identity ial greater than node's max ial unsuccessfully", async function() {
     this.timeout(15000);
-    const response = await idpApi.updateIdentityIal('idp1', {
+    const response = await identityApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: updateIalReferenceId,
@@ -163,7 +163,7 @@ describe("IdP update identity ial greater than node's max ial test", function() 
 
   after(async function() {
     this.timeout(15000);
-    await idpApi.updateIdentityIal('idp1', {
+    await identityApi.updateIdentityIal('idp1', {
       namespace: namespace,
       identifier: identifier,
       reference_id: uuidv4(),
