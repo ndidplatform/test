@@ -9,16 +9,16 @@ import {
   idp1EventEmitter,
   idp2EventEmitter,
   as1EventEmitter,
-} from '../../callback_server';
-import * as db from '../../db';
+} from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
   createResponseSignature,
   wait,
-} from '../../utils';
-import * as config from '../../config';
-import { idp2Available } from '..';
+} from '../../../utils';
+import * as config from '../../../config';
+import { idp2Available } from '../..';
 
 describe('IdP response request already confirmed test', function() {
   let namespace;
@@ -41,16 +41,25 @@ describe('IdP response request already confirmed test', function() {
 
   before(async function() {
     this.timeout(30000);
-    if (db.idp1Identities[0] == null || db.idp2Identities == null) {
-      throw new Error('No created identity to use');
-    }
+
     if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
+      throw new Error('No created identity to use');
+    }
+
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -116,7 +125,7 @@ describe('IdP response request already confirmed test', function() {
   it('IdP (idp2) should create response (accept) successfully', async function() {
     this.timeout(20000);
     const idp2Identity = db.idp2Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -124,16 +133,9 @@ describe('IdP response request already confirmed test', function() {
       reference_id: idp2ReferenceId,
       callback_url: config.IDP2_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: idp2Identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        idp2Identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: idp2Identity.accessors[0].accessorId,
     });
 
@@ -150,7 +152,7 @@ describe('IdP response request already confirmed test', function() {
   it('IdP (idp1) should get an error callback response when making a response with request that already confirmed by idp2', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -158,16 +160,9 @@ describe('IdP response request already confirmed test', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
 
@@ -221,16 +216,25 @@ describe('IdP response request already closed test', function() {
 
   before(async function() {
     this.timeout(30000);
-    if (db.idp1Identities[0] == null || db.idp2Identities == null) {
-      throw new Error('No created identity to use');
-    }
+
     if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
+      throw new Error('No created identity to use');
+    }
+
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -323,7 +327,7 @@ describe('IdP response request already closed test', function() {
   it('IdP (idp2) should create response (accept) successfully', async function() {
     this.timeout(20000);
     const idp2Identity = db.idp2Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -331,16 +335,9 @@ describe('IdP response request already closed test', function() {
       reference_id: idp2ReferenceId,
       callback_url: config.IDP2_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: idp2Identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        idp2Identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: idp2Identity.accessors[0].accessorId,
     });
 
@@ -394,7 +391,7 @@ describe('IdP response request already closed test', function() {
   it('IdP (idp1) should get an error callback response when making a response with request that already closed', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -402,16 +399,9 @@ describe('IdP response request already closed test', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
 
@@ -462,12 +452,20 @@ describe('IdP response request already timed out test', function() {
 
   before(async function() {
     this.timeout(30000);
-    if (db.idp1Identities[0] == null) {
+
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -532,23 +530,16 @@ describe('IdP response request already timed out test', function() {
   it('IdP (idp1) should get an error callback response when making a response with request that already timed out', async function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
     const responseBody = await response.json();

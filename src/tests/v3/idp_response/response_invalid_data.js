@@ -1,18 +1,18 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
 // import * as commonApi from '../../api/v2/common';
-import { rpEventEmitter, idp1EventEmitter } from '../../callback_server';
-import * as db from '../../db';
+import { rpEventEmitter, idp1EventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
   createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
-import { idp2Available } from '..';
+} from '../../../utils';
+import * as config from '../../../config';
+import { idp2Available } from '../..';
 
 /* ============================== MOVE TO ./error_response =================================
 describe('IdP response invalid ial test', function() {

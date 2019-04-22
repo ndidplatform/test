@@ -1,19 +1,19 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
 // import * as commonApi from '../../api/v2/common';
-import { idp1EventEmitter } from '../../callback_server';
-import * as db from '../../db';
+import { idp1EventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
   createResponseSignature,
   wait,
-} from '../../utils';
-import * as config from '../../config';
-import { idp2Available, as2Available } from '..';
+} from '../../../utils';
+import * as config from '../../../config';
+import { idp2Available, as2Available } from '../..';
 
 describe('IdP response errors tests', function() {
   let namespace;
@@ -32,12 +32,20 @@ describe('IdP response errors tests', function() {
 
   before(async function() {
     this.timeout(30000);
-    if (db.idp1Identities[0] == null) {
+
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -98,16 +106,9 @@ describe('IdP response errors tests', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: 'some-non-existent-request-id',
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
     const responseBody = await response.json();
@@ -126,16 +127,9 @@ describe('IdP response errors tests', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       // accessor_id: identity.accessors[0].accessorId,
     });
     const responseBody = await response.json();
@@ -144,61 +138,61 @@ describe('IdP response errors tests', function() {
     expect(responseBody.error.code).to.equal(20014);
   });
 
-  it('should get an error when making a response without secret (mode 3)', async function() {
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
+  // it('should get an error when making a response without secret (mode 3)', async function() {
+  //   const identity = db.idp1Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier
+  //   );
 
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      ial: 2.3,
-      aal: 3,
-      // secret: identity.accessors[0].secret,
-      status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
-    });
-    const responseBody = await response.json();
+  //   const response = await idpApi.createResponse('idp1', {
+  //     reference_id: idpReferenceId,
+  //     callback_url: config.IDP1_CALLBACK_URL,
+  //     request_id: requestId,
+  //     namespace: createRequestParams.namespace,
+  //     identifier: createRequestParams.identifier,
+  //     ial: 2.3,
+  //     aal: 3,
+  //     // secret: identity.accessors[0].secret,
+  //     status: 'accept',
+  //     signature: createResponseSignature(
+  //       identity.accessors[0].accessorPrivateKey,
+  //       requestMessageHash
+  //     ),
+  //     accessor_id: identity.accessors[0].accessorId,
+  //   });
+  //   const responseBody = await response.json();
 
-    expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20015);
-  });
+  //   expect(response.status).to.equal(400);
+  //   expect(responseBody.error.code).to.equal(20015);
+  // });
 
-  it('should get an error when making a response without signature (mode 3)', async function() {
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
+  // it('should get an error when making a response without signature (mode 3)', async function() {
+  //   const identity = db.idp1Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier
+  //   );
 
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      ial: 2.3,
-      aal: 3,
-      secret: identity.accessors[0].secret,
-      status: 'accept',
-      // signature: createResponseSignature(
-      //   identity.accessors[0].accessorPrivateKey,
-      //   requestMessageHash
-      // ),
-      accessor_id: identity.accessors[0].accessorId,
-    });
-    const responseBody = await response.json();
+  //   const response = await idpApi.createResponse('idp1', {
+  //     reference_id: idpReferenceId,
+  //     callback_url: config.IDP1_CALLBACK_URL,
+  //     request_id: requestId,
+  //     namespace: createRequestParams.namespace,
+  //     identifier: createRequestParams.identifier,
+  //     ial: 2.3,
+  //     aal: 3,
+  //     secret: identity.accessors[0].secret,
+  //     status: 'accept',
+  //     // signature: createResponseSignature(
+  //     //   identity.accessors[0].accessorPrivateKey,
+  //     //   requestMessageHash
+  //     // ),
+  //     accessor_id: identity.accessors[0].accessorId,
+  //   });
+  //   const responseBody = await response.json();
 
-    expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20003);
-  });
+  //   expect(response.status).to.equal(400);
+  //   expect(responseBody.error.code).to.equal(20003);
+  // });
 
   it('should get an error when making a response with non-existent accessor ID (mode 3)', async function() {
     const identity = db.idp1Identities.find(
@@ -210,16 +204,9 @@ describe('IdP response errors tests', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: 'non-existent-accessor-id',
     });
     const responseBody = await response.json();
@@ -228,30 +215,30 @@ describe('IdP response errors tests', function() {
     expect(responseBody.error.code).to.equal(20011);
   });
 
-  it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
+  // it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
+  //   const identity = db.idp1Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier
+  //   );
 
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      ial: 2.3,
-      aal: 3,
-      secret: identity.accessors[0].secret,
-      status: 'accept',
-      signature: 'some-invalid-signature',
-      accessor_id: identity.accessors[0].accessorId,
-    });
-    const responseBody = await response.json();
+  //   const response = await idpApi.createResponse('idp1', {
+  //     reference_id: idpReferenceId,
+  //     callback_url: config.IDP1_CALLBACK_URL,
+  //     request_id: requestId,
+  //     namespace: createRequestParams.namespace,
+  //     identifier: createRequestParams.identifier,
+  //     ial: 2.3,
+  //     aal: 3,
+  //     secret: identity.accessors[0].secret,
+  //     status: 'accept',
+  //     signature: 'some-invalid-signature',
+  //     accessor_id: identity.accessors[0].accessorId,
+  //   });
+  //   const responseBody = await response.json();
 
-    expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20028);
-  });
+  //   expect(response.status).to.equal(400);
+  //   expect(responseBody.error.code).to.equal(20028);
+  // });
 
   it('should get an error when making a response with invalid ial (ial is not in enum) (mode 3)', async function() {
     const identity = db.idp1Identities.find(
@@ -320,16 +307,9 @@ describe('IdP response errors tests', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
     expect(response.status).to.equal(400);
@@ -338,42 +318,42 @@ describe('IdP response errors tests', function() {
     expect(responseBody.error.code).to.equal(20060);
   });
 
-  it('should get an error when making a response with invalid secret', async function() {
-    this.timeout(20000);
+  // it('should get an error when making a response with invalid secret', async function() {
+  //   this.timeout(20000);
 
-    if (!idp2Available || db.idp2Identities.length === 0) {
-      this.skip();
-    }
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-    const identityIdP2 = db.idp2Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
+  //   if (!idp2Available || db.idp2Identities.length === 0) {
+  //     this.skip();
+  //   }
+  //   const identity = db.idp1Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier
+  //   );
+  //   const identityIdP2 = db.idp2Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier
+  //   );
 
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      ial: 2.3,
-      aal: 3,
-      secret: identityIdP2.accessors[0].secret,
-      status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
-    });
-    expect(response.status).to.equal(400);
+  //   const response = await idpApi.createResponse('idp1', {
+  //     reference_id: idpReferenceId,
+  //     callback_url: config.IDP1_CALLBACK_URL,
+  //     request_id: requestId,
+  //     namespace: createRequestParams.namespace,
+  //     identifier: createRequestParams.identifier,
+  //     ial: 2.3,
+  //     aal: 3,
+  //     secret: identityIdP2.accessors[0].secret,
+  //     status: 'accept',
+  //     signature: createResponseSignature(
+  //       identity.accessors[0].accessorPrivateKey,
+  //       requestMessageHash
+  //     ),
+  //     accessor_id: identity.accessors[0].accessorId,
+  //   });
+  //   expect(response.status).to.equal(400);
 
-    const responseBody = await response.json();
-    expect(responseBody.error.code).to.equal(20027);
-  });
+  //   const responseBody = await response.json();
+  //   expect(responseBody.error.code).to.equal(20027);
+  // });
 
   it('should get an error when IdP update identity invalid ial (ial is not in enum)', async function() {
     this.timeout(15000);
@@ -418,12 +398,20 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
 
   before(async function() {
     this.timeout(30000);
-    if (db.idp1Identities[0] == null) {
+
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -480,6 +468,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
 
   it("should get an error response when making a response with ial less than request's min_ial", async function() {
     this.timeout(10000);
+
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
@@ -489,16 +478,11 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 1.1,
       aal: 3,
       secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
+
       accessor_id: identity.accessors[0].accessorId,
     });
     const responseBodyErrorCallback = await responseErrorCalback.json();
@@ -518,16 +502,9 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
 
@@ -570,12 +547,20 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
 
   before(async function() {
     this.timeout(30000);
-    if (db.idp1Identities[0] == null) {
+
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -641,16 +626,9 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 1,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
     const responseBodyErrorCallback = await responseErrorCalback.json();
@@ -669,16 +647,9 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
 
@@ -727,12 +698,19 @@ describe('IdP2 making response with request does not concern IdP2 (mode 1)', fun
       this.skip();
     }
 
-    if (db.idp1Identities[0] == null) {
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -790,16 +768,9 @@ describe('IdP2 making response with request does not concern IdP2 (mode 1)', fun
       reference_id: idpReferenceId,
       callback_url: config.IDP2_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
     const responseBodyErrorCallback = await response.json();
@@ -841,12 +812,19 @@ describe('IdP2 making response with request does not concern IdP2 (mode 3)', fun
       this.skip();
     }
 
-    if (db.idp1Identities[0] == null) {
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -904,16 +882,9 @@ describe('IdP2 making response with request does not concern IdP2 (mode 3)', fun
       reference_id: idpReferenceId,
       callback_url: config.IDP2_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
       accessor_id: identity.accessors[0].accessorId,
     });
     const responseBodyErrorCallback = await response.json();
