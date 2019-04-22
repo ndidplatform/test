@@ -1,25 +1,25 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
-import * as ndidApi from '../../api/v2/ndid';
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
-import * as commonApi from '../../api/v2/common';
+import * as ndidApi from '../../../api/v3/ndid';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
+import * as commonApi from '../../../api/v3/common';
 
-import { ndidAvailable, as1Available, idp1Available } from '..';
+import { ndidAvailable, as1Available, idp1Available } from '../..';
 import {
   as1EventEmitter,
   idp1EventEmitter,
   rpEventEmitter,
-} from '../../callback_server';
+} from '../../../callback_server';
 import {
   createEventPromise,
   generateReferenceId,
-  hashRequestMessageForConsent,
   wait,
-} from '../../utils';
-import * as config from '../../config';
+  hash,
+} from '../../../utils';
+import * as config from '../../../config';
 
 describe('NDID disable service destination test', function() {
   const namespace = 'citizen_id';
@@ -75,7 +75,7 @@ describe('NDID disable service destination test', function() {
     const responseGetServices = await commonApi.getServices('ndid1');
     const responseBody = await responseGetServices.json();
     alreadyAddedService = responseBody.find(
-      (service) => service.service_id === 'test_disable_service_destination'
+      service => service.service_id === 'test_disable_service_destination'
     );
   });
 
@@ -104,7 +104,7 @@ describe('NDID disable service destination test', function() {
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(
-      (service) => service.service_id === 'test_disable_service_destination'
+      service => service.service_id === 'test_disable_service_destination'
     );
     expect(service).to.deep.equal({
       service_id: 'test_disable_service_destination',
@@ -132,6 +132,7 @@ describe('NDID disable service destination test', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS1_CALLBACK_URL,
+      supported_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -290,7 +291,7 @@ describe('NDID disable service destination after RP create request test', functi
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -303,10 +304,9 @@ describe('NDID disable service destination after RP create request test', functi
       namespace: createRequestParams.namespace,
       identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -334,12 +334,9 @@ describe('NDID disable service destination after RP create request test', functi
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: 'Some signature',
     });
     expect(response.status).to.equal(202);
 

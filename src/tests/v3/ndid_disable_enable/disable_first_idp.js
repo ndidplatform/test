@@ -1051,7 +1051,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
-        mode: 2,
+        mode: 3,
         namespace,
         identifier,
         idp_id_list: [],
