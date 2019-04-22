@@ -1,17 +1,19 @@
 import { expect } from 'chai';
+import uuidv4 from 'uuid/v4';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
 // import * as commonApi from '../../api/v2/common';
-import { idp1EventEmitter, as1EventEmitter } from '../../callback_server';
-import * as db from '../../db';
+import { idp1EventEmitter, as1EventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+  hash,
+  wait,
+} from '../../../utils';
+import * as config from '../../../config';
 
 describe('AS data response errors', function() {
   let namespace;
@@ -38,12 +40,21 @@ describe('AS data response errors', function() {
 
   before(async function() {
     this.timeout(30000);
-    if (db.idp1Identities[0] == null) {
+
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
+    //referenceGroupCode = identity[0].referenceGroupCode;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -108,27 +119,15 @@ describe('AS data response errors', function() {
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;
 
-    const identity = db.idp1Identities.find(
-      (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
     await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: identity[0].accessors[0].accessorId,
     });
-
     await dataRequestReceivedPromise.promise;
   });
 
@@ -177,7 +176,14 @@ describe('AS data response errors', function() {
     expect(responseBody.error.code).to.equal(20037);
   });
 
-  after(function() {
+  after(async function() {
+    this.timeout(10000);
+    await rpApi.closeRequest('rp1', {
+      reference_id: uuidv4(),
+      callback_url: config.RP_CALLBACK_URL,
+      request_id: requestId,
+    });
+
     idp1EventEmitter.removeAllListeners('callback');
     as1EventEmitter.removeAllListeners('callback');
   });

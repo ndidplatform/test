@@ -1,4 +1,4 @@
-import { as1Available, as2Available } from '..';
+import { as1Available, as2Available } from '../..';
 
 describe('(AS) Data response tests', function() {
   before(function() {

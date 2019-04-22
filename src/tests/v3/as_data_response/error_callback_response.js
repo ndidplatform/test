@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 
-import { as1Available, ndidAvailable } from '../';
-import * as asApi from '../../api/v2/as';
-import * as ndidApi from '../../api/v2/ndid';
-import { as1EventEmitter } from '../../callback_server';
-import { createEventPromise, generateReferenceId, wait } from '../../utils';
-import * as config from '../../config';
+import { as1Available, ndidAvailable } from '../..';
+import * as asApi from '../../../api/v3/as';
+import * as ndidApi from '../../../api/v3/ndid';
+import { as1EventEmitter } from '../../../callback_server';
+import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import * as config from '../../../config';
 
 describe('AS error callback response tests', function() {
   const customerAssetsInfoReferenceId = generateReferenceId(); //NDID is not registered this service
@@ -52,6 +52,7 @@ describe('AS error callback response tests', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS1_CALLBACK_URL,
+      supported_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 
@@ -76,6 +77,7 @@ describe('AS error callback response tests', function() {
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS1_CALLBACK_URL,
+      supported_namespace_list: ['citizen_id'],
     });
     expect(response.status).to.equal(202);
 

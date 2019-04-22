@@ -1,23 +1,23 @@
 import { expect } from 'chai';
 
-import * as rpApi from '../../api/v2/rp';
-import * as idpApi from '../../api/v2/idp';
-import * as asApi from '../../api/v2/as';
+import * as rpApi from '../../../api/v3/rp';
+import * as idpApi from '../../../api/v3/idp';
+import * as asApi from '../../../api/v3/as';
 import {
   rpEventEmitter,
   idp1EventEmitter,
   as1EventEmitter,
   as2EventEmitter,
-} from '../../callback_server';
-import * as db from '../../db';
+} from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
   createResponseSignature,
   wait,
-} from '../../utils';
-import * as config from '../../config';
-import { as2Available } from '..';
+} from '../../../utils';
+import * as config from '../../../config';
+import { as2Available } from '../..';
 
 describe('AS response data request already closed test', function() {
   let namespace;
@@ -45,12 +45,20 @@ describe('AS response data request already closed test', function() {
 
   before(async function() {
     this.timeout(20000);
-    if (db.idp1Identities[0] == null) {
+
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -118,23 +126,16 @@ describe('AS response data request already closed test', function() {
     const responseBody = await response.json();
     requestId = responseBody.request_id;
     await createRequestResultPromise.promise;
-    const incomingRequest = await incomingRequestPromise.promise;
-    const identity = db.idp1Identities[0];
+    await incomingRequestPromise.promise;
+    //const identity = db.idp1Identities[0];
     await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        incomingRequest.request_message_hash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: identity[0].accessors[0].accessorId,
     });
     await responseResultPromise.promise;
   });
@@ -220,13 +221,21 @@ describe('AS response data request already timed out test', function() {
   let requestId;
 
   before(async function() {
-    this.timeout(20000);
-    if (db.idp1Identities[0] == null) {
+    this.timeout(50000);
+
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -294,23 +303,16 @@ describe('AS response data request already timed out test', function() {
     const responseBody = await response.json();
     requestId = responseBody.request_id;
     await createRequestResultPromise.promise;
-    const incomingRequest = await incomingRequestPromise.promise;
-    const identity = db.idp1Identities[0];
+    await incomingRequestPromise.promise;
+    //const identity = db.idp1Identities[0];
     await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        incomingRequest.request_message_hash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: identity[0].accessors[0].accessorId,
     });
     let responseResult = await responseResultPromise.promise;
     if (responseResult.success == false) {
@@ -392,16 +394,25 @@ describe('AS response data request already completed test', function() {
 
   before(async function() {
     this.timeout(20000);
-    if (db.idp1Identities[0] == null) {
-      throw new Error('No created identity to use');
-    }
+
     if (!as2Available) {
       this.test.parent.pending = true;
       this.skip();
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
+      throw new Error('No created identity to use');
+    }
+
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -486,23 +497,16 @@ describe('AS response data request already completed test', function() {
     const responseBody = await response.json();
     requestId = responseBody.request_id;
     await createRequestResultPromise.promise;
-    const incomingRequest = await incomingRequestPromise.promise;
-    const identity = db.idp1Identities[0];
+    await incomingRequestPromise.promise;
+    //const identity = db.idp1Identities[0];
     await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        incomingRequest.request_message_hash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: identity[0].accessors[0].accessorId,
     });
     await responseResultPromise.promise;
   });
@@ -588,7 +592,6 @@ describe('AS response data request already completed test', function() {
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
