@@ -11,6 +11,7 @@ require('./revoke_accessor');
 require('./revoke_identity_association');
 require('./add_identity');
 require('./create_request');
-require('./ndid');
 require('./dpki');
+require('./ndid');
 require('./token');
+require('./ndid_disable_enable');

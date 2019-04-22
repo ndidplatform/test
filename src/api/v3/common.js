@@ -30,10 +30,10 @@ export function getServices(nodeId) {
   return httpGet(`${apiBaseUrl}/utility/services`);
 }
 
-// export function getASByServiceId(nodeId, serviceId) {
-//   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
-//   return httpGet(`${apiBaseUrl}/utility/as/${serviceId}`);
-// }
+export function getASByServiceId(nodeId, serviceId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
+  return httpGet(`${apiBaseUrl}/utility/as/${serviceId}`);
+}
 
 export function getServiceDataSchema(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
