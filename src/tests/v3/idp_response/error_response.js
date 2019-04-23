@@ -41,7 +41,6 @@ describe('IdP response errors tests', function() {
 
   before(async function() {
     this.timeout(30000);
-    await wait(2000);
     let identity = db.idp1Identities.filter(
       identity =>
         identity.namespace === 'citizen_id' &&
