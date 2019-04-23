@@ -153,7 +153,7 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
     });
   });
 
-  describe('IdP (idp1) should response with new accessor id (mode 2 ) successfully', function() {
+  describe('IdP (idp1) should response with new accessor id (mode 2) successfully', function() {
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
