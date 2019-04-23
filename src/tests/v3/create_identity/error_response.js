@@ -2,10 +2,10 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import * as idpApi from '../../api/v2/idp';
-import * as db from '../../db';
-import { generateReferenceId } from '../../utils';
-import * as config from '../../config';
+import * as identityApi from '../../../api/v3/identity';
+import * as db from '../../../db';
+import { generateReferenceId } from '../../../utils';
+import * as config from '../../../config';
 
 describe('Create identity errors', function() {
   let namespace;
@@ -24,26 +24,46 @@ describe('Create identity errors', function() {
   const referenceId = generateReferenceId();
 
   before(function() {
-    if (db.idp1Identities[0] == null) {
+    let identity = db.idp1Identities.filter(
+      identity =>
+        identity.namespace === 'citizen_id' &&
+        identity.mode === 3 &&
+        !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
-    accessorId = db.idp1Identities[0].accessors[0].accessorId;
+    namespace = identity[0].namespace;
+    identifier = identity[0].identifier;
+    accessorId = identity[0].accessors[0].accessorId;
+
+    // if (db.idp1Identities[0] == null) {
+    //   throw new Error('No created identity to use');
+    // }
+
+    // namespace = db.idp1Identities[0].namespace;
+    // identifier = db.idp1Identities[0].identifier;
+    // accessorId = db.idp1Identities[0].accessors[0].accessorId;
   });
 
   it('IdP should get an error when creating duplicate identity (at IdP where already created an idenity for this user)', async function() {
     this.timeout(10000);
-    const response = await idpApi.createIdentity('idp1', {
+    const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -52,15 +72,20 @@ describe('Create identity errors', function() {
 
   it('IdP should get an error when creating identity with duplicate accessor_id', async function() {
     this.timeout(10000);
-    const response = await idpApi.createIdentity('idp1', {
+    const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier: uuidv4(),
+      identity_list: [
+        {
+          namespace,
+          identifier: uuidv4(),
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       accessor_id: accessorId,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -74,15 +99,20 @@ describe('Create identity errors', function() {
     // const keypair = forge.pki.rsa.generateKeyPair(2048);
     // const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
-    const response = await idpApi.createIdentity('idp1', {
+    const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      mode: 3,
     });
 
     const responseBody = await response.json();
@@ -92,15 +122,20 @@ describe('Create identity errors', function() {
 
   it('IdP should get an error when using invalid format accessor public key', async function() {
     this.timeout(10000);
-    const response = await idpApi.createIdentity('idp1', {
+    const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: 'aa',
       //accessor_id,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -114,15 +149,15 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
 6KkEXSmW7kSHrAKXBCDTMVt5HpadpRQt8Qzc3xfSGunAxKS+lGloPw==
 -----END PUBLIC KEY-----
 `; // EC secp256k1 pub key
-    const response = await idpApi.createIdentity('idp1', {
+    const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [{ namespace, identifier }],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -133,15 +168,20 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
     this.timeout(30000);
     // const keypair = forge.pki.rsa.generateKeyPair(2047);
     // const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
-    const response = await idpApi.createIdentity('idp1', {
+    const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKeyLengthShorterThan2048Bit,
       //accessor_id,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(400);

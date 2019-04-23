@@ -2,12 +2,13 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import { idp2Available } from '..';
-import * as idpApi from '../../api/v2/idp';
-import * as commonApi from '../../api/v2/common';
-import * as rpApi from '../../api/v2/rp';
-import { idp1EventEmitter, idp2EventEmitter } from '../../callback_server';
-import * as db from '../../db';
+import { idp2Available } from '../..';
+import * as idpApi from '../../../api/v3/idp';
+import * as identityApi from '../../../api/v3/identity';
+import * as commonApi from '../../../api/v3/common';
+import * as rpApi from '../../../api/v3/rp';
+import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
@@ -15,10 +16,10 @@ import {
   hashRequestMessageForConsent,
   wait,
   createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+} from '../../../utils';
+import * as config from '../../../config';
 
-describe('Reject 2nd IdP create identity test', function() {
+describe('Reject 2nd IdP create identity (mode 3) test', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
   const createIdentityRequestMessage =
@@ -41,14 +42,15 @@ describe('Reject 2nd IdP create identity test', function() {
   const incomingRequestPromise = createEventPromise(); //1st IDP
   const createIdentityRequestResultPromise = createEventPromise(); //1st IDP
   const createIdentityRequestResultPromise2 = createEventPromise(); //2nd IDP
-  const accessorSignPromise = createEventPromise(); //1s IDP
-  const accessorSignPromise2 = createEventPromise(); //2nd IDP
   const IdP2createIdentityResultPromise = createEventPromise(); //2nd IDP
   const responseResultPromise = createEventPromise();
+  const accessorEncryptPromise = createEventPromise();
 
   //1st IdP
   let requestId;
   let accessorId;
+  let referenceGroupCode;
+  let responseAccessorId;
 
   //2nd IdP
   let requestId2ndIdPCreateIdentity;
@@ -56,24 +58,12 @@ describe('Reject 2nd IdP create identity test', function() {
 
   let requestMessageHash;
 
-  db.createIdentityReferences.push({
-    referenceId,
-    accessorPrivateKey,
-  });
-
-  db.createIdentityReferences.push({
-    referenceId: referenceIdIdp2,
-    accessorPrivateKey: accessorPrivateKey2,
-  });
-
   before(function() {
     if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
     }
-    if (db.idp1Identities[0] == null) {
-      throw new Error('No created identity to use');
-    }
+
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
@@ -98,9 +88,9 @@ describe('Reject 2nd IdP create identity test', function() {
       }
     });
 
-    idp1EventEmitter.on('accessor_sign_callback', function(callbackData) {
-      if (callbackData.reference_id === referenceId) {
-        accessorSignPromise.resolve(callbackData);
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId2ndIdPCreateIdentity) {
+        accessorEncryptPromise.resolve(callbackData);
       }
     });
 
@@ -119,69 +109,44 @@ describe('Reject 2nd IdP create identity test', function() {
         IdP2createIdentityResultPromise.resolve(callbackData);
       }
     });
-
-    idp2EventEmitter.on('accessor_sign_callback', function(callbackData) {
-      if (callbackData.reference_id === referenceIdIdp2) {
-        accessorSignPromise2.resolve(callbackData);
-      }
-    });
   });
 
-  it('1st IdP should create identity request successfully', async function() {
+  it('1st IdP should create identity request (mode 3) successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.createIdentity('idp1', {
+    const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [{ namespace, identifier }],
+
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    // expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
 
-    requestId = responseBody.request_id;
+    // requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
 
-    const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
-    expect(createIdentityRequestResult).to.deep.include({
-      reference_id: referenceId,
-      request_id: requestId,
-      exist: false,
-      accessor_id: accessorId,
-      success: true,
-    });
-    expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-  });
-
-  it('1st IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
-    const sid = `${namespace}:${identifier}`;
-    const sid_hash = hash(sid);
-
-    const accessorSignParams = await accessorSignPromise.promise;
-    expect(accessorSignParams).to.deep.equal({
-      type: 'accessor_sign',
-      node_id: 'idp1',
-      reference_id: referenceId,
-      accessor_id: accessorId,
-      sid,
-      sid_hash,
-      hash_method: 'SHA256',
-      key_type: 'RSA',
-      sign_method: 'RSA-SHA256',
-      padding: 'PKCS#1v1.5',
-    });
+    // const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
+    // expect(createIdentityRequestResult).to.deep.include({
+    //   reference_id: referenceId,
+    //   request_id: requestId,
+    //   exist: false,
+    //   accessor_id: accessorId,
+    //   success: true,
+    // });
+    // expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
+    // const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
+    //   ':'
+    // );
+    // expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    // expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('1st IdP Identity should be created successfully', async function() {
@@ -189,12 +154,14 @@ describe('Reject 2nd IdP create identity test', function() {
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
-      request_id: requestId,
+      // request_id: requestId,
       success: true,
     });
-    expect(createIdentityResult.secret).to.be.a('string').that.is.not.empty;
 
-    const secret = createIdentityResult.secret;
+    expect(createIdentityResult.reference_group_code).to.be.a('string').that.is
+      .not.empty;
+
+    referenceGroupCode = createIdentityResult.reference_group_code;
 
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
@@ -202,9 +169,17 @@ describe('Reject 2nd IdP create identity test', function() {
     });
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
-    expect(idpNode).to.exist;
+    expect(idpNode).to.not.be.undefined;
+    expect(idpNodes)
+      .to.be.an('array')
+      .that.to.have.lengthOf(1);
+    expect(idpNode.mode_list)
+      .to.be.an('array')
+      .that.include(2, 3);
 
     db.idp1Identities.push({
+      referenceGroupCode,
+      mode: 3,
       namespace,
       identifier,
       accessors: [
@@ -212,24 +187,28 @@ describe('Reject 2nd IdP create identity test', function() {
           accessorId,
           accessorPrivateKey,
           accessorPublicKey,
-          secret,
         },
       ],
     });
   });
 
-  it('2nd IdP should create identity request successfully', async function() {
+  it('2nd IdP should create identity request (mode 3) successfully', async function() {
     this.timeout(20000);
-    const response = await idpApi.createIdentity('idp2', {
+    const response = await identityApi.createIdentity('idp2', {
       reference_id: referenceIdIdp2,
       callback_url: config.IDP2_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
       request_message: createIdentityRequestMessage,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -249,29 +228,9 @@ describe('Reject 2nd IdP create identity test', function() {
     });
   });
 
-  it('2nd IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
-    const sid = `${namespace}:${identifier}`;
-    const sid_hash = hash(sid);
-
-    const accessorSignParams = await accessorSignPromise2.promise;
-    expect(accessorSignParams).to.deep.equal({
-      type: 'accessor_sign',
-      node_id: 'idp2',
-      reference_id: referenceIdIdp2,
-      accessor_id: accessorId2ndIdPCreateIdentity,
-      sid,
-      sid_hash,
-      hash_method: 'SHA256',
-      key_type: 'RSA',
-      sign_method: 'RSA-SHA256',
-      padding: 'PKCS#1v1.5',
-    });
-  });
-
   it('2nd IdP should get request_id for the unfinished (not closed or timed out) create identity request with reference_id', async function() {
     this.timeout(10000);
-    const response = await idpApi.getRequestIdByReferenceId('idp2', {
+    const response = await identityApi.getRequestIdByReferenceId('idp2', {
       reference_id: referenceIdIdp2,
     });
     const responseBody = await response.json();
@@ -288,19 +247,17 @@ describe('Reject 2nd IdP create identity test', function() {
     expect(incomingRequest).to.deep.include({
       mode: 3,
       request_id: requestId2ndIdPCreateIdentity,
-      namespace,
-      identifier,
       request_message: createIdentityRequestMessage,
-      request_message_hash: hashRequestMessageForConsent(
-        createIdentityRequestMessage,
-        incomingRequest.initial_salt,
-        requestId2ndIdPCreateIdentity
+      request_message_hash: hash(
+        createIdentityRequestMessage + incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp2',
       min_ial: 1.1,
       min_aal: 1,
       data_request_list: [],
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
@@ -321,26 +278,43 @@ describe('Reject 2nd IdP create identity test', function() {
         identity.namespace === namespace && identity.identifier === identifier
     );
 
+    responseAccessorId = identity.accessors[0].accessorId;
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: idp1RejectRequestReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId2ndIdPCreateIdentity,
-      namespace,
-      identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'reject',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await accessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: responseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idp1RejectRequestReferenceId,
+      request_id: requestId2ndIdPCreateIdentity,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
       reference_id: idp1RejectRequestReferenceId,
       request_id: requestId2ndIdPCreateIdentity,
       success: true,
@@ -356,6 +330,14 @@ describe('Reject 2nd IdP create identity test', function() {
       success: false,
     });
     expect(createIdentityResult.error.code).to.equal(10016);
+
+    const response = await commonApi.getRelevantIdpNodesBySid('idp2', {
+      namespace,
+      identifier,
+    });
+    const idpNodes = await response.json();
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
+    expect(idpNode).to.be.undefined;
   });
 
   it('Special request status for create identity should be rejected and closed', async function() {
@@ -391,7 +373,7 @@ describe('Reject 2nd IdP create identity test', function() {
 
   it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
     this.timeout(10000);
-    const response = await idpApi.getRequestIdByReferenceId('idp1', {
+    const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceIdIdp2,
     });
     expect(response.status).to.equal(404);

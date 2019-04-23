@@ -241,10 +241,10 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
 
     responseAccessorId = identity.accessors[0].accessorId;
 
-    db.createResponseReferences.push({
-      referenceId: idpReferenceId,
-      accessorPrivateKey: identity.accessors[0].accessorPrivateKey,
-    });
+    // db.createResponseReferences.push({
+    //   referenceId: idpReferenceId,
+    //   accessorPrivateKey: identity.accessors[0].accessorPrivateKey,
+    // });
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,

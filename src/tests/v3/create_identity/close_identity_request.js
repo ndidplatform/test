@@ -2,11 +2,12 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import { idp2Available } from '..';
-import * as idpApi from '../../api/v2/idp';
-import * as commonApi from '../../api/v2/common';
-import { idp1EventEmitter, idp2EventEmitter } from '../../callback_server';
-import * as db from '../../db';
+import { idp2Available } from '../..';
+import * as idpApi from '../../../api/v3/idp';
+import * as identityApi from '../../../api/v3/identity';
+import * as commonApi from '../../../api/v3/common';
+import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
+import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
@@ -14,10 +15,10 @@ import {
   wait,
   hashRequestMessageForConsent,
   createResponseSignature,
-} from '../../utils';
-import * as config from '../../config';
+} from '../../../utils';
+import * as config from '../../../config';
 
-describe('2nd IdP close identity request test', function() {
+describe('2nd IdP close identity request (mode 3) test', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
 
@@ -47,6 +48,8 @@ describe('2nd IdP close identity request test', function() {
   //1st IdP
   let requestId;
   let accessorId;
+  let referenceGroupCode;
+  let responseAccessorId;
 
   //2nd IdP
   let requestId2ndIdP;
@@ -56,24 +59,12 @@ describe('2nd IdP close identity request test', function() {
   let requestMessageSalt;
   let requestMessageHash;
 
-  db.createIdentityReferences.push({
-    referenceId,
-    accessorPrivateKey,
-  });
-
-  db.createIdentityReferences.push({
-    referenceId: referenceIdIdp2,
-    accessorPrivateKey: accessorPrivateKey2,
-  });
-
   before(function() {
     if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
     }
-    if (db.idp1Identities[0] == null) {
-      throw new Error('No created identity to use');
-    }
+
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
@@ -127,75 +118,87 @@ describe('2nd IdP close identity request test', function() {
 
   it('1st IdP should create identity request successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.createIdentity('idp1', {
+    const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    // expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
 
-    requestId = responseBody.request_id;
+    // requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
 
-    const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
-    expect(createIdentityRequestResult).to.deep.include({
-      reference_id: referenceId,
-      request_id: requestId,
-      exist: false,
-      accessor_id: accessorId,
-      success: true,
-    });
+    // const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
+    // expect(createIdentityRequestResult).to.deep.include({
+    //   reference_id: referenceId,
+    //   request_id: requestId,
+    //   exist: false,
+    //   accessor_id: accessorId,
+    //   success: true,
+    // });
   });
 
-  it('1st IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
-    const sid = `${namespace}:${identifier}`;
-    const sid_hash = hash(sid);
+  // it('1st IdP should receive accessor sign callback with correct data', async function() {
+  //   this.timeout(15000);
+  //   const sid = `${namespace}:${identifier}`;
+  //   const sid_hash = hash(sid);
 
-    const accessorSignParams = await accessorSignPromise.promise;
-    expect(accessorSignParams).to.deep.equal({
-      type: 'accessor_sign',
-      node_id: 'idp1',
-      reference_id: referenceId,
-      accessor_id: accessorId,
-      sid,
-      sid_hash,
-      hash_method: 'SHA256',
-      key_type: 'RSA',
-      sign_method: 'RSA-SHA256',
-      padding: 'PKCS#1v1.5',
-    });
-  });
+  //   const accessorSignParams = await accessorSignPromise.promise;
+  //   expect(accessorSignParams).to.deep.equal({
+  //     type: 'accessor_sign',
+  //     node_id: 'idp1',
+  //     reference_id: referenceId,
+  //     accessor_id: accessorId,
+  //     sid,
+  //     sid_hash,
+  //     hash_method: 'SHA256',
+  //     key_type: 'RSA',
+  //     sign_method: 'RSA-SHA256',
+  //     padding: 'PKCS#1v1.5',
+  //   });
+  // });
 
   it('1st IdP Identity should be created successfully', async function() {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
       reference_id: referenceId,
-      request_id: requestId,
+      // request_id: requestId,
       success: true,
     });
-    expect(createIdentityResult.secret).to.be.a('string').that.is.not.empty;
+    expect(createIdentityResult.reference_group_code).to.be.a('string').that.is
+      .not.empty;
 
-    const secret = createIdentityResult.secret;
+    referenceGroupCode = createIdentityResult.reference_group_code;
 
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
     });
+
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
-    expect(idpNode).to.exist;
+    expect(idpNode).to.not.be.undefined;
+    expect(idpNode.mode_list)
+      .to.be.an('array')
+      .that.include(2, 3);
 
     db.idp1Identities.push({
+      referenceGroupCode,
+      mode: 3,
       namespace,
       identifier,
       accessors: [
@@ -203,7 +206,6 @@ describe('2nd IdP close identity request test', function() {
           accessorId,
           accessorPrivateKey,
           accessorPublicKey,
-          secret,
         },
       ],
     });
@@ -211,15 +213,20 @@ describe('2nd IdP close identity request test', function() {
 
   it('2nd IdP should create identity request successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.createIdentity('idp2', {
+    const response = await identityApi.createIdentity('idp2', {
       reference_id: referenceIdIdp2,
       callback_url: config.IDP2_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      mode: 3,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -239,34 +246,17 @@ describe('2nd IdP close identity request test', function() {
     });
 
     db.idp2Identities.push({
+      referenceGroupCode,
+      mode: 3,
       namespace,
       identifier,
       accessors: [
         {
+          accessorId,
           accessorPrivateKey,
           accessorPublicKey,
         },
       ],
-    });
-  });
-
-  it('2nd IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
-    const sid = `${namespace}:${identifier}`;
-    const sid_hash = hash(sid);
-
-    const accessorSignParams = await accessorSignPromise2.promise;
-    expect(accessorSignParams).to.deep.equal({
-      type: 'accessor_sign',
-      node_id: 'idp2',
-      reference_id: referenceIdIdp2,
-      accessor_id: accessorId2ndIdP,
-      sid,
-      sid_hash,
-      hash_method: 'SHA256',
-      key_type: 'RSA',
-      sign_method: 'RSA-SHA256',
-      padding: 'PKCS#1v1.5',
     });
   });
 
@@ -276,13 +266,13 @@ describe('2nd IdP close identity request test', function() {
     expect(incomingRequest).to.deep.include({
       mode: 3,
       request_id: requestId2ndIdP,
-      namespace,
-      identifier,
       requester_node_id: 'idp2',
       min_ial: 1.1,
       min_aal: 1,
       data_request_list: [],
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
     expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
       .empty;
@@ -291,11 +281,7 @@ describe('2nd IdP close identity request test', function() {
     requestMessageSalt = incomingRequest.request_message_salt;
 
     expect(incomingRequest.request_message_hash).to.equal(
-      hashRequestMessageForConsent(
-        requestMessage,
-        incomingRequest.initial_salt,
-        incomingRequest.request_id
-      )
+      hash(requestMessage + incomingRequest.request_message_salt)
     );
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
@@ -312,7 +298,7 @@ describe('2nd IdP close identity request test', function() {
 
   it('2nd IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.getRequestIdByReferenceId('idp2', {
+    const response = await identityApi.getRequestIdByReferenceId('idp2', {
       reference_id: referenceIdIdp2,
     });
     const responseBody = await response.json();
@@ -325,7 +311,7 @@ describe('2nd IdP close identity request test', function() {
 
   it('2nd IdP should close identity request successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.closeIdentityRequest('idp2', {
+    const response = await identityApi.closeIdentityRequest('idp2', {
       request_id: requestId2ndIdP,
       callback_url: config.IDP2_CALLBACK_URL,
       reference_id: closeIdentityRequestReferenceId,
@@ -357,27 +343,17 @@ describe('2nd IdP close identity request test', function() {
       identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
-    let latestAccessor;
-    if (identity) {
-      latestAccessor = identity.accessors.length - 1;
-    } else {
-      throw new Error('Identity not found');
-    }
+
+    responseAccessorId = identity.accessors[0].accessorId;
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId2ndIdP,
-      namespace,
-      identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[latestAccessor].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[latestAccessor].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[latestAccessor].accessorId,
+      accessor_id: responseAccessorId,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
@@ -431,7 +407,7 @@ describe('2nd IdP close identity request test', function() {
   it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
     this.timeout(10000);
     await wait(2000); //wait for api clean up reference id
-    const response = await idpApi.getRequestIdByReferenceId('idp2', {
+    const response = await identityApi.getRequestIdByReferenceId('idp2', {
       reference_id: referenceIdIdp2,
     });
     expect(response.status).to.equal(404);
@@ -456,6 +432,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   const accessorSignPromise = createEventPromise(); // 2nd IdP
   const incomingRequestPromise = createEventPromise(); // 1st IdP
   const responseResultPromise = createEventPromise(); // 1st IdP
+  const accessorEncryptPromise = createEventPromise(); // 1st IdP
   const createIdentityResultPromise = createEventPromise(); // 2nd IdP
 
   let requestId;
@@ -463,11 +440,14 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
   let requestMessage;
   let requestMessageSalt;
   let requestMessageHash;
+  let responseAccessorId;
+  let referenceGroupCode;
 
   before(function() {
     if (!idp2Available) {
       this.skip();
     }
+
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -494,6 +474,12 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       }
     });
 
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        accessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
     idp2EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_identity_request_result' &&
@@ -507,12 +493,6 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
         createIdentityResultPromise.resolve(callbackData);
       }
     });
-
-    idp2EventEmitter.on('accessor_sign_callback', function(callbackData) {
-      if (callbackData.reference_id === referenceId) {
-        accessorSignPromise.resolve(callbackData);
-      }
-    });
   });
 
   it('2nd IdP should create identity request successfully', async function() {
@@ -523,21 +503,22 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
     );
     const accessorPublicKey = identity.accessors[0].accessorPublicKey;
     const accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+    referenceGroupCode = identity.referenceGroupCode;
 
-    db.createIdentityReferences.push({
-      referenceId,
-      accessorPrivateKey,
-    });
-
-    const response = await idpApi.createIdentity('idp2', {
+    const response = await identityApi.createIdentity('idp2', {
       reference_id: referenceId,
       callback_url: config.IDP2_CALLBACK_URL,
-      namespace,
-      identifier,
+      identity_list: [
+        {
+          namespace,
+          identifier,
+        },
+      ],
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       // accessor_id: accessorId,
       ial: 2.3,
+      mode: 3,
     });
 
     const responseBody = await response.json();
@@ -565,29 +546,9 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('2nd IdP should receive accessor sign callback with correct data', async function() {
-    this.timeout(15000);
-    const sid = `${namespace}:${identifier}`;
-    const sid_hash = hash(sid);
-
-    const accessorSignParams = await accessorSignPromise.promise;
-    expect(accessorSignParams).to.deep.equal({
-      type: 'accessor_sign',
-      node_id: 'idp2',
-      reference_id: referenceId,
-      accessor_id: accessorId,
-      sid,
-      sid_hash,
-      hash_method: 'SHA256',
-      key_type: 'RSA',
-      sign_method: 'RSA-SHA256',
-      padding: 'PKCS#1v1.5',
-    });
-  });
-
   it('2nd IdP should get request_id for the unfinished (not closed or timed out) create identity request with reference_id', async function() {
     this.timeout(10000);
-    const response = await idpApi.getRequestIdByReferenceId('idp2', {
+    const response = await identityApi.getRequestIdByReferenceId('idp2', {
       reference_id: referenceId,
     });
     const responseBody = await response.json();
@@ -604,13 +565,13 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
     expect(incomingRequest).to.deep.include({
       mode: 3,
       request_id: requestId,
-      namespace,
-      identifier,
       requester_node_id: 'idp2',
       min_ial: 1.1,
       min_aal: 1,
       data_request_list: [],
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
     expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
       .empty;
@@ -619,11 +580,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
     requestMessageSalt = incomingRequest.request_message_salt;
 
     expect(incomingRequest.request_message_hash).to.equal(
-      hashRequestMessageForConsent(
-        requestMessage,
-        incomingRequest.initial_salt,
-        incomingRequest.request_id
-      )
+      hash(requestMessage + incomingRequest.request_message_salt)
     );
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
@@ -643,26 +600,43 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
         identity.namespace === namespace && identity.identifier === identifier
     );
 
+    responseAccessorId = identity.accessors[0].accessorId;
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: idp1ReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace,
-      identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await accessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: responseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idp1ReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
       reference_id: idp1ReferenceId,
       request_id: requestId,
       success: true,
@@ -677,24 +651,20 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       request_id: requestId,
       success: true,
     });
-    expect(createIdentityResult.secret).to.be.a('string').that.is.not.empty;
-
-    const secret = createIdentityResult.secret;
+    expect(createIdentityResult.reference_group_code).to.equal(
+      referenceGroupCode
+    );
 
     const response = await commonApi.getRelevantIdpNodesBySid('idp2', {
       namespace,
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
-    expect(idpNode).to.exist;
-
-    const identity = db.idp2Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-
-    identity.accessors[0] = { ...identity.accessors[0], accessorId, secret };
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    expect(idpNode).to.not.be.undefined;
+    expect(idpNode.mode_list)
+      .to.be.an('array')
+      .that.include(2, 3);
   });
 
   it('Special request status for create identity should be completed and closed', async function() {
@@ -728,7 +698,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
 
   it('2nd IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
     this.timeout(10000);
-    const response = await idpApi.getRequestIdByReferenceId('idp2', {
+    const response = await identityApi.getRequestIdByReferenceId('idp2', {
       reference_id: referenceId,
     });
     expect(response.status).to.equal(404);
@@ -736,7 +706,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     idp2EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_sign_callback');
   });
 });

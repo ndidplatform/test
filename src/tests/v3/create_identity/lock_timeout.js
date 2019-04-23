@@ -5,10 +5,11 @@ import * as debugApi from '../../api/v2/debug';
 import * as ndidApi from '../../api/v2/ndid';
 import * as commonApi from '../../api/v2/common';
 import { createRequest } from '../../api/v2/rp';
-import { hash, wait } from '../../utils';
-import { RP_CALLBACK_URL } from '../../config';
-import { ndidAvailable } from '..';
+import { hash, wait } from '../../../utils';
+import { RP_CALLBACK_URL } from '../../../config';
+import { ndidAvailable } from '../..';
 
+/* ============================== UNUSED TEST CASE =================================
 describe('Use debug API to lock first IdP', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
@@ -97,3 +98,4 @@ describe('Use debug API to lock first IdP', function() {
     });
   });
 });
+*/

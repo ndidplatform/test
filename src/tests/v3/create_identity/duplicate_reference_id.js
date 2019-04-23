@@ -193,7 +193,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')
-      .that.include(2);
+      .that.include(2, 3);
 
     // db.idp1Identities.push({
     //   referenceGroupCode,
