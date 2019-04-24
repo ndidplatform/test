@@ -455,6 +455,7 @@ describe('IdP (idp1) create identity (mode 3) (for use in other test) as 1st IdP
       mode: 3,
       namespace,
       identifier,
+      onlyOneIdP: true,
       accessors: [
         {
           accessorId,
