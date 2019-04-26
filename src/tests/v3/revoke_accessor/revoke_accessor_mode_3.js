@@ -44,7 +44,9 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
     let responseAccessorId;
 
     before(function() {
+
       const identity = db.idp1Identities.find(identity => identity.mode === 3);
+
       if (db.idp1Identities[0] == null || !identity) {
         throw new Error('No created identity to use');
       }
@@ -254,7 +256,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
       ).that.is.not.empty;
     });
 
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP should receive callback create response result with success = true', async function() {
       this.timeout(15000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
@@ -693,7 +695,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
       ).that.is.not.empty;
     });
 
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP should receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -1270,7 +1272,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
       idp2EventEmitter.removeAllListeners('callback');
     });
   });
-  describe('IdP (idp1) shuold revoke accessor (mode 3) successfully', function() {
+  describe('IdP (idp1) should revoke accessor (mode 3) successfully', function() {
     const revokeAccessorRequestMessage =
       'Revoke accessor consent request custom message ข้อความสำหรับขอเพิกถอน accessor บนระบบ';
 
@@ -1460,7 +1462,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
       ).that.is.not.empty;
     });
 
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP should receive callback create response result with success = true', async function() {
       this.timeout(15000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
@@ -1886,3 +1888,4 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
     });
   });
 });
+
