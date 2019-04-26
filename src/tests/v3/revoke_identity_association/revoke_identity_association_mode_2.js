@@ -134,6 +134,17 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
     expect(response.status).to.equal(404);
   });
 
+  it('After revoked identity association should query idp that associate with this sid not found', async function() {
+    const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
+      namespace,
+      identifier,
+    });
+    expect(response.status).equal(200);
+    const idpNodes = await response.json();
+    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    expect(idpNode).to.be.undefined;
+  });
+
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
     idp2EventEmitter.removeAllListeners('identity_notification_callback');
