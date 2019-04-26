@@ -43,11 +43,11 @@ describe('Add accessor with duplicate reference id test', function() {
   let requestMessageHash;
 
   before(function() {
-    if (db.idp1Identities[0] == null) {
+    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
-
-    const identity = db.idp1Identities.find(identity => identity.mode === 3);
 
     namespace = identity.namespace;
     identifier = identity.identifier;
@@ -97,7 +97,7 @@ describe('Add accessor with duplicate reference id test', function() {
     });
   });
 
-  it('should add accessor successfully', async function() {
+  it('Should add accessor successfully', async function() {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
@@ -134,7 +134,7 @@ describe('Add accessor with duplicate reference id test', function() {
     await wait(3000);
   });
 
-  it('should add accessor with duplicate reference id unsuccessfully', async function() {
+  it('Should add accessor with duplicate reference id unsuccessfully', async function() {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
@@ -152,7 +152,7 @@ describe('Add accessor with duplicate reference id test', function() {
     expect(responseBody.error.code).to.equal(20045);
   });
 
-  it('should add accessor with duplicate reference id unsuccessfully', async function() {
+  it('Should add accessor with duplicate reference id unsuccessfully', async function() {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
@@ -211,7 +211,7 @@ describe('Add accessor with duplicate reference id test', function() {
     await wait(2000);
   });
 
-  it('dP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+  it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
     this.timeout(10000);
     const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,

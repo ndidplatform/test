@@ -73,7 +73,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
     });
   });
 
-  it('should add accessor method successfully', async function() {
+  it('Should add accessor successfully', async function() {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
@@ -1163,7 +1163,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
     });
   });
 
-  it('should add accessor method successfully', async function() {
+  it('Should add accessor successfully', async function() {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp2', {
       namespace: namespace,
