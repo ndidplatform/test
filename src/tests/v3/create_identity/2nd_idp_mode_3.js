@@ -1404,12 +1404,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     'Create identity consent request custom message ข้อความสำหรับขอสร้างตัวตนบนระบบ';
 
   let responseAccessorId;
-
-  //   db.createIdentityReferences.push({
-  //     referenceId,
-  //     accessorPrivateKey,
-  //   });
-
+  
   before(function() {
     if (!idp2Available) {
       this.test.parent.pending = true;
@@ -1420,7 +1415,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       identity => identity.mode === 3 && identity.willCreateOnIdP2 === true
     )[0];
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 

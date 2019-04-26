@@ -37,7 +37,7 @@ describe('IdP update identity ial test', function() {
       identity => identity.namespace === 'citizen_id' && identity.mode === 3
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -90,7 +90,7 @@ describe('IdP update identity ial test', function() {
     const responseBody = await response.json();
     expect(responseBody.ial).to.equal(3);
   });
-1
+  1;
   after(async function() {
     this.timeout(10000);
     await identityApi.updateIdentityIal('idp1', {

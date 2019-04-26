@@ -58,7 +58,7 @@ describe('NDID disable namespace test', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 

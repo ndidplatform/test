@@ -9,11 +9,7 @@ import * as identityApi from '../../../api/v3/identity';
 // import * as commonApi from '../../api/v2/common';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  wait,
-} from '../../../utils';
+import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
 import { idp2Available, as2Available } from '../..';
 
@@ -48,7 +44,7 @@ describe('IdP response errors tests', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -415,7 +411,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -564,7 +560,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -714,7 +710,7 @@ describe('IdP2 making response with request does not concern IdP2 (mode 1)', fun
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -828,7 +824,7 @@ describe('IdP2 making response with request does not concern IdP2 (mode 3)', fun
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 

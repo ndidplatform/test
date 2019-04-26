@@ -66,7 +66,7 @@ describe('NDID disable RP node and enable RP node test', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -510,7 +510,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -953,7 +953,7 @@ describe('NDID disable AS node and enable AS node test', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
     namespace = identity[0].namespace;

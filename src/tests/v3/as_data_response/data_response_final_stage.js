@@ -53,7 +53,7 @@ describe('AS response data request already closed test', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -230,7 +230,7 @@ describe('AS response data request already timed out test', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -407,7 +407,7 @@ describe('AS response data request already completed test', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 

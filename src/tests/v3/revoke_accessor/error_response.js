@@ -21,7 +21,7 @@ describe('Revoke accessor error response tests', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
 
@@ -78,7 +78,7 @@ describe('Revoke accessor error response tests', function() {
         !identity.revokeIdentityAssociation
     );
 
-    if (!identity) {
+    if (identity.length === 0) {
       this.test.parent.pending = true;
       this.skip();
     }

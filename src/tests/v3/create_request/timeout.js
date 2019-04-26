@@ -28,8 +28,6 @@ describe('Timeout test (3 seconds)', function() {
       identity => identity.mode === 3 && !identity.revokeIdentityAssociation
     );
 
-    await wait(1000);
-
     if (identity.length === 0) {
       throw new Error('No created identity to use');
     }
