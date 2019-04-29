@@ -372,7 +372,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
 
     before(async function() {
       this.timeout(10000);
-      await wait(3000);
+      
       accessorIdForRevoke = accessorId;
       responseAccessorId = accessorId2;
 
