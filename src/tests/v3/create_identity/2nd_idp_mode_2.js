@@ -138,32 +138,12 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+    expect(responseBody).to.not.include.keys('request_id');
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.exist).to.equal(true);
 
     accessorId = responseBody.accessor_id;
   });
-
-  // it('should receive accessor sign callback with correct data', async function() {
-  //   this.timeout(15000);
-  //   const sid = `${namespace}:${identifier}`;
-  //   const sid_hash = hash(sid);
-
-  //   const accessorSignParams = await accessorSignPromise.promise;
-  //   expect(accessorSignParams).to.deep.equal({
-  //     type: 'accessor_sign',
-  //     node_id: 'idp1',
-  //     reference_id: referenceId,
-  //     accessor_id: accessorId,
-  //     sid,
-  //     sid_hash,
-  //     hash_method: 'SHA256',
-  //     key_type: 'RSA',
-  //     sign_method: 'RSA-SHA256',
-  //     padding: 'PKCS#1v1.5',
-  //   });
-  // });
 
   it('Identity should be created successfully', async function() {
     this.timeout(15000);

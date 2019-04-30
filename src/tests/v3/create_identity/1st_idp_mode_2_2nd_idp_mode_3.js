@@ -86,6 +86,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
+    expect(responseBody).to.not.include.keys('request_id');
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.exist).to.equal(false);
 
