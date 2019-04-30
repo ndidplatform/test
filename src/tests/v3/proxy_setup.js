@@ -1,12 +1,12 @@
 import { expect } from 'chai';
 
-import { proxy1Available, proxy2Available } from '.';
-import * as rpApi from '../api/v2/rp';
-import * as idpApi from '../api/v2/idp';
-import * as asApi from '../api/v2/as';
-import { proxy1EventEmitter } from '../callback_server';
-import { createEventPromise, generateReferenceId } from '../utils';
-import * as config from '../config';
+import { proxy1Available, proxy2Available } from '..';
+import * as rpApi from '../../api/v3/rp';
+import * as idpApi from '../../api/v3/idp';
+import * as asApi from '../../api/v3/as';
+import { proxy1EventEmitter } from '../../callback_server';
+import { createEventPromise, generateReferenceId } from '../../utils';
+import * as config from '../../config';
 
 describe('Proxy (proxy1) setup', function() {
   before(async function() {
@@ -37,8 +37,11 @@ describe('Proxy (proxy1) setup', function() {
   it('should set IdP callbacks successfully', async function() {
     const response = await idpApi.setCallbacks('proxy1', {
       incoming_request_url: config.PROXY1_CALLBACK_URL,
-      accessor_sign_url: config.PROXY1_ACCESSOR_SIGN_CALLBACK_URL,
+      // accessor_sign_url: config.PROXY1_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY1_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.PROXY1_NOTIFICATION_CALLBACK_URL,
+      accessor_encrypt_url: config.PROXY1_ACCESSOR_ENCRYPT_CALLBACK_URL,
     });
     expect(response.status).to.equal(204);
   });
@@ -49,8 +52,11 @@ describe('Proxy (proxy1) setup', function() {
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
       incoming_request_url: config.PROXY1_CALLBACK_URL,
-      accessor_sign_url: config.PROXY1_ACCESSOR_SIGN_CALLBACK_URL,
+      //accessor_sign_url: config.PROXY1_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY1_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.PROXY1_NOTIFICATION_CALLBACK_URL,
+      accessor_encrypt_url: config.PROXY1_ACCESSOR_ENCRYPT_CALLBACK_URL,
     });
   });
 
@@ -103,6 +109,7 @@ describe('Proxy (proxy1) setup', function() {
         min_ial: 1.1,
         min_aal: 1,
         url: config.PROXY1_CALLBACK_URL,
+        supported_namespace_list: ['citizen_id'],
       });
       expect(response.status).to.equal(202);
 
@@ -127,6 +134,7 @@ describe('Proxy (proxy1) setup', function() {
         url: config.PROXY1_CALLBACK_URL,
         active: true,
         suspended: false,
+        supported_namespace_list: ['citizen_id'],
       });
     });
 
@@ -140,6 +148,7 @@ describe('Proxy (proxy1) setup', function() {
         min_ial: 1.1,
         min_aal: 1,
         url: config.PROXY1_CALLBACK_URL,
+        supported_namespace_list: ['citizen_id'],
       });
       expect(response.status).to.equal(202);
 
@@ -164,6 +173,7 @@ describe('Proxy (proxy1) setup', function() {
         url: config.PROXY1_CALLBACK_URL,
         active: true,
         suspended: false,
+        supported_namespace_list: ['citizen_id'],
       });
     });
 
@@ -202,8 +212,11 @@ describe('Proxy (proxy2) setup', function() {
   it('should set IdP callbacks successfully', async function() {
     const response = await idpApi.setCallbacks('proxy2', {
       incoming_request_url: config.PROXY2_CALLBACK_URL,
-      accessor_sign_url: config.PROXY2_ACCESSOR_SIGN_CALLBACK_URL,
+      //accessor_sign_url: config.PROXY2_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY2_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.PROXY1_NOTIFICATION_CALLBACK_URL,
+      accessor_encrypt_url: config.PROXY1_ACCESSOR_ENCRYPT_CALLBACK_URL,
     });
     expect(response.status).to.equal(204);
   });
@@ -214,8 +227,11 @@ describe('Proxy (proxy2) setup', function() {
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
       incoming_request_url: config.PROXY2_CALLBACK_URL,
-      accessor_sign_url: config.PROXY2_ACCESSOR_SIGN_CALLBACK_URL,
+      //accessor_sign_url: config.PROXY2_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY2_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.PROXY1_NOTIFICATION_CALLBACK_URL,
+      accessor_encrypt_url: config.PROXY1_ACCESSOR_ENCRYPT_CALLBACK_URL,
     });
   });
 

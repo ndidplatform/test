@@ -19,8 +19,6 @@ export const proxy2EventEmitter = new EventEmitter();
 export let asSendDataThroughCallback = false;
 export let idpSignInvalidSignature = false;
 let invalidPrivateKey;
-let a =
-  'Z557rgt9ZdGitBeoKm8eKjGEPEi4tt+GHID/At8asX+YWQGhJiHWjOXEe0VBXgmZdWz4qfYBXqwVaT8BhBtaEX0ussYWnTXxjFr6ifDbuJERLtZCIqPPpCmQxcByRvtTJl/RjswzHRqFqD/qMMrH2QIrO3FElcd5fhyGsHwZKmfy5eRQSsN7esiR0ncQCjiBWkQVg4n6LU4ofGpFUgta5NO6uc4wxuumN+hfnuznGdMsc4f6VhnTSr++kCvod1G6SMsViPnuZmSg4hO4T5pK8rnRMas3wLY/JsgArM5aPuw0zYWMEwBWpFgiVBqgyLS4U3kL9pGbsd7Z98v1Bh+ZYw==';
 
 export function setAsSendDataThroughCallback(sendThroughCallback) {
   asSendDataThroughCallback = sendThroughCallback;
@@ -239,6 +237,33 @@ proxy1App.post('/proxy/accessor/sign', async function(req, res) {
   });
 });
 
+proxy1App.post('/proxy/accessor/encrypt', async function(req, res) {
+  const callbackData = req.body;
+  proxy1EventEmitter.emit('accessor_encrypt_callback', callbackData);
+  let accessorPrivateKey;
+  db.proxy1Idp4Identities.forEach(identity => {
+    identity.accessors.forEach(accessor => {
+      if (accessor.accessorId === callbackData.accessor_id) {
+        accessorPrivateKey = accessor.accessorPrivateKey;
+        return;
+      }
+      if (accessorPrivateKey) return;
+    });
+  });
+  res.status(200).json({
+    signature: utils.createResponseSignature(
+      accessorPrivateKey,
+      callbackData.request_message_padded_hash
+    ),
+  });
+});
+
+proxy1App.post('/proxy/identity/notification', async function(req, res) {
+  const callbackData = req.body;
+  proxy1App.emit('identity_notification_callback', callbackData);
+  res.status(204).end();
+});
+
 /*
   Proxy-2
 */
@@ -265,6 +290,33 @@ proxy2App.post('/proxy/accessor/sign', async function(req, res) {
       callbackData.sid
     ),
   });
+});
+
+// proxy2App.post('/proxy/accessor/encrypt', async function(req, res) {
+//   const callbackData = req.body;
+//   proxy2EventEmitter.emit('accessor_encrypt_callback', callbackData);
+//   let accessorPrivateKey;
+//   db.proxy1Idp4Identities.forEach(identity => {
+//     identity.accessors.forEach(accessor => {
+//       if (accessor.accessorId === callbackData.accessor_id) {
+//         accessorPrivateKey = accessor.accessorPrivateKey;
+//         return;
+//       }
+//       if (accessorPrivateKey) return;
+//     });
+//   });
+//   res.status(200).json({
+//     signature: utils.createResponseSignature(
+//       accessorPrivateKey,
+//       callbackData.request_message_padded_hash
+//     ),
+//   });
+// });
+
+proxy2App.post('/proxy/identity/notification', async function(req, res) {
+  const callbackData = req.body;
+  proxy2App.emit('identity_notification_callback', callbackData);
+  res.status(204).end();
 });
 
 export function startCallbackServers() {

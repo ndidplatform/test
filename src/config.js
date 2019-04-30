@@ -34,8 +34,13 @@ export const AS2_CALLBACK_URL = `http://${CALLBACK_IP}:${AS2_CALLBACK_PORT}/as/c
 
 export const PROXY1_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY1_CALLBACK_PORT}/proxy/callback`;
 export const PROXY1_ACCESSOR_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY1_CALLBACK_PORT}/proxy/accessor/sign`;
+export const PROXY1_ACCESSOR_ENCRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY1_CALLBACK_PORT}/proxy/accessor/encrypt`;
+export const PROXY1_NOTIFICATION_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY1_CALLBACK_PORT}/proxy/identity/notification`;
+
 export const PROXY2_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY2_CALLBACK_PORT}/proxy/callback`;
 export const PROXY2_ACCESSOR_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY2_CALLBACK_PORT}/proxy/accessor/sign`;
+export const PROXY2_ACCESSOR_ENCRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY2_CALLBACK_PORT}/proxy/accessor/encrypt`;
+export const PROXY2_NOTIFICATION_CALLBACK_URL = `http://${CALLBACK_IP}:${PROXY2_CALLBACK_PORT}/proxy/identity/notification`;
 
 export const NDID_CALLBACK_URL = `http://${CALLBACK_IP}:${NDID_CALLBACK_PORT}/ndid/callback`;
 

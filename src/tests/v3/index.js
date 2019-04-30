@@ -3,6 +3,7 @@ require('./rp_setup');
 require('./idp_setup');
 require('./as_setup');
 require('./as_service_setup');
+require('./proxy_setup');
 require('./create_identity');
 require('./verify_identity');
 require('./data_request');
