@@ -1,3 +1,6 @@
+import { proxy1Available } from '../..';
+import { wait } from '../../../utils';
+
 describe('Create identity', function() {
   require('./1st_idp_mode_2');
   require('./2nd_idp_mode_2');
@@ -12,5 +15,22 @@ describe('Create identity', function() {
   require('./duplicate_reference_id');
   require('./close_identity_request');
   require('./error_response');
-  // require('./lock_timeout');
+  // require('./lock_timeout'); // UNUSED TEST CASE
+});
+
+describe('Create identity (IdP behind proxy)', function() {
+  before(function() {
+    if (!proxy1Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+  });
+
+  require('./proxy/1st_idp_mode_2');
+  require('./proxy/1st_idp_mode_3');
+
+  after(async function() {
+    //wait for identity to propagate (different abci/tendermint for idp/rp)
+    await wait(1000);
+  });
 });

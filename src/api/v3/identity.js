@@ -20,8 +20,12 @@ export function getIdentityInfo(nodeId, data) {
 
 export function getIdentityIal(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  const { namespace, identifier } = data;
-  return httpGet(`${apiBaseUrl}/identity/${namespace}/${identifier}/ial`);
+  const { namespace, identifier, node_id } = data;
+  return httpGet(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/ial${
+      node_id ? `?node_id=${node_id}` : ''
+    }`
+  );
 }
 
 export function addAccessor(nodeId, data) {
