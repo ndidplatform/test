@@ -10,16 +10,16 @@ describe('Verify identity flow (no data request)', function() {
   require('./2_idp_1_accept_1_reject_mode_1');
 });
 
-// describe('Verify identity flow (no data request) (Node behind proxy)', function() {
-//   before(function() {
-//     if (!proxy1Available) {
-//       this.test.parent.pending = true;
-//       this.skip();
-//     }
-//   });
+describe('Verify identity flow (no data request) (Node behind proxy)', function() {
+  before(function() {
+    if (!proxy1Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+  });
 
-//   require('./proxy/1_idp_accept_mode_1_rp_behind_proxy');
-//   require('./proxy/1_idp_accept_mode_1_rp_idp_behind_proxy');
-//   require('./proxy/1_idp_accept_mode_3_rp_behind_proxy');
-//   require('./proxy/1_idp_accept_mode_3_rp_idp_behind_proxy');
-// });
+  require('./proxy/1_idp_accept_mode_1_rp_behind_proxy');
+  require('./proxy/1_idp_accept_mode_1_rp_idp_behind_proxy');
+  require('./proxy/1_idp_accept_mode_3_rp_behind_proxy');
+  require('./proxy/1_idp_accept_mode_3_rp_idp_behind_proxy');
+});

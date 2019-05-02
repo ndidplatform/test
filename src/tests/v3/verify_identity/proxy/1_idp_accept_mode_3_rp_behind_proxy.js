@@ -1,30 +1,22 @@
 import { expect } from 'chai';
-import forge from 'node-forge';
 
-import { proxy2Available } from '../..';
-import * as rpApi from '../../../api/v2/rp';
-import * as idpApi from '../../../api/v2/idp';
-// import * as commonApi from '../../api/v2/common';
+import * as rpApi from '../../../../api/v3/rp';
+import * as idpApi from '../../../../api/v3/idp';
 import {
   proxy1EventEmitter,
-  proxy2EventEmitter,
-} from '../../../callback_server';
+  idp1EventEmitter,
+} from '../../../../callback_server';
+import * as db from '../../../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../../utils';
-import * as config from '../../../config';
+  hash,
+} from '../../../../utils';
+import * as config from '../../../../config';
 
-describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) behind proxy', function() {
-  const idpNodeId = 'proxy1_idp4';
-
+describe('1 IdP, accept consent, mode 3, RP (proxy1_rp4) behind proxy', function() {
   let namespace;
   let identifier;
-
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
@@ -33,6 +25,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
+  const accessorEncryptPromise = createEventPromise(); // IDP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
@@ -41,37 +34,38 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   let requestId;
   let requestMessageSalt;
   let requestMessageHash;
+  let responseAccessorId;
 
   const requestStatusUpdates = [];
 
   before(function() {
-    if (!proxy2Available) {
-      this.test.parent.pending = true;
-      this.skip();
+    let identity = db.idp1Identities.find(identity => identity.mode === 3);
+
+    if (!identity) {
+      throw new Error('No created identity to use');
     }
 
-    namespace = 'citizen_id';
-    identifier = '1234567890123';
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
-      node_id: 'proxy2_rp5',
+      node_id: 'proxy1_rp4',
       reference_id: rpReferenceId,
-      callback_url: config.PROXY2_CALLBACK_URL,
-      mode: 1,
+      callback_url: config.PROXY1_CALLBACK_URL,
+      mode: 3,
       namespace,
       identifier,
-      idp_id_list: [idpNodeId],
+      idp_id_list: [],
       data_request_list: [],
       request_message:
-        'Test request message (mode 1) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
+        'Test request message (mode 3) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
     };
 
-    // RP
-    proxy2EventEmitter.on('callback', function(callbackData) {
+    proxy1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -94,8 +88,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
       }
     });
 
-    // IdP
-    proxy1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -105,11 +98,17 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
         responseResultPromise.resolve(callbackData);
       }
     });
+
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        accessorEncryptPromise.resolve(callbackData);
+      }
+    });
   });
 
   it('RP should create a request successfully', async function() {
     this.timeout(10000);
-    const response = await rpApi.createRequest('proxy2', createRequestParams);
+    const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
@@ -158,22 +157,21 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
-      node_id: idpNodeId,
+      node_id: 'idp1',
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: createRequestParams.node_id,
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: createRequestParams.data_request_list,
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
@@ -191,30 +189,55 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
 
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.createResponse('proxy1', {
-      node_id: idpNodeId,
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    responseAccessorId = identity.accessors[0].accessorId;
+
+    const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
-      callback_url: config.PROXY1_CALLBACK_URL,
+      callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: createResponseSignature(userPrivateKey, requestMessageHash),
+      accessor_id: responseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await accessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: responseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
-      node_id: idpNodeId,
+      node_id: 'idp1',
+      type: 'response_result',
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
     });
   });
 
-  it('RP should receive completed request status', async function() {
+  it('RP should receive completed request status with valid proofs', async function() {
     this.timeout(15000);
     const requestStatus = await requestStatusCompletedPromise.promise;
     expect(requestStatus).to.deep.include({
@@ -229,10 +252,9 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
       service_list: [],
       response_valid_list: [
         {
-          idp_id: idpNodeId,
-          valid_signature: null,
-          valid_proof: null,
-          valid_ial: null,
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_ial: true,
         },
       ],
     });
@@ -259,10 +281,9 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
       service_list: [],
       response_valid_list: [
         {
-          idp_id: idpNodeId,
-          valid_signature: null,
-          valid_proof: null,
-          valid_ial: null,
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_ial: true,
         },
       ],
     });
@@ -280,6 +301,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
 
   after(function() {
     proxy1EventEmitter.removeAllListeners('callback');
-    proxy2EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
   });
 });
