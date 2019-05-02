@@ -17,19 +17,20 @@ export const proxy1EventEmitter = new EventEmitter();
 export const proxy2EventEmitter = new EventEmitter();
 
 export let asSendDataThroughCallback = false;
-export let idpSignInvalidSignature = false;
-let invalidPrivateKey;
+export let useSpecificPrivateKeyForSign = false;
+
+let privateKeyForSign;
 
 export function setAsSendDataThroughCallback(sendThroughCallback) {
   asSendDataThroughCallback = sendThroughCallback;
 }
 
-export function setIdPSignInvalidSignature(
-  signInvalidSignature,
+export function setIdPUseSpecificPrivateKeyForSign(
+  specificPrivateKeyForSign,
   privateKey = null
 ) {
-  idpSignInvalidSignature = signInvalidSignature;
-  invalidPrivateKey = privateKey;
+  useSpecificPrivateKeyForSign = specificPrivateKeyForSign;
+  privateKeyForSign = privateKey;
 }
 
 /*
@@ -90,30 +91,25 @@ idp1App.post('/idp/accessor/encrypt', async function(req, res) {
   const callbackData = req.body;
   idp1EventEmitter.emit('accessor_encrypt_callback', callbackData);
   let accessorPrivateKey;
-  db.idp1Identities.forEach(identity => {
-    identity.accessors.forEach(accessor => {
-      if (accessor.accessorId === callbackData.accessor_id) {
-        accessorPrivateKey = accessor.accessorPrivateKey;
-        return;
-      }
-      if (accessorPrivateKey) return;
-    });
-  });
-  if (idpSignInvalidSignature) {
-    res.status(200).json({
-      signature: utils.createResponseSignature(
-        invalidPrivateKey,
-        callbackData.request_message_padded_hash
-      ),
-    });
+  if (useSpecificPrivateKeyForSign) {
+    accessorPrivateKey = privateKeyForSign;
   } else {
-    res.status(200).json({
-      signature: utils.createResponseSignature(
-        accessorPrivateKey,
-        callbackData.request_message_padded_hash
-      ),
+    db.idp1Identities.forEach(identity => {
+      identity.accessors.forEach(accessor => {
+        if (accessor.accessorId === callbackData.accessor_id) {
+          accessorPrivateKey = accessor.accessorPrivateKey;
+          return;
+        }
+        if (accessorPrivateKey) return;
+      });
     });
   }
+  res.status(200).json({
+    signature: utils.createResponseSignature(
+      accessorPrivateKey,
+      callbackData.request_message_padded_hash
+    ),
+  });
 });
 
 idp1App.post('/idp/identity/notification', async function(req, res) {
@@ -292,26 +288,30 @@ proxy2App.post('/proxy/accessor/sign', async function(req, res) {
   });
 });
 
-// proxy2App.post('/proxy/accessor/encrypt', async function(req, res) {
-//   const callbackData = req.body;
-//   proxy2EventEmitter.emit('accessor_encrypt_callback', callbackData);
-//   let accessorPrivateKey;
-//   db.proxy1Idp4Identities.forEach(identity => {
-//     identity.accessors.forEach(accessor => {
-//       if (accessor.accessorId === callbackData.accessor_id) {
-//         accessorPrivateKey = accessor.accessorPrivateKey;
-//         return;
-//       }
-//       if (accessorPrivateKey) return;
-//     });
-//   });
-//   res.status(200).json({
-//     signature: utils.createResponseSignature(
-//       accessorPrivateKey,
-//       callbackData.request_message_padded_hash
-//     ),
-//   });
-// });
+proxy2App.post('/proxy/accessor/encrypt', async function(req, res) {
+  const callbackData = req.body;
+  proxy2EventEmitter.emit('accessor_encrypt_callback', callbackData);
+  let accessorPrivateKey;
+  if (useSpecificPrivateKeyForSign) {
+    accessorPrivateKey = privateKeyForSign;
+  } else {
+    // db.proxy2Idp5Identities.forEach(identity => {
+    //   identity.accessors.forEach(accessor => {
+    //     if (accessor.accessorId === callbackData.accessor_id) {
+    //       accessorPrivateKey = accessor.accessorPrivateKey;
+    //       return;
+    //     }
+    //     if (accessorPrivateKey) return;
+    //   });
+    // });
+  }
+  res.status(200).json({
+    signature: utils.createResponseSignature(
+      accessorPrivateKey,
+      callbackData.request_message_padded_hash
+    ),
+  });
+});
 
 proxy2App.post('/proxy/identity/notification', async function(req, res) {
   const callbackData = req.body;
