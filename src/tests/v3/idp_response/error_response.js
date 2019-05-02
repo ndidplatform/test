@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 import forge from 'node-forge';
 
-import { setIdPSignInvalidSignature } from '../../../callback_server';
+import { setIdPUseSpecificPrivateKeyForSign } from '../../../callback_server';
 import * as rpApi from '../../../api/v3/rp';
 import * as idpApi from '../../../api/v3/idp';
 import * as identityApi from '../../../api/v3/identity';
@@ -226,7 +226,7 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
     this.timeout(25000);
-    setIdPSignInvalidSignature(true, invalidAccessorPrivateKey);
+    setIdPUseSpecificPrivateKeyForSign(true, invalidAccessorPrivateKey);
     await wait(2000);
     const identity = db.idp1Identities.find(
       identity =>
@@ -255,7 +255,7 @@ describe('IdP response errors tests', function() {
       success: false,
     });
     expect(responseResult.error.code).to.equal(10014);
-    setIdPSignInvalidSignature(false);
+    setIdPUseSpecificPrivateKeyForSign(false);
     await wait(2000);
   });
 
