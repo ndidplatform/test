@@ -818,293 +818,305 @@ describe('RP create request errors', function() {
       suspended: false,
     });
   });
+});
 
-  describe('RP create request (mode 2) with service in data request list does not accepted namespace', async function() {
-    before(function() {
-      if (!as2Available || !ndidAvailable) {
-        this.skip();
+describe('RP create request (mode 2) with service in data request list does not accepted namespace', function() {
+  const bankStatementReferenceId = generateReferenceId();
+  const addOrUpdateServiceBankStatementResultPromise = createEventPromise();
+  const as2BankStatementReferenceId = generateReferenceId();
+  const as2AddOrUpdateServiceBankStatementResultPromise = createEventPromise();
+
+  let identityMode2;
+  let identityMode3;
+  let namespace;
+  let identifier;
+  let skipped;
+
+  before(function() {
+    if (!as2Available || !ndidAvailable) {
+      skipped = true;
+      this.skip();
+    }
+
+    identityMode2 = db.idp1Identities.find(identity => identity.mode === 2);
+    identityMode3 = db.idp1Identities.find(identity => identity.mode === 3);
+
+    if (db.idp1Identities[0] == null || !identityMode2 || !identityMode3) {
+      throw new Error('No created identity to use');
+    }
+
+    as1EventEmitter.on('callback', function(callbackData) {
+      if (callbackData.type === 'add_or_update_service_result') {
+        if (callbackData.reference_id === bankStatementReferenceId) {
+          addOrUpdateServiceBankStatementResultPromise.resolve(callbackData);
+        }
       }
     });
 
-    const bankStatementReferenceId = generateReferenceId();
-    const addOrUpdateServiceBankStatementResultPromise = createEventPromise();
-
-    const as2BankStatementReferenceId = generateReferenceId();
-    const as2AddOrUpdateServiceBankStatementResultPromise = createEventPromise();
-
-    before(function() {
-      as1EventEmitter.on('callback', function(callbackData) {
-        if (callbackData.type === 'add_or_update_service_result') {
-          if (callbackData.reference_id === bankStatementReferenceId) {
-            addOrUpdateServiceBankStatementResultPromise.resolve(callbackData);
-          }
+    as2EventEmitter.on('callback', function(callbackData) {
+      if (callbackData.type === 'add_or_update_service_result') {
+        if (callbackData.reference_id === as2BankStatementReferenceId) {
+          as2AddOrUpdateServiceBankStatementResultPromise.resolve(callbackData);
         }
-      });
-
-      as2EventEmitter.on('callback', function(callbackData) {
-        if (callbackData.type === 'add_or_update_service_result') {
-          if (callbackData.reference_id === as2BankStatementReferenceId) {
-            as2AddOrUpdateServiceBankStatementResultPromise.resolve(
-              callbackData
-            );
-          }
-        }
-      });
-    });
-
-    it('NDID should add new namespace (TEST_NAMESPACE) successfully', async function() {
-      this.timeout(50000);
-      let alreadyAddedNamespace;
-
-      //Check already added TEST_NAMESPACE namespace
-      const response = await commonApi.getNamespaces('ndid1');
-      const responseBody = await response.json();
-      alreadyAddedNamespace = responseBody.find(
-        ns => ns.namespace === 'TEST_NAMESPACE'
-      );
-
-      let responseNamespace = await ndidApi.registerNamespace('ndid1', {
-        namespace: 'TEST_NAMESPACE',
-        description: 'TEST_NAMESPACE',
-      });
-
-      if (alreadyAddedNamespace) {
-        const responseBody = await responseNamespace.json();
-        expect(responseNamespace.status).to.equal(400);
-        expect(responseBody.error.code).to.equal(25013);
-      } else {
-        expect(responseNamespace.status).to.equal(201);
       }
+    });
+  });
 
-      await wait(1000);
+  it('NDID should add new namespace (TEST_NAMESPACE) successfully', async function() {
+    this.timeout(50000);
+    let alreadyAddedNamespace;
+
+    //Check already added TEST_NAMESPACE namespace
+    const response = await commonApi.getNamespaces('ndid1');
+    const responseBody = await response.json();
+    alreadyAddedNamespace = responseBody.find(
+      ns => ns.namespace === 'TEST_NAMESPACE'
+    );
+
+    let responseNamespace = await ndidApi.registerNamespace('ndid1', {
+      namespace: 'TEST_NAMESPACE',
+      description: 'TEST_NAMESPACE',
     });
 
-    it('AS should add offered service (update supported_namespace_list bank_statement) successfully', async function() {
-      const responseUpdateService = await asApi.addOrUpdateService('as1', {
-        serviceId: 'bank_statement',
-        reference_id: bankStatementReferenceId,
-        callback_url: config.AS1_CALLBACK_URL,
-        supported_namespace_list: ['TEST_NAMESPACE'],
-      });
-      expect(responseUpdateService.status).to.equal(202);
+    if (alreadyAddedNamespace) {
+      const responseBody = await responseNamespace.json();
+      expect(responseNamespace.status).to.equal(400);
+      expect(responseBody.error.code).to.equal(25013);
+    } else {
+      expect(responseNamespace.status).to.equal(201);
+    }
 
-      const addOrUpdateServiceResult = await addOrUpdateServiceBankStatementResultPromise.promise;
-      expect(addOrUpdateServiceResult).to.deep.include({
-        reference_id: bankStatementReferenceId,
-        success: true,
-      });
+    await wait(1000);
+  });
+
+  it('AS should add offered service (update supported_namespace_list bank_statement) successfully', async function() {
+    const responseUpdateService = await asApi.addOrUpdateService('as1', {
+      serviceId: 'bank_statement',
+      reference_id: bankStatementReferenceId,
+      callback_url: config.AS1_CALLBACK_URL,
+      supported_namespace_list: ['TEST_NAMESPACE'],
+    });
+    expect(responseUpdateService.status).to.equal(202);
+
+    const addOrUpdateServiceResult = await addOrUpdateServiceBankStatementResultPromise.promise;
+    expect(addOrUpdateServiceResult).to.deep.include({
+      reference_id: bankStatementReferenceId,
+      success: true,
+    });
+  });
+
+  it('AS should have offered service (update supported_namespace_list bank_statement)', async function() {
+    const response = await asApi.getService('as1', {
+      serviceId: 'bank_statement',
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      min_ial: 1.1,
+      min_aal: 1,
+      url: config.AS1_CALLBACK_URL,
+      active: true,
+      suspended: false,
+      supported_namespace_list: ['TEST_NAMESPACE'],
+    });
+  });
+
+  it('AS (as2) should add offered service (update supported_namespace_list bank_statement) successfully', async function() {
+    const responseUpdateService = await asApi.addOrUpdateService('as2', {
+      serviceId: 'bank_statement',
+      reference_id: as2BankStatementReferenceId,
+      callback_url: config.AS2_CALLBACK_URL,
+      supported_namespace_list: ['TEST_NAMESPACE'],
+    });
+    expect(responseUpdateService.status).to.equal(202);
+
+    const addOrUpdateServiceResult = await as2AddOrUpdateServiceBankStatementResultPromise.promise;
+    expect(addOrUpdateServiceResult).to.deep.include({
+      reference_id: as2BankStatementReferenceId,
+      success: true,
+    });
+  });
+
+  it('AS (as2) should have offered service (update supported_namespace_list bank_statement)', async function() {
+    this.timeout(10000);
+    const response = await asApi.getService('as2', {
+      serviceId: 'bank_statement',
+    });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      min_ial: 1.1,
+      min_aal: 1,
+      url: config.AS2_CALLBACK_URL,
+      active: true,
+      suspended: false,
+      supported_namespace_list: ['TEST_NAMESPACE'],
+    });
+    await wait(3000);
+  });
+
+  it('RP should create request (mode 2 provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
+    let identity = db.idp1Identities.find(identity => identity.mode === 2);
+    namespace = identity.namespace;
+    identifier = identity.identifier;
+
+    const createRequestParams = {
+      reference_id: generateReferenceId(),
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 2,
+      namespace, // citizen_id
+      identifier,
+      idp_id_list: [],
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: ['as1'],
+          min_as: 1,
+          request_params: JSON.stringify({
+            format: 'pdf',
+          }),
+        },
+      ],
+      request_message: 'Test request message (error create request) (mode 2)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+    };
+
+    const responseRp = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBodyRp = await responseRp.json();
+    expect(responseRp.status).to.equal(400);
+    expect(responseBodyRp.error.code).to.equal(20022);
+  });
+
+  it('RP should create request (mode 3 provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
+    let identity = db.idp1Identities.find(identity => identity.mode === 3);
+    namespace = identity.namespace;
+    identifier = identity.identifier;
+
+    const createRequestParams = {
+      reference_id: generateReferenceId(),
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 3,
+      namespace, //citizen_id
+      identifier,
+      idp_id_list: [],
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: ['as1'],
+          min_as: 1,
+          request_params: JSON.stringify({
+            format: 'pdf',
+          }),
+        },
+      ],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+    };
+
+    const responseRp = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBodyRp = await responseRp.json();
+    expect(responseRp.status).to.equal(400);
+    expect(responseBodyRp.error.code).to.equal(20022);
+  });
+
+  it('RP should create request (mode 2 without provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
+    let identity = db.idp1Identities.find(identity => identity.mode === 2);
+    namespace = identity.namespace;
+    identifier = identity.identifier;
+
+    const createRequestParams = {
+      reference_id: generateReferenceId(),
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 2,
+      namespace,
+      identifier,
+      idp_id_list: [],
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: [],
+          min_as: 1,
+          request_params: JSON.stringify({
+            format: 'pdf',
+          }),
+        },
+      ],
+      request_message: 'Test request message (error create request) (mode 2)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+    };
+
+    const responseRp = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBodyRp = await responseRp.json();
+    expect(responseRp.status).to.equal(400);
+    expect(responseBodyRp.error.code).to.equal(20022);
+  });
+
+  it('RP should create request (mode 3 without provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
+    let identity = db.idp1Identities.find(identity => identity.mode === 3);
+    namespace = identity.namespace;
+    identifier = identity.identifier;
+
+    const createRequestParams = {
+      reference_id: generateReferenceId(),
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 3,
+      namespace,
+      identifier,
+      idp_id_list: [],
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: [],
+          min_as: 1,
+          request_params: JSON.stringify({
+            format: 'pdf',
+          }),
+        },
+      ],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+    };
+
+    const responseRp = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBodyRp = await responseRp.json();
+    expect(responseRp.status).to.equal(400);
+    expect(responseBodyRp.error.code).to.equal(20022);
+  });
+
+  after(async function() {
+    this.timeout(20000);
+
+    if (skipped) return;
+
+    await asApi.addOrUpdateService('as1', {
+      serviceId: 'bank_statement',
+      reference_id: bankStatementReferenceId,
+      callback_url: config.AS1_CALLBACK_URL,
+      supported_namespace_list: ['citizen_id'],
     });
 
-    it('AS should have offered service (update supported_namespace_list bank_statement)', async function() {
-      const response = await asApi.getService('as1', {
-        serviceId: 'bank_statement',
-      });
-      const responseBody = await response.json();
-      expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
-        min_ial: 1.1,
-        min_aal: 1,
-        url: config.AS1_CALLBACK_URL,
-        active: true,
-        suspended: false,
-        supported_namespace_list: ['TEST_NAMESPACE'],
-      });
+    await asApi.addOrUpdateService('as2', {
+      serviceId: 'bank_statement',
+      reference_id: bankStatementReferenceId,
+      callback_url: config.AS2_CALLBACK_URL,
+      supported_namespace_list: ['citizen_id'],
     });
 
-    it('AS (as2) should add offered service (update supported_namespace_list bank_statement) successfully', async function() {
-      const responseUpdateService = await asApi.addOrUpdateService('as2', {
-        serviceId: 'bank_statement',
-        reference_id: as2BankStatementReferenceId,
-        callback_url: config.AS2_CALLBACK_URL,
-        supported_namespace_list: ['TEST_NAMESPACE'],
-      });
-      expect(responseUpdateService.status).to.equal(202);
+    await wait(3000);
 
-      const addOrUpdateServiceResult = await as2AddOrUpdateServiceBankStatementResultPromise.promise;
-      expect(addOrUpdateServiceResult).to.deep.include({
-        reference_id: as2BankStatementReferenceId,
-        success: true,
-      });
-    });
-
-    it('AS (as2) should have offered service (update supported_namespace_list bank_statement)', async function() {
-      this.timeout(10000);
-      const response = await asApi.getService('as2', {
-        serviceId: 'bank_statement',
-      });
-      const responseBody = await response.json();
-      expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
-        min_ial: 1.1,
-        min_aal: 1,
-        url: config.AS2_CALLBACK_URL,
-        active: true,
-        suspended: false,
-        supported_namespace_list: ['TEST_NAMESPACE'],
-      });
-      await wait(3000);
-    });
-
-    it('RP should create request (mode 2 provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
-      let identity = db.idp1Identities.find(identity => identity.mode === 2);
-      namespace = identity.namespace;
-      identifier = identity.identifier;
-
-      const createRequestParams = {
-        reference_id: generateReferenceId(),
-        callback_url: config.RP_CALLBACK_URL,
-        mode: 2,
-        namespace, // citizen_id
-        identifier,
-        idp_id_list: [],
-        data_request_list: [
-          {
-            service_id: 'bank_statement',
-            as_id_list: ['as1'],
-            min_as: 1,
-            request_params: JSON.stringify({
-              format: 'pdf',
-            }),
-          },
-        ],
-        request_message: 'Test request message (error create request) (mode 2)',
-        min_ial: 1.1,
-        min_aal: 1,
-        min_idp: 1,
-        request_timeout: 86400,
-      };
-
-      const responseRp = await rpApi.createRequest('rp1', createRequestParams);
-      const responseBodyRp = await responseRp.json();
-      expect(responseRp.status).to.equal(400);
-      expect(responseBodyRp.error.code).to.equal(20022);
-    });
-
-    it('RP should create request (mode 3 provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
-      let identity = db.idp1Identities.find(identity => identity.mode === 3);
-      namespace = identity.namespace;
-      identifier = identity.identifier;
-
-      const createRequestParams = {
-        reference_id: generateReferenceId(),
-        callback_url: config.RP_CALLBACK_URL,
-        mode: 3,
-        namespace, //citizen_id
-        identifier,
-        idp_id_list: [],
-        data_request_list: [
-          {
-            service_id: 'bank_statement',
-            as_id_list: ['as1'],
-            min_as: 1,
-            request_params: JSON.stringify({
-              format: 'pdf',
-            }),
-          },
-        ],
-        request_message: 'Test request message (error create request) (mode 3)',
-        min_ial: 1.1,
-        min_aal: 1,
-        min_idp: 1,
-        request_timeout: 86400,
-      };
-
-      const responseRp = await rpApi.createRequest('rp1', createRequestParams);
-      const responseBodyRp = await responseRp.json();
-      expect(responseRp.status).to.equal(400);
-      expect(responseBodyRp.error.code).to.equal(20022);
-    });
-
-    it('RP should create request (mode 2 without provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
-      let identity = db.idp1Identities.find(identity => identity.mode === 2);
-      namespace = identity.namespace;
-      identifier = identity.identifier;
-
-      const createRequestParams = {
-        reference_id: generateReferenceId(),
-        callback_url: config.RP_CALLBACK_URL,
-        mode: 2,
-        namespace,
-        identifier,
-        idp_id_list: [],
-        data_request_list: [
-          {
-            service_id: 'bank_statement',
-            as_id_list: [],
-            min_as: 1,
-            request_params: JSON.stringify({
-              format: 'pdf',
-            }),
-          },
-        ],
-        request_message: 'Test request message (error create request) (mode 2)',
-        min_ial: 1.1,
-        min_aal: 1,
-        min_idp: 1,
-        request_timeout: 86400,
-      };
-
-      const responseRp = await rpApi.createRequest('rp1', createRequestParams);
-      const responseBodyRp = await responseRp.json();
-      expect(responseRp.status).to.equal(400);
-      expect(responseBodyRp.error.code).to.equal(20022);
-    });
-
-    it('RP should create request (mode 3 without provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
-      let identity = db.idp1Identities.find(identity => identity.mode === 3);
-      namespace = identity.namespace;
-      identifier = identity.identifier;
-
-      const createRequestParams = {
-        reference_id: generateReferenceId(),
-        callback_url: config.RP_CALLBACK_URL,
-        mode: 3,
-        namespace,
-        identifier,
-        idp_id_list: [],
-        data_request_list: [
-          {
-            service_id: 'bank_statement',
-            as_id_list: [],
-            min_as: 1,
-            request_params: JSON.stringify({
-              format: 'pdf',
-            }),
-          },
-        ],
-        request_message: 'Test request message (error create request) (mode 3)',
-        min_ial: 1.1,
-        min_aal: 1,
-        min_idp: 1,
-        request_timeout: 86400,
-      };
-
-      const responseRp = await rpApi.createRequest('rp1', createRequestParams);
-      const responseBodyRp = await responseRp.json();
-      expect(responseRp.status).to.equal(400);
-      expect(responseBodyRp.error.code).to.equal(20022);
-    });
-    after(async function() {
-      this.timeout(20000);
-
-      await asApi.addOrUpdateService('as1', {
-        serviceId: 'bank_statement',
-        reference_id: bankStatementReferenceId,
-        callback_url: config.AS1_CALLBACK_URL,
-        supported_namespace_list: ['citizen_id'],
-      });
-
-      await asApi.addOrUpdateService('as2', {
-        serviceId: 'bank_statement',
-        reference_id: bankStatementReferenceId,
-        callback_url: config.AS2_CALLBACK_URL,
-        supported_namespace_list: ['citizen_id'],
-      });
-
-      await wait(3000);
-
-      as1EventEmitter.removeAllListeners('callback');
-      as2EventEmitter.removeAllListeners('callback');
-    });
+    as1EventEmitter.removeAllListeners('callback');
+    as2EventEmitter.removeAllListeners('callback');
   });
 });
