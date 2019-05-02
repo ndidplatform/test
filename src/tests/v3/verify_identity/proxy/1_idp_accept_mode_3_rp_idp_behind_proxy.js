@@ -55,8 +55,8 @@ describe('1 IdP, accept consent, mode 3, RP (proxy2_rp5) and IDP (proxy1_idp4) b
       throw new Error('No created identity to use');
     }
 
-    namespace = db.proxy1Idp4Identities[0].namespace;
-    identifier = db.proxy1Idp4Identities[0].identifier;
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       node_id: 'proxy2_rp5',
@@ -224,7 +224,7 @@ describe('1 IdP, accept consent, mode 3, RP (proxy2_rp5) and IDP (proxy1_idp4) b
 
     const accessorEncryptParams = await accessorEncryptPromise.promise;
     expect(accessorEncryptParams).to.deep.include({
-      node_id: 'proxy1_idp4',
+      node_id: idpNodeId,
       type: 'accessor_encrypt',
       accessor_id: responseAccessorId,
       key_type: 'RSA',
@@ -240,7 +240,7 @@ describe('1 IdP, accept consent, mode 3, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
-      node_id: 'proxy1_idp4',
+      node_id: idpNodeId,
       type: 'response_result',
       reference_id: idpReferenceId,
       request_id: requestId,
@@ -265,7 +265,6 @@ describe('1 IdP, accept consent, mode 3, RP (proxy2_rp5) and IDP (proxy1_idp4) b
         {
           idp_id: idpNodeId,
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -295,7 +294,6 @@ describe('1 IdP, accept consent, mode 3, RP (proxy2_rp5) and IDP (proxy1_idp4) b
         {
           idp_id: idpNodeId,
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
