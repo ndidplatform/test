@@ -1,31 +1,27 @@
 import { expect } from 'chai';
-import forge from 'node-forge';
 
-import * as rpApi from '../../../api/v2/rp';
-import * as idpApi from '../../../api/v2/idp';
-import * as asApi from '../../../api/v2/as';
-import * as commonApi from '../../../api/v2/common';
+import * as rpApi from '../../../../api/v3/rp';
+import * as idpApi from '../../../../api/v3/idp';
+import * as asApi from '../../../../api/v3/as';
+import * as commonApi from '../../../../api/v3/common';
 import {
   rpEventEmitter,
   idp1EventEmitter,
   proxy1EventEmitter,
-} from '../../../callback_server';
+} from '../../../../callback_server';
+import * as db from '../../../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../../utils';
-import * as config from '../../../config';
+  hash,
+} from '../../../../utils';
+import * as config from '../../../../config';
 
-describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
+describe('1 IdP, 1 AS, mode 3, AS (proxy1_as4) behind proxy', function() {
   const asNodeId = 'proxy1_as4';
 
   let namespace;
   let identifier;
-
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
@@ -35,6 +31,7 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
+  const accessorEncryptPromise = createEventPromise(); // IDP
   const requestStatusConfirmedPromise = createEventPromise(); // RP
   const dataRequestReceivedPromise = createEventPromise(); // AS
   const sendDataResultPromise = createEventPromise(); // AS
@@ -52,20 +49,27 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
   let requestId;
   let requestMessageSalt;
   let requestMessageHash;
+  let responseAccessorId;
 
   const requestStatusUpdates = [];
 
   before(function() {
-    namespace = 'citizen_id';
-    identifier = '1234567890123';
+    let identity = db.idp1Identities.find(identity => identity.mode === 3);
+
+    if (!identity) {
+      throw new Error('No created identity to use');
+    }
+
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
-      mode: 1,
+      mode: 3,
       namespace,
       identifier,
-      idp_id_list: ['idp1'],
+      idp_id_list: [],
       data_request_list: [
         {
           service_id: 'bank_statement',
@@ -76,7 +80,7 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
           }),
         },
       ],
-      request_message: 'Test request message (data request) (mode 1)',
+      request_message: 'Test request message (data request) (mode 3)',
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
@@ -123,6 +127,12 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
         callbackData.reference_id === idpReferenceId
       ) {
         responseResultPromise.resolve(callbackData);
+      }
+    });
+
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId) {
+        accessorEncryptPromise.resolve(callbackData);
       }
     });
 
@@ -199,13 +209,10 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -213,6 +220,8 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       data_request_list: dataRequestListWithoutParams,
       request_timeout: createRequestParams.request_timeout,
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
@@ -230,28 +239,55 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
 
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    responseAccessorId = identity.accessors[0].accessorId;
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: createResponseSignature(userPrivateKey, requestMessageHash),
+      accessor_id: responseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await accessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: responseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
     });
   });
 
-  it('RP should receive confirmed request status', async function() {
+  it('RP should receive confirmed request status with valid proofs', async function() {
     this.timeout(15000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
     expect(requestStatus).to.deep.include({
@@ -273,9 +309,8 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       response_valid_list: [
         {
           idp_id: 'idp1',
-          valid_signature: null,
-          valid_proof: null,
-          valid_ial: null,
+          valid_signature: true,
+          valid_ial: true,
         },
       ],
     });
@@ -291,6 +326,7 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
     this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
+      node_id: asNodeId,
       request_id: requestId,
       mode: createRequestParams.mode,
       namespace,
@@ -348,9 +384,8 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       response_valid_list: [
         {
           idp_id: 'idp1',
-          valid_signature: null,
-          valid_proof: null,
-          valid_ial: null,
+          valid_signature: true,
+          valid_ial: true,
         },
       ],
     });
@@ -384,9 +419,8 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       response_valid_list: [
         {
           idp_id: 'idp1',
-          valid_signature: null,
-          valid_proof: null,
-          valid_ial: null,
+          valid_signature: true,
+          valid_ial: true,
         },
       ],
     });
@@ -420,9 +454,8 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       response_valid_list: [
         {
           idp_id: 'idp1',
-          valid_signature: null,
-          valid_proof: null,
-          valid_ial: null,
+          valid_signature: true,
+          valid_ial: true,
         },
       ],
     });
@@ -455,7 +488,7 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
   it('RP should receive 5 request status updates', function() {
     expect(requestStatusUpdates).to.have.lengthOf(5);
   });
-  
+
   it('RP should remove data requested from AS successfully', async function() {
     const response = await rpApi.removeDataRequestedFromAS('rp1', {
       request_id: requestId,
