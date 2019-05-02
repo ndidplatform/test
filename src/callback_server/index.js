@@ -237,15 +237,19 @@ proxy1App.post('/proxy/accessor/encrypt', async function(req, res) {
   const callbackData = req.body;
   proxy1EventEmitter.emit('accessor_encrypt_callback', callbackData);
   let accessorPrivateKey;
-  db.proxy1Idp4Identities.forEach(identity => {
-    identity.accessors.forEach(accessor => {
-      if (accessor.accessorId === callbackData.accessor_id) {
-        accessorPrivateKey = accessor.accessorPrivateKey;
-        return;
-      }
-      if (accessorPrivateKey) return;
+  if (useSpecificPrivateKeyForSign) {
+    accessorPrivateKey = privateKeyForSign;
+  } else {
+    db.proxy1Idp4Identities.forEach(identity => {
+      identity.accessors.forEach(accessor => {
+        if (accessor.accessorId === callbackData.accessor_id) {
+          accessorPrivateKey = accessor.accessorPrivateKey;
+          return;
+        }
+        if (accessorPrivateKey) return;
+      });
     });
-  });
+  }
   res.status(200).json({
     signature: utils.createResponseSignature(
       accessorPrivateKey,

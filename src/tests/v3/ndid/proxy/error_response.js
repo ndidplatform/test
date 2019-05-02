@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import * as ndidApi from '../../../api/v2/ndid';
+import * as ndidApi from '../../../../api/v3/ndid';
 
 describe('NDID response errors (proxy)', function() {
   it('NDID should get an error when add node to proxy without node_id', async function() {

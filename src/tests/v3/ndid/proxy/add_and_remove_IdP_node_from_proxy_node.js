@@ -1,59 +1,58 @@
 import { expect } from 'chai';
 
-import * as ndidApi from '../../../api/v2/ndid';
-import * as commonApi from '../../../api/v2/common';
-import * as rpApi from '../../../api/v2/rp';
-import * as idpApi from '../../../api/v2/idp';
-import * as asApi from '../../../api/v2/as';
-import * as debugApi from '../../../api/v2/debug';
-import { wait } from '../../../utils';
+import * as ndidApi from '../../../../api/v3/ndid';
+import * as commonApi from '../../../../api/v3/common';
+import * as rpApi from '../../../../api/v3/rp';
+import * as idpApi from '../../../../api/v3/idp';
+import * as asApi from '../../../../api/v3/as';
+import * as debugApi from '../../../../api/v3/debug';
+import { setIdPUseSpecificPrivateKeyForSign } from '../../../../callback_server';
+import { wait } from '../../../../utils';
 
 import {
   proxy1EventEmitter,
   idp1EventEmitter,
   rpEventEmitter,
-  as1EventEmitter,
-} from '../../../callback_server';
-import * as db from '../../../db';
+} from '../../../../callback_server';
+import * as db from '../../../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-} from '../../../utils';
-import * as config from '../../../config';
+  hash,
+} from '../../../../utils';
+import * as config from '../../../../config';
 
-describe('NDID add AS node to proxy node and remove AS node from proxy node tests', function() {
-  const asNodeId = 'as1';
+describe('NDID add IdP node to proxy node and remove IdP node from proxy node tests', function() {
+  const asNodeId = 'proxy1_as4';
+
   let namespace;
   let identifier;
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const asReferenceId = generateReferenceId();
-  const bankStatementReferenceId = generateReferenceId();
 
   const createRequestResultPromise1 = createEventPromise();
   const requestStatusPendingPromise1 = createEventPromise();
-  const incomingRequestPromise1 = createEventPromise();
-  const responseResultPromise1 = createEventPromise();
+  const proxyIncomingRequestPromise = createEventPromise();
+  const proxyResponseResultPromise = createEventPromise();
+  const proxyAccessorEncryptPromise = createEventPromise(); // IDP
   const requestStatusConfirmedPromise1 = createEventPromise();
   const requestStatusCompletedPromise1 = createEventPromise();
   const requestClosedPromise1 = createEventPromise();
   const dataRequestReceivedPromise1 = createEventPromise();
   const sendDataResultPromise1 = createEventPromise();
-  const addOrUpdateServiceBankStatementResultPromise = createEventPromise();
 
-  const createRequestResultPromise2 = createEventPromise();
-  const requestStatusPendingPromise2 = createEventPromise();
-  const requestStatusConfirmedPromise2 = createEventPromise();
-  const incomingRequestPromise2 = createEventPromise();
-  const responseResultPromise2 = createEventPromise();
-  const requestStatusCompletedPromise2 = createEventPromise();
-  const requestClosedPromise2 = createEventPromise();
-  const dataRequestReceivedPromise2 = createEventPromise();
-  const sendDataResultPromise2 = createEventPromise();
-  const addOrUpdateServiceBankStatementResultPromise2 = createEventPromise();
+  const createRequestResultPromise2 = createEventPromise(); // RP
+  const requestStatusPendingPromise2 = createEventPromise(); // RP
+  const requestStatusConfirmedPromise2 = createEventPromise(); // RP
+  const incomingRequestPromise = createEventPromise(); // IDP
+  const responseResultPromise2 = createEventPromise(); // IDP
+  const accessorEncryptPromise = createEventPromise(); // IDP
+  const requestStatusCompletedPromise2 = createEventPromise(); // RP
+  const requestClosedPromise2 = createEventPromise(); // RP
+  const dataRequestReceivedPromise2 = createEventPromise(); // AS
+  const sendDataResultPromise2 = createEventPromise(); // AS
 
   let createRequestParams;
 
@@ -62,7 +61,10 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
   let requestMessageSalt;
   let requestMessageHash;
 
-  let originalASMqAddresses;
+  let responseAccessorId;
+  let responseAccessorId2;
+
+  let originalIdPMqAddresses;
 
   const data = JSON.stringify({
     test: 'test',
@@ -71,26 +73,29 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
   });
 
   before(async function() {
+    this.timeout(10000);
     if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
       this.test.parent.pending = true;
       this.skip();
     }
-    this.timeout(10000);
-    if (db.idp1Identities[0] == null) {
+
+    const identity = db.idp1Identities.find(
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+    );
+
+    if (!identity) {
       throw new Error('No created identity to use');
     }
 
-    const response = await commonApi.getNodeInfo('as1');
+    namespace = identity.namespace;
+    identifier = identity.identifier;
+    const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
-    originalASMqAddresses = responseBody.mq;
-
-    namespace = db.idp1Identities[0].namespace;
-    identifier = db.idp1Identities[0].identifier;
+    originalIdPMqAddresses = responseBody.mq;
 
     createRequestParams = {
-      node_id: 'proxy1_rp4',
       reference_id: rpReferenceId,
-      callback_url: config.PROXY1_CALLBACK_URL,
+      callback_url: config.RP_CALLBACK_URL,
       mode: 3,
       namespace,
       identifier,
@@ -113,8 +118,68 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       request_timeout: 86400,
     };
 
-    //RP
     proxy1EventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'data_request' &&
+        callbackData.request_id === requestId1
+      ) {
+        dataRequestReceivedPromise1.resolve(callbackData);
+      } else if (
+        callbackData.type === 'send_data_result' &&
+        callbackData.request_id === requestId1
+      ) {
+        sendDataResultPromise1.resolve(callbackData);
+      } else if (
+        callbackData.type === 'data_request' &&
+        callbackData.request_id === requestId2
+      ) {
+        dataRequestReceivedPromise2.resolve(callbackData);
+      } else if (
+        callbackData.type === 'send_data_result' &&
+        callbackData.request_id === requestId2
+      ) {
+        sendDataResultPromise2.resolve(callbackData);
+      }
+      if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId1
+      ) {
+        proxyIncomingRequestPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'response_result' &&
+        callbackData.request_id === requestId1
+      ) {
+        proxyResponseResultPromise.resolve(callbackData);
+      }
+    });
+
+    proxy1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId1) {
+        proxyAccessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
+    idp1EventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'incoming_request' &&
+        callbackData.request_id === requestId2
+      ) {
+        incomingRequestPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'response_result' &&
+        callbackData.request_id === requestId2
+      ) {
+        responseResultPromise2.resolve(callbackData);
+      }
+    });
+
+    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      if (callbackData.request_id === requestId2) {
+        accessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
+    rpEventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId &&
@@ -159,73 +224,12 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
         }
       }
     });
-
-    //AS
-    proxy1EventEmitter.on('callback', function(callbackData) {
-      if (callbackData.type === 'add_or_update_service_result') {
-        if (callbackData.reference_id === bankStatementReferenceId) {
-          addOrUpdateServiceBankStatementResultPromise.resolve(callbackData);
-        }
-      } else if (
-        callbackData.type === 'data_request' &&
-        callbackData.request_id === requestId1
-      ) {
-        dataRequestReceivedPromise1.resolve(callbackData);
-      } else if (
-        callbackData.type === 'send_data_result' &&
-        callbackData.request_id === requestId1
-      ) {
-        sendDataResultPromise1.resolve(callbackData);
-      }
-    });
-
-    idp1EventEmitter.on('callback', function(callbackData) {
-      if (
-        callbackData.type === 'incoming_request' &&
-        callbackData.request_id === requestId1
-      ) {
-        incomingRequestPromise1.resolve(callbackData);
-      } else if (
-        callbackData.type === 'response_result' &&
-        callbackData.request_id === requestId1
-      ) {
-        responseResultPromise1.resolve(callbackData);
-      } else if (
-        callbackData.type === 'incoming_request' &&
-        callbackData.request_id === requestId2
-      ) {
-        incomingRequestPromise2.resolve(callbackData);
-      } else if (
-        callbackData.type === 'response_result' &&
-        callbackData.request_id === requestId2
-      ) {
-        responseResultPromise2.resolve(callbackData);
-      }
-    });
-
-    as1EventEmitter.on('callback', function(callbackData) {
-      if (callbackData.type === 'add_or_update_service_result') {
-        if (callbackData.reference_id === bankStatementReferenceId) {
-          addOrUpdateServiceBankStatementResultPromise2.resolve(callbackData);
-        }
-      } else if (
-        callbackData.type === 'data_request' &&
-        callbackData.request_id === requestId2
-      ) {
-        dataRequestReceivedPromise2.resolve(callbackData);
-      } else if (
-        callbackData.type === 'send_data_result' &&
-        callbackData.request_id === requestId2
-      ) {
-        sendDataResultPromise2.resolve(callbackData);
-      }
-    });
   });
 
-  it('NDID should add AS node (as1) to proxy1', async function() {
+  it('NDID should add IdP node (idp1) to proxy1', async function() {
     this.timeout(10000);
     const response = await ndidApi.addNodeToProxyNode('ndid1', {
-      node_id: 'as1',
+      node_id: 'idp1',
       proxy_node_id: 'proxy1',
       config: 'KEY_ON_PROXY',
     });
@@ -233,58 +237,20 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
     await wait(3000);
   });
 
-  it('AS node (as1) should add to proxy1 successfully', async function() {
+  it('IdP node (idp1) should add to proxy1 successfully', async function() {
     this.timeout(10000);
     const response = await commonApi.getNodeInfo('proxy1', {
-      node_id: 'as1',
+      node_id: 'idp1',
     });
     const responseBody = await response.json();
-    expect(responseBody.role).to.equal('AS');
+    expect(responseBody.role).to.equal('IdP');
     expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
     expect(responseBody.proxy.config).to.equal('KEY_ON_PROXY');
   });
 
-  it('AS node (as1) should add offered service (bank_statement) successfully', async function() {
+  it('RP should create a request successfully', async function() {
     this.timeout(15000);
-    const response = await asApi.addOrUpdateService('proxy1', {
-      node_id: asNodeId,
-      serviceId: 'bank_statement',
-      reference_id: bankStatementReferenceId,
-      callback_url: config.PROXY1_CALLBACK_URL,
-      min_ial: 1.1,
-      min_aal: 1,
-      url: config.PROXY1_CALLBACK_URL,
-    });
-    expect(response.status).to.equal(202);
-
-    const addOrUpdateServiceResult = await addOrUpdateServiceBankStatementResultPromise.promise;
-    expect(addOrUpdateServiceResult).to.deep.include({
-      node_id: asNodeId,
-      reference_id: bankStatementReferenceId,
-      success: true,
-    });
-  });
-
-  it('AS node (as1) should have offered service (bank_statement)', async function() {
-    this.timeout(15000);
-    const response = await asApi.getService('proxy1', {
-      node_id: asNodeId,
-      serviceId: 'bank_statement',
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.deep.equal({
-      min_ial: 1.1,
-      min_aal: 1,
-      url: config.PROXY1_CALLBACK_URL,
-      active: true,
-      suspended: false,
-    });
-  });
-
-  it('RP node (proxy1_rp4) should create a request successfully', async function() {
-    this.timeout(15000);
-    const response = await rpApi.createRequest('proxy1', createRequestParams);
+    const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
@@ -294,7 +260,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
 
     const createRequestResult = await createRequestResultPromise1.promise;
     expect(createRequestResult).to.deep.include({
-      node_id: createRequestParams.node_id,
+      node_id: 'rp1',
       success: true,
       reference_id: rpReferenceId,
       request_id: requestId1,
@@ -302,10 +268,10 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(15000);
+    this.timeout(10000);
     const requestStatus = await requestStatusPendingPromise1.promise;
     expect(requestStatus).to.deep.include({
-      node_id: createRequestParams.node_id,
+      node_id: 'rp1',
       request_id: requestId1,
       status: 'pending',
       mode: createRequestParams.mode,
@@ -331,11 +297,11 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('After add IdP node (idp1) to proxy1 it should receive incoming request callback', async function() {
     this.timeout(15000);
-    const incomingRequest = await incomingRequestPromise1.promise;
+    const incomingRequest = await proxyIncomingRequestPromise.promise;
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -347,19 +313,18 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       node_id: 'idp1',
       mode: createRequestParams.mode,
       request_id: requestId1,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId1
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
-      requester_node_id: createRequestParams.node_id,
+      requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
@@ -371,35 +336,57 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
-    const response = await idpApi.createResponse('idp1', {
+    responseAccessorId = identity.accessors[0].accessorId;
+    let privateKey = identity.accessors[0].accessorPrivateKey;
+
+    setIdPUseSpecificPrivateKeyForSign(true, privateKey);
+
+    const response = await idpApi.createResponse('proxy1', {
+      node_id: 'idp1',
       reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
+      callback_url: config.PROXY1_CALLBACK_URL,
       request_id: requestId1,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
-      secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
     });
     expect(response.status).to.equal(202);
+  });
 
-    const responseResult = await responseResultPromise1.promise;
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await proxyAccessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: responseAccessorId,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idpReferenceId,
+      request_id: requestId1,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
+    const responseResult = await proxyResponseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
+      type: 'response_result',
       reference_id: idpReferenceId,
       request_id: requestId1,
       success: true,
     });
+
+    setIdPUseSpecificPrivateKeyForSign(false);
   });
 
   it('RP should receive confirmed request status with valid proofs', async function() {
@@ -425,7 +412,6 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -450,7 +436,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id: createRequestParams.node_id,
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -482,7 +468,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
     this.timeout(15000);
     const requestStatus = await requestStatusCompletedPromise1.promise;
     expect(requestStatus).to.deep.include({
-      node_id: createRequestParams.node_id,
+      node_id: 'rp1',
       request_id: requestId1,
       status: 'completed',
       mode: createRequestParams.mode,
@@ -502,7 +488,6 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -519,7 +504,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
     this.timeout(15000);
     const requestStatus = await requestClosedPromise1.promise;
     expect(requestStatus).to.deep.include({
-      node_id: createRequestParams.node_id,
+      node_id: 'rp1',
       request_id: requestId1,
       status: 'completed',
       mode: createRequestParams.mode,
@@ -539,7 +524,6 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -552,87 +536,55 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('NDID should remove AS node (as1) from proxy1', async function() {
+  it('NDID should remove IdP node (idp1) from proxy1', async function() {
     this.timeout(10000);
     const response = await ndidApi.removeNodeFromProxyNode('ndid1', {
-      node_id: 'as1',
+      node_id: 'idp1',
     });
     expect(response.status).to.equal(204);
     await wait(3000);
   });
 
-  it('AS node (as1) should remove from proxy1 successfully', async function() {
+  it('IdP node (idp1) should remove from proxy1 successfully', async function() {
     this.timeout(10000);
-    const response = await commonApi.getNodeInfo('as1');
+    const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
-    expect(responseBody.role).to.equal('AS');
+    expect(responseBody.role).to.equal('IdP');
     expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
+    expect(responseBody.max_ial).is.a('number');
+    expect(responseBody.max_aal).is.a('number');
     expect(responseBody.proxy).to.be.undefined;
     expect(responseBody.mq).to.be.null;
   });
 
-  it('Should set MQ addresses (use debug) for AS node (as1) successfully', async function() {
+  it('Should set MQ addresses (use debug) for IdP node (idp1) successfully', async function() {
     this.timeout(20000);
 
-    await debugApi.transact('as1', {
-      nodeId: 'as1',
+    await debugApi.transact('idp1', {
+      nodeId: 'idp1',
       fnName: 'SetMqAddresses',
-      addresses: originalASMqAddresses,
+      addresses: originalIdPMqAddresses,
     });
 
     await wait(3000);
   });
 
-  it('AS node (as1) should set MQ addresses successfully', async function() {
+  it('IdP node (idp1) should set MQ addresses successfully', async function() {
     this.timeout(10000);
-    const response = await commonApi.getNodeInfo('as1');
+    const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
-    expect(responseBody.role).to.equal('AS');
+    expect(responseBody.role).to.equal('IdP');
     expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
+    expect(responseBody.max_ial).is.a('number');
+    expect(responseBody.max_aal).is.a('number');
     expect(responseBody.proxy).to.be.undefined;
-    expect(responseBody.mq).to.deep.equal(originalASMqAddresses);
+    expect(responseBody.mq).to.deep.equal(originalIdPMqAddresses);
   });
 
-  it('AS node (proxy1_as4) should add offered service (bank_statement) successfully', async function() {
-    this.timeout(15000);
-    const response = await asApi.addOrUpdateService('as1', {
-      serviceId: 'bank_statement',
-      reference_id: bankStatementReferenceId,
-      callback_url: config.AS1_CALLBACK_URL,
-      min_ial: 1.1,
-      min_aal: 1,
-      url: config.AS1_CALLBACK_URL,
-    });
-    expect(response.status).to.equal(202);
-
-    const addOrUpdateServiceResult = await addOrUpdateServiceBankStatementResultPromise2.promise;
-    expect(addOrUpdateServiceResult).to.deep.include({
-      node_id: asNodeId,
-      reference_id: bankStatementReferenceId,
-      success: true,
-    });
-  });
-
-  it('AS node (proxy1_as4) should have offered service (bank_statement)', async function() {
-    this.timeout(15000);
-    const response = await asApi.getService('as1', {
-      serviceId: 'bank_statement',
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.deep.equal({
-      min_ial: 1.1,
-      min_aal: 1,
-      url: config.AS1_CALLBACK_URL,
-      active: true,
-      suspended: false,
-    });
-  });
-
-  it('RP node (rp1) should create a request successfully', async function() {
+  it('RP should create a request successfully', async function() {
     this.timeout(15000);
 
-    const response = await rpApi.createRequest('proxy1', createRequestParams);
+    const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
@@ -642,10 +594,10 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
 
     const createRequestResult = await createRequestResultPromise2.promise;
     expect(createRequestResult).to.deep.include({
-      node_id: createRequestParams.node_id,
-      success: true,
+      node_id: 'rp1',
       reference_id: rpReferenceId,
       request_id: requestId2,
+      success: true,
     });
   });
 
@@ -678,11 +630,11 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('After remove IdP node (idp1) from proxy1 it should receive incoming request callback', async function() {
     this.timeout(15000);
-    const incomingRequest = await incomingRequestPromise2.promise;
+    const incomingRequest = await incomingRequestPromise.promise;
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -693,19 +645,18 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       node_id: 'idp1',
       mode: createRequestParams.mode,
       request_id: requestId2,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       request_message: createRequestParams.request_message,
-      request_message_hash: hashRequestMessageForConsent(
-        createRequestParams.request_message,
-        incomingRequest.initial_salt,
-        requestId2
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt
       ),
-      requester_node_id: createRequestParams.node_id,
+      requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
       min_aal: createRequestParams.min_aal,
       data_request_list: dataRequestListWithoutParams,
     });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
@@ -717,31 +668,48 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
+
+    responseAccessorId2 = identity.accessors[0].accessorId;
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId2,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
       secret: identity.accessors[0].secret,
       status: 'accept',
-      signature: createResponseSignature(
-        identity.accessors[0].accessorPrivateKey,
-        requestMessageHash
-      ),
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId2,
     });
     expect(response.status).to.equal(202);
+  });
 
+  it('IdP should receive accessor encrypt callback with correct data', async function() {
+    this.timeout(15000);
+
+    const accessorEncryptParams = await accessorEncryptPromise.promise;
+    expect(accessorEncryptParams).to.deep.include({
+      node_id: 'idp1',
+      type: 'accessor_encrypt',
+      accessor_id: responseAccessorId2,
+      key_type: 'RSA',
+      padding: 'none',
+      reference_id: idpReferenceId,
+      request_id: requestId2,
+    });
+
+    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+      .that.is.not.empty;
+  });
+
+  it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise2.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
+      type: 'response_result',
       reference_id: idpReferenceId,
       request_id: requestId2,
       success: true,
@@ -771,7 +739,6 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -796,7 +763,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       request_params: createRequestParams.data_request_list[0].request_params,
       max_ial: 2.3,
       max_aal: 3,
-      requester_node_id: createRequestParams.node_id,
+      requester_node_id: 'rp1',
     });
     expect(dataRequest.response_signature_list).to.have.lengthOf(1);
     expect(dataRequest.response_signature_list[0]).to.be.a('string').that.is.not
@@ -805,11 +772,12 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
 
   it('AS should send data successfully', async function() {
     this.timeout(15000);
-    const response = await asApi.sendData('as1', {
+    const response = await asApi.sendData('proxy1', {
+      node_id: asNodeId,
       requestId: requestId2,
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: asReferenceId,
-      callback_url: config.AS1_CALLBACK_URL,
+      callback_url: config.PROXY1_CALLBACK_URL,
       data,
     });
     expect(response.status).to.equal(202);
@@ -827,7 +795,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
     this.timeout(15000);
     const requestStatus = await requestStatusCompletedPromise2.promise;
     expect(requestStatus).to.deep.include({
-      node_id: createRequestParams.node_id,
+      node_id: 'rp1',
       request_id: requestId2,
       status: 'completed',
       mode: createRequestParams.mode,
@@ -847,7 +815,6 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -864,7 +831,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
     this.timeout(15000);
     const requestStatus = await requestClosedPromise2.promise;
     expect(requestStatus).to.deep.include({
-      node_id: createRequestParams.node_id,
+      node_id: 'rp1',
       request_id: requestId2,
       status: 'completed',
       mode: createRequestParams.mode,
@@ -884,7 +851,6 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
         {
           idp_id: 'idp1',
           valid_signature: true,
-          valid_proof: true,
           valid_ial: true,
         },
       ],
@@ -899,16 +865,16 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
 
   after(async function() {
     this.timeout(15000);
-    const response = await commonApi.getNodeInfo('as1');
+    const response = await commonApi.getNodeInfo('idp1');
     const responseBody = await response.json();
     if (responseBody.proxy) {
       await ndidApi.removeNodeFromProxyNode('ndid1', {
-        node_id: 'as1',
+        node_id: 'idp1',
       });
-      await debugApi.transact('as1', {
-        nodeId: 'as1',
+      await debugApi.transact('idp1', {
+        nodeId: 'idp1',
         fnName: 'SetMqAddresses',
-        addresses: originalASMqAddresses,
+        addresses: originalIdPMqAddresses,
       });
       await wait(3000);
     }
