@@ -382,7 +382,7 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
   before(function() {
     if (!idp2Available) {
       this.test.pending = true;
-      this.test.skip();
+      this.skip();
     }
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
