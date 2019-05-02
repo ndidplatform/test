@@ -5,11 +5,7 @@ import * as rpApi from '../../../api/v3/rp';
 import * as idpApi from '../../../api/v3/idp';
 // import * as commonApi from '../../api/v2/common';
 import { rpEventEmitter, idp1EventEmitter } from '../../../callback_server';
-import {
-  createEventPromise,
-  generateReferenceId,
-  hash
-} from '../../../utils';
+import { createEventPromise, generateReferenceId, hash } from '../../../utils';
 import * as config from '../../../config';
 
 describe('1 IdP, reject consent, mode 1', function() {
@@ -181,12 +177,9 @@ describe('1 IdP, reject consent, mode 1', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
       ial: 2.3,
       aal: 3,
       status: 'reject',
-      //signature: createResponseSignature(userPrivateKey, requestMessageHash),
     });
     expect(response.status).to.equal(202);
 

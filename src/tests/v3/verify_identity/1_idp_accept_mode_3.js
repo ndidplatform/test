@@ -8,8 +8,6 @@ import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
   hash,
 } from '../../../utils';
 import * as config from '../../../config';
