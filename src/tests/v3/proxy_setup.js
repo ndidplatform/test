@@ -215,8 +215,8 @@ describe('Proxy (proxy2) setup', function() {
       //accessor_sign_url: config.PROXY2_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY2_CALLBACK_URL,
       identity_modification_notification_url:
-        config.PROXY1_NOTIFICATION_CALLBACK_URL,
-      accessor_encrypt_url: config.PROXY1_ACCESSOR_ENCRYPT_CALLBACK_URL,
+        config.PROXY2_NOTIFICATION_CALLBACK_URL,
+      accessor_encrypt_url: config.PROXY2_ACCESSOR_ENCRYPT_CALLBACK_URL,
     });
     expect(response.status).to.equal(204);
   });
@@ -230,8 +230,8 @@ describe('Proxy (proxy2) setup', function() {
       //accessor_sign_url: config.PROXY2_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY2_CALLBACK_URL,
       identity_modification_notification_url:
-        config.PROXY1_NOTIFICATION_CALLBACK_URL,
-      accessor_encrypt_url: config.PROXY1_ACCESSOR_ENCRYPT_CALLBACK_URL,
+        config.PROXY2_NOTIFICATION_CALLBACK_URL,
+      accessor_encrypt_url: config.PROXY2_ACCESSOR_ENCRYPT_CALLBACK_URL,
     });
   });
 
