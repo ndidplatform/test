@@ -6,8 +6,17 @@ import * as commonApi from '../../../api/v3/common';
 import * as asApi from '../../../api/v3/as';
 import * as db from '../../../db';
 import { generateReferenceId, wait, createEventPromise } from '../../../utils';
-import { as1Available, ndidAvailable, as2Available } from '../../';
-import { as1EventEmitter, as2EventEmitter } from '../../../callback_server';
+import {
+  as1Available,
+  ndidAvailable,
+  as2Available,
+  proxy1Available,
+} from '../../';
+import {
+  as1EventEmitter,
+  as2EventEmitter,
+  proxy1EventEmitter,
+} from '../../../callback_server';
 import * as config from '../../../config';
 
 describe('RP create request errors', function() {
@@ -698,7 +707,6 @@ describe('RP create request errors', function() {
       min_ial: 3,
       min_aal: 3,
     });
-    expect(responseUpdateService.status).to.equal(202);
     expect(as2ResponseUpdateService.status).to.equal(202);
 
     await wait(3000);
@@ -722,7 +730,7 @@ describe('RP create request errors', function() {
     });
 
     const as2ResponseBody = await as2Response.json();
-    expect(response.status).to.equal(200);
+    expect(as2Response.status).to.equal(200);
     expect(as2ResponseBody).to.deep.include({
       min_ial: 3,
       min_aal: 3,
@@ -741,7 +749,7 @@ describe('RP create request errors', function() {
       data_request_list: [
         {
           service_id: 'bank_statement',
-          as_id_list: [],
+          as_id_list: ['as1', 'as2'],
           min_as: 1,
           request_params: JSON.stringify({
             format: 'pdf',
@@ -825,6 +833,8 @@ describe('RP create request (mode 2) with service in data request list does not 
   const addOrUpdateServiceBankStatementResultPromise = createEventPromise();
   const as2BankStatementReferenceId = generateReferenceId();
   const as2AddOrUpdateServiceBankStatementResultPromise = createEventPromise();
+  const proxy1BankStatementReferenceId = generateReferenceId();
+  const proxy1AddOrUpdateServiceBankStatementResultPromise = createEventPromise();
 
   let identityMode2;
   let identityMode3;
@@ -860,6 +870,18 @@ describe('RP create request (mode 2) with service in data request list does not 
         }
       }
     });
+
+    if (proxy1Available) {
+      proxy1EventEmitter.on('callback', function(callbackData) {
+        if (callbackData.type === 'add_or_update_service_result') {
+          if (callbackData.reference_id === proxy1BankStatementReferenceId) {
+            proxy1AddOrUpdateServiceBankStatementResultPromise.resolve(
+              callbackData
+            );
+          }
+        }
+      });
+    }
   });
 
   it('NDID should add new namespace (TEST_NAMESPACE) successfully', async function() {
@@ -935,6 +957,46 @@ describe('RP create request (mode 2) with service in data request list does not 
       reference_id: as2BankStatementReferenceId,
       success: true,
     });
+    if (proxy1Available) {
+      const proxy1ResponseUpdateService = await asApi.addOrUpdateService(
+        'proxy1',
+        {
+          node_id: 'proxy1_as4',
+          serviceId: 'bank_statement',
+          reference_id: proxy1BankStatementReferenceId,
+          callback_url: config.PROXY1_CALLBACK_URL,
+          supported_namespace_list: ['TEST_NAMESPACE'],
+        }
+      );
+      expect(proxy1ResponseUpdateService.status).to.equal(202);
+
+      const proxy1AddOrUpdateServiceResult = await proxy1AddOrUpdateServiceBankStatementResultPromise.promise;
+      expect(proxy1AddOrUpdateServiceResult).to.deep.include({
+        reference_id: proxy1BankStatementReferenceId,
+        success: true,
+      });
+    }
+  });
+
+  it('AS (proxy1_as4) should add offered service (update supported_namespace_list bank_statement) successfully', async function() {
+    if (!proxy1Available) this.skip();
+    const proxy1ResponseUpdateService = await asApi.addOrUpdateService(
+      'proxy1',
+      {
+        node_id: 'proxy1_as4',
+        serviceId: 'bank_statement',
+        reference_id: proxy1BankStatementReferenceId,
+        callback_url: config.PROXY1_CALLBACK_URL,
+        supported_namespace_list: ['TEST_NAMESPACE'],
+      }
+    );
+    expect(proxy1ResponseUpdateService.status).to.equal(202);
+
+    const proxy1AddOrUpdateServiceResult = await proxy1AddOrUpdateServiceBankStatementResultPromise.promise;
+    expect(proxy1AddOrUpdateServiceResult).to.deep.include({
+      reference_id: proxy1BankStatementReferenceId,
+      success: true,
+    });
   });
 
   it('AS (as2) should have offered service (update supported_namespace_list bank_statement)', async function() {
@@ -948,6 +1010,27 @@ describe('RP create request (mode 2) with service in data request list does not 
       min_ial: 1.1,
       min_aal: 1,
       url: config.AS2_CALLBACK_URL,
+      active: true,
+      suspended: false,
+      supported_namespace_list: ['TEST_NAMESPACE'],
+    });
+    await wait(3000);
+  });
+
+  it('AS (proxy1_as4) should have offered service (update supported_namespace_list bank_statement)', async function() {
+    this.timeout(10000);
+    if (!proxy1Available) this.skip();
+    const proxy1Response = await asApi.getService('proxy1', {
+      node_id: 'proxy1_as4',
+      serviceId: 'bank_statement',
+    });
+
+    const proxy1ResponseBody = await proxy1Response.json();
+    expect(proxy1Response.status).to.equal(200);
+    expect(proxy1ResponseBody).to.deep.equal({
+      min_ial: 1.1,
+      min_aal: 1,
+      url: config.PROXY1_CALLBACK_URL,
       active: true,
       suspended: false,
       supported_namespace_list: ['TEST_NAMESPACE'],
@@ -1114,9 +1197,20 @@ describe('RP create request (mode 2) with service in data request list does not 
       supported_namespace_list: ['citizen_id'],
     });
 
+    if (proxy1Available) {
+      await asApi.addOrUpdateService('proxy1', {
+        node_id: 'proxy1_as4',
+        serviceId: 'bank_statement',
+        reference_id: bankStatementReferenceId,
+        callback_url: config.PROXY1_CALLBACK_URL,
+        supported_namespace_list: ['citizen_id'],
+      });
+    }
+
     await wait(3000);
 
     as1EventEmitter.removeAllListeners('callback');
     as2EventEmitter.removeAllListeners('callback');
+    proxy1EventEmitter.removeAllListeners('callback');
   });
 });
