@@ -1,4 +1,5 @@
 import { ndidAvailable } from '../..';
+import { proxy1Available } from '../..';
 
 describe('NDID disable and enable tests', function() {
   before(function() {
@@ -15,4 +16,14 @@ describe('NDID disable and enable tests', function() {
   require('./enable_service');
   require('./disable_service_destination');
   require('./enable_service_destination');
+});
+
+describe('NDID disable and enable (proxy) tests', function() {
+  before(function() {
+    if (!proxy1Available || !ndidAvailable) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+  });
+  require('./proxy/disable_enable_proxy_node');
 });

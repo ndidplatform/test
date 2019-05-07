@@ -80,7 +80,9 @@ describe('NDID update RP node to other proxy node', function() {
   const requestStatusUpdates = [];
 
   before(function() {
-    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+    const identity = db.idp1Identities.find(
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+    );
 
     if (!identity) {
       throw new Error('No created identity to use');
@@ -371,6 +373,9 @@ describe('NDID update RP node to other proxy node', function() {
     });
     await wait(3000);
   });
+  idp1EventEmitter.removeAllListeners('callback');
+  idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+  proxy2EventEmitter.removeAllListeners('callback');
 });
 
 describe('NDID update IdP node to other proxy node', function() {
@@ -698,6 +703,10 @@ describe('NDID update IdP node to other proxy node', function() {
     });
     await wait(3000);
   });
+
+  proxy1EventEmitter.removeAllListeners('callback');
+  proxy2EventEmitter.removeAllListeners('callback');
+  proxy2EventEmitter.removeAllListeners('accessor_encrypt_callback');
 });
 
 describe('NDID update AS node to other proxy node', function() {
@@ -741,7 +750,9 @@ describe('NDID update AS node to other proxy node', function() {
   const requestStatusUpdates = [];
 
   before(function() {
-    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+    const identity = db.idp1Identities.find(
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+    );
 
     if (!identity) {
       throw new Error('No created identity to use');
@@ -1262,4 +1273,9 @@ describe('NDID update AS node to other proxy node', function() {
     });
     await wait(3000);
   });
+
+  rpEventEmitter.removeAllListeners('callback');
+  idp1EventEmitter.removeAllListeners('callback');
+  idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+  proxy2EventEmitter.removeAllListeners('callback');
 });

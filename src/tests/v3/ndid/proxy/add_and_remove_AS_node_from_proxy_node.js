@@ -81,7 +81,9 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       this.skip();
     }
 
-    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+    const identity = db.idp1Identities.find(
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+    );
 
     if (!identity) {
       throw new Error('No created identity to use');
