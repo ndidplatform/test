@@ -204,11 +204,6 @@ describe('IdP response errors tests', function() {
   // });
 
   it('should get an error when making a response with non-existent accessor ID (mode 3)', async function() {
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
