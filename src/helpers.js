@@ -4,7 +4,7 @@ export async function isNodeAvailable(nodeId) {
   try {
     const response = await commonApi.getInfo(nodeId);
     const responseBody = await response.json();
-    if (responseBody.nodeId === nodeId) {
+    if (responseBody.node_id === nodeId) {
       return true;
     }
     return false;
