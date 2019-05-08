@@ -892,5 +892,9 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
       });
       await wait(3000);
     }
+    proxy1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    rpEventEmitter.removeAllListeners('callback');
   });
 });

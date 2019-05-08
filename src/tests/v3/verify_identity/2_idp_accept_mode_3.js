@@ -465,5 +465,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
     idp2EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
   });
 });

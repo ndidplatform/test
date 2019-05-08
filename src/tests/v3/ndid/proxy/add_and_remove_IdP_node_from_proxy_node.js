@@ -878,5 +878,10 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       });
       await wait(3000);
     }
+    proxy1EventEmitter.removeAllListeners('callback');
+    proxy1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    rpEventEmitter.removeAllListeners('callback');
   });
 });

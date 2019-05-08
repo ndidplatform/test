@@ -346,6 +346,7 @@ describe('Reject revoke accessor test', function() {
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
   });
 
   //revoke by idp1
@@ -556,6 +557,7 @@ describe('Reject revoke accessor test', function() {
     });
     after(function() {
       idp1EventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     });
   });
 

@@ -586,6 +586,7 @@ describe('1 IdP, 1 AS, mode 3, AS (proxy1_as4) behind proxy', function() {
   after(function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     proxy1EventEmitter.removeAllListeners('callback');
   });
 });

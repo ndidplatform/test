@@ -643,6 +643,7 @@ describe("Update nodes's DPKI test", function() {
     after(function() {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       as1EventEmitter.removeAllListeners('callback');
     });
   });

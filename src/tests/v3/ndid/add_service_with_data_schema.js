@@ -626,6 +626,13 @@ describe('NDID add and update service with data_schema test', function() {
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
+
+    after(function() {
+      rpEventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+      as1EventEmitter.removeAllListeners('callback');
+    });
   });
 
   describe('NDID update service with new data_schema test', function() {
@@ -1180,6 +1187,11 @@ describe('NDID add and update service with data_schema test', function() {
       });
       await wait(3000);
     });
+
+    rpEventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    as1EventEmitter.removeAllListeners('callback');
   });
 
   describe('NDID update service with data_schema = n/a (does not validate data) test', function() {
@@ -1654,6 +1666,11 @@ describe('NDID add and update service with data_schema test', function() {
         data_schema_version: '1',
       });
       await wait(3000);
+
+      rpEventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+      as1EventEmitter.removeAllListeners('callback');
     });
   });
 });

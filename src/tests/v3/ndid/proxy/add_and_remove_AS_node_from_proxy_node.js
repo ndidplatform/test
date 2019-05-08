@@ -957,5 +957,9 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       });
       await wait(3000);
     }
+    proxy1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    as1EventEmitter.removeAllListeners('callback');
   });
 });

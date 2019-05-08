@@ -351,6 +351,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
   });
 
   describe('IdP (idp1) should revoke accessor (mode 3) successfully', function() {

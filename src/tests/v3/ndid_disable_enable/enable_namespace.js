@@ -139,6 +139,6 @@ describe('NDID enable namespace test', function() {
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
-    idp1EventEmitter.removeAllListeners('accessor_sign_callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
   });
 });

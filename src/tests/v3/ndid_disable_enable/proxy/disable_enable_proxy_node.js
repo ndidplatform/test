@@ -463,7 +463,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       });
       await wait(5000);
 
-      proxy1Available.removeAllListeners('callback');
+      proxy1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       as1EventEmitter.removeAllListeners('callback');
