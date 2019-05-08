@@ -402,7 +402,7 @@ describe('Create identity with same namespace and multiple identifier (mode 2) t
           .that.include(2);
       });
 
-      it('idp2 should create identity request (mode 2) unsuccessfully', async function() {
+      it('idp2 should create identity request (mode 2) unsuccessfully (Exceed number of identifier allowed for namespace) ', async function() {
         this.timeout(10000);
         const response = await identityApi.createIdentity('idp2', {
           reference_id: idp2ReferenceId,
