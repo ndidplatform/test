@@ -94,26 +94,6 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
     accessorId = responseBody.accessor_id;
   });
 
-  // it('should receive accessor sign callback with correct data', async function() {
-  //   this.timeout(15000);
-  //   const sid = `${namespace}:${identifier}`;
-  //   const sid_hash = hash(sid);
-
-  //   const accessorSignParams = await accessorSignPromise.promise;
-  //   expect(accessorSignParams).to.deep.equal({
-  //     type: 'accessor_sign',
-  //     node_id: 'idp1',
-  //     reference_id: referenceId,
-  //     accessor_id: accessorId,
-  //     sid,
-  //     sid_hash,
-  //     hash_method: 'SHA256',
-  //     key_type: 'RSA',
-  //     sign_method: 'RSA-SHA256',
-  //     padding: 'PKCS#1v1.5',
-  //   });
-  // });
-
   it('Identity should be created successfully', async function() {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;

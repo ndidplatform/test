@@ -373,7 +373,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
 
     before(async function() {
       this.timeout(10000);
-      
+
       accessorIdForRevoke = accessorId;
       responseAccessorId = accessorId2;
 
@@ -563,6 +563,216 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('identity_notification_callback');
+    });
+  });
+
+  describe('Add duplicate accessor id that is revoked', function() {
+    const keypair = forge.pki.rsa.generateKeyPair(2048);
+    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
+    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+
+    const referenceId = generateReferenceId();
+
+    const createIdentityResultPromise = createEventPromise();
+    const incomingRequestPromise = createEventPromise();
+    const responseResultPromise = createEventPromise();
+    const addAccessorRequestResultPromise = createEventPromise();
+    const addAccessorResultPromise = createEventPromise();
+    const accessorEncryptPromise = createEventPromise();
+
+    let accessorId;
+    let accessorId2;
+    let requestIdAddAccessor;
+    let responseAccessorId;
+
+    before(function() {
+      idp1EventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'create_identity_result' &&
+          callbackData.reference_id === referenceId
+        ) {
+          createIdentityResultPromise.resolve(callbackData);
+        } else if (
+          callbackData.type === 'add_accessor_request_result' &&
+          callbackData.request_id === requestIdAddAccessor
+        ) {
+          addAccessorRequestResultPromise.resolve(callbackData);
+        } else if (
+          callbackData.type === 'add_accessor_result' &&
+          callbackData.request_id === requestIdAddAccessor
+        ) {
+          addAccessorResultPromise.resolve(callbackData);
+        }
+        if (
+          callbackData.type === 'incoming_request' &&
+          callbackData.request_id === requestIdAddAccessor
+        ) {
+          incomingRequestPromise.resolve(callbackData);
+        } else if (
+          callbackData.type === 'response_result' &&
+          callbackData.request_id === requestIdAddAccessor
+        ) {
+          responseResultPromise.resolve(callbackData);
+        }
+      });
+
+      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+        if (callbackData.request_id === requestIdAddAccessor) {
+          accessorEncryptPromise.resolve(callbackData);
+        }
+      });
+    });
+
+    it('Should add accessor successfully', async function() {
+      this.timeout(10000);
+
+      let identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+
+      let accessor = identity.accessors.find(accessor => accessor.revoked);
+
+      const response = await identityApi.addAccessor('idp1', {
+        namespace: namespace,
+        identifier: identifier,
+        reference_id: referenceId,
+        callback_url: config.IDP1_CALLBACK_URL,
+        accessor_type: 'RSA',
+        accessor_public_key: accessorPublicKey,
+        accessor_id: accessor.accessorId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(202);
+      expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+      expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
+
+      requestIdAddAccessor = responseBody.request_id;
+      accessorId = responseBody.accessor_id;
+
+      const addAccessorRequestResult = await addAccessorRequestResultPromise.promise;
+      expect(addAccessorRequestResult).to.deep.include({
+        reference_id: referenceId,
+        request_id: requestIdAddAccessor,
+        accessor_id: accessorId,
+        success: true,
+      });
+      expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    });
+
+    it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+      this.timeout(10000);
+      const response = await identityApi.getRequestIdByReferenceId('idp1', {
+        reference_id: referenceId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.deep.equal({
+        request_id: requestIdAddAccessor,
+        accessor_id: accessorId,
+      });
+    });
+
+    it('idp1 should receive add accessor request', async function() {
+      this.timeout(15000);
+      const incomingRequest = await incomingRequestPromise.promise;
+      expect(incomingRequest).to.deep.include({
+        mode: 3,
+        request_id: requestIdAddAccessor,
+        //reference_group_code: referenceGroupCode,
+        //request_message: addAccessorRequestMessage,
+        // request_message_hash: hash(
+        //   addAccessorRequestMessage + incomingRequest.request_message_salt
+        // ),
+        requester_node_id: 'idp1',
+        min_ial: 1.1,
+        min_aal: 1,
+        data_request_list: [],
+      });
+      expect(incomingRequest.creation_time).to.be.a('number');
+      expect(incomingRequest.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      expect(incomingRequest.request_timeout).to.be.a('number');
+    });
+
+    it('IdP (idp1) should create response (accept) successfully', async function() {
+      this.timeout(10000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+
+      responseAccessorId = identity.accessors.find(
+        accessor => !accessor.revoked
+      ).accessorId;
+
+      const response = await idpApi.createResponse('idp1', {
+        reference_id: referenceId,
+        callback_url: config.IDP1_CALLBACK_URL,
+        request_id: requestIdAddAccessor,
+        ial: 2.3,
+        aal: 3,
+        status: 'accept',
+        accessor_id: responseAccessorId,
+      });
+      expect(response.status).to.equal(202);
+    });
+
+    it('IdP should receive accessor encrypt callback with correct data', async function() {
+      this.timeout(15000);
+
+      const accessorEncryptParams = await accessorEncryptPromise.promise;
+      expect(accessorEncryptParams).to.deep.include({
+        node_id: 'idp1',
+        type: 'accessor_encrypt',
+        accessor_id: responseAccessorId,
+        key_type: 'RSA',
+        padding: 'none',
+        reference_id: referenceId,
+        request_id: requestIdAddAccessor,
+      });
+
+      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+        'string'
+      ).that.is.not.empty;
+    });
+
+    it('IdP shoud receive callback create response result with success = true', async function() {
+      this.timeout(15000);
+      const responseResult = await responseResultPromise.promise;
+      expect(responseResult).to.deep.include({
+        node_id: 'idp1',
+        type: 'response_result',
+        reference_id: referenceId,
+        request_id: requestIdAddAccessor,
+        success: true,
+      });
+    });
+
+    it('Accessor id should be added unsuccessfully', async function() {
+      this.timeout(10000);
+      const addAccessorResult = await addAccessorResultPromise.promise;
+      expect(addAccessorResult).to.deep.include({
+        reference_id: referenceId,
+        request_id: requestIdAddAccessor,
+        success: false,
+      });
+    });
+
+    after(function() {
+      idp1EventEmitter.removeAllListeners('callback');
+      idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     });
   });
 
