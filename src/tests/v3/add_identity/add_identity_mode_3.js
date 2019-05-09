@@ -298,8 +298,8 @@ describe('Add identity (mode 3) tests', function() {
     it('idp1 should add identity that already onboard (already has reference group code) unsuccessfully', async function() {
       this.timeout(10000);
 
-      const identity = db.idp1Identities.find(identity => identity =>
-        identity.mode === 3
+      const identity = db.idp1Identities.find(
+        identity => identity.mode === 3 && !identity.revokeIdentityAssociation
       );
       let already_onboard_namespace = identity.namespace;
       let already_onboard_identifier = identity.identifier;
