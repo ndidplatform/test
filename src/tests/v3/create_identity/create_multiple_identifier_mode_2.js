@@ -6,7 +6,7 @@ import * as ndidApi from '../../../api/v3/ndid';
 import * as commonApi from '../../../api/v3/common';
 import * as identityApi from '../../../api/v3/identity';
 import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
-import { ndidAvailable } from '../..';
+import { ndidAvailable, idp2Available } from '../..';
 import { wait, generateReferenceId, createEventPromise } from '../../../utils';
 import * as config from '../../../config';
 
@@ -264,6 +264,11 @@ describe('Create identity with same namespace and multiple identifier (mode 2) t
 
     before(async function() {
       this.timeout(10000);
+
+      if (!idp2Available) {
+        this.test.parent.pending = true;
+        this.skip();
+      }
 
       //Check already added test_add_new_namespace namespace
       const response = await commonApi.getNamespaces('ndid1');

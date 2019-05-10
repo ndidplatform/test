@@ -17,6 +17,7 @@ import {
   rpEventEmitter,
 } from '../../../callback_server';
 import * as config from '../../../config';
+import { idp2Available } from '../..';
 
 describe('Create request tests', function() {
   //idp1 = mode 3, idp2 = mode 2
@@ -37,6 +38,11 @@ describe('Create request tests', function() {
   let accessorIdMode2;
 
   before(function() {
+    if (!idp2Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+
     idp1EventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
@@ -330,6 +336,7 @@ describe('Create request tests', function() {
 
     it('IdP (mode 3) should receive incoming request callback', async function() {
       this.timeout(15000);
+      if (!idp2Available) this.skip();
       const incomingRequest = await idp2IncomingRequestPromise.promise;
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
         dataRequest => {
@@ -726,6 +733,10 @@ describe('Create request with invalid mode tests', function() {
     const idp2CreateIdentityResultPromise = createEventPromise();
 
     before(function() {
+      if (!idp2Available) {
+        this.test.parent.pending = true;
+        this.skip();
+      }
       idp1EventEmitter.on('callback', function(callbackData) {
         if (
           callbackData.type === 'create_identity_result' &&

@@ -260,6 +260,11 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
 
   it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
     this.timeout(15000);
+
+    if (!idp2Available) {
+      this.skip();
+    }
+
     const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
     expect(notificationCreateIdentity).to.deep.include({
       node_id: 'idp2',
@@ -591,6 +596,11 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
 
     it('IdP (idp2) should receive incoming request callback', async function() {
       this.timeout(15000);
+
+      if (!idp2Available) {
+        this.skip();
+      }
+
       const incomingRequest = await idp2IncomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -713,8 +723,9 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     let lastStatusUpdateBlockHeight;
 
     before(function() {
-      if (db.idp2Identities[0] == null) {
-        throw new Error('No created identity to use');
+      if (!idp2Available) {
+        this.test.parent.pending = true;
+        this.skip();
       }
 
       const identity = db.idp2Identities.find(

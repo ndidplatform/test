@@ -41,14 +41,10 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
     const notificationCreateIdentityPromise = createEventPromise();
 
     before(function() {
-      if (db.idp1Identities[0] == null) {
-        throw new Error('No created identity to use');
-      }
-
-      if (!idp2Available) {
-        this.test.parent.pending = true;
-        this.skip();
-      }
+      // if (!idp2Available) {
+      //   this.test.parent.pending = true;
+      //   this.skip();
+      // }
 
       const identity = db.idp1Identities.find(identity => identity.mode === 2);
 
@@ -130,6 +126,7 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
 
     it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
       this.timeout(15000);
+      if (!idp2Available) this.skip();
       const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp2',
@@ -445,6 +442,9 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
 
     it('IdP (idp2) should receive incoming request callback', async function() {
       this.timeout(15000);
+
+      if (!idp2Available) this.skip();
+
       const incomingRequest = await idp2IncomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -1129,11 +1129,6 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
         throw new Error('No created identity to use');
       }
 
-      if (!idp2Available) {
-        this.test.parent.pending = true;
-        this.skip();
-      }
-
       accessorIdForRevoke = accessorId;
 
       idp1EventEmitter.on('callback', function(callbackData) {
@@ -1211,6 +1206,11 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
 
     it('After revoke acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
       this.timeout(15000);
+
+      if (!idp2Available) {
+        this.skip();
+      }
+
       const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp2',
@@ -1526,6 +1526,11 @@ describe('IdP (idp1) revoke accessor (mode 2) test', function() {
 
     it('IdP (idp2) should receive incoming request callback', async function() {
       this.timeout(15000);
+
+      if (!idp2Available) {
+        this.skip();
+      }
+
       const incomingRequest = await idp2IncomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(

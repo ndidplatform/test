@@ -447,6 +447,11 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
 
     it('IdP (idp2) should receive incoming request callback', async function() {
       this.timeout(15000);
+
+      if (!idp2Available) {
+        this.skip();
+      }
+
       const incomingRequest = await idp2IncomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -569,8 +574,9 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function() {
     let lastStatusUpdateBlockHeight;
 
     before(function() {
-      if (db.idp2Identities[0] == null) {
-        throw new Error('No created identity to use');
+      if (!idp2Available) {
+        this.test.parent.pending = true;
+        this.skip();
       }
 
       const identity = db.idp2Identities.find(

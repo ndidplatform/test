@@ -1127,10 +1127,6 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
   const notificationCreateIdentityPromise = createEventPromise();
 
   before(function() {
-    if (db.idp2Identities[0] == null) {
-      throw new Error('No created identity to use');
-    }
-
     if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();

@@ -12,6 +12,7 @@ import {
   hash,
 } from '../../../utils';
 import * as config from '../../../config';
+import { idp2Available } from '../..';
 
 describe('Add accessor with duplicate reference id test', function() {
   let namespace;
@@ -287,6 +288,7 @@ describe('Add accessor with duplicate reference id test', function() {
 
   it('IdP (idp2) should receive add accessor request', async function() {
     this.timeout(15000);
+    if (!idp2Available) this.skip();
     const incomingRequest = await idp2IncomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 3,

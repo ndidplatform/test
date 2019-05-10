@@ -14,7 +14,7 @@ import {
   rpEventEmitter,
   as1EventEmitter,
 } from '../../../callback_server';
-import { ndidAvailable } from '../..';
+import { ndidAvailable, idp2Available } from '../..';
 import {
   wait,
   generateReferenceId,
@@ -246,6 +246,7 @@ describe('Add identity (mode 2) tests', function() {
 
     it('idp2 that is not associated with this sid should add identity unsuccessfully', async function() {
       this.timeout(10000);
+      if (!idp2Available) this.skip();
       const response = await identityApi.addIdentity('idp2', {
         namespace,
         identifier,
@@ -1424,7 +1425,13 @@ describe('Add identity (mode 2) tests', function() {
       const addIdentityResultPromise = createEventPromise();
       let accessorId;
       let referenceGroupCode;
+
       before(function() {
+        if (!idp2Available) {
+          this.test.parent.pending = true;
+          this.skip();
+        }
+
         idp2EventEmitter.on('callback', function(callbackData) {
           if (
             callbackData.type === 'create_identity_result' &&
@@ -1457,6 +1464,7 @@ describe('Add identity (mode 2) tests', function() {
           }
         });
       });
+
       it('idp2 should create identity request (mode 2) successfully', async function() {
         this.timeout(10000);
         const response = await identityApi.createIdentity('idp2', {
@@ -2640,6 +2648,7 @@ describe('Add identity (mode 2) tests', function() {
       //   idp1EventEmitter.removeAllListeners('identity_notification_callback');
       // });
     });
+
     after(async function() {
       this.timeout(30000);
       const response = await ndidApi.updateNamespace('ndid1', {
@@ -2648,6 +2657,7 @@ describe('Add identity (mode 2) tests', function() {
           'test_add_identity and allowed_identifier_count_in_reference_group = 2',
         allowed_identifier_count_in_reference_group: 2,
       });
+
       expect(response.status).to.equal(204);
       await wait(1000);
 

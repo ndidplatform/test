@@ -14,7 +14,7 @@ import {
   rpEventEmitter,
   as1EventEmitter,
 } from '../../../callback_server';
-import { ndidAvailable } from '../..';
+import { ndidAvailable, idp2Available } from '../..';
 import {
   wait,
   generateReferenceId,
@@ -42,7 +42,7 @@ describe('Add identity (mode 2,3) tests', function() {
 
   before(async function() {
     this.timeout(10000);
-    if (!ndidAvailable) {
+    if (!ndidAvailable || !idp2Available) {
       this.test.parent.pending = true;
       this.skip();
     }

@@ -179,10 +179,6 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     let requestId;
 
     before(function() {
-      if (!idp2Available) {
-        this.test.parent.pending = true;
-        this.skip();
-      }
 
       idp1EventEmitter.on('callback', function(callbackData) {
         if (
@@ -1525,11 +1521,6 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     let requestId;
 
     before(function() {
-      if (!idp2Available) {
-        this.test.parent.pending = true;
-        this.skip();
-      }
-
       idp1EventEmitter.on('callback', function(callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
@@ -1878,7 +1869,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     });
 
     it('Should create identity request (mode 3) successfully', async function() {
-      this.timeout(1000000);
+      this.timeout(15000);
       const response = await identityApi.createIdentity('idp1', {
         reference_id: referenceId,
         callback_url: config.IDP1_CALLBACK_URL,

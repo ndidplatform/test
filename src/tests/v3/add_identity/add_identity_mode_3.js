@@ -15,7 +15,7 @@ import {
   rpEventEmitter,
   as1EventEmitter,
 } from '../../../callback_server';
-import { ndidAvailable } from '../..';
+import { ndidAvailable, idp2Available } from '../..';
 import {
   wait,
   generateReferenceId,
@@ -259,6 +259,9 @@ describe('Add identity (mode 3) tests', function() {
 
     it('idp2 that is not associated with this sid should add identity unsuccessfully', async function() {
       this.timeout(10000);
+
+      if (!idp2Available) this.skip();
+
       const response = await identityApi.addIdentity('idp2', {
         namespace,
         identifier,
@@ -1511,6 +1514,10 @@ describe('Add identity (mode 3) tests', function() {
       let requestIdAddIdentity;
 
       before(function() {
+        if (!idp2Available) {
+          this.test.parent.pending = true;
+          this.skip();
+        }
         idp2EventEmitter.on('callback', function(callbackData) {
           if (
             callbackData.type === 'create_identity_result' &&

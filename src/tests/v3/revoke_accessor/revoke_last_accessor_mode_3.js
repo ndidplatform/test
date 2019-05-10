@@ -603,6 +603,10 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
     let accessorIdForRevoke;
 
     before(function() {
+      if (!idp2Available) {
+        this.test.parent.pending = true;
+        this.skip();
+      }
       accessorIdForRevoke = idp1AccessorId;
 
       idp1EventEmitter.on('callback', function(callbackData) {

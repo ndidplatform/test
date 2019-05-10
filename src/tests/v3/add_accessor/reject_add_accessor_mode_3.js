@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
-import { as1Available } from '../..';
+import { as1Available, idp2Available } from '../..';
 import * as rpApi from '../../../api/v3/rp';
 import * as idpApi from '../../../api/v3/idp';
 import * as identityApi from '../../../api/v3/identity';
@@ -182,6 +182,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
 
     it('IdP (idp2) should receive add accessor request', async function() {
       this.timeout(15000);
+      if (!idp2Available) this.skip();
       const incomingRequest = await idp2IncomingRequestPromise.promise;
       expect(incomingRequest).to.deep.include({
         mode: 3,

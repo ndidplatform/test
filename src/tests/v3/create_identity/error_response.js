@@ -8,6 +8,7 @@ import * as db from '../../../db';
 import { idp1EventEmitter } from '../../../callback_server';
 import { generateReferenceId, wait, createEventPromise } from '../../../utils';
 import * as config from '../../../config';
+import { idp2Available } from '../..';
 
 describe('Create identity errors', function() {
   let namespace;
@@ -471,7 +472,10 @@ describe('Create identity errors', function() {
   });
 
   it('IdP (idp2) should get an error when creating identity with multiple reference group in identity list', async function() {
-    this.timeout(100000);
+    this.timeout(15000);
+
+    if (!idp2Available) this.skip();
+
     const response = await identityApi.createIdentity('idp2', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,

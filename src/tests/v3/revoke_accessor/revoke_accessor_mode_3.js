@@ -44,16 +44,10 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
     let responseAccessorId;
 
     before(function() {
-
       const identity = db.idp1Identities.find(identity => identity.mode === 3);
 
       if (db.idp1Identities[0] == null || !identity) {
         throw new Error('No created identity to use');
-      }
-
-      if (!idp2Available) {
-        this.test.parent.pending = true;
-        this.skip();
       }
 
       namespace = identity.namespace;
@@ -191,6 +185,11 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
 
     it('idp2 should receive add accessor request', async function() {
       this.timeout(15000);
+      
+      if (!idp2Available) {
+        this.skip();
+      }
+
       const incomingRequest = await idp2IncomingRequestPromise.promise;
       expect(incomingRequest).to.deep.include({
         mode: 3,
@@ -290,6 +289,11 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
 
     it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
       this.timeout(15000);
+
+      if (!idp2Available) {
+        this.skip();
+      }
+
       const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp2',
@@ -605,6 +609,11 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
 
     it('IdP (idp2) should receive incoming request callback', async function() {
       this.timeout(15000);
+
+      if (!idp2Available) {
+        this.skip();
+      }
+
       const incomingRequest = await idp2IncomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -1280,7 +1289,6 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
     const idp1ReferenceId = generateReferenceId();
 
     const incomingRequestPromise = createEventPromise();
-    const idp2IncomingRequestPromise = createEventPromise();
     const responseResultPromise = createEventPromise();
     const accessorEncryptPromise = createEventPromise();
     const revokeAccessorResultPromise = createEventPromise();
@@ -1293,11 +1301,6 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
     before(function() {
       if (db.idp1Identities[0] == null) {
         throw new Error('No created identity to use');
-      }
-
-      if (!idp2Available) {
-        this.test.parent.pending = true;
-        this.skip();
       }
 
       accessorIdForRevoke = accessorId;
@@ -1330,15 +1333,6 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
       idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
-        }
-      });
-
-      idp2EventEmitter.on('callback', function(callbackData) {
-        if (
-          callbackData.type === 'incoming_request' &&
-          callbackData.request_id === requestId
-        ) {
-          idp2IncomingRequestPromise.resolve(callbackData);
         }
       });
 
@@ -1499,6 +1493,11 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
 
     it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
       this.timeout(15000);
+
+      if (!idp2Available) {
+        this.skip();
+      }
+
       const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp2',
@@ -1813,6 +1812,11 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
 
     it('IdP (idp2) should receive incoming request callback', async function() {
       this.timeout(15000);
+
+      if (!idp2Available) {
+        this.skip();
+      }
+
       const incomingRequest = await idp2IncomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
@@ -1888,4 +1892,3 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
     });
   });
 });
-
