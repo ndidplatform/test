@@ -2661,9 +2661,20 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     });
 
     after(function() {
+      let identityIndex = db.idp1Identities.findIndex(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      db.idp1Identities.splice(identityIndex, 1);
+      identityIndex = db.idp2Identities.findIndex(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      db.idp2Identities.splice(identityIndex, 1);
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+      idp2EventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
     });
   });
