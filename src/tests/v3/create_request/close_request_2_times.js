@@ -60,6 +60,7 @@ describe('Close request the 2 times test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

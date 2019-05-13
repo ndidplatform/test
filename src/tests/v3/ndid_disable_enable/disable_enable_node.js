@@ -97,6 +97,7 @@ describe('NDID disable RP node and enable RP node test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -540,6 +541,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -982,6 +984,7 @@ describe('NDID disable AS node and enable AS node test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

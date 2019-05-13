@@ -73,6 +73,7 @@ describe('1 IdP, accept consent, mode 3, RP (proxy2_rp5) and IDP (proxy1_idp4) b
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     proxy2EventEmitter.on('callback', function(callbackData) {

@@ -6,7 +6,7 @@ import * as identityApi from '../../../api/v3/identity';
 import * as commonApi from '../../../api/v3/common';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
-import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { createEventPromise, generateReferenceId } from '../../../utils';
 import * as config from '../../../config';
 
 describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as 1st IdP', function() {

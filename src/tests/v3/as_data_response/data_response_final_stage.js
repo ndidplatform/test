@@ -83,6 +83,7 @@ describe('AS response data request already closed test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -260,6 +261,7 @@ describe('AS response data request already timed out test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 7,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -437,6 +439,7 @@ describe('AS response data request already completed test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

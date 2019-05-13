@@ -196,6 +196,7 @@ describe('Create request tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -419,6 +420,7 @@ describe('Create request tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -672,6 +674,7 @@ describe('Create request with invalid mode tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -705,6 +708,7 @@ describe('Create request with invalid mode tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -881,6 +885,7 @@ describe('Create request with invalid mode tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       const response = await rpApi.createRequest('rp1', createRequestParams);

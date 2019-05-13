@@ -373,6 +373,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {

@@ -450,6 +450,7 @@ describe("Update nodes's DPKI test", function() {
           min_aal: 1,
           min_idp: 1,
           request_timeout: 86400,
+          bypass_identity_check:false
         };
       });
       it('RP should create a request successfully', async function() {

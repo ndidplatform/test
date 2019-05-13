@@ -96,6 +96,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       proxy1EventEmitter.on('callback', function(callbackData) {
@@ -541,6 +542,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -986,6 +988,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -1441,6 +1444,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {
@@ -1885,6 +1889,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {
@@ -2329,6 +2334,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {

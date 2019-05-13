@@ -294,6 +294,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
         type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'create_identity',
+        actor_node_id: 'idp1',
       });
     });
 

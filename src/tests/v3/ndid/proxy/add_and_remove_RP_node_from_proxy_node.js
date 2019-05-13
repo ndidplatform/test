@@ -117,6 +117,7 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     createRequestParams = {
@@ -142,6 +143,7 @@ describe('NDID add RP node to proxy node and remove RP node from proxy node test
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {

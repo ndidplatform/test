@@ -566,7 +566,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     });
   });
 
-  describe('Add duplicate accessor id that is revoked', function() {
+  describe('Add duplicate accessor id that is revoked unsuccessfully', function() {
     const keypair = forge.pki.rsa.generateKeyPair(2048);
     const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
     const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
@@ -853,6 +853,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check: false,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {

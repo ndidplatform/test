@@ -85,6 +85,7 @@ describe('1 IdP, 1 AS, mode 3, AS (proxy1_as4) behind proxy', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

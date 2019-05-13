@@ -300,6 +300,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
         type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'add_accessor',
+        actor_node_id: 'idp1',
       });
     });
 
@@ -397,6 +398,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -1504,6 +1506,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
         type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'revoke_accessor',
+        actor_node_id: 'idp1',
       });
     });
 
@@ -1600,6 +1603,7 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {

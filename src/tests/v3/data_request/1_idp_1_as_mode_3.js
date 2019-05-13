@@ -93,6 +93,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -1064,6 +1065,7 @@ describe('1 IdP, 1 AS, mode 3 (as_id_list is empty array)', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -2048,6 +2050,7 @@ describe('1 IdP, 1 AS, mode 3 (without as_id_list key)', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -3030,6 +3033,7 @@ describe('1 IdP, 1 AS, mode 2 (without request_params key)', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -3999,6 +4003,7 @@ describe('1 IdP, 1 AS, mode 2 (with empty string request_params and request_mess
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

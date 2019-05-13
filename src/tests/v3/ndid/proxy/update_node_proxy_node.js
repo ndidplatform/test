@@ -106,6 +106,7 @@ describe('NDID update RP node to other proxy node', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     proxy2EventEmitter.on('callback', function(callbackData) {
@@ -430,6 +431,7 @@ describe('NDID update IdP node to other proxy node', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {
@@ -783,6 +785,7 @@ describe('NDID update AS node to other proxy node', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

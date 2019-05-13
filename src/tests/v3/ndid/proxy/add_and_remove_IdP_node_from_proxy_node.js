@@ -116,6 +116,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {

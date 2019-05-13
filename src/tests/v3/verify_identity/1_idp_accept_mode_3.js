@@ -5,11 +5,7 @@ import * as idpApi from '../../../api/v3/idp';
 import * as commonApi from '../../../api/v3/common';
 import { rpEventEmitter, idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  hash,
-} from '../../../utils';
+import { createEventPromise, generateReferenceId, hash } from '../../../utils';
 import * as config from '../../../config';
 
 describe('1 IdP, accept consent, mode 3', function() {
@@ -45,7 +41,7 @@ describe('1 IdP, accept consent, mode 3', function() {
 
   before(function() {
     let identity = db.idp1Identities.find(identity => identity.mode === 3);
-
+    
     if (!identity) {
       throw new Error('No created identity to use');
     }
@@ -67,6 +63,7 @@ describe('1 IdP, accept consent, mode 3', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -497,7 +494,6 @@ describe('1 IdP, accept consent, mode 3 (without idp_id_list key and data_reques
 
   before(function() {
     let identity = db.idp1Identities.find(identity => identity.mode === 3);
-
     if (!identity) {
       throw new Error('No created identity to use');
     }
@@ -517,6 +513,7 @@ describe('1 IdP, accept consent, mode 3 (without idp_id_list key and data_reques
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

@@ -430,6 +430,7 @@ describe('Add identity (mode 2,3) tests', function() {
         type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'create_identity',
+        actor_node_id: 'idp2',
       });
     });
 
@@ -614,6 +615,7 @@ describe('Add identity (mode 2,3) tests', function() {
         type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'add_identity',
+        actor_node_id: 'idp1',
       });
     });
 
@@ -706,6 +708,7 @@ describe('Add identity (mode 2,3) tests', function() {
           min_aal: 1,
           min_idp: 1,
           request_timeout: 86400,
+          bypass_identity_check:false
         };
 
         rpEventEmitter.on('callback', function(callbackData) {
@@ -1722,6 +1725,7 @@ describe('Add identity (mode 2,3) tests', function() {
           min_aal: 1,
           min_idp: 1,
           request_timeout: 86400,
+          bypass_identity_check:false
         };
 
         rpEventEmitter.on('callback', function(callbackData) {

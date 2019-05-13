@@ -48,6 +48,7 @@ describe('Timeout test (3 seconds)', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 3, // seconds
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

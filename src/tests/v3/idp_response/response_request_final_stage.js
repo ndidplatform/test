@@ -89,6 +89,7 @@ describe('IdP response request already confirmed test', function() {
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -274,6 +275,7 @@ describe('IdP response request already closed test', function() {
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -505,6 +507,7 @@ describe('IdP response request already timed out test', function() {
       min_aal: 3,
       min_idp: 1,
       request_timeout: 3,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

@@ -78,6 +78,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     setAsSendDataThroughCallback(true);

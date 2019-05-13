@@ -4,13 +4,11 @@ import uuidv4 from 'uuid/v4';
 
 import * as commonApi from '../../../api/v3/common';
 import * as identityApi from '../../../api/v3/identity';
-import {
-  idp1EventEmitter,
-  idp2available,
-} from '../../../callback_server';
+import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
+import { idp2Available } from '../../';
 
 describe('IdP error response add accessor test', function() {
   let namespace = 'citizen_id';
@@ -157,7 +155,7 @@ describe('IdP error response add accessor test', function() {
   it('idp2 that is not associated with this sid should add accessor unsuccessfully', async function() {
     this.timeout(10000);
 
-    if (!idp2available) this.skip();
+    if (!idp2Available) this.skip();
 
     const response = await identityApi.addAccessor('idp2', {
       namespace: namespace,

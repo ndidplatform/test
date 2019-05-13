@@ -109,6 +109,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -395,6 +396,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'create_identity',
+        actor_node_id: 'idp2',
       });
     });
 
@@ -1070,6 +1072,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -1356,6 +1359,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'create_identity',
+        actor_node_id: 'idp2',
       });
     });
 
@@ -2031,6 +2035,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -2317,6 +2322,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         type: 'identity_modification_notification',
         reference_group_code: referenceGroupCode,
         action: 'create_identity',
+        actor_node_id: 'idp2',
       });
     });
 

@@ -36,6 +36,50 @@ describe('RP create request errors', function() {
     }
   });
 
+  it('should get an error when creating a request without bypass_identity_check in mode 2', async function() {
+    const createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 2,
+      namespace: identityMode2.namespace,
+      identifier: identityMode2.identifier,
+      idp_id_list: [],
+      data_request_list: [],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+    };
+
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20003);
+  });
+
+  it('should get an error when creating a request without bypass_identity_check in mode 3', async function() {
+    const createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 3,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
+      idp_id_list: [],
+      data_request_list: [],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+    };
+
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20003);
+  });
+
   it('should get an error when creating a request without IdP ID list in mode 1', async function() {
     const createRequestParams = {
       reference_id: rpReferenceId,
@@ -111,6 +155,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -142,6 +187,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -181,6 +227,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -220,6 +267,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -251,6 +299,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -282,6 +331,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 0,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -313,6 +363,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: '86400',
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -344,6 +395,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -374,6 +426,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -404,6 +457,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -434,6 +488,7 @@ describe('RP create request errors', function() {
       min_ial: 1.1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -464,6 +519,7 @@ describe('RP create request errors', function() {
       min_ial: 1.1,
       min_aal: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -494,6 +550,7 @@ describe('RP create request errors', function() {
       min_ial: 1.1,
       min_aal: 1,
       min_idp: 1,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -522,6 +579,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -584,6 +642,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -615,6 +674,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -646,6 +706,7 @@ describe('RP create request errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -1065,6 +1126,7 @@ describe('RP create request (mode 2) with service in data request list does not 
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const responseRp = await rpApi.createRequest('rp1', createRequestParams);
@@ -1100,6 +1162,7 @@ describe('RP create request (mode 2) with service in data request list does not 
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const responseRp = await rpApi.createRequest('rp1', createRequestParams);
@@ -1135,6 +1198,7 @@ describe('RP create request (mode 2) with service in data request list does not 
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const responseRp = await rpApi.createRequest('rp1', createRequestParams);
@@ -1170,6 +1234,7 @@ describe('RP create request (mode 2) with service in data request list does not 
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
 
     const responseRp = await rpApi.createRequest('rp1', createRequestParams);

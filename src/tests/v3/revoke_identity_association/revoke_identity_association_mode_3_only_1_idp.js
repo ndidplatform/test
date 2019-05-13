@@ -179,7 +179,6 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     let requestId;
 
     before(function() {
-
       idp1EventEmitter.on('callback', function(callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
@@ -409,11 +408,12 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
               }),
             },
           ],
-          request_message: 'Test request message (data request) (mode 2)',
+          request_message: 'Test request message (data request) (mode 3)',
           min_ial: 1.1,
           min_aal: 1,
           min_idp: 1,
           request_timeout: 86400,
+          bypass_identity_check: false,
         };
 
         rpEventEmitter.on('callback', function(callbackData) {
@@ -673,6 +673,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           min_aal: 1,
           min_idp: 1,
           request_timeout: 86400,
+          bypass_identity_check: false,
         };
 
         rpEventEmitter.on('callback', function(callbackData) {
@@ -1755,6 +1756,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           min_aal: 1,
           min_idp: 1,
           request_timeout: 86400,
+          bypass_identity_check: false,
         };
 
         rpEventEmitter.on('callback', function(callbackData) {
@@ -2026,6 +2028,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           min_aal: 1,
           min_idp: 1,
           request_timeout: 86400,
+          bypass_identity_check: false,
         };
 
         rpEventEmitter.on('callback', function(callbackData) {
@@ -2253,7 +2256,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         this.timeout(10000);
 
         responseAccessorId = accessorId;
-        
+
         const response = await idpApi.createResponse('idp1', {
           reference_id: idpReferenceId,
           callback_url: config.IDP1_CALLBACK_URL,

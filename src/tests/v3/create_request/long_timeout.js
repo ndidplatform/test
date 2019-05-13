@@ -48,6 +48,7 @@ describe('Long timeout test (>2147483647 seconds or >24.8 days - greater than 32
       min_aal: 1,
       min_idp: 1,
       request_timeout: 9947483647, // seconds
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

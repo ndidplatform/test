@@ -893,6 +893,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           type: 'identity_modification_notification',
           reference_group_code: referenceGroupCode,
           action: 'create_identity',
+          actor_node_id: 'idp2',
         });
       });
 

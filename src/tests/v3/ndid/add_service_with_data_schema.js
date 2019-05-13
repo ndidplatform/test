@@ -121,6 +121,7 @@ describe('NDID add and update service with data_schema test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -726,6 +727,7 @@ describe('NDID add and update service with data_schema test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -1265,6 +1267,7 @@ describe('NDID add and update service with data_schema test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check:false
       };
 
       rpEventEmitter.on('callback', function(callbackData) {

@@ -120,6 +120,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     //RP

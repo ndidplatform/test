@@ -91,6 +91,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

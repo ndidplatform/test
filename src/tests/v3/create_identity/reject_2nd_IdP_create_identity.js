@@ -396,6 +396,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check: false,
     };
     const response = await rpApi.createRequest('rp1', createRequestParams);
     expect(response.status).to.equal(400);

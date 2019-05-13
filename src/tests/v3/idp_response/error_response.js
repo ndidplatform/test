@@ -81,6 +81,7 @@ describe('IdP response errors tests', function() {
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -443,6 +444,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -592,6 +594,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -848,6 +851,7 @@ describe('IdP2 making response with request does not concern IdP2 (mode 3)', fun
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {

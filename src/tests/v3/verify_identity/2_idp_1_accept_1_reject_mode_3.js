@@ -81,6 +81,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       min_aal: 1,
       min_idp: 2,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

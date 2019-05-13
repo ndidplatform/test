@@ -271,6 +271,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       type: 'identity_modification_notification',
       reference_group_code: referenceGroupCode,
       action: 'revoke_identity_association',
+      actor_node_id: 'idp1',
     });
   });
 
@@ -354,6 +355,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check: false,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -464,6 +466,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check: false,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -760,6 +763,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
+        bypass_identity_check: false,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {

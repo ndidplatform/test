@@ -80,6 +80,7 @@ describe('2 IdPs, min_idp = 2, accept consent, mode 3', function() {
       min_aal: 1,
       min_idp: 2,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {

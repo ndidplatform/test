@@ -86,6 +86,7 @@ describe('AS data response errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {

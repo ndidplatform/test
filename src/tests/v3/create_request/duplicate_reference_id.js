@@ -45,6 +45,7 @@ describe('Create request with duplicate reference id test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -134,6 +135,7 @@ describe('Create request with duplicate reference id that is not in progress (cl
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400, //sec
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -257,6 +259,7 @@ describe('Create request with duplicate reference id that is not in progress (ti
       min_aal: 1,
       min_idp: 1,
       request_timeout: 7, //sec
+      bypass_identity_check:false
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
