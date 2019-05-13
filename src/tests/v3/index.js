@@ -5,6 +5,7 @@ require('./as_setup');
 require('./as_service_setup');
 require('./proxy_setup');
 require('./create_identity');
+require('./upgrade_identity_mode');
 require('./verify_identity');
 require('./data_request');
 require('./add_accessor');

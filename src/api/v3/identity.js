@@ -78,3 +78,21 @@ export function updateIdentityIal(nodeId, data) {
     rest
   );
 }
+
+export function upgradeIdentityMode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/mode`,
+    rest
+  );
+}
+
+export function revokeAndAddAccessor(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors_revoke_and_add`,
+    rest
+  );
+}
