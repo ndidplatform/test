@@ -1545,7 +1545,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     await wait(2000);
   });
 
-  it('RP should create a request (mode 3) to idp1 (identity at mode 1 is mode 2) unsuccessfully', async function() {
+  it('RP should create a request (mode 3) to idp1 (identity at idp1 is mode 2) unsuccessfully', async function() {
     this.timeout(10000);
 
     let createRequestParams = {
@@ -1638,8 +1638,6 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     expect(incomingRequest.request_timeout).to.be.a('number');
-
-    // requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('idp2 should create response (accept) successfully', async function() {
