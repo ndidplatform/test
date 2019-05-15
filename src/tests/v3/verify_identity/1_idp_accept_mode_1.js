@@ -1,25 +1,28 @@
 import { expect } from 'chai';
-import forge from 'node-forge';
 
-import * as rpApi from '../../../api/v3/rp';
-import * as idpApi from '../../../api/v3/idp';
-import * as commonApi from '../../../api/v3/common';
-import { rpEventEmitter, idp1EventEmitter } from '../../../callback_server';
 import {
-  createEventPromise,
-  generateReferenceId,
-  hashRequestMessageForConsent,
-  createResponseSignature,
-  hash,
-} from '../../../utils';
+  rpCreateRequestTest,
+  rpReceivePendingRequestStatusTest,
+  rpReceiveCompletedRequestStatusTest,
+  rpReceiveRequestClosedStatusTest,
+} from '../_fragments/request_flow_fragments/rp';
+import {
+  idpReceiveIncomingRequestCallbackTest,
+  idpCreateResponseTest,
+} from '../_fragments/request_flow_fragments/idp';
+import {
+  hasPrivateMessagesTest,
+  removePrivateMessagesTest,
+  hasNoPrivateMessagesTest,
+} from '../_fragments/common';
+
+import { rpEventEmitter, idp1EventEmitter } from '../../../callback_server';
+import { createEventPromise, generateReferenceId } from '../../../utils';
 import * as config from '../../../config';
 
 describe('1 IdP, accept consent, mode 1', function() {
   let namespace;
   let identifier;
-
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
@@ -34,8 +37,6 @@ describe('1 IdP, accept consent, mode 1', function() {
   let createRequestParams;
 
   let requestId;
-  let requestMessageSalt;
-  let requestMessageHash;
 
   let lastStatusUpdateBlockHeight;
 
@@ -98,223 +99,114 @@ describe('1 IdP, accept consent, mode 1', function() {
 
   it('RP should create a request successfully', async function() {
     this.timeout(10000);
-    const response = await rpApi.createRequest('rp1', createRequestParams);
-    const responseBody = await response.json();
-    expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
-    expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
-
-    requestId = responseBody.request_id;
-
-    const createRequestResult = await createRequestResultPromise.promise;
-    expect(createRequestResult.success).to.equal(true);
-    expect(createRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
+    const testResult = await rpCreateRequestTest({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      createRequestResultPromise,
+    });
+    requestId = testResult.requestId;
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
   it('RP should receive pending request status', async function() {
     this.timeout(10000);
-    const requestStatus = await requestStatusPendingPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [],
+    await rpReceivePendingRequestStatusTest({
+      createRequestParams,
+      requestId,
+      lastStatusUpdateBlockHeight,
+      requestStatusPendingPromise,
+      serviceList: [],
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-    expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight
-    );
   });
 
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
-    const incomingRequest = await incomingRequestPromise.promise;
-    expect(incomingRequest).to.deep.include({
-      mode: createRequestParams.mode,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      request_message: createRequestParams.request_message,
-      request_message_hash: hash(
-        createRequestParams.request_message +
-          incomingRequest.request_message_salt
-      ),
-      requester_node_id: 'rp1',
-      min_ial: createRequestParams.min_ial,
-      min_aal: createRequestParams.min_aal,
-      data_request_list: createRequestParams.data_request_list,
-      request_timeout: createRequestParams.request_timeout,
+    await idpReceiveIncomingRequestCallbackTest({
+      createRequestParams,
+      requestId,
+      incomingRequestPromise,
+      requesterNodeId: 'rp1',
     });
-    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
-      .empty;
-    expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
+    await idpCreateResponseTest({
+      callApiAtNodeId: 'idp1',
+      createRequestParams,
+      callbackUrl: config.IDP1_CALLBACK_URL,
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      //signature: createResponseSignature(userPrivateKey, requestMessageHash),
-    });
-    expect(response.status).to.equal(202);
-
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
+      requestId,
+      idpReferenceId,
+      responseResultPromise,
     });
   });
 
   it('RP should receive completed request status', async function() {
     this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [
+    const testResult = await rpReceiveCompletedRequestStatusTest({
+      requestStatusCompletedPromise,
+      requestId,
+      createRequestParams,
+      serviceList: [],
+      responseValidList: [
         {
           idp_id: 'idp1',
           valid_signature: null,
           valid_ial: null,
         },
       ],
+      lastStatusUpdateBlockHeight,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-    expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight
-    );
-    lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
   it('RP should receive request closed status', async function() {
     this.timeout(10000);
-    const requestStatus = await requestClosedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: true,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [
+    await rpReceiveRequestClosedStatusTest({
+      requestClosedPromise,
+      requestId,
+      createRequestParams,
+      serviceList: [],
+      responseValidList: [
         {
           idp_id: 'idp1',
           valid_signature: null,
           valid_ial: null,
         },
       ],
+      lastStatusUpdateBlockHeight,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-    expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight
-    );
   });
 
   it('RP should receive 3 request status updates', function() {
     expect(requestStatusUpdates).to.have.lengthOf(3);
   });
 
-  it('RP should have and able to get saved private messages', async function() {
-    const response = await commonApi.getPrivateMessages('rp1', {
-      request_id: requestId,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.be.an('array').that.is.not.empty;
+  it('RP should have and able to get saved private messages', function() {
+    return hasPrivateMessagesTest({ callApiAtNodeId: 'rp1', requestId });
   });
 
-  it('RP should remove saved private messages successfully', async function() {
-    const response = await commonApi.removePrivateMessages('rp1', {
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(204);
+  it('RP should remove saved private messages successfully', function() {
+    return removePrivateMessagesTest({ callApiAtNodeId: 'rp1', requestId });
   });
 
-  it('RP should have no saved private messages left after removal', async function() {
-    const response = await commonApi.getPrivateMessages('rp1', {
-      request_id: requestId,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.be.an('array').that.is.empty;
+  it('RP should have no saved private messages left after removal', function() {
+    return hasNoPrivateMessagesTest({ callApiAtNodeId: 'rp1', requestId });
   });
 
-  it('IdP should have and able to get saved private messages', async function() {
-    const response = await commonApi.getPrivateMessages('idp1', {
-      request_id: requestId,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.be.an('array').that.is.not.empty;
+  it('IdP should have and able to get saved private messages', function() {
+    return hasPrivateMessagesTest({ callApiAtNodeId: 'idp1', requestId });
   });
 
-  it('IdP should remove saved private messages successfully', async function() {
-    const response = await commonApi.removePrivateMessages('idp1', {
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(204);
+  it('IdP should remove saved private messages successfully', function() {
+    return removePrivateMessagesTest({ callApiAtNodeId: 'idp1', requestId });
   });
 
-  it('IdP should have no saved private messages left after removal', async function() {
-    const response = await commonApi.getPrivateMessages('idp1', {
-      request_id: requestId,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.be.an('array').that.is.empty;
+  it('IdP should have no saved private messages left after removal', function() {
+    return hasNoPrivateMessagesTest({ callApiAtNodeId: 'idp1', requestId });
   });
 
   after(function() {
@@ -326,9 +218,6 @@ describe('1 IdP, accept consent, mode 1', function() {
 describe('1 IdP, accept consent, mode 1 (with empty string request_message)', function() {
   let namespace;
   let identifier;
-
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
@@ -343,8 +232,6 @@ describe('1 IdP, accept consent, mode 1 (with empty string request_message)', fu
   let createRequestParams;
 
   let requestId;
-  let requestMessageSalt;
-  let requestMessageHash;
 
   let lastStatusUpdateBlockHeight;
 
@@ -406,223 +293,114 @@ describe('1 IdP, accept consent, mode 1 (with empty string request_message)', fu
 
   it('RP should create a request successfully', async function() {
     this.timeout(10000);
-    const response = await rpApi.createRequest('rp1', createRequestParams);
-    const responseBody = await response.json();
-    expect(response.status).to.equal(202);
-    expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
-    expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
-
-    requestId = responseBody.request_id;
-
-    const createRequestResult = await createRequestResultPromise.promise;
-    expect(createRequestResult.success).to.equal(true);
-    expect(createRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
+    const testResult = await rpCreateRequestTest({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      createRequestResultPromise,
+    });
+    requestId = testResult.requestId;
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
   it('RP should receive pending request status', async function() {
     this.timeout(10000);
-    const requestStatus = await requestStatusPendingPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [],
+    await rpReceivePendingRequestStatusTest({
+      createRequestParams,
+      requestId,
+      lastStatusUpdateBlockHeight,
+      requestStatusPendingPromise,
+      serviceList: [],
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-    expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight
-    );
   });
 
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
-    const incomingRequest = await incomingRequestPromise.promise;
-    expect(incomingRequest).to.deep.include({
-      mode: createRequestParams.mode,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
-      request_message: createRequestParams.request_message,
-      request_message_hash: hash(
-        createRequestParams.request_message +
-          incomingRequest.request_message_salt
-      ),
-      requester_node_id: 'rp1',
-      min_ial: createRequestParams.min_ial,
-      min_aal: createRequestParams.min_aal,
-      data_request_list: createRequestParams.data_request_list,
-      request_timeout: createRequestParams.request_timeout,
+    await idpReceiveIncomingRequestCallbackTest({
+      createRequestParams,
+      requestId,
+      incomingRequestPromise,
+      requesterNodeId: 'rp1',
     });
-    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
-      .empty;
-    expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      namespace: createRequestParams.namespace,
-      identifier: createRequestParams.identifier,
+    await idpCreateResponseTest({
+      callApiAtNodeId: 'idp1',
+      createRequestParams,
+      callbackUrl: config.IDP1_CALLBACK_URL,
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      //signature: createResponseSignature(userPrivateKey, requestMessageHash),
-    });
-    expect(response.status).to.equal(202);
-
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
+      requestId,
+      idpReferenceId,
+      responseResultPromise,
     });
   });
 
   it('RP should receive completed request status', async function() {
     this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [
+    const testResult = await rpReceiveCompletedRequestStatusTest({
+      requestStatusCompletedPromise,
+      requestId,
+      createRequestParams,
+      serviceList: [],
+      responseValidList: [
         {
           idp_id: 'idp1',
           valid_signature: null,
           valid_ial: null,
         },
       ],
+      lastStatusUpdateBlockHeight,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-    expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight
-    );
-    lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
   it('RP should receive request closed status', async function() {
     this.timeout(10000);
-    const requestStatus = await requestClosedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: true,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [
+    await rpReceiveRequestClosedStatusTest({
+      requestClosedPromise,
+      requestId,
+      createRequestParams,
+      serviceList: [],
+      responseValidList: [
         {
           idp_id: 'idp1',
           valid_signature: null,
           valid_ial: null,
         },
       ],
+      lastStatusUpdateBlockHeight,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-    expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight
-    );
   });
 
   it('RP should receive 3 request status updates', function() {
     expect(requestStatusUpdates).to.have.lengthOf(3);
   });
 
-  it('RP should have and able to get saved private messages', async function() {
-    const response = await commonApi.getPrivateMessages('rp1', {
-      request_id: requestId,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.be.an('array').that.is.not.empty;
+  it('RP should have and able to get saved private messages', function() {
+    return hasPrivateMessagesTest({ callApiAtNodeId: 'rp1', requestId });
   });
 
-  it('RP should remove saved private messages successfully', async function() {
-    const response = await commonApi.removePrivateMessages('rp1', {
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(204);
+  it('RP should remove saved private messages successfully', function() {
+    return removePrivateMessagesTest({ callApiAtNodeId: 'rp1', requestId });
   });
 
-  it('RP should have no saved private messages left after removal', async function() {
-    const response = await commonApi.getPrivateMessages('rp1', {
-      request_id: requestId,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.be.an('array').that.is.empty;
+  it('RP should have no saved private messages left after removal', function() {
+    return hasNoPrivateMessagesTest({ callApiAtNodeId: 'rp1', requestId });
   });
 
   it('IdP should have and able to get saved private messages', async function() {
-    const response = await commonApi.getPrivateMessages('idp1', {
-      request_id: requestId,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.be.an('array').that.is.not.empty;
+    return hasPrivateMessagesTest({ callApiAtNodeId: 'idp1', requestId });
   });
 
   it('IdP should remove saved private messages successfully', async function() {
-    const response = await commonApi.removePrivateMessages('idp1', {
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(204);
+    return removePrivateMessagesTest({ callApiAtNodeId: 'idp1', requestId });
   });
 
   it('IdP should have no saved private messages left after removal', async function() {
-    const response = await commonApi.getPrivateMessages('idp1', {
-      request_id: requestId,
-    });
-    const responseBody = await response.json();
-    expect(response.status).to.equal(200);
-    expect(responseBody).to.be.an('array').that.is.empty;
+    return hasNoPrivateMessagesTest({ callApiAtNodeId: 'idp1', requestId });
   });
 
   after(function() {
