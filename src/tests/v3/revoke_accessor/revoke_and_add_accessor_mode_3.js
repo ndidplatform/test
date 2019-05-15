@@ -1582,12 +1582,6 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
     });
 
     after(function() {
-      let identityIndex = db.idp1Identities.findIndex(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      db.idp1Identities.splice(identityIndex, 1);
-
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
@@ -1781,6 +1775,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
 
     it('1st IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
+
       const identity = db.idp1Identities.find(
         identity =>
           identity.namespace === namespace && identity.identifier === identifier
