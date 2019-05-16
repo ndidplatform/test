@@ -208,7 +208,10 @@ export function mode2And3FlowTest({
     it(`IdP (${idpNodeId}) should create response (accept) successfully`, async function() {
       this.timeout(10000);
 
-      responseAccessorId = getAccessorForResponse();
+      responseAccessorId = getAccessorForResponse({
+        namespace: createRequestParams.namespace,
+        identifier: createRequestParams.identifier,
+      });
 
       idpResponseParams = {
         ...idpResponseParams,
@@ -325,7 +328,7 @@ export function mode2And3FlowTest({
 
   it('RP should receive request closed status', async function() {
     this.timeout(10000);
-    const testResult =await receiveRequestClosedStatusTest({
+    const testResult = await receiveRequestClosedStatusTest({
       requestClosedPromise,
       requestId,
       createRequestParams,

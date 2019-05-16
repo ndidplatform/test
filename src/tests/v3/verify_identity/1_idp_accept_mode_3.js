@@ -32,14 +32,16 @@ describe('1 IdP, accept consent, mode 3', function() {
       {
         callIdpApiAtNodeId: 'idp1',
         idpEventEmitter: idp1EventEmitter,
-        getAccessorForResponse: () => {
-          // db.idp1Identities.find(
-          //   (identity) =>
-          //     identity.namespace === createRequestParams.namespace &&
-          //     identity.identifier === createRequestParams.identifier
-          // );
+        getAccessorForResponse: ({
+          namespace,
+          identifier,
+          referenceGroupCode,
+        }) => {
           const identity = db.idp1Identities.find(
-            (identity) => identity.mode === 3
+            (identity) =>
+              (identity.namespace === namespace &&
+                identity.identifier === identifier) ||
+              identity.referenceGroupCode === referenceGroupCode
           );
           return identity.accessors[0].accessorId;
         },
@@ -86,14 +88,16 @@ describe('1 IdP, accept consent, mode 3 (without idp_id_list key and data_reques
       {
         callIdpApiAtNodeId: 'idp1',
         idpEventEmitter: idp1EventEmitter,
-        getAccessorForResponse: () => {
-          // db.idp1Identities.find(
-          //   (identity) =>
-          //     identity.namespace === createRequestParams.namespace &&
-          //     identity.identifier === createRequestParams.identifier
-          // );
+        getAccessorForResponse: ({
+          namespace,
+          identifier,
+          referenceGroupCode,
+        }) => {
           const identity = db.idp1Identities.find(
-            (identity) => identity.mode === 3
+            (identity) =>
+              (identity.namespace === namespace &&
+                identity.identifier === identifier) ||
+              identity.referenceGroupCode === referenceGroupCode
           );
           return identity.accessors[0].accessorId;
         },
