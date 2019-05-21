@@ -23,6 +23,8 @@ import {
 import * as config from '../../../config';
 
 describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is not last accessor id) test', function() {
+  const addAccessorRequestMessage =
+    'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
   let namespace = 'citizen_id';
   let identifier = uuidv4();
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -203,7 +205,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id: accessorId,
-      // request_message: addAccessorRequestMessage,
+      request_message: addAccessorRequestMessage,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -249,10 +251,10 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       mode: 3,
       request_id: requestIdAddAccessor,
       reference_group_code: referenceGroupCode,
-      //request_message: addAccessorRequestMessage,
-      // request_message_hash: hash(
-      //   addAccessorRequestMessage + incomingRequest.request_message_salt
-      // ),
+      request_message: addAccessorRequestMessage,
+      request_message_hash: hash(
+        addAccessorRequestMessage + incomingRequest.request_message_salt
+      ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
       min_aal: 1,
@@ -567,8 +569,10 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
   });
 
   describe('Add duplicate accessor id that is revoked unsuccessfully', function() {
+    const addAccessorRequestMessage =
+      'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
     const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
+    //const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
     const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
     const referenceId = generateReferenceId();
@@ -641,6 +645,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         accessor_type: 'RSA',
         accessor_public_key: accessorPublicKey,
         accessor_id: accessor.accessorId,
+        request_message: addAccessorRequestMessage,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -685,11 +690,11 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(incomingRequest).to.deep.include({
         mode: 3,
         request_id: requestIdAddAccessor,
-        //reference_group_code: referenceGroupCode,
-        //request_message: addAccessorRequestMessage,
-        // request_message_hash: hash(
-        //   addAccessorRequestMessage + incomingRequest.request_message_salt
-        // ),
+        reference_group_code: referenceGroupCode,
+        request_message: addAccessorRequestMessage,
+        request_message_hash: hash(
+          addAccessorRequestMessage + incomingRequest.request_message_salt
+        ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
         min_aal: 1,

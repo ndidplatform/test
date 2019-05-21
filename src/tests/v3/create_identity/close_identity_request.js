@@ -13,12 +13,12 @@ import {
   generateReferenceId,
   hash,
   wait,
-  hashRequestMessageForConsent,
-  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
 
 describe('2nd IdP close identity request (mode 3) test', function() {
+  const createIdentityRequestMessage =
+    'Create identity consent request custom message ข้อความสำหรับขอสร้าง identity บนระบบ';
   const namespace = 'citizen_id';
   const identifier = uuidv4();
 
@@ -29,7 +29,7 @@ describe('2nd IdP close identity request (mode 3) test', function() {
 
   //Keypair for 2nd IdP
   const keypair2 = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey2 = forge.pki.privateKeyToPem(keypair2.privateKey);
+  //const accessorPrivateKey2 = forge.pki.privateKeyToPem(keypair2.privateKey);
   const accessorPublicKey2 = forge.pki.publicKeyToPem(keypair2.publicKey);
 
   const referenceId = generateReferenceId();
@@ -54,10 +54,6 @@ describe('2nd IdP close identity request (mode 3) test', function() {
   //2nd IdP
   let requestId2ndIdP;
   let accessorId2ndIdP;
-
-  let requestMessage;
-  let requestMessageSalt;
-  let requestMessageHash;
 
   before(function() {
     if (!idp2Available) {
@@ -140,36 +136,7 @@ describe('2nd IdP close identity request (mode 3) test', function() {
 
     // requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
-
-    // const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
-    // expect(createIdentityRequestResult).to.deep.include({
-    //   reference_id: referenceId,
-    //   request_id: requestId,
-    //   exist: false,
-    //   accessor_id: accessorId,
-    //   success: true,
-    // });
   });
-
-  // it('1st IdP should receive accessor sign callback with correct data', async function() {
-  //   this.timeout(15000);
-  //   const sid = `${namespace}:${identifier}`;
-  //   const sid_hash = hash(sid);
-
-  //   const accessorSignParams = await accessorSignPromise.promise;
-  //   expect(accessorSignParams).to.deep.equal({
-  //     type: 'accessor_sign',
-  //     node_id: 'idp1',
-  //     reference_id: referenceId,
-  //     accessor_id: accessorId,
-  //     sid,
-  //     sid_hash,
-  //     hash_method: 'SHA256',
-  //     key_type: 'RSA',
-  //     sign_method: 'RSA-SHA256',
-  //     padding: 'PKCS#1v1.5',
-  //   });
-  // });
 
   it('1st IdP Identity should be created successfully', async function() {
     this.timeout(15000);
@@ -227,6 +194,7 @@ describe('2nd IdP close identity request (mode 3) test', function() {
       //accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
+      request_message: createIdentityRequestMessage,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -276,12 +244,14 @@ describe('2nd IdP close identity request (mode 3) test', function() {
     expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
     expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
       .empty;
+    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
-    requestMessage = incomingRequest.request_message;
-    requestMessageSalt = incomingRequest.request_message_salt;
+    //requestMessage = incomingRequest.request_message;
+    // requestMessageSalt = incomingRequest.request_message_salt;
 
     expect(incomingRequest.request_message_hash).to.equal(
-      hash(requestMessage + incomingRequest.request_message_salt)
+      hash(createIdentityRequestMessage + incomingRequest.request_message_salt)
     );
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
@@ -293,7 +263,7 @@ describe('2nd IdP close identity request (mode 3) test', function() {
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     expect(incomingRequest.request_timeout).to.be.a('number');
 
-    requestMessageHash = incomingRequest.request_message_hash;
+    // requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('2nd IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
@@ -422,6 +392,8 @@ describe('2nd IdP close identity request (mode 3) test', function() {
 });
 
 describe('IdP (idp2) create identity as 2nd IdP after close identity request test', function() {
+  const createIdentityRequestMessage =
+    'Create identity consent request custom message ข้อความสำหรับขอสร้าง identity บนระบบ';
   let namespace;
   let identifier;
 
@@ -448,9 +420,6 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       this.skip();
     }
 
-    if (db.idp1Identities[0] == null) {
-      throw new Error('No created identity to use');
-    }
     if (db.idp2Identities.length < 1) {
       throw new Error('Identity to use at idp2 not found');
     }
@@ -502,7 +471,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
         identity.namespace === namespace && identity.identifier === identifier
     );
     const accessorPublicKey = identity.accessors[0].accessorPublicKey;
-    const accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+    //const accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
     referenceGroupCode = identity.referenceGroupCode;
 
     const response = await identityApi.createIdentity('idp2', {
@@ -519,6 +488,7 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       // accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
+      request_message: createIdentityRequestMessage,
     });
 
     const responseBody = await response.json();
@@ -575,12 +545,13 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
     expect(incomingRequest.request_message).to.be.a('string').that.is.not.empty;
     expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
       .empty;
+    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
+      .empty;
 
-    requestMessage = incomingRequest.request_message;
     requestMessageSalt = incomingRequest.request_message_salt;
 
     expect(incomingRequest.request_message_hash).to.equal(
-      hash(requestMessage + incomingRequest.request_message_salt)
+      hash(createIdentityRequestMessage + incomingRequest.request_message_salt)
     );
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');

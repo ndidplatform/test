@@ -16,6 +16,9 @@ import {
 import * as config from '../../../config';
 
 describe('Revoke accessor with duplicate reference id test', function() {
+  const addAccessorRequestMessage =
+    'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
+
   let namespace = 'citizen_id';
   let identifier = uuidv4();
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -196,7 +199,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id: accessorId,
-      // request_message: addAccessorRequestMessage,
+      request_message: addAccessorRequestMessage,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -242,10 +245,10 @@ describe('Revoke accessor with duplicate reference id test', function() {
       mode: 3,
       request_id: requestIdAddAccessor,
       reference_group_code: referenceGroupCode,
-      //request_message: addAccessorRequestMessage,
-      // request_message_hash: hash(
-      //   addAccessorRequestMessage + incomingRequest.request_message_salt
-      // ),
+      request_message: addAccessorRequestMessage,
+      request_message_hash: hash(
+        addAccessorRequestMessage + incomingRequest.request_message_salt
+      ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
       min_aal: 1,
@@ -348,6 +351,9 @@ describe('Revoke accessor with duplicate reference id test', function() {
   });
 
   describe('Revoke accessor with duplicate reference id', function() {
+    const revokeAccessorRequestMessage =
+      'Revoke accessor consent request custom message ข้อความสำหรับขอเพิกถอน accessor บนระบบ';
+
     const referenceId = generateReferenceId();
     const idp1ReferenceId = generateReferenceId();
     const idpReferenceIdCloseRevokeAccessor = generateReferenceId();
@@ -438,6 +444,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
         namespace,
         identifier,
         accessor_id: accessorId,
+        request_message: revokeAccessorRequestMessage,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -462,6 +469,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
         namespace,
         identifier,
         accessor_id: accessorId,
+        request_message: revokeAccessorRequestMessage,
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
@@ -485,6 +493,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
         namespace,
         identifier,
         accessor_id: accessorId,
+        request_message: revokeAccessorRequestMessage,
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
@@ -535,6 +544,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
         namespace,
         identifier,
         accessor_id: accessorId,
+        request_message: revokeAccessorRequestMessage,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -549,6 +559,10 @@ describe('Revoke accessor with duplicate reference id test', function() {
         mode: 3,
         request_id: requestId2ndRevokeAccessor,
         requester_node_id: 'idp1',
+        request_message: revokeAccessorRequestMessage,
+        request_message_hash: hash(
+          revokeAccessorRequestMessage + incomingRequest.request_message_salt
+        ),
       });
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(

@@ -157,6 +157,8 @@ describe('Add identity (mode 2,3) tests', function() {
   });
 
   describe('idp1 create identity request and add identity (mode 3) tests', function() {
+    const addIdentityRequestMessage =
+        'Add identity consent request custom message ข้อความสำหรับขอเพิ่ม identity บนระบบ';
     const referenceId = generateReferenceId();
     const errorCaseReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
@@ -467,6 +469,7 @@ describe('Add identity (mode 2,3) tests', function() {
             identifier: identifier3,
           },
         ],
+        request_message:addIdentityRequestMessage
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -480,10 +483,10 @@ describe('Add identity (mode 2,3) tests', function() {
         mode: 2,
         request_id: requestIdAddIdentity,
         reference_group_code: referenceGroupCode,
-        //   request_message: createIdentityRequestMessage,
-        //   request_message_hash: hash(
-        //     createIdentityRequestMessage + incomingRequest.request_message_salt
-        //   ),
+          request_message: addIdentityRequestMessage,
+          request_message_hash: hash(
+            addIdentityRequestMessage + incomingRequest.request_message_salt
+          ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
         min_aal: 1,
@@ -510,10 +513,10 @@ describe('Add identity (mode 2,3) tests', function() {
         mode: 2,
         request_id: requestIdAddIdentity,
         reference_group_code: referenceGroupCode,
-        //   request_message: createIdentityRequestMessage,
-        //   request_message_hash: hash(
-        //     createIdentityRequestMessage + incomingRequest.request_message_salt
-        //   ),
+          request_message: addIdentityRequestMessage,
+          request_message_hash: hash(
+            addIdentityRequestMessage + incomingRequest.request_message_salt
+          ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
         min_aal: 1,

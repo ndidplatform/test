@@ -7,6 +7,9 @@ import { generateReferenceId } from '../../../utils';
 import * as config from '../../../config';
 
 describe('Revoke accessor error response tests', function() {
+  const revokeAccessorRequestMessage =
+    'Revoke accessor consent request custom message ข้อความสำหรับขอเพิกถอน accessor บนระบบ';
+
   let namespace;
   let identifier;
   let accessorId;
@@ -39,6 +42,7 @@ describe('Revoke accessor error response tests', function() {
       namespace: 'notExistingNamespace',
       identifier,
       accessor_id: accessorId,
+      request_message: revokeAccessorRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -52,6 +56,7 @@ describe('Revoke accessor error response tests', function() {
       namespace,
       identifier: 'notExistingIdentifier',
       accessor_id: accessorId,
+      request_message: revokeAccessorRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -65,6 +70,7 @@ describe('Revoke accessor error response tests', function() {
       namespace,
       identifier,
       accessor_id: 'notExistingAccessorId',
+      request_message: revokeAccessorRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -92,6 +98,7 @@ describe('Revoke accessor error response tests', function() {
       namespace,
       identifier,
       accessor_id: accessorId,
+      request_message: revokeAccessorRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -100,13 +107,16 @@ describe('Revoke accessor error response tests', function() {
 });
 
 describe('Revoke and add accessor error response tests', function() {
+  const revokeAndAddAccessorRequestMessage =
+    'Revoke and add accessor consent request custom message ข้อความสำหรับขอเพิกถอนและเพิ่ม accessor บนระบบ';
+
   let namespace;
   let identifier;
   let accessorId;
   let referenceGroupCode;
 
   const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
+  //const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
   const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
   const idpReferenceIdRevoke = generateReferenceId();
@@ -138,7 +148,7 @@ describe('Revoke and add accessor error response tests', function() {
       revoking_accessor_id: accessorId,
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
-      request_message: 'Revoke and add accessor test',
+      request_message: revokeAndAddAccessorRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -154,7 +164,7 @@ describe('Revoke and add accessor error response tests', function() {
       revoking_accessor_id: accessorId,
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
-      request_message: 'Revoke and add accessor test',
+      request_message: revokeAndAddAccessorRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -170,7 +180,7 @@ describe('Revoke and add accessor error response tests', function() {
       revoking_accessor_id: 'notExistingAccessorId',
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
-      request_message: 'Revoke and add accessor test',
+      request_message: revokeAndAddAccessorRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -187,7 +197,7 @@ describe('Revoke and add accessor error response tests', function() {
       accessor_id: accessorId,
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
-      request_message: 'Revoke and add accessor test',
+      request_message: revokeAndAddAccessorRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -217,7 +227,7 @@ describe('Revoke and add accessor error response tests', function() {
       revoking_accessor_id: accessorId,
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
-      request_message: 'Revoke and add accessor test',
+      request_message: revokeAndAddAccessorRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
