@@ -8,6 +8,7 @@ require('./create_identity');
 require('./upgrade_identity_mode');
 require('./verify_identity');
 require('./data_request');
+require('./on_the_fly_onboard_and_uplift');
 require('./add_accessor');
 require('./revoke_accessor');
 require('./revoke_identity_association');
