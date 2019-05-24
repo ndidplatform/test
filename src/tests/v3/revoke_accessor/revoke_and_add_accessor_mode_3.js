@@ -25,7 +25,7 @@ import { idp2Available } from '../../';
 
 describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
   const revokeAndAddAccessorRequestMessage =
-      'Revoke and add accessor consent request custom message ข้อความสำหรับขอเพิกถอนและเพิ่ม accessor บนระบบ';
+    'Revoke and add accessor consent request custom message ข้อความสำหรับขอเพิกถอนและเพิ่ม accessor บนระบบ';
   let namespace = 'citizen_id';
   let identifier = uuidv4();
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -209,7 +209,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       revoking_accessor_id: accessorId,
-      request_message:revokeAndAddAccessorRequestMessage
+      request_message: revokeAndAddAccessorRequestMessage,
     });
     expect(response.status).to.equal(202);
     const responseBody = await response.json();
@@ -260,7 +260,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
       reference_group_code: referenceGroupCode,
       request_message: revokeAndAddAccessorRequestMessage,
       request_message_hash: hash(
-        revokeAndAddAccessorRequestMessage + incomingRequest.request_message_salt
+        revokeAndAddAccessorRequestMessage +
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -2920,7 +2921,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
 
       describe('Revoke and add accessor with user have 2 idp mode 3 test', function() {
         const revokeAndAddAccessorRequestMessage =
-      'Revoke and add accessor consent request custom message ข้อความสำหรับขอเพิกถอนและเพิ่ม accessor บนระบบ';
+          'Revoke and add accessor consent request custom message ข้อความสำหรับขอเพิกถอนและเพิ่ม accessor บนระบบ';
 
         const referenceId = generateReferenceId();
 
@@ -2930,6 +2931,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
         const revokeAndAddAccessorRequestResultPromise = createEventPromise();
         const revokeAndAddAccessorResultPromise = createEventPromise();
         const accessorEncryptPromise = createEventPromise();
+        const notificationRevokeAndAddAccessorPromise = createEventPromise();
 
         let revokedAccessorId;
         let responseAccessorId;
@@ -2983,6 +2985,19 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
               idp1IncomingRequestPromise.resolve(callbackData);
             }
           });
+
+          idp1EventEmitter.on('identity_notification_callback', function(
+            callbackData
+          ) {
+            if (
+              callbackData.type === 'identity_modification_notification' &&
+              callbackData.reference_group_code === referenceGroupCode &&
+              callbackData.action === 'revoke_and_add_accessor'
+            ) {
+              console.log(callbackData);
+              notificationRevokeAndAddAccessorPromise.resolve(callbackData);
+            }
+          });
         });
 
         it('Should revoke and add accessor successfully', async function() {
@@ -2999,7 +3014,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
             accessor_public_key: accessorPublicKey,
             revoking_accessor_id: accessorId,
             accessor_id: provideAccessorId,
-            request_message:revokeAndAddAccessorRequestMessage
+            request_message: revokeAndAddAccessorRequestMessage,
           });
           expect(response.status).to.equal(202);
           const responseBody = await response.json();
@@ -3049,7 +3064,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
             reference_group_code: referenceGroupCode,
             request_message: revokeAndAddAccessorRequestMessage,
             request_message_hash: hash(
-              revokeAndAddAccessorRequestMessage + incomingRequest.request_message_salt
+              revokeAndAddAccessorRequestMessage +
+                incomingRequest.request_message_salt
             ),
             requester_node_id: 'idp2',
             min_ial: 1.1,
@@ -3076,7 +3092,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
             reference_group_code: referenceGroupCode,
             request_message: revokeAndAddAccessorRequestMessage,
             request_message_hash: hash(
-              revokeAndAddAccessorRequestMessage + incomingRequest.request_message_salt
+              revokeAndAddAccessorRequestMessage +
+                incomingRequest.request_message_salt
             ),
             requester_node_id: 'idp2',
             min_ial: 1.1,
@@ -3184,6 +3201,18 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
             reference_id: referenceId,
           });
           expect(response.status).to.equal(404);
+        });
+
+        it('After revoke and add accessor IdP (idp1) that associated with this sid should receive identity notification callback', async function() {
+          this.timeout(15000);
+          const notificationCreateIdentity = await notificationRevokeAndAddAccessorPromise.promise;
+          expect(notificationCreateIdentity).to.deep.include({
+            node_id: 'idp1',
+            type: 'identity_modification_notification',
+            reference_group_code: referenceGroupCode,
+            action: 'revoke_and_add_accessor',
+            actor_node_id: 'idp2',
+          });
         });
 
         after(function() {
