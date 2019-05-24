@@ -158,7 +158,7 @@ describe('Add identity (mode 2,3) tests', function() {
 
   describe('idp1 create identity request and add identity (mode 3) tests', function() {
     const addIdentityRequestMessage =
-        'Add identity consent request custom message ข้อความสำหรับขอเพิ่ม identity บนระบบ';
+      'Add identity consent request custom message ข้อความสำหรับขอเพิ่ม identity บนระบบ';
     const referenceId = generateReferenceId();
     const errorCaseReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
@@ -171,6 +171,7 @@ describe('Add identity (mode 2,3) tests', function() {
     const accessorEncryptPromise = createEventPromise();
     const idp2AccessorEncryptPromise = createEventPromise();
     const addIdentityRequestResultPromise = createEventPromise();
+    const idp2AddIdentityRequestResultPromise = createEventPromise();
     const idp1NotificationCreateIdentityPromise = createEventPromise();
     const idp2NotificationCreateIdentityPromise = createEventPromise();
     const idp1NotificationAddIdentityPromise = createEventPromise();
@@ -265,7 +266,7 @@ describe('Add identity (mode 2,3) tests', function() {
           callbackData.type === 'add_identity_request_result' &&
           callbackData.reference_id === referenceId
         ) {
-          addIdentityRequestResultPromise.resolve(callbackData);
+          idp2AddIdentityRequestResultPromise.resolve(callbackData);
         }
       });
 
@@ -469,11 +470,26 @@ describe('Add identity (mode 2,3) tests', function() {
             identifier: identifier3,
           },
         ],
-        request_message:addIdentityRequestMessage
+        request_message: addIdentityRequestMessage,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
       requestIdAddIdentity = responseBody.request_id;
+
+      const addIdentityRequestResult = await addIdentityRequestResultPromise.promise;
+      expect(addIdentityRequestResult).to.deep.include({
+        reference_id: referenceId,
+        request_id: requestIdAddIdentity,
+        success: true,
+      });
+
+      expect(addIdentityRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = addIdentityRequestResult.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('IdP (idp1) should receive add identity request', async function() {
@@ -483,10 +499,10 @@ describe('Add identity (mode 2,3) tests', function() {
         mode: 2,
         request_id: requestIdAddIdentity,
         reference_group_code: referenceGroupCode,
-          request_message: addIdentityRequestMessage,
-          request_message_hash: hash(
-            addIdentityRequestMessage + incomingRequest.request_message_salt
-          ),
+        request_message: addIdentityRequestMessage,
+        request_message_hash: hash(
+          addIdentityRequestMessage + incomingRequest.request_message_salt
+        ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
         min_aal: 1,
@@ -513,10 +529,10 @@ describe('Add identity (mode 2,3) tests', function() {
         mode: 2,
         request_id: requestIdAddIdentity,
         reference_group_code: referenceGroupCode,
-          request_message: addIdentityRequestMessage,
-          request_message_hash: hash(
-            addIdentityRequestMessage + incomingRequest.request_message_salt
-          ),
+        request_message: addIdentityRequestMessage,
+        request_message_hash: hash(
+          addIdentityRequestMessage + incomingRequest.request_message_salt
+        ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
         min_aal: 1,
@@ -711,7 +727,7 @@ describe('Add identity (mode 2,3) tests', function() {
           min_aal: 1,
           min_idp: 1,
           request_timeout: 86400,
-          bypass_identity_check:false
+          bypass_identity_check: false,
         };
 
         rpEventEmitter.on('callback', function(callbackData) {
@@ -1728,7 +1744,7 @@ describe('Add identity (mode 2,3) tests', function() {
           min_aal: 1,
           min_idp: 1,
           request_timeout: 86400,
-          bypass_identity_check:false
+          bypass_identity_check: false,
         };
 
         rpEventEmitter.on('callback', function(callbackData) {

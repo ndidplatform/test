@@ -347,6 +347,21 @@ describe('Add identity (mode 3) tests', function() {
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
       requestId = responseBody.request_id;
+
+      const addIdentityRequestResult = await addIdentityRequestResultPromise.promise;
+      expect(addIdentityRequestResult).to.deep.include({
+        reference_id: referenceId,
+        request_id: requestId,
+        success: true,
+      });
+
+      expect(addIdentityRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = addIdentityRequestResult.creation_block_height.split(
+        ':'
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
     it('IdP (idp1) should receive add identity request', async function() {
