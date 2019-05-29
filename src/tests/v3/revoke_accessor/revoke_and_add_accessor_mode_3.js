@@ -2994,7 +2994,6 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function() {
               callbackData.reference_group_code === referenceGroupCode &&
               callbackData.action === 'revoke_and_add_accessor'
             ) {
-              console.log(callbackData);
               notificationRevokeAndAddAccessorPromise.resolve(callbackData);
             }
           });
