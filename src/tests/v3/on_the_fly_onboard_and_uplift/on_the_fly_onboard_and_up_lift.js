@@ -4773,7 +4773,7 @@ describe('On the fly onboard and uplift tests', function() {
         success: true,
       });
 
-      await wait(2000);
+      await wait(5000);
     });
 
     it('After idp1 upgrade identity mode should create response (accept) successfully', async function() {
