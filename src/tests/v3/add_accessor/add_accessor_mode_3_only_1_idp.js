@@ -168,12 +168,10 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
     const idp1ReferenceId = generateReferenceId();
 
     const incomingRequestPromise = createEventPromise();
-    const idp2IncomingRequestPromise = createEventPromise();
     const responseResultPromise = createEventPromise();
     const accessorEncryptPromise = createEventPromise();
     const addAccessorResultPromise = createEventPromise();
     const addAccessorRequestResultPromise = createEventPromise();
-    const notificationCreateIdentityPromise = createEventPromise();
 
     let accessorId;
     let requestId;

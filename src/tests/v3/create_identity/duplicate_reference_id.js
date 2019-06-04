@@ -15,6 +15,8 @@ import {
 import * as config from '../../../config';
 
 describe('Create identity request (mode 3) with duplicate reference id test', function() {
+  const createIdentityRequestMessage =
+        'Create identity consent request custom message ข้อความสำหรับขอสร้าง identity บนระบบ';
   const namespace = 'citizen_id';
   const identifier = uuidv4();
 
@@ -226,6 +228,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       //accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
+      request_message:createIdentityRequestMessage
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -256,6 +259,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       //accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
+      request_message:createIdentityRequestMessage
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -278,6 +282,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       //accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
+      request_message:createIdentityRequestMessage
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -330,6 +335,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       //accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
+      request_message:createIdentityRequestMessage
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -366,11 +372,11 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
     expect(incomingRequest.request_message_hash).to.be.a('string').that.is.not
       .empty;
 
-    requestMessage = incomingRequest.request_message;
+    // requestMessage = incomingRequest.request_message;
     requestMessageSalt = incomingRequest.request_message_salt;
 
     expect(incomingRequest.request_message_hash).to.equal(
-      hash(requestMessage + incomingRequest.request_message_salt)
+      hash(createIdentityRequestMessage + incomingRequest.request_message_salt)
     );
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');

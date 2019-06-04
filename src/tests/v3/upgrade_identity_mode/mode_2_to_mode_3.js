@@ -1259,6 +1259,9 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
   const upgradeIdentityModeResultPromise = createEventPromise();
   const upgradeIdentityModeRequestResultPromise = createEventPromise();
 
+  const notificationCreateIdentityPromise = createEventPromise();
+  const notificationUpgradeIdentityModePromise = createEventPromise();
+
   let accessorId;
   let referenceGroupCode;
 
@@ -1311,6 +1314,24 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         callbackData.request_id === requestId
       ) {
         responseResultPromise.resolve(callbackData);
+      }
+    });
+
+    idp2EventEmitter.on('identity_notification_callback', function(
+      callbackData
+    ) {
+      if (
+        callbackData.type === 'identity_modification_notification' &&
+        callbackData.reference_group_code === referenceGroupCode &&
+        callbackData.action === 'create_identity'
+      ) {
+        notificationCreateIdentityPromise.resolve(callbackData);
+      } else if (
+        callbackData.type === 'identity_modification_notification' &&
+        callbackData.reference_group_code === referenceGroupCode &&
+        callbackData.action === 'upgrade_identity_mode'
+      ) {
+        notificationUpgradeIdentityModePromise.resolve(callbackData);
       }
     });
   });
@@ -1545,7 +1566,19 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     await wait(2000);
   });
 
-  it('RP should create a request (mode 3) to idp1 (identity at mode 1 is mode 2) unsuccessfully', async function() {
+  it('After create identity IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
+    this.timeout(15000);
+    const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+    expect(notificationCreateIdentity).to.deep.include({
+      node_id: 'idp2',
+      type: 'identity_modification_notification',
+      reference_group_code: referenceGroupCode,
+      action: 'create_identity',
+      actor_node_id: 'idp1',
+    });
+  });
+
+  it('RP should create a request (mode 3) to idp1 (identity at idp1 is mode 2) unsuccessfully', async function() {
     this.timeout(10000);
 
     let createRequestParams = {
@@ -1638,8 +1671,6 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     expect(incomingRequest.request_timeout).to.be.a('number');
-
-    // requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('idp2 should create response (accept) successfully', async function() {
@@ -1716,6 +1747,18 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       .that.include(2, 3);
 
     await wait(2000);
+  });
+
+  it('After upgrade identity mode IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
+    this.timeout(15000);
+    const notificationUpgradeIdentityMode = await notificationUpgradeIdentityModePromise.promise;
+    expect(notificationUpgradeIdentityMode).to.deep.include({
+      node_id: 'idp2',
+      type: 'identity_modification_notification',
+      reference_group_code: referenceGroupCode,
+      action: 'upgrade_identity_mode',
+      actor_node_id: 'idp1',
+    });
   });
 
   after(function() {

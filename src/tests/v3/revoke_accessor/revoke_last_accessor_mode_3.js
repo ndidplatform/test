@@ -164,12 +164,10 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
     const idp1ReferenceId = generateReferenceId();
 
     const incomingRequestPromise = createEventPromise();
-    const idp2IncomingRequestPromise = createEventPromise();
     const responseResultPromise = createEventPromise();
     const accessorEncryptPromise = createEventPromise();
     const revokeAccessorResultPromise = createEventPromise();
     const revokeAccessorRequestResultPromise = createEventPromise();
-    const notificationCreateIdentityPromise = createEventPromise();
 
     let requestId;
     let accessorIdForRevoke;
@@ -592,12 +590,10 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
     const idp1ReferenceId = generateReferenceId();
 
     const incomingRequestPromise = createEventPromise();
-    const idp2IncomingRequestPromise = createEventPromise();
     const responseResultPromise = createEventPromise();
     const accessorEncryptPromise = createEventPromise();
     const revokeAccessorResultPromise = createEventPromise();
     const revokeAccessorRequestResultPromise = createEventPromise();
-    const notificationCreateIdentityPromise = createEventPromise();
 
     let requestId;
     let accessorIdForRevoke;
