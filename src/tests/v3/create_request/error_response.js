@@ -20,8 +20,6 @@ import {
 import * as config from '../../../config';
 
 describe('RP create request errors', function() {
-  let namespace;
-  let identifier;
   let identityMode2;
   let identityMode3;
 
@@ -78,6 +76,96 @@ describe('RP create request errors', function() {
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
     expect(responseBody.error.code).to.equal(20003);
+  });
+
+  it('should get an error when creating a request with bypass_identity_check = true and idp_id_list is empty array in mode 2', async function() {
+    const createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 2,
+      namespace: identityMode2.namespace,
+      identifier: identityMode2.identifier,
+      idp_id_list: [],
+      data_request_list: [],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+      bypass_identity_check: true,
+    };
+
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20016);
+  });
+
+  it('should get an error when creating a request with bypass_identity_check = true and idp_id_list is empty array in mode 3', async function() {
+    const createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 3,
+      namespace: identityMode2.namespace,
+      identifier: identityMode2.identifier,
+      idp_id_list: [],
+      data_request_list: [],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+      bypass_identity_check: true,
+    };
+
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20016);
+  });
+
+  it('should get an error when creating a request with bypass_identity_check = true without property idp_id_list in mode 2', async function() {
+    const createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 2,
+      namespace: identityMode2.namespace,
+      identifier: identityMode2.identifier,
+      data_request_list: [],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+      bypass_identity_check: true,
+    };
+
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20016);
+  });
+
+  it('should get an error when creating a request with bypass_identity_check = true without property idp_id_list in mode 3', async function() {
+    const createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 3,
+      namespace: identityMode2.namespace,
+      identifier: identityMode2.identifier,
+      data_request_list: [],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+      bypass_identity_check: true,
+    };
+
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20016);
   });
 
   it('should get an error when creating a request without IdP ID list in mode 1', async function() {

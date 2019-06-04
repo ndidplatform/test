@@ -22,6 +22,9 @@ import {
 import * as config from '../../../config';
 
 describe('Reject revoke accessor test', function() {
+  const addAccessorRequestMessage =
+    'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
+
   let namespace = 'citizen_id';
   let identifier = uuidv4();
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -202,7 +205,7 @@ describe('Reject revoke accessor test', function() {
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       //accessor_id: accessorId,
-      // request_message: addAccessorRequestMessage,
+      request_message: addAccessorRequestMessage,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -248,6 +251,10 @@ describe('Reject revoke accessor test', function() {
       mode: 3,
       request_id: requestIdAddAccessor,
       reference_group_code: referenceGroupCode,
+      request_message: addAccessorRequestMessage,
+      request_message_hash: hash(
+        addAccessorRequestMessage + incomingRequest.request_message_salt
+      ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
       min_aal: 1,
@@ -351,6 +358,9 @@ describe('Reject revoke accessor test', function() {
 
   //revoke by idp1
   describe('Reject revoke accessor by the owner', function() {
+    const revokeAccessorRequestMessage =
+      'Revoke accessor consent request custom message ข้อความสำหรับขอเพิกถอน accessor บนระบบ';
+
     let requestId;
 
     const idpReferenceIdRevoke = generateReferenceId();
@@ -403,6 +413,7 @@ describe('Reject revoke accessor test', function() {
         namespace,
         identifier,
         accessor_id: accessorId,
+        request_message: revokeAccessorRequestMessage,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -449,6 +460,10 @@ describe('Reject revoke accessor test', function() {
         mode: 3,
         request_id: requestId,
         requester_node_id: 'idp1',
+        request_message: revokeAccessorRequestMessage,
+        request_message_hash: hash(
+          revokeAccessorRequestMessage + incomingRequest.request_message_salt
+        ),
       });
       expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
         .empty;
@@ -612,7 +627,7 @@ describe('Reject revoke accessor test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
-        bypass_identity_check:false
+        bypass_identity_check: false,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {

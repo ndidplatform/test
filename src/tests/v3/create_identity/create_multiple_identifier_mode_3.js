@@ -8,7 +8,7 @@ import * as identityApi from '../../../api/v3/identity';
 import * as idpApi from '../../../api/v3/idp';
 import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
 import { ndidAvailable, idp2Available } from '../../';
-import { wait, generateReferenceId, createEventPromise } from '../../../utils';
+import { wait, generateReferenceId, createEventPromise, hash} from '../../../utils';
 import * as config from '../../../config';
 import * as db from '../../../db';
 
@@ -317,6 +317,8 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
     });
 
     describe('idp1 and idp2 should create identity request (mode 3) with identity_list contains namespace count (3) greater than allowed namespace count (2) unsuccessfully', function() {
+      const createIdentityRequestMessage =
+        'Create identity consent request custom message ข้อความสำหรับขอสร้าง identity บนระบบ';
       const referenceId = generateReferenceId();
       const idpResponseReferenceId = generateReferenceId();
       const createIdentityResultPromise = createEventPromise();
@@ -471,6 +473,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           //accessor_id,
           ial: 2.3,
           mode: 3,
+          request_message: createIdentityRequestMessage,
         });
         const responseBody = await response.json();
         expect(response.status).to.equal(202);
@@ -487,10 +490,10 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           mode: 3,
           request_id: requestId,
           reference_group_code: referenceGroupCode,
-          //request_message: createIdentityRequestMessage,
-          // request_message_hash: hash(
-          //   createIdentityRequestMessage + incomingRequest.request_message_salt
-          // ),
+          request_message: createIdentityRequestMessage,
+          request_message_hash: hash(
+            createIdentityRequestMessage + incomingRequest.request_message_salt
+          ),
           requester_node_id: 'idp2',
           min_ial: 1.1,
           min_aal: 1,
@@ -590,6 +593,8 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       });
     });
     describe('idp1 and idp2 should create identity request (mode 3) with identity_list namespace count (2) equal to allowed namespace count (2) successfully', async function() {
+      const createIdentityRequestMessage =
+        'Create identity consent request custom message ข้อความสำหรับขอสร้าง identity บนระบบ';
       const keypair = forge.pki.rsa.generateKeyPair(2048);
       const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
       const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
@@ -755,6 +760,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           //accessor_id,
           ial: 2.3,
           mode: 3,
+          request_message: createIdentityRequestMessage,
         });
         const responseBody = await response.json();
         expect(response.status).to.equal(202);
@@ -772,10 +778,10 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           mode: 3,
           request_id: requestId,
           reference_group_code: referenceGroupCode,
-          //request_message: createIdentityRequestMessage,
-          // request_message_hash: hash(
-          //   createIdentityRequestMessage + incomingRequest.request_message_salt
-          // ),
+          request_message: createIdentityRequestMessage,
+          request_message_hash: hash(
+            createIdentityRequestMessage + incomingRequest.request_message_salt
+          ),
           requester_node_id: 'idp2',
           min_ial: 1.1,
           min_aal: 1,
