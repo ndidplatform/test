@@ -1,4 +1,5 @@
 require('./node_setup');
+require('./node_callback_setup');
 require('./rp_setup');
 require('./idp_setup');
 require('./as_setup');
