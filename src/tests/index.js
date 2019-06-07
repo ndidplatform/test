@@ -3,6 +3,10 @@ import {
   startCallbackServer as startDpkiCallbackServer,
   stopCallbackServer as stopDpkiCallbackServer,
 } from '../callback_server/dpki';
+import {
+  startCallbackServer as startNodeCallbackServer,
+  stopCallbackServer as stopNodeCallbackServer,
+} from '../callback_server/node';
 import { isNodeAvailable } from '../helpers';
 import * as config from '../config';
 
@@ -50,6 +54,7 @@ describe('End-to-End NDID API test (API v3)', function() {
   before(async function() {
     this.timeout(5000);
     startCallbackServers();
+    startNodeCallbackServer();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
       startDpkiCallbackServer();
     }
@@ -81,6 +86,7 @@ describe('End-to-End NDID API test (API v3)', function() {
 
   after(function() {
     stopCallbackServers();
+    stopNodeCallbackServer();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
       stopDpkiCallbackServer();
     }

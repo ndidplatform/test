@@ -9,6 +9,7 @@ import {
   idp1EventEmitter,
   as1EventEmitter,
 } from '../../../callback_server';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import * as db from '../../../db';
 import { createEventPromise, generateReferenceId, hash } from '../../../utils';
 import * as config from '../../../config';
@@ -22,13 +23,17 @@ describe('1 IdP, 1 AS, mode 2', function() {
   const asReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); // RP
+  const mqSendSuccessRpToIdpCallbackPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
   const accessorEncryptPromise = createEventPromise(); // IDP
+  const mqSendSuccessIdpToRpCallbackPromise = createEventPromise(); // IDP
   const requestStatusConfirmedPromise = createEventPromise(); // RP
   const dataRequestReceivedPromise = createEventPromise(); // AS
+  const mqSendSuccessRpToAsCallbackPromise = createEventPromise(); // RP
   const sendDataResultPromise = createEventPromise(); // AS
+  const mqSendSuccessAsToRpCallbackPromise = createEventPromise(); // AS
   const requestStatusSignedDataPromise = createEventPromise(); // RP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
@@ -62,7 +67,7 @@ describe('1 IdP, 1 AS, mode 2', function() {
   let lastStatusUpdateBlockHeight;
 
   before(function() {
-    const identity = db.idp1Identities.find(identity => identity.mode === 2);
+    const identity = db.idp1Identities.find((identity) => identity.mode === 2);
 
     if (!identity) {
       throw new Error('No created identity to use');
@@ -92,7 +97,7 @@ describe('1 IdP, 1 AS, mode 2', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -195,6 +200,29 @@ describe('1 IdP, 1 AS, mode 2', function() {
         }
       }
     });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId
+      ) {
+        if (callbackData.node_id === 'rp1') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+          } else if (callbackData.destination_node_id === 'as1') {
+            mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'idp1') {
+          if (callbackData.destination_node_id === 'rp1') {
+            mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'as1') {
+          if (callbackData.destination_node_id === 'rp1') {
+            mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+          }
+        }
+      }
+    });
   });
 
   it('RP should create a request successfully', async function() {
@@ -252,12 +280,26 @@ describe('1 IdP, 1 AS, mode 2', function() {
     lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
   });
 
+  it('RP should receive message queue send success (to IdP) callback', async function() {
+    this.timeout(15000);
+    const mqSendSuccess = await mqSendSuccessRpToIdpCallbackPromise.promise;
+
+    expect(mqSendSuccess).to.deep.include({
+      node_id: 'rp1',
+      type: 'message_queue_send_success',
+      destination_node_id: 'idp1',
+      request_id: requestId,
+    });
+    expect(mqSendSuccess.destination_ip).to.be.a('string').that.is.not.empty;
+    expect(mqSendSuccess.destination_port).to.be.a('number');
+  });
+
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -300,7 +342,7 @@ describe('1 IdP, 1 AS, mode 2', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -341,7 +383,7 @@ describe('1 IdP, 1 AS, mode 2', function() {
       .that.is.not.empty;
   });
 
-  it('IdP shoud receive callback create response result with success = true', async function() {
+  it('IdP should receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
@@ -350,6 +392,20 @@ describe('1 IdP, 1 AS, mode 2', function() {
       request_id: requestId,
       success: true,
     });
+  });
+
+  it('IdP should receive message queue send success (to RP) callback', async function() {
+    this.timeout(15000);
+    const mqSendSuccess = await mqSendSuccessIdpToRpCallbackPromise.promise;
+
+    expect(mqSendSuccess).to.deep.include({
+      node_id: 'idp1',
+      type: 'message_queue_send_success',
+      destination_node_id: 'rp1',
+      request_id: requestId,
+    });
+    expect(mqSendSuccess.destination_ip).to.be.a('string').that.is.not.empty;
+    expect(mqSendSuccess.destination_port).to.be.a('number');
   });
 
   it('RP should receive confirmed request status with valid proofs', async function() {
@@ -428,6 +484,20 @@ describe('1 IdP, 1 AS, mode 2', function() {
   //     lastStatusUpdateBlockHeight
   //   );
   // });
+
+  it('RP should receive message queue send success (to AS) callback', async function() {
+    this.timeout(15000);
+    const mqSendSuccess = await mqSendSuccessRpToAsCallbackPromise.promise;
+
+    expect(mqSendSuccess).to.deep.include({
+      node_id: 'rp1',
+      type: 'message_queue_send_success',
+      destination_node_id: 'as1',
+      request_id: requestId,
+    });
+    expect(mqSendSuccess.destination_ip).to.be.a('string').that.is.not.empty;
+    expect(mqSendSuccess.destination_port).to.be.a('number');
+  });
 
   it('AS should receive data request', async function() {
     this.timeout(15000);
@@ -510,6 +580,20 @@ describe('1 IdP, 1 AS, mode 2', function() {
       reference_id: asReferenceId,
       success: true,
     });
+  });
+
+  it('AS should receive message queue send success (to RP) callback', async function() {
+    this.timeout(15000);
+    const mqSendSuccess = await mqSendSuccessAsToRpCallbackPromise.promise;
+
+    expect(mqSendSuccess).to.deep.include({
+      node_id: 'as1',
+      type: 'message_queue_send_success',
+      destination_node_id: 'rp1',
+      request_id: requestId,
+    });
+    expect(mqSendSuccess.destination_ip).to.be.a('string').that.is.not.empty;
+    expect(mqSendSuccess.destination_port).to.be.a('number');
   });
 
   it('RP should receive request status with signed data count = 1', async function() {
@@ -1042,7 +1126,7 @@ describe('1 IdP, 1 AS, mode 2 (as_id_list is empty array)', function() {
       throw new Error('No created identity to use');
     }
 
-    const identity = db.idp1Identities.find(identity => {
+    const identity = db.idp1Identities.find((identity) => {
       return identity.mode === 2;
     });
 
@@ -1071,7 +1155,7 @@ describe('1 IdP, 1 AS, mode 2 (as_id_list is empty array)', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -1260,9 +1344,9 @@ describe('1 IdP, 1 AS, mode 2 (as_id_list is empty array)', function() {
       request_timeout: createRequestParams.request_timeout,
     });
 
-    incomingRequest.data_request_list.forEach(incomingRequestData => {
+    incomingRequest.data_request_list.forEach((incomingRequestData) => {
       let data_request_list = createRequestParams.data_request_list.find(
-        service => service.service_id === incomingRequestData.service_id
+        (service) => service.service_id === incomingRequestData.service_id
       );
       expect(incomingRequestData.service_id).to.equal(
         data_request_list.service_id
@@ -1292,7 +1376,7 @@ describe('1 IdP, 1 AS, mode 2 (as_id_list is empty array)', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -2034,7 +2118,7 @@ describe('1 IdP, 1 AS, mode 2 (without as_id_list key)', function() {
       throw new Error('No created identity to use');
     }
 
-    const identity = db.idp1Identities.find(identity => {
+    const identity = db.idp1Identities.find((identity) => {
       return identity.mode === 2;
     });
 
@@ -2062,7 +2146,7 @@ describe('1 IdP, 1 AS, mode 2 (without as_id_list key)', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -2251,9 +2335,9 @@ describe('1 IdP, 1 AS, mode 2 (without as_id_list key)', function() {
       request_timeout: createRequestParams.request_timeout,
     });
 
-    incomingRequest.data_request_list.forEach(incomingRequestData => {
+    incomingRequest.data_request_list.forEach((incomingRequestData) => {
       let data_request_list = createRequestParams.data_request_list.find(
-        service => service.service_id === incomingRequestData.service_id
+        (service) => service.service_id === incomingRequestData.service_id
       );
       expect(incomingRequestData.service_id).to.equal(
         data_request_list.service_id
@@ -2283,7 +2367,7 @@ describe('1 IdP, 1 AS, mode 2 (without as_id_list key)', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -3025,7 +3109,7 @@ describe('1 IdP, 1 AS, mode 2 (without request_params key)', function() {
       throw new Error('No created identity to use');
     }
 
-    const identity = db.idp1Identities.find(identity => {
+    const identity = db.idp1Identities.find((identity) => {
       return identity.mode === 2;
     });
 
@@ -3051,7 +3135,7 @@ describe('1 IdP, 1 AS, mode 2 (without request_params key)', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -3216,7 +3300,7 @@ describe('1 IdP, 1 AS, mode 2 (without request_params key)', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -3259,7 +3343,7 @@ describe('1 IdP, 1 AS, mode 2 (without request_params key)', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -4001,7 +4085,7 @@ describe('1 IdP, 1 AS, mode 2 (with empty string request_params and request_mess
       throw new Error('No created identity to use');
     }
 
-    const identity = db.idp1Identities.find(identity => {
+    const identity = db.idp1Identities.find((identity) => {
       return identity.mode === 2;
     });
 
@@ -4028,7 +4112,7 @@ describe('1 IdP, 1 AS, mode 2 (with empty string request_params and request_mess
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -4193,7 +4277,7 @@ describe('1 IdP, 1 AS, mode 2 (with empty string request_params and request_mess
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -4236,7 +4320,7 @@ describe('1 IdP, 1 AS, mode 2 (with empty string request_params and request_mess
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 

@@ -17,6 +17,8 @@ export const NDID_CALLBACK_PORT = 9000;
 
 export const DPKI_CALLBACK_PORT = 12000;
 
+export const NODE_CALLBACK_PORT = 14000;
+
 export const RP_CALLBACK_URL = `http://${CALLBACK_IP}:${RP_CALLBACK_PORT}/rp/callback`;
 
 export const IDP1_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP1_CALLBACK_PORT}/idp/callback`;
@@ -50,3 +52,5 @@ export const USE_EXTERNAL_CRYPTO_SERVICE =
 export const DPKI_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/sign`;
 export const DPKI_MASTER_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/master/sign`;
 export const DPKI_DECRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/decrypt`;
+
+export const MQ_SEND_SUCCESS_CALLBACK_URL = `http://${CALLBACK_IP}:${NODE_CALLBACK_PORT}/node/mq_send_success`;

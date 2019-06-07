@@ -13,7 +13,7 @@ import * as nodeApi from '../../api/v3/node';
 import * as config from '../../config';
 import { wait } from '../../utils';
 
-describe('Node callback setup', function() {
+describe('Node (external crypto) callback setup', function() {
   before(async function() {
     if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
       this.test.parent.pending = true;
