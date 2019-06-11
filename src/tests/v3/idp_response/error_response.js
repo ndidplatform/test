@@ -2,13 +2,14 @@ import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 import forge from 'node-forge';
 
-import { setIdPUseSpecificPrivateKeyForSign } from '../../../callback_server';
+import { setIdPAccessorEncryptWithRamdomByte } from '../../../callback_server';
 import * as rpApi from '../../../api/v3/rp';
 import * as idpApi from '../../../api/v3/idp';
 import * as identityApi from '../../../api/v3/identity';
 // import * as commonApi from '../../api/v2/common';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
+import * as util from '../../../utils';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
 import { idp2Available, as2Available } from '../..';
@@ -222,7 +223,8 @@ describe('IdP response errors tests', function() {
 
   it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
     this.timeout(25000);
-    setIdPUseSpecificPrivateKeyForSign(true, invalidAccessorPrivateKey);
+    let random8Byte = util.randomByte(8);
+    setIdPAccessorEncryptWithRamdomByte(true, random8Byte);
     await wait(2000);
     const identity = db.idp1Identities.find(
       identity =>
@@ -251,7 +253,7 @@ describe('IdP response errors tests', function() {
       success: false,
     });
     expect(responseResult.error.code).to.equal(10014);
-    setIdPUseSpecificPrivateKeyForSign(false);
+    setIdPAccessorEncryptWithRamdomByte(false);
     await wait(2000);
   });
 
