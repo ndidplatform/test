@@ -50,7 +50,7 @@ describe('Node (external crypto) callback setup', function() {
       const response = await nodeApi.getCallbacks('rp1');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
+      expect(responseBody).to.deep.include({
         sign_url: config.DPKI_SIGN_CALLBACK_URL,
         master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
         decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
@@ -72,7 +72,7 @@ describe('Node (external crypto) callback setup', function() {
       const response = await nodeApi.getCallbacks('idp1');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
+      expect(responseBody).to.deep.include({
         sign_url: config.DPKI_SIGN_CALLBACK_URL,
         master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
         decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
@@ -100,7 +100,7 @@ describe('Node (external crypto) callback setup', function() {
       const response = await nodeApi.getCallbacks('idp2');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
+      expect(responseBody).to.deep.include({
         sign_url: config.DPKI_SIGN_CALLBACK_URL,
         master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
         decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
@@ -128,7 +128,7 @@ describe('Node (external crypto) callback setup', function() {
       const response = await nodeApi.getCallbacks('as1');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
+      expect(responseBody).to.deep.include({
         sign_url: config.DPKI_SIGN_CALLBACK_URL,
         master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
         decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
@@ -156,7 +156,7 @@ describe('Node (external crypto) callback setup', function() {
       const response = await nodeApi.getCallbacks('as2');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
+      expect(responseBody).to.deep.include({
         sign_url: config.DPKI_SIGN_CALLBACK_URL,
         master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
         decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
@@ -184,7 +184,7 @@ describe('Node (external crypto) callback setup', function() {
       const response = await nodeApi.getCallbacks('proxy1');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
+      expect(responseBody).to.deep.include({
         sign_url: config.DPKI_SIGN_CALLBACK_URL,
         master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
         decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
@@ -212,7 +212,7 @@ describe('Node (external crypto) callback setup', function() {
       const response = await nodeApi.getCallbacks('proxy2');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
+      expect(responseBody).to.deep.include({
         sign_url: config.DPKI_SIGN_CALLBACK_URL,
         master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
         decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
@@ -240,7 +240,7 @@ describe('Node (external crypto) callback setup', function() {
       const response = await nodeApi.getCallbacks('ndid1');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
-      expect(responseBody).to.deep.equal({
+      expect(responseBody).to.deep.include({
         sign_url: config.DPKI_SIGN_CALLBACK_URL,
         master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
         decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,

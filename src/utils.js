@@ -88,3 +88,7 @@ export function hashRequestMessageForConsent(request_message, initialSalt, reque
 
   return Buffer.concat([paddingBuffer, normalHashBuffer]).toString('base64');
 }
+
+export function randomByte(length){
+  return crypto.randomBytes(length);
+}

@@ -16,10 +16,11 @@ export const as2EventEmitter = new EventEmitter();
 export const proxy1EventEmitter = new EventEmitter();
 export const proxy2EventEmitter = new EventEmitter();
 
-export let asSendDataThroughCallback = false;
-export let useSpecificPrivateKeyForSign = false;
-
+let asSendDataThroughCallback = false;
+let useSpecificPrivateKeyForSign = false;
+let responseAccessorEncryptWithRandomByte = false;
 let privateKeyForSign;
+let responseRandomByte;
 
 export function setAsSendDataThroughCallback(sendThroughCallback) {
   asSendDataThroughCallback = sendThroughCallback;
@@ -31,6 +32,14 @@ export function setIdPUseSpecificPrivateKeyForSign(
 ) {
   useSpecificPrivateKeyForSign = specificPrivateKeyForSign;
   privateKeyForSign = privateKey;
+}
+
+export function setIdPAccessorEncryptWithRamdomByte(
+  accessorEncryptWithRandomByte,
+  randomByte = null
+) {
+  responseAccessorEncryptWithRandomByte = accessorEncryptWithRandomByte;
+  responseRandomByte = randomByte;
 }
 
 /*
@@ -88,6 +97,7 @@ idp1App.post('/idp/accessor/sign', async function(req, res) {
 });
 
 idp1App.post('/idp/accessor/encrypt', async function(req, res) {
+  let signature;
   const callbackData = req.body;
   idp1EventEmitter.emit('accessor_encrypt_callback', callbackData);
   let accessorPrivateKey;
@@ -104,11 +114,16 @@ idp1App.post('/idp/accessor/encrypt', async function(req, res) {
       });
     });
   }
-  res.status(200).json({
-    signature: utils.createResponseSignature(
+  if (responseAccessorEncryptWithRandomByte) {
+    signature = responseRandomByte;
+  } else {
+    signature = utils.createResponseSignature(
       accessorPrivateKey,
       callbackData.request_message_padded_hash
-    ),
+    );
+  }
+  res.status(200).json({
+    signature,
   });
 });
 
