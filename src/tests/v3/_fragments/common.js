@@ -8,13 +8,27 @@ export async function receivePendingRequestStatusTest({
   requestId,
   lastStatusUpdateBlockHeight,
   requestStatusPendingPromise,
-  serviceList = {
-    service_id: createRequestParams.data_request_list[0].service_id,
-    min_as: createRequestParams.data_request_list[0].min_as,
-    signed_data_count: 0,
-    received_data_count: 0,
-  },
+  // serviceList = [
+  //   {
+  //     service_id: createRequestParams.data_request_list[0].service_id,
+  //     min_as: createRequestParams.data_request_list[0].min_as,
+  //     signed_data_count: 0,
+  //     received_data_count: 0,
+  //   },
+  // ],
 }) {
+  let serviceList = [];
+  if (createRequestParams.data_request_list) {
+    serviceList = createRequestParams.data_request_list.map(service => {
+      return {
+        service_id: service.service_id,
+        min_as: service.min_as,
+        signed_data_count: 0,
+        received_data_count: 0,
+      };
+    });
+  }
+
   const requestStatus = await requestStatusPendingPromise.promise;
   expect(requestStatus).to.deep.include({
     node_id: nodeId,
