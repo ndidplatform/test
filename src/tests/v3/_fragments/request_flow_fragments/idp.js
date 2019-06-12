@@ -5,6 +5,7 @@ import * as idpApi from '../../../../api/v3/idp';
 import { hash } from '../../../../utils';
 
 export async function idpReceiveMode1IncomingRequestCallbackTest({
+  nodeId,
   createRequestParams,
   requestId,
   incomingRequestPromise,
@@ -12,6 +13,7 @@ export async function idpReceiveMode1IncomingRequestCallbackTest({
 }) {
   const incomingRequest = await incomingRequestPromise.promise;
   expect(incomingRequest).to.deep.include({
+    node_id: nodeId,
     mode: createRequestParams.mode,
     request_id: requestId,
     namespace: createRequestParams.namespace,
@@ -24,7 +26,7 @@ export async function idpReceiveMode1IncomingRequestCallbackTest({
     min_ial: createRequestParams.min_ial,
     min_aal: createRequestParams.min_aal,
     data_request_list: createRequestParams.data_request_list
-      ? createRequestParams.data_request_list.map((dataRequest) => {
+      ? createRequestParams.data_request_list.map(dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -70,7 +72,7 @@ export async function idpReceiveMode2And3IncomingRequestCallbackTest({
     min_ial: createRequestParams.min_ial,
     min_aal: createRequestParams.min_aal,
     data_request_list: createRequestParams.data_request_list
-      ? createRequestParams.data_request_list.map((dataRequest) => {
+      ? createRequestParams.data_request_list.map(dataRequest => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -112,12 +114,14 @@ export async function idpCreateResponseTest({
 }
 
 export async function idpReceiveCreateResponseResultCallbackTest({
+  nodeId,
   requestId,
   idpReferenceId,
   responseResultPromise,
 }) {
   const responseResult = await responseResultPromise.promise;
   expect(responseResult).to.deep.include({
+    node_id: nodeId,
     reference_id: idpReferenceId,
     request_id: requestId,
     success: true,
