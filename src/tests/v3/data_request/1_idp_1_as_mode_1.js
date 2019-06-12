@@ -3,16 +3,12 @@ import forge from 'node-forge';
 
 import {
   rpCreateRequestTest,
-  rpReceivePendingRequestStatusTest,
-  rpReceiveConfirmedRequestStatusTest,
-  rpReceiveCompletedRequestStatusTest,
-  rpReceiveRequestClosedStatusTest,
   rpGotDataFromAsTest,
   removeAsDataTest,
   rpHasNoDataFromAsTest,
 } from '../_fragments/request_flow_fragments/rp';
 import {
-  idpReceiveIncomingRequestCallbackTest,
+  idpReceiveMode1IncomingRequestCallbackTest,
   idpCreateResponseTest,
 } from '../_fragments/request_flow_fragments/idp';
 import {
@@ -20,6 +16,10 @@ import {
   asSendDataTest,
 } from '../_fragments/request_flow_fragments/as';
 import {
+  receivePendingRequestStatusTest,
+  receiveConfirmedRequestStatusTest,
+  receiveCompletedRequestStatusTest,
+  receiveRequestClosedStatusTest,
   hasPrivateMessagesTest,
   removePrivateMessagesTest,
   hasNoPrivateMessagesTest,
@@ -167,25 +167,26 @@ describe('1 IdP, 1 AS, mode 1', function() {
 
   it('RP should receive pending request status', async function() {
     this.timeout(10000);
-    await rpReceivePendingRequestStatusTest({
+    await receivePendingRequestStatusTest({
+      nodeId: 'rp1',
       createRequestParams,
       requestId,
       lastStatusUpdateBlockHeight,
       requestStatusPendingPromise,
-      serviceList: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-      ],
+      // serviceList: [
+      //   {
+      //     service_id: createRequestParams.data_request_list[0].service_id,
+      //     min_as: createRequestParams.data_request_list[0].min_as,
+      //     signed_data_count: 0,
+      //     received_data_count: 0,
+      //   },
+      // ],
     });
   });
 
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
-    await idpReceiveIncomingRequestCallbackTest({
+    await idpReceiveMode1IncomingRequestCallbackTest({
       createRequestParams,
       requestId,
       incomingRequestPromise,
@@ -197,7 +198,6 @@ describe('1 IdP, 1 AS, mode 1', function() {
     this.timeout(10000);
     await idpCreateResponseTest({
       callApiAtNodeId: 'idp1',
-      createRequestParams,
       callbackUrl: config.IDP1_CALLBACK_URL,
       ial: 2.3,
       aal: 3,
@@ -210,7 +210,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
 
   it('RP should receive confirmed request status', async function() {
     this.timeout(15000);
-    const testResult = await rpReceiveConfirmedRequestStatusTest({
+    const testResult = await receiveConfirmedRequestStatusTest({
       requestStatusCompletedPromise,
       requestId,
       createRequestParams,
@@ -258,7 +258,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
 
   it('RP should receive request status with signed data count = 1', async function() {
     this.timeout(15000);
-    const testResult = await rpReceiveConfirmedRequestStatusTest({
+    const testResult = await receiveConfirmedRequestStatusTest({
       requestStatusConfirmedPromise: requestStatusSignedDataPromise,
       requestId,
       createRequestParams,
@@ -284,7 +284,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
 
   it('RP should receive completed request status with received data count = 1', async function() {
     this.timeout(15000);
-    const testResult = await rpReceiveCompletedRequestStatusTest({
+    const testResult = await receiveCompletedRequestStatusTest({
       requestStatusCompletedPromise,
       requestId,
       createRequestParams,
@@ -310,7 +310,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
 
   it('RP should receive request closed status', async function() {
     this.timeout(10000);
-    await rpReceiveRequestClosedStatusTest({
+    await receiveRequestClosedStatusTest({
       requestClosedPromise,
       requestId,
       createRequestParams,
@@ -568,7 +568,7 @@ describe('1 IdP, 1 AS, mode 1 (with as_id_list is empty array)', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -594,7 +594,7 @@ describe('1 IdP, 1 AS, mode 1 (with as_id_list is empty array)', function() {
 
     incomingRequest.data_request_list.forEach((incomingRequestData, index) => {
       let data_request_list = createRequestParams.data_request_list.find(
-        (service) => service.service_id === incomingRequestData.service_id
+        service => service.service_id === incomingRequestData.service_id
       );
       expect(incomingRequestData.service_id).to.equal(
         data_request_list.service_id
@@ -1120,7 +1120,7 @@ describe('1 IdP, 1 AS, mode 1 (without as_id_list key)', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -1146,7 +1146,7 @@ describe('1 IdP, 1 AS, mode 1 (without as_id_list key)', function() {
 
     incomingRequest.data_request_list.forEach((incomingRequestData, index) => {
       let data_request_list = createRequestParams.data_request_list.find(
-        (service) => service.service_id === incomingRequestData.service_id
+        service => service.service_id === incomingRequestData.service_id
       );
       expect(incomingRequestData.service_id).to.equal(
         data_request_list.service_id
@@ -1673,7 +1673,7 @@ describe('1 IdP, 1 AS, mode 1 (without request_params key)', function() {
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
