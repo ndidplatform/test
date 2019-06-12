@@ -97,9 +97,9 @@ export function mode2And3FlowTest({
   );
 
   const idp_requestClosedPromises = idpParams.map(() => createEventPromise());
+  
   let requestId;
   let lastStatusUpdateBlockHeight;
-
   let idpsReceiveRequestPromises;
   let arrayMqSendSuccessRpToIdpCallback = [];
   const requestStatusUpdates = [];
@@ -301,7 +301,7 @@ export function mode2And3FlowTest({
       requestId,
       lastStatusUpdateBlockHeight,
       requestStatusPendingPromise,
-      serviceList: [],
+      //serviceList: [],
     });
   });
 
@@ -385,6 +385,7 @@ export function mode2And3FlowTest({
         request_id: requestId,
         accessor_id: responseAccessorId,
       };
+
       await idpCreateResponseTest({
         callApiAtNodeId: callIdpApiAtNodeId,
         idpResponseParams,
@@ -416,7 +417,7 @@ export function mode2And3FlowTest({
       let mqSendSuccessCallbackPromise = mqSendSuccessIdpToRpCallbackPromises.find(
         ({ node_id }) => node_id === idpNodeId
       ).mqSendSuccessIdpToRpCallbackPromise;
-      if(!mqSendSuccessCallbackPromise){
+      if (!mqSendSuccessCallbackPromise) {
         throw new Error(
           `${idpNodeId} not receive MQ send success idp to rp callback`
         );
@@ -484,7 +485,6 @@ export function mode2And3FlowTest({
           this.timeout(15000);
           const idp_requestStatusPromise =
             idp_requestStatusPromises[idpNodeIds[j]][i];
-          receiveConfirmedRequestStatusTest;
           let callFunctionReceiveRequestStatusTest =
             idpResponseParams.status === 'accept'
               ? receiveConfirmedRequestStatusTest
