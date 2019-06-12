@@ -8,12 +8,14 @@ import {
 } from './request_flow_fragments/idp';
 import {
   receivePendingRequestStatusTest,
+  receiveConfirmedRequestStatusTest,
+  receiveRejectedRequestStatusTest,
   receiveCompletedRequestStatusTest,
+  receiveComplicatedRequestStatusTest,
   receiveRequestClosedStatusTest,
   hasPrivateMessagesTest,
   removePrivateMessagesTest,
   hasNoPrivateMessagesTest,
-  receiveConfirmedRequestStatusTest,
 } from './common';
 
 import { createEventPromise } from '../../../utils';
@@ -36,19 +38,51 @@ export function mode1FlowTest({
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromises = idpParams.map(() => createEventPromise()); // IdPs
   const responseResultPromises = idpParams.map(() => createEventPromise()); // IdPs
+  const responseAcceptCount = idpParams.filter(
+    idpParam => idpParam.idpResponseParams.status === 'accept'
+  ).length;
+  const responseRejectCount = idpParams.filter(
+    idpParam => idpParam.idpResponseParams.status === 'reject'
+  ).length;
+
   const requestStatusConfirmedPromises = idpParams.map((_, index) =>
     index === idpParams.length - 1 ? null : createEventPromise()
   ); // RP
+  const requestStatusRejectedPromises = idpParams.map((_, index) =>
+    index === idpParams.length - 1 ? null : createEventPromise()
+  ); // RP
   const requestStatusCompletedPromise = createEventPromise(); // RP
+  const requestStatusRejectedPromise = createEventPromise(); // RP
+  const requestStatusComplicatedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
   let requestId;
-
   let lastStatusUpdateBlockHeight;
-
   const requestStatusUpdates = [];
+  let finalRequestStatus;
+  let callFunctionReceiveRequestStatusTest;
+  let requestStatusPromise;
+
+  if (responseAcceptCount > 0 && responseRejectCount > 0) {
+    finalRequestStatus = 'complicated';
+    callFunctionReceiveRequestStatusTest = receiveComplicatedRequestStatusTest;
+    requestStatusPromise = requestStatusComplicatedPromise;
+  } else if (responseAcceptCount > 0 && responseRejectCount === 0) {
+    finalRequestStatus = 'completed';
+    callFunctionReceiveRequestStatusTest = receiveCompletedRequestStatusTest;
+    requestStatusPromise = requestStatusCompletedPromise;
+  } else if (responseAcceptCount === 0 && responseRejectCount > 0) {
+    finalRequestStatus = 'rejected';
+    callFunctionReceiveRequestStatusTest = receiveRejectedRequestStatusTest;
+    requestStatusPromise = requestStatusRejectedPromise;
+  }
 
   before(function() {
+
+    if (createRequestParams.min_idp != idpParams.length) {
+      throw new Error('idpParams not equal to min_idp');
+    }
+    
     rpEventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
@@ -66,6 +100,16 @@ export function mode1FlowTest({
           requestStatusConfirmedPromises[
             callbackData.answered_idp_count - 1
           ].resolve(callbackData);
+        } else if (callbackData.status === 'rejected') {
+          if (callbackData.answered_idp_count === idpParams.length) {
+            requestStatusRejectedPromise.resolve(callbackData);
+          } else {
+            requestStatusRejectedPromises[
+              callbackData.answered_idp_count - 1
+            ].resolve(callbackData);
+          }
+        } else if (callbackData.status === 'complicated') {
+          requestStatusComplicatedPromise.resolve(callbackData);
         } else if (callbackData.status === 'completed') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
@@ -105,6 +149,7 @@ export function mode1FlowTest({
   it('RP should receive pending request status', async function() {
     this.timeout(10000);
     await receivePendingRequestStatusTest({
+      nodeId: rpNodeId,
       createRequestParams,
       requestId,
       lastStatusUpdateBlockHeight,
@@ -118,13 +163,13 @@ export function mode1FlowTest({
     const incomingRequestPromise = incomingRequestPromises[i];
     const responseResultPromise = responseResultPromises[i];
     const requestStatusConfirmedPromise = requestStatusConfirmedPromises[i];
+    const requestStatusRejectPromise = requestStatusRejectedPromises[i];
     let idpResponseParams = idpParams[i].idpResponseParams;
-
-    it(`IdP (${
-      idpNodeIds[i]
-    }) should receive incoming request callback`, async function() {
+    const idpNodeId = idpNodeIds[i];
+    it(`IdP (${idpNodeId}) should receive incoming request callback`, async function() {
       this.timeout(15000);
       await idpReceiveMode1IncomingRequestCallbackTest({
+        nodeId: idpNodeId,
         createRequestParams,
         requestId,
         incomingRequestPromise,
@@ -132,9 +177,9 @@ export function mode1FlowTest({
       });
     });
 
-    it(`IdP (${
-      idpNodeIds[i]
-    }) should create response (accept) successfully`, async function() {
+    it(`IdP (${idpNodeId}) should create response (${
+      idpResponseParams.status
+    }) successfully`, async function() {
       this.timeout(10000);
       idpResponseParams = {
         ...idpResponseParams,
@@ -145,6 +190,7 @@ export function mode1FlowTest({
         idpResponseParams,
       });
       await idpReceiveCreateResponseResultCallbackTest({
+        nodeId: idpNodeId,
         requestId,
         idpReferenceId: idpResponseParams.reference_id,
         responseResultPromise,
@@ -152,37 +198,67 @@ export function mode1FlowTest({
     });
 
     if (i < idpNodeIds.length - 1) {
-      it('RP should receive confirmed request status', async function() {
-        this.timeout(15000);
-        const testResult = await receiveConfirmedRequestStatusTest({
-          requestStatusConfirmedPromise,
-          requestId,
-          createRequestParams,
-          answeredIdpCount: idpNodeIds.filter((idpNodeId, index) => index <= i)
-            .length,
-          serviceList: [],
-          responseValidList: idpNodeIds
-            .filter((idpNodeId, index) => index <= i)
-            .map((idpNodeId) => ({
-              idp_id: idpNodeId,
-              valid_signature: null,
-              valid_ial: null,
-            })),
-          lastStatusUpdateBlockHeight,
+      if (idpResponseParams.status === 'reject') {
+        it('RP should receive reject request status', async function() {
+          this.timeout(15000);
+          const testResult = await receiveRejectedRequestStatusTest({
+            nodeId: rpNodeId,
+            requestStatusRejectPromise,
+            requestId,
+            createRequestParams,
+            answeredIdpCount: idpNodeIds.filter(
+              (idpNodeId, index) => index <= i
+            ).length,
+            serviceList: [],
+            responseValidList: idpNodeIds
+              .filter((idpNodeId, index) => index <= i)
+              .map(idpNodeId => ({
+                idp_id: idpNodeId,
+                valid_signature: null,
+                valid_ial: null,
+              })),
+            lastStatusUpdateBlockHeight,
+          });
+          lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
         });
-        lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
-      });
+      } else {
+        it('RP should receive confirmed request status', async function() {
+          this.timeout(15000);
+          const testResult = await receiveConfirmedRequestStatusTest({
+            nodeId: rpNodeId,
+            requestStatusConfirmedPromise,
+            requestId,
+            createRequestParams,
+            answeredIdpCount: idpNodeIds.filter(
+              (idpNodeId, index) => index <= i
+            ).length,
+            serviceList: [],
+            responseValidList: idpNodeIds
+              .filter((idpNodeId, index) => index <= i)
+              .map(idpNodeId => ({
+                idp_id: idpNodeId,
+                valid_signature: null,
+                valid_ial: null,
+              })),
+            lastStatusUpdateBlockHeight,
+          });
+          lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+        });
+      }
     } else {
-      it('RP should receive completed request status', async function() {
+      it(`RP should receive ${finalRequestStatus} request status`, async function() {
         this.timeout(15000);
-        const testResult = await receiveCompletedRequestStatusTest({
-          requestStatusCompletedPromise,
+        const testResult = await callFunctionReceiveRequestStatusTest({
+          nodeId: rpNodeId,
+          requestStatusPromise,
           requestId,
           createRequestParams,
           serviceList: [],
+          answeredIdpCount: idpNodeIds.filter((idpNodeId, index) => index <= i)
+            .length, // for request status rejected
           responseValidList: idpNodeIds
             .filter((idpNodeId, index) => index <= i)
-            .map((idpNodeId) => ({
+            .map(idpNodeId => ({
               idp_id: idpNodeId,
               valid_signature: null,
               valid_ial: null,
@@ -193,26 +269,35 @@ export function mode1FlowTest({
       });
     }
   }
-
-  it('RP should receive request closed status', async function() {
-    this.timeout(10000);
-    const testResult = await receiveRequestClosedStatusTest({
-      requestClosedPromise,
-      requestId,
-      createRequestParams,
-      serviceList: [],
-      responseValidList: idpNodeIds.map((idpNodeId) => ({
-        idp_id: idpNodeId,
-        valid_signature: null,
-        valid_ial: null,
-      })),
-      lastStatusUpdateBlockHeight,
+  if (finalRequestStatus === 'completed') {
+    it('RP should receive request closed status', async function() {
+      this.timeout(10000);
+      const testResult = await receiveRequestClosedStatusTest({
+        nodeId: rpNodeId,
+        requestClosedPromise,
+        requestId,
+        createRequestParams,
+        serviceList: [],
+        responseValidList: idpNodeIds.map(idpNodeId => ({
+          idp_id: idpNodeId,
+          valid_signature: null,
+          valid_ial: null,
+        })),
+        lastStatusUpdateBlockHeight,
+      });
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
     });
-    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
-  });
+  }
 
-  it('RP should receive 3 request status updates', function() {
-    expect(requestStatusUpdates).to.have.lengthOf(3);
+  it('RP should receive request status updates', function() {
+    let requestStatusCount = idpNodeIds.length;
+    if (finalRequestStatus === 'completed') {
+      // +2 for pending and closed
+      expect(requestStatusUpdates).to.have.lengthOf(requestStatusCount + 2);
+    } else {
+      // +1 for pending
+      expect(requestStatusUpdates).to.have.lengthOf(requestStatusCount + 1);
+    }
   });
 
   it('RP should have and able to get saved private messages', function() {
