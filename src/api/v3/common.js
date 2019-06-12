@@ -4,7 +4,29 @@ import API_VERSION from './apiVersion';
 export function getRelevantIdpNodesBySid(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier } = data;
-  return httpGet(`${apiBaseUrl}/utility/idp/${namespace}/${identifier}`);
+  const { min_ial, min_aal, mode } = data;
+
+  let arrayQueryString = [];
+  let queryString;
+
+  if (min_ial) {
+    arrayQueryString.push(`min_ial=${min_ial}`);
+  }
+  if (min_aal) {
+    arrayQueryString.push(`min_aal=${min_aal}`);
+  }
+  if (mode) {
+    arrayQueryString.push(`mode=${mode}`);
+  }
+  if (arrayQueryString.length > 0) {
+    queryString = arrayQueryString.join('&');
+  }
+
+  return httpGet(
+    `${apiBaseUrl}/utility/idp/${namespace}/${identifier}?${
+      queryString ? queryString : ''
+    }`
+  );
 }
 
 export function getIdP(nodeId) {
