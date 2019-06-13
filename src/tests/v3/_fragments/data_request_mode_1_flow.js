@@ -23,7 +23,7 @@ import {
   receiveMessagequeueSendSuccessCallback,
 } from './common';
 
-import { createEventPromise, wait } from '../../../utils';
+import { createEventPromise} from '../../../utils';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 
 export function mode1DataRequestFlowTest({
