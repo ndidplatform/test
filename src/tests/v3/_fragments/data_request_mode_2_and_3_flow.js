@@ -1,10 +1,12 @@
+import * as commonApi from '../../../api/v3/common';
 import {
   rpCreateRequestTest,
   rpGotDataFromAsTest,
 } from './request_flow_fragments/rp';
 import {
-  idpReceiveMode1IncomingRequestCallbackTest,
+  idpReceiveMode2And3IncomingRequestCallbackTest,
   idpCreateResponseTest,
+  idpReceiveAccessorEncryptCallbackTest,
   idpReceiveCreateResponseResultCallbackTest,
 } from './request_flow_fragments/idp';
 import {
@@ -18,18 +20,19 @@ import {
   receiveCompletedRequestStatusTest,
   receiveComplicatedRequestStatusTest,
   receiveRequestClosedStatusTest,
+  receiveMessagequeueSendSuccessCallback,
   hasPrivateMessagesTest,
   removePrivateMessagesTest,
   hasNoPrivateMessagesTest,
-  receiveMessagequeueSendSuccessCallback,
 } from './common';
 
 import { createEventPromise } from '../../../utils';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 
-export function mode1DataRequestFlowTest({
+export function mode2And3DataRequestFlowTest({
   callRpApiAtNodeId,
   rpEventEmitter,
+  getIdentityForRequest,
   createRequestParams,
   idpParams,
   asParams,
@@ -44,7 +47,6 @@ export function mode1DataRequestFlowTest({
   const asNodeIds = asParams.map(({ callAsApiAtNodeId, asResponseParams }) =>
     asResponseParams.node_id ? asResponseParams.node_id : callAsApiAtNodeId
   );
-
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
   const incomingRequestPromises = idpParams.map(() => createEventPromise()); // IdPs
@@ -55,6 +57,7 @@ export function mode1DataRequestFlowTest({
       mqSendSuccessIdpToRpCallbackPromise: createEventPromise(),
     };
   }); //IdPs
+  const accessorEncryptPromises = idpParams.map(() => createEventPromise()); // IdPs
   const responseAcceptCount = idpParams.filter(
     idpParam => idpParam.idpResponseParams.status === 'accept'
   ).length;
@@ -68,6 +71,7 @@ export function mode1DataRequestFlowTest({
   const requestStatusRejectedPromises = idpParams.map(() =>
     createEventPromise()
   ); // RP
+
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestStatusRejectedPromise = createEventPromise(); // RP
   const requestStatusComplicatedPromise = createEventPromise(); // RP
@@ -138,20 +142,9 @@ export function mode1DataRequestFlowTest({
 
   const idp_requestClosedPromises = idpParams.map(() => createEventPromise());
 
-  let idpsReceiveRequestPromises;
-  if (createRequestParams.idp_id_list) {
-    idpsReceiveRequestPromises = createRequestParams.idp_id_list.map(
-      node_id => {
-        return {
-          node_id,
-          MqSendSuccessRpToIdpCallbackPromise: createEventPromise(),
-        };
-      }
-    );
-  }
-
   let requestId;
   let lastStatusUpdateBlockHeight;
+  let idpsReceiveRequestPromises;
   let arrayMqSendSuccessRpToIdpCallback = [];
   const requestStatusUpdates = [];
   const idp_requestStatusUpdates = [];
@@ -177,10 +170,37 @@ export function mode1DataRequestFlowTest({
     idp_finalRequestStatusPromises = idp_requestStatusRejectedPromise;
   }
 
-  before(function() {
+  before(async function() {
+    this.timeout(15000);
     if (createRequestParams.min_idp != idpParams.length) {
       throw new Error('idpParams not equal to min_idp');
     }
+
+    const identity = getIdentityForRequest();
+    if (!identity) {
+      throw new Error('No created identity to use');
+    }
+    const responseGetRelevantIdpNodesBySid = await commonApi.getRelevantIdpNodesBySid(
+      callRpApiAtNodeId,
+      {
+        namespace: identity.namespace,
+        identifier: identity.identifier,
+        mode: createRequestParams.mode,
+        min_ial: createRequestParams.min_ial,
+      }
+    );
+    const resposenBodyGetRelevantIdpNodesBySid = await responseGetRelevantIdpNodesBySid.json();
+    idpsReceiveRequestPromises = resposenBodyGetRelevantIdpNodesBySid.map(
+      ({ node_id }) => {
+        return {
+          node_id,
+          MqSendSuccessRpToIdpCallbackPromise: createEventPromise(),
+        };
+      }
+    );
+
+    createRequestParams.namespace = identity.namespace;
+    createRequestParams.identifier = identity.identifier;
 
     rpEventEmitter.on('callback', function(callbackData) {
       if (
@@ -270,6 +290,12 @@ export function mode1DataRequestFlowTest({
           }
         }
       });
+
+      idpEventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+        if (callbackData.request_id === requestId) {
+          accessorEncryptPromises[i].resolve(callbackData);
+        }
+      });
     }
 
     for (let i = 0; i < asParams.length; i++) {
@@ -329,6 +355,7 @@ export function mode1DataRequestFlowTest({
       //   }
       // });
     }
+
     nodeCallbackEventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'message_queue_send_success' &&
@@ -365,7 +392,7 @@ export function mode1DataRequestFlowTest({
             }
           }
         }
-        // else if (callbackData.node_id === 'as1') {
+        //else if (callbackData.node_id === 'as1') {
         //   if (callbackData.destination_node_id === 'rp1') {
         //     mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
         //   }
@@ -393,7 +420,7 @@ export function mode1DataRequestFlowTest({
       requestId,
       lastStatusUpdateBlockHeight,
       requestStatusPendingPromise,
-      serviceList: [],
+      //serviceList: [],
     });
   });
 
@@ -425,14 +452,18 @@ export function mode1DataRequestFlowTest({
     const callIdpApiAtNodeId = idpParams[i].callIdpApiAtNodeId;
     const incomingRequestPromise = incomingRequestPromises[i];
     const responseResultPromise = responseResultPromises[i];
+    const accessorEncryptPromise = accessorEncryptPromises[i];
     const requestStatusConfirmedPromise = requestStatusConfirmedPromises[i];
     const requestStatusRejectPromise = requestStatusRejectedPromises[i];
     let idpResponseParams = idpParams[i].idpResponseParams;
+    const getAccessorForResponse = idpParams[i].getAccessorForResponse;
     const idpNodeId = idpNodeIds[i];
+
+    let responseAccessorId;
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function() {
       this.timeout(15000);
-      await idpReceiveMode1IncomingRequestCallbackTest({
+      await idpReceiveMode2And3IncomingRequestCallbackTest({
         nodeId: idpNodeId,
         createRequestParams,
         requestId,
@@ -441,18 +472,57 @@ export function mode1DataRequestFlowTest({
       });
     });
 
-    it(`IdP (${idpNodeId}) should create response (${
-      idpResponseParams.status
-    }) successfully`, async function() {
+    // IdP may or may not get this request status callback
+    // it(`IdP (${idpNodeIds[i]}) should receive pending request status`, async function() {
+    //   this.timeout(10000);
+    //   const requestStatus = await idp_requestStatusPendingPromise.promise;
+    //   expect(requestStatus).to.deep.include({
+    //     request_id: requestId,
+    //     status: 'pending',
+    //     mode: createRequestParams.mode,
+    //     min_idp: createRequestParams.min_idp,
+    //     answered_idp_count: 0,
+    //     closed: false,
+    //     timed_out: false,
+    //     service_list: [],
+    //     response_valid_list: [],
+    //   });
+    //   expect(requestStatus).to.have.property('block_height');
+    //   expect(requestStatus.block_height).is.a('string');const splittedBlockHeight = requestStatus.block_height.split(':');expect(splittedBlockHeight).to.have.lengthOf(2);expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    // });
+
+    it(`IdP (${idpNodeId}) should create response (accept) successfully`, async function() {
       this.timeout(10000);
+
+      responseAccessorId = getAccessorForResponse({
+        namespace: createRequestParams.namespace,
+        identifier: createRequestParams.identifier,
+      });
+
       idpResponseParams = {
         ...idpResponseParams,
         request_id: requestId,
+        accessor_id: responseAccessorId,
       };
+
       await idpCreateResponseTest({
         callApiAtNodeId: callIdpApiAtNodeId,
         idpResponseParams,
       });
+    });
+
+    it(`IdP (${idpNodeId}) should receive accessor encrypt callback with correct data`, async function() {
+      this.timeout(15000);
+      await idpReceiveAccessorEncryptCallbackTest({
+        idpNodeId,
+        accessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idpResponseParams.reference_id,
+      });
+    });
+
+    it(`IdP (${idpNodeId}) should receive callback create response result with success = true`, async function() {
       await idpReceiveCreateResponseResultCallbackTest({
         nodeId: idpNodeId,
         requestId,
@@ -502,8 +572,8 @@ export function mode1DataRequestFlowTest({
             .filter((idpNodeId, index) => index <= i)
             .map(idpNodeId => ({
               idp_id: idpNodeId,
-              valid_signature: null,
-              valid_ial: null,
+              valid_signature: true,
+              valid_ial: true,
             })),
           lastStatusUpdateBlockHeight,
         });
@@ -531,8 +601,8 @@ export function mode1DataRequestFlowTest({
             .filter((idpNodeId, index) => index <= i)
             .map(idpNodeId => ({
               idp_id: idpNodeId,
-              valid_signature: null,
-              valid_ial: null,
+              valid_signature: true,
+              valid_ial: true,
             })),
           lastStatusUpdateBlockHeight,
         });
@@ -546,7 +616,6 @@ export function mode1DataRequestFlowTest({
         this.timeout(15000);
         const idp_requestStatusPromise =
           idp_requestStatusPromises[idpNodeIds[j]][i];
-        receiveConfirmedRequestStatusTest;
         let callFunctionReceiveRequestStatusTest =
           idpResponseParams.status === 'accept'
             ? receiveConfirmedRequestStatusTest
@@ -659,8 +728,8 @@ export function mode1DataRequestFlowTest({
           ),
           responseValidList: idpNodeIds.map(nodeId => ({
             idp_id: nodeId,
-            valid_signature: null,
-            valid_ial: null,
+            valid_signature: true,
+            valid_ial: true,
           })),
           lastStatusUpdateBlockHeight,
         });
@@ -687,8 +756,8 @@ export function mode1DataRequestFlowTest({
         ),
         responseValidList: idpNodeIds.map(idpNodeId => ({
           idp_id: idpNodeId,
-          valid_signature: null,
-          valid_ial: null,
+          valid_signature: true,
+          valid_ial: true,
         })),
         lastStatusUpdateBlockHeight,
       });
@@ -716,8 +785,8 @@ export function mode1DataRequestFlowTest({
           ),
           responseValidList: idpNodeIds.map(idpNodeId => ({
             idp_id: idpNodeId,
-            valid_signature: null,
-            valid_ial: null,
+            valid_signature: true,
+            valid_ial: true,
           })),
           lastStatusUpdateBlockHeight,
           testForEqualLastStatusUpdateBlockHeight: true,
@@ -747,8 +816,8 @@ export function mode1DataRequestFlowTest({
     });
   });
 
-  // it('RP should receive request status updates', async function() {
-  //   let requestStatusCount = idpNodeIds.length + createRequestParams.data_request_list
+  // it('RP should receive request status updates', function() {
+  //   let requestStatusCount = idpNodeIds.length;
   //   if (finalRequestStatus === 'completed') {
   //     // +2 for pending and closed
   //     expect(requestStatusUpdates).to.have.lengthOf(requestStatusCount + 2);
@@ -816,10 +885,8 @@ export function mode1DataRequestFlowTest({
     for (let i = 0; i < idpParams.length; i++) {
       const { idpEventEmitter } = idpParams[i];
       idpEventEmitter.removeAllListeners('callback');
+      idpEventEmitter.removeAllListeners('accessor_encrypt_callback');
     }
-    for (let i = 0; i < asParams.length; i++) {
-      const { asEventEmitter } = asParams[i];
-      asEventEmitter.removeAllListeners('callback');
-    }
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 }

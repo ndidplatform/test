@@ -93,6 +93,8 @@ export async function idpReceiveMode2And3IncomingRequestCallbackTest({
   incomingRequestPromise,
   requesterNodeId,
 }) {
+  const incomingRequest = await incomingRequestPromise.promise;
+
   let dataRequestListArray = [];
   if (createRequestParams.data_request_list) {
     createRequestParams.data_request_list.forEach((dataRequestList, index) => {
@@ -126,7 +128,6 @@ export async function idpReceiveMode2And3IncomingRequestCallbackTest({
     });
   }
 
-  const incomingRequest = await incomingRequestPromise.promise;
   expect(incomingRequest).to.deep.include({
     mode: createRequestParams.mode,
     request_id: requestId,

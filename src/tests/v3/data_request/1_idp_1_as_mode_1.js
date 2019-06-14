@@ -3,8 +3,6 @@ import {
   rpEventEmitter,
   idp1EventEmitter,
   as1EventEmitter,
-  as2EventEmitter,
-  idp2EventEmitter,
 } from '../../../callback_server';
 import { generateReferenceId } from '../../../utils';
 import * as config from '../../../config';
