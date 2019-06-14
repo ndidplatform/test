@@ -1,6 +1,7 @@
-import { expect } from 'chai';
-
-import { rpCreateRequestTest } from './request_flow_fragments/rp';
+import {
+  rpCreateRequestTest,
+  rpGotDataFromAsTest,
+} from './request_flow_fragments/rp';
 import {
   idpReceiveMode1IncomingRequestCallbackTest,
   idpCreateResponseTest,
@@ -23,7 +24,7 @@ import {
   receiveMessagequeueSendSuccessCallback,
 } from './common';
 
-import { createEventPromise} from '../../../utils';
+import { createEventPromise } from '../../../utils';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 
 export function mode1DataRequestFlowTest({
@@ -652,9 +653,9 @@ export function mode1DataRequestFlowTest({
               service_id: dataRequestList.service_id,
               min_as: dataRequestList.min_as,
               signed_data_count:
-                dataRequestList.service_id === serviceId ? i + 1 : j+i,
+                dataRequestList.service_id === serviceId ? i + 1 : j + i,
               received_data_count:
-                dataRequestList.service_id === serviceId ? i : j+i,
+                dataRequestList.service_id === serviceId ? i : j + i,
             })
           ),
           responseValidList: idpNodeIds.map(nodeId => ({
@@ -726,6 +727,27 @@ export function mode1DataRequestFlowTest({
     }
   }
 
+  it('RP should get the correct data received from AS', async function() {
+    let asResponseDataArr = [];
+    asParams.forEach(asParam => {
+      asParam.asResponseParams.forEach(asResponseParam => {
+        asResponseDataArr.push({
+          sourceNodeId: asResponseParam.node_id
+            ? asResponseParam.node_id
+            : asParam.callAsApiAtNodeId,
+          serviceId: asResponseParam.service_id,
+          data: asResponseParam.data,
+        });
+      });
+    });
+    await rpGotDataFromAsTest({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      requestId,
+      asResponseDataArr,
+    });
+  });
+
   // it('RP should receive request status updates', async function() {
   //   let requestStatusCount = idpNodeIds.length + createRequestParams.data_request_list
   //   if (finalRequestStatus === 'completed') {
@@ -795,6 +817,10 @@ export function mode1DataRequestFlowTest({
     for (let i = 0; i < idpParams.length; i++) {
       const { idpEventEmitter } = idpParams[i];
       idpEventEmitter.removeAllListeners('callback');
+    }
+    for (let i = 0; i < asParams.length; i++) {
+      const { asEventEmitter } = asParams[i];
+      asEventEmitter.removeAllListeners('callback');
     }
   });
 }

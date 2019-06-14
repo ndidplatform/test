@@ -1,7 +1,5 @@
 import { expect } from 'chai';
-
 import * as idpApi from '../../../../api/v3/idp';
-
 import { hash } from '../../../../utils';
 
 export async function idpReceiveMode1IncomingRequestCallbackTest({
@@ -12,6 +10,40 @@ export async function idpReceiveMode1IncomingRequestCallbackTest({
   requesterNodeId,
 }) {
   const incomingRequest = await incomingRequestPromise.promise;
+
+  let dataRequestListArray = [];
+  if (createRequestParams.data_request_list) {
+    createRequestParams.data_request_list.forEach((dataRequestList, index) => {
+      if (
+        !dataRequestList.as_id_list ||
+        dataRequestList.as_id_list.length === 0
+      ) {
+        let { request_params, ...dataRequestWithoutParams } = dataRequestList;
+        expect(incomingRequest.data_request_list[index].as_id_list).to.be.an(
+          'array'
+        ).that.is.not.empty;
+
+        expect(incomingRequest.data_request_list[index].service_id).to.equal(
+          dataRequestList.service_id
+        );
+        expect(incomingRequest.data_request_list[index].min_as).to.equal(
+          dataRequestList.min_as
+        );
+        dataRequestWithoutParams = {
+          ...dataRequestWithoutParams,
+          as_id_list: incomingRequest.data_request_list[index].as_id_list,
+        };
+        dataRequestListArray.push(dataRequestWithoutParams);
+      } else if (dataRequestList.as_id_list.length > 0) {
+        const { request_params, ...dataRequestWithoutParams } = dataRequestList;
+        expect(incomingRequest.data_request_list[index]).to.deep.equal(
+          dataRequestWithoutParams
+        );
+        dataRequestListArray.push(dataRequestWithoutParams);
+      }
+    });
+  }
+
   expect(incomingRequest).to.deep.include({
     node_id: nodeId,
     mode: createRequestParams.mode,
@@ -25,14 +57,15 @@ export async function idpReceiveMode1IncomingRequestCallbackTest({
     requester_node_id: requesterNodeId,
     min_ial: createRequestParams.min_ial,
     min_aal: createRequestParams.min_aal,
-    data_request_list: createRequestParams.data_request_list
-      ? createRequestParams.data_request_list.map(dataRequest => {
-          const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
-          return {
-            ...dataRequestWithoutParams,
-          };
-        })
-      : [],
+    data_request_list: dataRequestListArray,
+    // data_request_list: createRequestParams.data_request_list
+    //   ? createRequestParams.data_request_list.map(dataRequest => {
+    //       const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
+    //       return {
+    //         ...dataRequestWithoutParams,
+    //       };
+    //     })
+    //   : [],
     request_timeout: createRequestParams.request_timeout,
   });
   expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
@@ -60,6 +93,39 @@ export async function idpReceiveMode2And3IncomingRequestCallbackTest({
   incomingRequestPromise,
   requesterNodeId,
 }) {
+  let dataRequestListArray = [];
+  if (createRequestParams.data_request_list) {
+    createRequestParams.data_request_list.forEach((dataRequestList, index) => {
+      if (
+        !dataRequestList.as_id_list ||
+        dataRequestList.as_id_list.length === 0
+      ) {
+        let { request_params, ...dataRequestWithoutParams } = dataRequestList;
+        expect(incomingRequest.data_request_list[index].as_id_list).to.be.an(
+          'array'
+        ).that.is.not.empty;
+
+        expect(incomingRequest.data_request_list[index].service_id).to.equal(
+          dataRequestList.service_id
+        );
+        expect(incomingRequest.data_request_list[index].min_as).to.equal(
+          dataRequestList.min_as
+        );
+        dataRequestWithoutParams = {
+          ...dataRequestWithoutParams,
+          as_id_list: incomingRequest.data_request_list[index].as_id_list,
+        };
+        dataRequestListArray.push(dataRequestWithoutParams);
+      } else if (dataRequestList.as_id_list.length > 0) {
+        const { request_params, ...dataRequestWithoutParams } = dataRequestList;
+        expect(incomingRequest.data_request_list[index]).to.deep.equal(
+          dataRequestWithoutParams
+        );
+        dataRequestListArray.push(dataRequestWithoutParams);
+      }
+    });
+  }
+
   const incomingRequest = await incomingRequestPromise.promise;
   expect(incomingRequest).to.deep.include({
     mode: createRequestParams.mode,
@@ -71,14 +137,15 @@ export async function idpReceiveMode2And3IncomingRequestCallbackTest({
     requester_node_id: requesterNodeId,
     min_ial: createRequestParams.min_ial,
     min_aal: createRequestParams.min_aal,
-    data_request_list: createRequestParams.data_request_list
-      ? createRequestParams.data_request_list.map(dataRequest => {
-          const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
-          return {
-            ...dataRequestWithoutParams,
-          };
-        })
-      : [],
+    data_request_list: dataRequestListArray,
+    // data_request_list: createRequestParams.data_request_list
+    //   ? createRequestParams.data_request_list.map(dataRequest => {
+    //       const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
+    //       return {
+    //         ...dataRequestWithoutParams,
+    //       };
+    //     })
+    //   : [],
     request_timeout: createRequestParams.request_timeout,
   });
   expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not

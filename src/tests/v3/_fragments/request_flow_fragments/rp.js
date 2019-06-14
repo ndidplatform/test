@@ -39,23 +39,39 @@ export async function rpGotDataFromAsTest({
   callApiAtNodeId,
   createRequestParams,
   requestId,
-  data,
+  asResponseDataArr,
 }) {
   const response = await rpApi.getDataFromAS(callApiAtNodeId, {
     requestId,
   });
-  const dataArr = await response.json();
+  const dataArray = await response.json();
   expect(response.status).to.equal(200);
 
-  expect(dataArr).to.have.lengthOf(1);
-  expect(dataArr[0]).to.deep.include({
-    source_node_id: 'as1',
-    service_id: createRequestParams.data_request_list[0].service_id,
-    signature_sign_method: 'RSA-SHA256',
-    data,
+  let dataArrLength = createRequestParams.data_request_list.reduce(
+    (sum, dataRequestList) => {
+      return sum + dataRequestList.min_as;
+    },
+    0
+  );
+
+  expect(dataArray).to.have.lengthOf(dataArrLength);
+
+  dataArray.forEach(dataArr => {
+    let asResponseData = asResponseDataArr.find(
+      asResponseData =>
+        asResponseData.sourceNodeId === dataArr.source_node_id &&
+        asResponseData.serviceId === dataArr.service_id
+    );
+
+    expect(dataArr).to.deep.include({
+      source_node_id: asResponseData.sourceNodeId,
+      service_id: asResponseData.serviceId,
+      signature_sign_method: 'RSA-SHA256',
+      data: asResponseData.data,
+    });
+    expect(dataArr.source_signature).to.be.a('string').that.is.not.empty;
+    expect(dataArr.data_salt).to.be.a('string').that.is.not.empty;
   });
-  expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
-  expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
 }
 
 export async function removeAsDataTest({ callApiAtNodeId, requestId }) {

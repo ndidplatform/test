@@ -17,12 +17,15 @@ export async function asReceiveDataRequestTest({
     namespace: createRequestParams.namespace,
     identifier: createRequestParams.identifier,
     service_id: serviceId, //createRequestParams.data_request_list[0].service_id,
-    request_params: requestParams, //createRequestParams.data_request_list[0].request_params,
+    //request_params: requestParams, //createRequestParams.data_request_list[0].request_params,
     max_ial: 2.3,
     max_aal: 3,
     requester_node_id: 'rp1',
     request_timeout: createRequestParams.request_timeout,
   });
+  if (requestParams) {
+    expect(dataRequest.request_params).to.equal(requestParams);
+  }
   expect(dataRequest.response_signature_list).to.have.lengthOf(
     responseSignatureListLength
   );
