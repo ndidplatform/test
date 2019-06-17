@@ -107,6 +107,19 @@ export function mode2And3DataRequestFlowTest({
     };
   }, {});
 
+  const mqSendSuccessAsToRpCallbackPromises = asParams.reduce(
+    (accumulator, asParam) => {
+      let nodeId = asParam.asResponseParams[0].node_id
+        ? asParams.asResponseParams[0].node_id
+        : asParam.callAsApiAtNodeId;
+      return {
+        ...accumulator,
+        [nodeId]: asParam.asResponseParams.map(() => createEventPromise()),
+      };
+    },
+    {}
+  );
+
   let requestStatusSignedDataPromises = {};
   asParams.map(asParam => {
     asParam.asResponseParams.map(asResponseParam => {
@@ -355,7 +368,7 @@ export function mode2And3DataRequestFlowTest({
       //   }
       // });
     }
-
+    let receiveMqSendSuccessAsToRpCallbackCount = {};
     nodeCallbackEventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'message_queue_send_success' &&
@@ -391,12 +404,26 @@ export function mode2And3DataRequestFlowTest({
               idp.mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
             }
           }
+        } else if (callbackData.node_id.includes('as')) {
+          if (callbackData.destination_node_id.includes('rp')) {
+            if (
+              typeof receiveMqSendSuccessAsToRpCallbackCount[
+                callbackData.node_id
+              ] === 'number'
+            ) {
+              receiveMqSendSuccessAsToRpCallbackCount[
+                callbackData.node_id
+              ] += 1;
+            } else {
+              receiveMqSendSuccessAsToRpCallbackCount[callbackData.node_id] = 0;
+            }
+            let index =
+              receiveMqSendSuccessAsToRpCallbackCount[callbackData.node_id];
+            mqSendSuccessAsToRpCallbackPromises[callbackData.node_id][
+              index
+            ].resolve(callbackData);
+          }
         }
-        //else if (callbackData.node_id === 'as1') {
-        //   if (callbackData.destination_node_id === 'rp1') {
-        //     mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
-        //   }
-        // }
       }
     });
   });
@@ -705,6 +732,18 @@ export function mode2And3DataRequestFlowTest({
         });
       });
 
+      it(`AS should receive message queue send success (To ${rpNodeId}) callback`, async function() {
+        this.timeout(15000);
+        const mqSendSuccessCallbackPromise =
+          mqSendSuccessAsToRpCallbackPromises[asNodeId][j];
+        await receiveMessagequeueSendSuccessCallback({
+          nodeId: asNodeId,
+          requestId,
+          mqSendSuccessCallbackPromise,
+          destinationNodeId: rpNodeId,
+        });
+      });
+
       it(`RP should receive request status with service ${serviceId} signed data count = ${i +
         1}`, async function() {
         this.timeout(15000);
@@ -886,6 +925,10 @@ export function mode2And3DataRequestFlowTest({
       const { idpEventEmitter } = idpParams[i];
       idpEventEmitter.removeAllListeners('callback');
       idpEventEmitter.removeAllListeners('accessor_encrypt_callback');
+    }
+    for (let i = 0; i < asParams.length; i++) {
+      const { asEventEmitter } = asParams[i];
+      asEventEmitter.removeAllListeners('callback');
     }
     nodeCallbackEventEmitter.removeAllListeners('callback');
   });
