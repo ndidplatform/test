@@ -15,6 +15,8 @@ import {
   hash,
 } from '../../../../utils';
 import * as config from '../../../../config';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../../_fragments/common';
 
 describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) behind proxy', function() {
   const idpNodeId = 'proxy1_idp4';
@@ -22,16 +24,15 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   let namespace;
   let identifier;
 
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
+  const mqSendSuccessRpToIdpCallbackPromise = createEventPromise(); // RP
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
+  const mqSendSuccessIdpToRpCallbackPromise = createEventPromise(); // IDP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
@@ -104,6 +105,31 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
         responseResultPromise.resolve(callbackData);
       }
     });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId
+      ) {
+        if (callbackData.node_id === 'proxy2_rp5') {
+          if (callbackData.destination_node_id === 'proxy1_idp4') {
+            mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+          }
+          // else if (callbackData.destination_node_id === 'as1') {
+          //   mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+          // }
+        } else if (callbackData.node_id === 'proxy1_idp4') {
+          if (callbackData.destination_node_id === 'proxy2_rp5') {
+            mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+          }
+        }
+        // else if (callbackData.node_id === 'as1') {
+        //   if (callbackData.destination_node_id === 'rp1') {
+        //     mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+        //   }
+        // }
+      }
+    });
   });
 
   it('RP should create a request successfully', async function() {
@@ -151,6 +177,16 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('RP should receive message queue send success (To proxy1_idp4) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'proxy2_rp5',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+      destinationNodeId: 'proxy1_idp4',
+    });
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -206,6 +242,16 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
+    });
+  });
+
+  it('IdP should receive message queue send success (To proxy2_rp5) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'proxy1_idp4',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+      destinationNodeId: 'proxy2_rp5',
     });
   });
 
@@ -274,5 +320,6 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
   after(function() {
     proxy1EventEmitter.removeAllListeners('callback');
     proxy2EventEmitter.removeAllListeners('callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 });

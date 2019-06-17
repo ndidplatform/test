@@ -13,6 +13,8 @@ import {
   hash,
 } from '../../../../utils';
 import * as config from '../../../../config';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../../_fragments/common';
 
 describe('1 IdP, accept consent, mode 3, RP (proxy1_rp4) behind proxy', function() {
   let namespace;
@@ -23,9 +25,11 @@ describe('1 IdP, accept consent, mode 3, RP (proxy1_rp4) behind proxy', function
 
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
+  const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
   const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise(); // IDP
   const accessorEncryptPromise = createEventPromise(); // IDP
+  const mqSendSuccessIdpToRpCallbackPromise = createEventPromise(); // IDP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
 
@@ -63,7 +67,7 @@ describe('1 IdP, accept consent, mode 3, RP (proxy1_rp4) behind proxy', function
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {
@@ -103,6 +107,31 @@ describe('1 IdP, accept consent, mode 3, RP (proxy1_rp4) behind proxy', function
     idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
       if (callbackData.request_id === requestId) {
         accessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId
+      ) {
+        if (callbackData.node_id === 'proxy1_rp4') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+          }
+          // else if (callbackData.destination_node_id === 'as1') {
+          //   mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+          // }
+        } else if (callbackData.node_id === 'idp1') {
+          if (callbackData.destination_node_id === 'proxy1_rp4') {
+            mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+          }
+        }
+        // else if (callbackData.node_id === 'as1') {
+        //   if (callbackData.destination_node_id === 'rp1') {
+        //     mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+        //   }
+        // }
       }
     });
   });
@@ -152,6 +181,16 @@ describe('1 IdP, accept consent, mode 3, RP (proxy1_rp4) behind proxy', function
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('RP should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'proxy1_rp4',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+      destinationNodeId: 'idp1',
+    });
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -238,6 +277,16 @@ describe('1 IdP, accept consent, mode 3, RP (proxy1_rp4) behind proxy', function
     });
   });
 
+  it('IdP should receive message queue send success (To proxy1_rp4) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+      destinationNodeId: 'proxy1_rp4',
+    });
+  });
+
   it('RP should receive completed request status with valid proofs', async function() {
     this.timeout(15000);
     const requestStatus = await requestStatusCompletedPromise.promise;
@@ -304,5 +353,6 @@ describe('1 IdP, accept consent, mode 3, RP (proxy1_rp4) behind proxy', function
     proxy1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 });
