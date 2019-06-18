@@ -18,6 +18,8 @@ import {
   wait,
 } from '../../../utils';
 import * as config from '../../../config';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 
 describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2', function() {
   let namespace;
@@ -54,6 +56,12 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
   const as_requestStatusSignedDataPromise = createEventPromise();
   const as_requestStatusCompletedPromise = createEventPromise();
   const as_requestClosedPromise = createEventPromise();
+
+
+  const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+  const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+  const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
+  const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
 
   let createRequestParams;
   const data =
@@ -222,6 +230,29 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       }
     });
 
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId
+      ) {
+        if (callbackData.node_id === 'rp1') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+          } else if (callbackData.destination_node_id === 'as1') {
+            mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'idp1') {
+          if (callbackData.destination_node_id === 'rp1') {
+            mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'as1') {
+          if (callbackData.destination_node_id === 'rp1') {
+            mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+          }
+        }
+      }
+    });
+
     // Set supported data URL type on IdP
     const response = await nodeApi.updateNode('idp1', {
       reference_id: updateNodeReferenceId_before,
@@ -321,6 +352,17 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     );
     lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
   });
+
+  it('RP should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'rp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+      destinationNodeId: 'idp1',
+    });
+  });
+
 
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
@@ -422,6 +464,16 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     });
   });
 
+  it('IdP should receive message queue send success (To rp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+      destinationNodeId: 'rp1',
+    });
+  });
+
   it('RP should receive confirmed request status with valid proofs', async function() {
     this.timeout(15000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
@@ -498,6 +550,16 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
   //     lastStatusUpdateBlockHeight
   //   );
   // });
+
+  it('RP should receive message queue send success (To as1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'rp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+      destinationNodeId: 'as1',
+    });
+  });
 
   it('AS should receive data request', async function() {
     this.timeout(15000);
@@ -579,6 +641,16 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       type: 'send_data_result',
       reference_id: asReferenceId,
       success: true,
+    });
+  });
+
+  it('AS should receive message queue send success (To rp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'as1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+      destinationNodeId: 'rp1',
     });
   });
 
@@ -1067,5 +1139,6 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     as1EventEmitter.removeAllListeners('callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 });

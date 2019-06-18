@@ -1,5 +1,4 @@
 import { expect } from 'chai';
-import forge from 'node-forge';
 
 import * as rpApi from '../../../../api/v3/rp';
 import * as idpApi from '../../../../api/v3/idp';
@@ -16,15 +15,14 @@ import {
   hash,
 } from '../../../../utils';
 import * as config from '../../../../config';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../../_fragments/common';
 
 describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
   const asNodeId = 'proxy1_as4';
 
   let namespace;
   let identifier;
-
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
@@ -40,6 +38,11 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
   const requestStatusSignedDataPromise = createEventPromise(); // RP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestClosedPromise = createEventPromise(); // RP
+
+  const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+  const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+  const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
+  const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
 
   let createRequestParams;
   const data = JSON.stringify({
@@ -138,6 +141,29 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
         sendDataResultPromise.resolve(callbackData);
       }
     });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId
+      ) {
+        if (callbackData.node_id === 'rp1') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+          } else if (callbackData.destination_node_id === 'proxy1_as4') {
+            mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'idp1') {
+          if (callbackData.destination_node_id === 'rp1') {
+            mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'proxy1_as4') {
+          if (callbackData.destination_node_id === 'rp1') {
+            mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+          }
+        }
+      }
+    });
   });
 
   it('RP should create a request successfully', async function() {
@@ -181,6 +207,16 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('RP should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'rp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+      destinationNodeId: 'idp1',
+    });
   });
 
   it('IdP should receive incoming request callback', async function() {
@@ -246,6 +282,16 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
     });
   });
 
+  it('IdP should receive message queue send success (To rp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+      destinationNodeId: 'rp1',
+    });
+  });
+
   it('RP should receive confirmed request status', async function() {
     this.timeout(15000);
     const requestStatus = await requestStatusConfirmedPromise.promise;
@@ -279,6 +325,16 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('RP should receive message queue send success (To proxy1_as4) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'rp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+      destinationNodeId: 'proxy1_as4',
+    });
   });
 
   it('AS should receive data request', async function() {
@@ -317,6 +373,16 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
       node_id: asNodeId,
       reference_id: asReferenceId,
       success: true,
+    });
+  });
+
+  it('AS should receive message queue send success (To rp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'proxy1_as4',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+      destinationNodeId: 'rp1',
     });
   });
 
@@ -545,5 +611,6 @@ describe('1 IdP, 1 AS, mode 1, AS (proxy1_as4) behind proxy', function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
     proxy1EventEmitter.removeAllListeners('callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 });
