@@ -442,15 +442,15 @@ export function mode2And3DataRequestFlowTest({
     initialSalt = testResult.initial_salt;
   });
 
-  it('RP should verify request_params_hash successfully', async function() {
-    this.timeout(15000);
-    await verifyRequestParamsHash({
-      callApiAtNodeId: callRpApiAtNodeId,
-      createRequestParams,
-      requestId,
-      initialSalt,
-    });
-  });
+  // it('RP should verify request_params_hash successfully', async function() {
+  //   this.timeout(15000);
+  //   await verifyRequestParamsHash({
+  //     callApiAtNodeId: callRpApiAtNodeId,
+  //     createRequestParams,
+  //     requestId,
+  //     initialSalt,
+  //   });
+  // });
 
   it('RP should receive pending request status', async function() {
     this.timeout(10000);
@@ -464,29 +464,29 @@ export function mode2And3DataRequestFlowTest({
     });
   });
 
-  // it('RP should receive message queue send success (to IdP) callback', async function() {
-  //   this.timeout(15000);
-  //   if (
-  //     idpsReceiveRequestPromises.length !=
-  //     arrayMqSendSuccessRpToIdpCallback.length
-  //   ) {
-  //     throw new Error(
-  //       'idps receive request not equal to MQ send success rp to idp callback'
-  //     );
-  //   }
+  it('RP should receive message queue send success (to IdP) callback', async function() {
+    this.timeout(15000);
+    if (
+      idpsReceiveRequestPromises.length !=
+      arrayMqSendSuccessRpToIdpCallback.length
+    ) {
+      throw new Error(
+        'idps receive request not equal to MQ send success rp to idp callback'
+      );
+    }
 
-  //   for (let i = 0; i < idpsReceiveRequestPromises.length; i++) {
-  //     const mqSendSuccessCallbackPromise =
-  //       idpsReceiveRequestPromises[i].MqSendSuccessRpToIdpCallbackPromise;
-  //     const destinationNodeId = idpsReceiveRequestPromises[i].node_id;
-  //     await receiveMessagequeueSendSuccessCallback({
-  //       nodeId: rpNodeId,
-  //       requestId,
-  //       mqSendSuccessCallbackPromise,
-  //       destinationNodeId,
-  //     });
-  //   }
-  // });
+    for (let i = 0; i < idpsReceiveRequestPromises.length; i++) {
+      const mqSendSuccessCallbackPromise =
+        idpsReceiveRequestPromises[i].MqSendSuccessRpToIdpCallbackPromise;
+      const destinationNodeId = idpsReceiveRequestPromises[i].node_id;
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: rpNodeId,
+        requestId,
+        mqSendSuccessCallbackPromise,
+        destinationNodeId,
+      });
+    }
+  });
 
   for (let i = 0; i < idpParams.length; i++) {
     const callIdpApiAtNodeId = idpParams[i].callIdpApiAtNodeId;
@@ -571,23 +571,23 @@ export function mode2And3DataRequestFlowTest({
       });
     });
 
-    // it(`IdP (${idpNodeId}) should receive message queue send success (to RP) callback`, async function() {
-    //   this.timeout(15000);
-    //   let mqSendSuccessCallbackPromise = mqSendSuccessIdpToRpCallbackPromises.find(
-    //     ({ node_id }) => node_id === idpNodeId
-    //   ).mqSendSuccessIdpToRpCallbackPromise;
-    //   if (!mqSendSuccessCallbackPromise) {
-    //     throw new Error(
-    //       `${idpNodeId} not receive MQ send success idp to rp callback`
-    //     );
-    //   }
-    //   await receiveMessagequeueSendSuccessCallback({
-    //     nodeId: idpNodeId,
-    //     requestId,
-    //     mqSendSuccessCallbackPromise,
-    //     destinationNodeId: rpNodeId,
-    //   });
-    // });
+    it(`IdP (${idpNodeId}) should receive message queue send success (to RP) callback`, async function() {
+      this.timeout(15000);
+      let mqSendSuccessCallbackPromise = mqSendSuccessIdpToRpCallbackPromises.find(
+        ({ node_id }) => node_id === idpNodeId
+      ).mqSendSuccessIdpToRpCallbackPromise;
+      if (!mqSendSuccessCallbackPromise) {
+        throw new Error(
+          `${idpNodeId} not receive MQ send success idp to rp callback`
+        );
+      }
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: idpNodeId,
+        requestId,
+        mqSendSuccessCallbackPromise,
+        destinationNodeId: rpNodeId,
+      });
+    });
 
     // if (i < idpNodeIds.length - 1) {
     if (idpResponseParams.status === 'reject') {
@@ -690,21 +690,21 @@ export function mode2And3DataRequestFlowTest({
     // }
   }
 
-  // for (let i = 0; i < asParams.length; i++) {
-  //   let asNodeId = asNodeIds[i];
-  //   it(`RP should receive message queue send success (To ${asNodeId}) callback`, async function() {
-  //     this.timeout(15000);
-  //     const mqSendSuccessCallbackPromise =
-  //       mqSendSuccessRpToAsCallbackPromises[i]
-  //         .mqSendSuccessRpToAsCallbackPromise;
-  //     await receiveMessagequeueSendSuccessCallback({
-  //       nodeId: rpNodeId,
-  //       requestId,
-  //       mqSendSuccessCallbackPromise,
-  //       destinationNodeId: asNodeId,
-  //     });
-  //   });
-  // }
+  for (let i = 0; i < asParams.length; i++) {
+    let asNodeId = asNodeIds[i];
+    it(`RP should receive message queue send success (To ${asNodeId}) callback`, async function() {
+      this.timeout(15000);
+      const mqSendSuccessCallbackPromise =
+        mqSendSuccessRpToAsCallbackPromises[i]
+          .mqSendSuccessRpToAsCallbackPromise;
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: rpNodeId,
+        requestId,
+        mqSendSuccessCallbackPromise,
+        destinationNodeId: asNodeId,
+      });
+    });
+  }
 
   for (let i = 0; i < asParams.length; i++) {
     let asNodeId = asNodeIds[i];
@@ -745,17 +745,17 @@ export function mode2And3DataRequestFlowTest({
         });
       });
 
-      // it(`AS should receive message queue send success (To ${rpNodeId}) callback`, async function() {
-      //   this.timeout(15000);
-      //   const mqSendSuccessCallbackPromise =
-      //     mqSendSuccessAsToRpCallbackPromises[asNodeId][j];
-      //   await receiveMessagequeueSendSuccessCallback({
-      //     nodeId: asNodeId,
-      //     requestId,
-      //     mqSendSuccessCallbackPromise,
-      //     destinationNodeId: rpNodeId,
-      //   });
-      // });
+      it(`AS should receive message queue send success (To ${rpNodeId}) callback`, async function() {
+        this.timeout(15000);
+        const mqSendSuccessCallbackPromise =
+          mqSendSuccessAsToRpCallbackPromises[asNodeId][j];
+        await receiveMessagequeueSendSuccessCallback({
+          nodeId: asNodeId,
+          requestId,
+          mqSendSuccessCallbackPromise,
+          destinationNodeId: rpNodeId,
+        });
+      });
 
       it(`RP should receive request status with service ${serviceId} signed data count = ${i +
         1}`, async function() {
