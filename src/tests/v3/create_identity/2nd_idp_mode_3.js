@@ -21,6 +21,9 @@ import {
 } from '../../../utils';
 import { idp2Available } from '../../';
 import * as config from '../../../config';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
+import { create } from 'domain';
 
 describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as 2nd IdP', function() {
   let namespace;
@@ -40,6 +43,9 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
 
   const createIdentityRequestResultPromise = createEventPromise(); // idp2
   const createIdentityResultPromise = createEventPromise(); // idp2
+
+  const mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
+  const mqSendSuccessIdp1ToIdp2CallbackPromise = createEventPromise();
 
   //const IdP2notificationCreateIdentityPromise = createEventPromise();
 
@@ -128,6 +134,23 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     //     IdP2notificationCreateIdentityPromise.resolve(callbackData);
     //   }
     // });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId
+      ) {
+        if (callbackData.node_id === 'idp2') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessIdp2ToIdp1CallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'idp1') {
+          if (callbackData.destination_node_id === 'idp2') {
+            mqSendSuccessIdp1ToIdp2CallbackPromise.resolve(callbackData);
+          }
+        }
+      }
+    });
   });
 
   it('Before create identity this sid should exist on platform ', async function() {
@@ -200,6 +223,16 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp2',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1CallbackPromise,
+      destinationNodeId: 'idp1',
+    });
   });
 
   it('1st IdP should receive create identity request', async function() {
@@ -284,6 +317,16 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
+    });
+  });
+
+  it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp1ToIdp2CallbackPromise,
+      destinationNodeId: 'idp2',
     });
   });
 
@@ -426,6 +469,11 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     const as_requestStatusSignedDataPromise = createEventPromise();
     const as_requestStatusCompletedPromise = createEventPromise();
     const as_requestClosedPromise = createEventPromise();
+
+    const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+    const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+    const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
+    const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
 
     let createRequestParams;
     const data = JSON.stringify({
@@ -582,6 +630,29 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
           }
         }
       });
+
+      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === requestId
+        ) {
+          if (callbackData.node_id === 'rp1') {
+            if (callbackData.destination_node_id === 'idp2') {
+              mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'as1') {
+              mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp2') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'as1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+            }
+          }
+        }
+      });
     });
 
     it('RP should create a request successfully', async function() {
@@ -637,6 +708,16 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To idp2) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+        destinationNodeId: 'idp2',
+      });
     });
 
     it('IdP should receive incoming request callback', async function() {
@@ -740,6 +821,16 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       });
     });
 
+    it('IdP should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp2',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+        destinationNodeId: 'rp1',
+      });
+    });
+
     it('RP should receive confirmed request status with valid proofs', async function() {
       this.timeout(15000);
       const requestStatus = await requestStatusConfirmedPromise.promise;
@@ -816,6 +907,16 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     //     lastStatusUpdateBlockHeight
     //   );
     // });
+
+    it('RP should receive message queue send success (To as1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+        destinationNodeId: 'as1',
+      });
+    });
 
     it('AS should receive data request', async function() {
       this.timeout(15000);
@@ -897,6 +998,16 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
         type: 'send_data_result',
         reference_id: asReferenceId,
         success: true,
+      });
+    });
+
+    it('AS should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'as1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+        destinationNodeId: 'rp1',
       });
     });
 
@@ -1373,6 +1484,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       idp2EventEmitter.removeAllListeners('callback');
       idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
       as1EventEmitter.removeAllListeners('callback');
+      nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
 });
@@ -1395,6 +1507,9 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
 
   const createIdentityRequestResultPromise = createEventPromise(); // idp2
   const createIdentityResultPromise = createEventPromise(); // idp2
+
+  const mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
+  const mqSendSuccessIdp1ToIdp2CallbackPromise = createEventPromise();
 
   //const IdP2notificationCreateIdentityPromise = createEventPromise();
 
@@ -1482,6 +1597,23 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     //     IdP2notificationCreateIdentityPromise.resolve(callbackData);
     //   }
     // });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId
+      ) {
+        if (callbackData.node_id === 'idp2') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessIdp2ToIdp1CallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'idp1') {
+          if (callbackData.destination_node_id === 'idp2') {
+            mqSendSuccessIdp1ToIdp2CallbackPromise.resolve(callbackData);
+          }
+        }
+      }
+    });
   });
 
   it('Before create identity this sid should exist on platform ', async function() {
@@ -1554,6 +1686,16 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp2',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1CallbackPromise,
+      destinationNodeId: 'idp1',
+    });
   });
 
   it('1st IdP should receive create identity request', async function() {
@@ -1633,6 +1775,16 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       reference_id: idpReferenceId,
       request_id: requestId,
       success: true,
+    });
+  });
+
+  it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp1ToIdp2CallbackPromise,
+      destinationNodeId: 'idp2',
     });
   });
 
@@ -1746,6 +1898,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     idp2EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('identity_notification_callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 });
 
