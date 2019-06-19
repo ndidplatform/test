@@ -13,9 +13,7 @@ import {
   createEventPromise,
   generateReferenceId,
   hash,
-  hashRequestMessageForConsent,
   wait,
-  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
 
