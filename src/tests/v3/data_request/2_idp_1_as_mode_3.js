@@ -26,8 +26,6 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
       reference_id: generateReferenceId(),
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      // namespace,
-      // identifier,
       idp_id_list: [],
       data_request_list: [
         {
@@ -62,20 +60,14 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
                 identity.identifier === identifier) ||
               identity.referenceGroupCode === referenceGroupCode
           );
-          return identity.accessors[0].accessorId;
+          return identity.accessors[0];
         },
         idpResponseParams: {
           reference_id: generateReferenceId(),
           callback_url: config.IDP1_CALLBACK_URL,
-          // request_id: requestId,
           ial: 2.3,
           aal: 3,
           status: 'accept',
-          // signature: createResponseSignature(
-          //   identity.accessors[0].accessorPrivateKey,
-          //   requestMessageHash
-          // ),
-          // accessor_id: identity.accessors[0].accessorId,
         },
       },
       {
@@ -92,20 +84,14 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
                 identity.identifier === identifier) ||
               identity.referenceGroupCode === referenceGroupCode
           );
-          return identity.accessors[0].accessorId;
+          return identity.accessors[0];
         },
         idpResponseParams: {
           reference_id: generateReferenceId(),
           callback_url: config.IDP2_CALLBACK_URL,
-          // request_id: requestId,
           ial: 2.3,
           aal: 3,
           status: 'accept',
-          // signature: createResponseSignature(
-          //   identity.accessors[0].accessorPrivateKey,
-          //   requestMessageHash
-          // ),
-          // accessor_id: identity.accessors[0].accessorId,
         },
       },
     ],
