@@ -33,11 +33,9 @@ describe('1 IdP, reject consent, mode 1', function() {
         idpResponseParams: {
           reference_id: generateReferenceId(),
           callback_url: config.IDP1_CALLBACK_URL,
-          // request_id: requestId,
           ial: 2.3,
           aal: 3,
           status: 'reject',
-          //signature: createResponseSignature(userPrivateKey, requestMessageHash),
         },
       },
     ],

@@ -1,6 +1,11 @@
 import { expect } from 'chai';
 import * as idpApi from '../../../../api/v3/idp';
-import { hash } from '../../../../utils';
+import * as commonApi from '../../../../api/v3/common';
+import {
+  hash,
+  hashRequestMessageForConsent,
+  createResponseSignature,
+} from '../../../../utils';
 
 export async function idpReceiveMode1IncomingRequestCallbackTest({
   nodeId,
@@ -202,6 +207,8 @@ export async function idpReceiveAccessorEncryptCallbackTest({
   accessorId,
   requestId,
   idpReferenceId,
+  incomingRequestPromise,
+  accessorPublicKey,
 }) {
   const accessorEncryptParams = await accessorEncryptPromise.promise;
   expect(accessorEncryptParams).to.deep.include({
@@ -214,6 +221,57 @@ export async function idpReceiveAccessorEncryptCallbackTest({
     request_id: requestId,
   });
 
+  const responsePrivateMessage = await commonApi.getPrivateMessages(idpNodeId, {
+    request_id: requestId,
+  });
+  const responseBodyPrivateMessage = await responsePrivateMessage.json();
+
+  let inboundPrivateMessage = responseBodyPrivateMessage.find(
+    privateMessage => privateMessage.direction === 'inbound'
+  );
+
+  let initialSalt = inboundPrivateMessage.message.initial_salt;
+  let incomingRequest = await incomingRequestPromise.promise;
+  let requestMessage = incomingRequest.request_message;
+
+  let verifyRequestMessagePaddedHash = hashRequestMessageForConsent(
+    requestMessage,
+    initialSalt,
+    requestId,
+    accessorPublicKey
+  );
+
   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
     .that.is.not.empty;
+
+  expect(accessorEncryptParams.request_message_padded_hash).to.equal(
+    verifyRequestMessagePaddedHash
+  );
+
+  return {
+    verifyRequestMessagePaddedHash,
+  };
+}
+
+export async function verifyResponseSignature({
+  callApiAtNodeId,
+  requestId,
+  idpNodeId,
+  requestMessagePaddedHash,
+  accessorPrivateKey,
+}) {
+  let responseRequestDetail = await commonApi.getRequest(callApiAtNodeId, {
+    requestId,
+  });
+  let responseBodyRequestDetail = await responseRequestDetail.json();
+  const signatureFromBlockchain = responseBodyRequestDetail.response_list.find(
+    responseList => responseList.idp_id === idpNodeId
+  ).signature;
+
+  let signature = createResponseSignature(
+    accessorPrivateKey,
+    requestMessagePaddedHash
+  );
+
+  expect(signature).to.equal(signatureFromBlockchain);
 }

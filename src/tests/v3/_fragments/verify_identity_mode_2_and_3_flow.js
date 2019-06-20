@@ -8,6 +8,7 @@ import {
   idpCreateResponseTest,
   idpReceiveAccessorEncryptCallbackTest,
   idpReceiveCreateResponseResultCallbackTest,
+  verifyResponseSignature,
 } from './request_flow_fragments/idp';
 import {
   receivePendingRequestStatusTest,
@@ -23,7 +24,6 @@ import {
 } from './common';
 
 import { createEventPromise } from '../../../utils';
-
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 
 export function mode2And3FlowTest({
@@ -97,11 +97,13 @@ export function mode2And3FlowTest({
   );
 
   const idp_requestClosedPromises = idpParams.map(() => createEventPromise());
-  
+
+  let identity;
   let requestId;
   let lastStatusUpdateBlockHeight;
   let idpsReceiveRequestPromises;
   let arrayMqSendSuccessRpToIdpCallback = [];
+  let requestMessagePaddedHash;
   const requestStatusUpdates = [];
   const idp_requestStatusUpdates = [];
   let finalRequestStatus;
@@ -132,7 +134,7 @@ export function mode2And3FlowTest({
       throw new Error('idpParams not equal to min_idp');
     }
 
-    const identity = getIdentityForRequest();
+    identity = getIdentityForRequest();
     if (!identity) {
       throw new Error('No created identity to use');
     }
@@ -339,8 +341,9 @@ export function mode2And3FlowTest({
     let idpResponseParams = idpParams[i].idpResponseParams;
     const getAccessorForResponse = idpParams[i].getAccessorForResponse;
     const idpNodeId = idpNodeIds[i];
-
     let responseAccessorId;
+    let accessorPublicKey;
+    let accessorPrivateKey;
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function() {
       this.timeout(15000);
@@ -375,10 +378,14 @@ export function mode2And3FlowTest({
     it(`IdP (${idpNodeId}) should create response (accept) successfully`, async function() {
       this.timeout(10000);
 
-      responseAccessorId = getAccessorForResponse({
+      let accessor = getAccessorForResponse({
         namespace: createRequestParams.namespace,
         identifier: createRequestParams.identifier,
       });
+
+      responseAccessorId = accessor.accessorId;
+      accessorPublicKey = accessor.accessorPublicKey;
+      accessorPrivateKey = accessor.accessorPrivateKey;
 
       idpResponseParams = {
         ...idpResponseParams,
@@ -394,13 +401,16 @@ export function mode2And3FlowTest({
 
     it(`IdP (${idpNodeId}) should receive accessor encrypt callback with correct data`, async function() {
       this.timeout(15000);
-      await idpReceiveAccessorEncryptCallbackTest({
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
         idpNodeId,
         accessorEncryptPromise,
         accessorId: responseAccessorId,
         requestId,
         idpReferenceId: idpResponseParams.reference_id,
+        incomingRequestPromise,
+        accessorPublicKey,
       });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
     it(`IdP (${idpNodeId}) should receive callback create response result with success = true`, async function() {
@@ -561,6 +571,17 @@ export function mode2And3FlowTest({
         });
       }
     }
+
+    it(`Should verify IdP (${idpNodeId}) response signature successfully`, async function() {
+      this.timeout(15000);
+      await verifyResponseSignature({
+        callApiAtNodeId: idpNodeId,
+        requestId,
+        idpNodeId,
+        requestMessagePaddedHash,
+        accessorPrivateKey,
+      });
+    });
   }
   if (finalRequestStatus === 'completed') {
     it('RP should receive request closed status', async function() {

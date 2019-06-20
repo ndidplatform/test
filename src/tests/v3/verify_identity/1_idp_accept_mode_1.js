@@ -30,11 +30,9 @@ describe('1 IdP, accept consent, mode 1', function() {
         idpResponseParams: {
           reference_id: generateReferenceId(),
           callback_url: config.IDP1_CALLBACK_URL,
-          // request_id: requestId,
           ial: 2.3,
           aal: 3,
           status: 'accept',
-          //signature: createResponseSignature(userPrivateKey, requestMessageHash),
         },
       },
     ],
@@ -66,11 +64,9 @@ describe('1 IdP, accept consent, mode 1 (with empty string request_message)', fu
         idpResponseParams: {
           reference_id: generateReferenceId(),
           callback_url: config.IDP1_CALLBACK_URL,
-          // request_id: requestId,
           ial: 2.3,
           aal: 3,
           status: 'accept',
-          //signature: createResponseSignature(userPrivateKey, requestMessageHash),
         },
       },
     ],

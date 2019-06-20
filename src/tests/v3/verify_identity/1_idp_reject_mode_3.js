@@ -16,8 +16,6 @@ describe('1 IdP, reject consent, mode 3', function() {
       reference_id: generateReferenceId(),
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      // namespace,
-      // identifier,
       idp_id_list: [],
       data_request_list: [],
       request_message:
@@ -43,20 +41,14 @@ describe('1 IdP, reject consent, mode 3', function() {
                 identity.identifier === identifier) ||
               identity.referenceGroupCode === referenceGroupCode
           );
-          return identity.accessors[0].accessorId;
+          return identity.accessors[0];
         },
         idpResponseParams: {
           reference_id: generateReferenceId(),
           callback_url: config.IDP1_CALLBACK_URL,
-          // request_id: requestId,
           ial: 2.3,
           aal: 3,
           status: 'reject',
-          // signature: createResponseSignature(
-          //   identity.accessors[0].accessorPrivateKey,
-          //   requestMessageHash
-          // ),
-          // accessor_id: identity.accessors[0].accessorId,
         },
       },
     ],
@@ -74,8 +66,6 @@ describe('1 IdP, reject consent, mode 3 (without idp_id_list key and data_reques
       reference_id: generateReferenceId(),
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
-      // namespace,
-      // identifier,
       request_message:
         'Test request message (mode 3) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
       min_ial: 1.1,
@@ -99,20 +89,14 @@ describe('1 IdP, reject consent, mode 3 (without idp_id_list key and data_reques
                 identity.identifier === identifier) ||
               identity.referenceGroupCode === referenceGroupCode
           );
-          return identity.accessors[0].accessorId;
+          return identity.accessors[0]
         },
         idpResponseParams: {
           reference_id: generateReferenceId(),
           callback_url: config.IDP1_CALLBACK_URL,
-          // request_id: requestId,
           ial: 2.3,
           aal: 3,
           status: 'reject',
-          // signature: createResponseSignature(
-          //   identity.accessors[0].accessorPrivateKey,
-          //   requestMessageHash
-          // ),
-          // accessor_id: identity.accessors[0].accessorId,
         },
       },
     ],

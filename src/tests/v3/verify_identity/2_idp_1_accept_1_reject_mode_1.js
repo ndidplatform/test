@@ -41,11 +41,9 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
         idpResponseParams: {
           reference_id: generateReferenceId(),
           callback_url: config.IDP1_CALLBACK_URL,
-          // request_id: requestId,
           ial: 2.3,
           aal: 3,
           status: 'accept',
-          //signature: createResponseSignature(userPrivateKey, requestMessageHash),
         },
       },
       {
@@ -54,11 +52,9 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
         idpResponseParams: {
           reference_id: generateReferenceId(),
           callback_url: config.IDP2_CALLBACK_URL,
-          // request_id: requestId,
           ial: 2.3,
           aal: 3,
           status: 'reject',
-          //signature: createResponseSignature(userPrivateKey, requestMessageHash),
         },
       },
     ],
