@@ -202,6 +202,7 @@ export async function idpReceiveCreateResponseResultCallbackTest({
 }
 
 export async function idpReceiveAccessorEncryptCallbackTest({
+  callIdpApiAtNodeId,
   idpNodeId,
   accessorEncryptPromise,
   accessorId,
@@ -221,9 +222,21 @@ export async function idpReceiveAccessorEncryptCallbackTest({
     request_id: requestId,
   });
 
-  const responsePrivateMessage = await commonApi.getPrivateMessages(idpNodeId, {
+  let data = {
     request_id: requestId,
-  });
+  };
+  
+  if (callIdpApiAtNodeId.includes('proxy')) {
+    data = {
+      ...data,
+      node_id: idpNodeId,
+    };
+  }
+
+  const responsePrivateMessage = await commonApi.getPrivateMessages(
+    callIdpApiAtNodeId,
+    data
+  );
   const responseBodyPrivateMessage = await responsePrivateMessage.json();
 
   let inboundPrivateMessage = responseBodyPrivateMessage.find(

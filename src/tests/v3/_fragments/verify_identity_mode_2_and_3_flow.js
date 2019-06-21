@@ -402,6 +402,7 @@ export function mode2And3FlowTest({
     it(`IdP (${idpNodeId}) should receive accessor encrypt callback with correct data`, async function() {
       this.timeout(15000);
       let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId,
         idpNodeId,
         accessorEncryptPromise,
         accessorId: responseAccessorId,
@@ -575,7 +576,7 @@ export function mode2And3FlowTest({
     it(`Should verify IdP (${idpNodeId}) response signature successfully`, async function() {
       this.timeout(15000);
       await verifyResponseSignature({
-        callApiAtNodeId: idpNodeId,
+        callApiAtNodeId: callIdpApiAtNodeId,
         requestId,
         idpNodeId,
         requestMessagePaddedHash,
