@@ -37,6 +37,7 @@ describe('Proxy (proxy1) setup', function() {
   it('should set IdP callbacks successfully', async function() {
     const response = await idpApi.setCallbacks('proxy1', {
       incoming_request_url: config.PROXY1_CALLBACK_URL,
+      incoming_request_status_update_url: config.PROXY1_CALLBACK_URL,
       // accessor_sign_url: config.PROXY1_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY1_CALLBACK_URL,
       identity_modification_notification_url:
@@ -52,6 +53,7 @@ describe('Proxy (proxy1) setup', function() {
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
       incoming_request_url: config.PROXY1_CALLBACK_URL,
+      incoming_request_status_update_url: config.PROXY1_CALLBACK_URL,
       //accessor_sign_url: config.PROXY1_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY1_CALLBACK_URL,
       identity_modification_notification_url:
@@ -64,6 +66,7 @@ describe('Proxy (proxy1) setup', function() {
   it('should set AS callbacks successfully', async function() {
     const response = await asApi.setCallbacks('proxy1', {
       error_url: config.PROXY1_CALLBACK_URL,
+      incoming_request_status_update_url: config.PROXY1_CALLBACK_URL,
     });
     expect(response.status).to.equal(204);
   });
@@ -74,6 +77,7 @@ describe('Proxy (proxy1) setup', function() {
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
       error_url: config.PROXY1_CALLBACK_URL,
+      incoming_request_status_update_url: config.PROXY1_CALLBACK_URL,
     });
   });
 
@@ -212,6 +216,7 @@ describe('Proxy (proxy2) setup', function() {
   it('should set IdP callbacks successfully', async function() {
     const response = await idpApi.setCallbacks('proxy2', {
       incoming_request_url: config.PROXY2_CALLBACK_URL,
+      incoming_request_status_update_url: config.PROXY2_CALLBACK_URL,
       //accessor_sign_url: config.PROXY2_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY2_CALLBACK_URL,
       identity_modification_notification_url:
@@ -227,6 +232,7 @@ describe('Proxy (proxy2) setup', function() {
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
       incoming_request_url: config.PROXY2_CALLBACK_URL,
+      incoming_request_status_update_url: config.PROXY2_CALLBACK_URL,
       //accessor_sign_url: config.PROXY2_ACCESSOR_SIGN_CALLBACK_URL,
       error_url: config.PROXY2_CALLBACK_URL,
       identity_modification_notification_url:
@@ -239,6 +245,7 @@ describe('Proxy (proxy2) setup', function() {
   it('should set AS callbacks successfully', async function() {
     const response = await asApi.setCallbacks('proxy2', {
       error_url: config.PROXY2_CALLBACK_URL,
+      incoming_request_status_update_url: config.PROXY2_CALLBACK_URL,
     });
     expect(response.status).to.equal(204);
   });
@@ -249,6 +256,7 @@ describe('Proxy (proxy2) setup', function() {
     expect(response.status).to.equal(200);
     expect(responseBody).to.deep.equal({
       error_url: config.PROXY2_CALLBACK_URL,
+      incoming_request_status_update_url: config.PROXY2_CALLBACK_URL,
     });
   });
 });
