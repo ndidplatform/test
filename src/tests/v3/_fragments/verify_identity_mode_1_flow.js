@@ -215,7 +215,7 @@ export function mode1FlowTest({
         callbackData.type === 'message_queue_send_success' &&
         callbackData.request_id === requestId
       ) {
-        if (callbackData.node_id === 'rp1') {
+        if (callbackData.node_id.includes('rp')) {
           if (callbackData.destination_node_id.includes('idp')) {
             arrayMqSendSuccessRpToIdpCallback.push(callbackData);
             let idpReceiveRequestPromise = idpsReceiveRequestPromises.find(
