@@ -19,13 +19,12 @@ import {
   receivePendingRequestStatusTest,
   receiveConfirmedRequestStatusTest,
   receiveRejectedRequestStatusTest,
-  receiveCompletedRequestStatusTest,
-  receiveComplicatedRequestStatusTest,
   receiveRequestClosedStatusTest,
   receiveMessagequeueSendSuccessCallback,
   hasPrivateMessagesTest,
   removePrivateMessagesTest,
   hasNoPrivateMessagesTest,
+  receiveCompletedRequestStatusTest,
 } from './common';
 
 import { createEventPromise } from '../../../utils';
@@ -166,25 +165,13 @@ export function mode2And3DataRequestFlowTest({
   let requestMessagePaddedHash;
   const idp_requestStatusUpdates = [];
   let finalRequestStatus;
-  let callFunctionReceiveRequestStatusTest;
-  let requestStatusPromise;
-  let idp_finalRequestStatusPromises;
 
   if (responseAcceptCount > 0 && responseRejectCount > 0) {
     finalRequestStatus = 'complicated';
-    callFunctionReceiveRequestStatusTest = receiveComplicatedRequestStatusTest;
-    requestStatusPromise = requestStatusComplicatedPromise;
-    idp_finalRequestStatusPromises = idp_requestStatusComplicatedPromises;
   } else if (responseAcceptCount > 0 && responseRejectCount === 0) {
     finalRequestStatus = 'completed';
-    callFunctionReceiveRequestStatusTest = receiveCompletedRequestStatusTest;
-    requestStatusPromise = requestStatusCompletedPromise;
-    idp_finalRequestStatusPromises = idp_requestStatusCompletedPromises;
   } else if (responseAcceptCount === 0 && responseRejectCount > 0) {
     finalRequestStatus = 'rejected';
-    callFunctionReceiveRequestStatusTest = receiveRejectedRequestStatusTest;
-    requestStatusPromise = requestStatusRejectedPromise;
-    idp_finalRequestStatusPromises = idp_requestStatusRejectedPromise;
   }
 
   before(async function() {
@@ -812,6 +799,31 @@ export function mode2And3DataRequestFlowTest({
   }
 
   if (finalRequestStatus === 'completed') {
+    it('RP should receive request completed status', async function() {
+      this.timeout(10000);
+      const testResult = await receiveCompletedRequestStatusTest({
+        nodeId: rpNodeId,
+        requestStatusCompletedPromise,
+        requestId,
+        createRequestParams,
+        serviceList: createRequestParams.data_request_list.map(
+          dataRequestList => ({
+            service_id: dataRequestList.service_id,
+            min_as: dataRequestList.min_as,
+            signed_data_count: dataRequestList.min_as,
+            received_data_count: dataRequestList.min_as,
+          })
+        ),
+        responseValidList: idpNodeIds.map(idpNodeId => ({
+          idp_id: idpNodeId,
+          valid_signature: true,
+          valid_ial: true,
+        })),
+        lastStatusUpdateBlockHeight,
+      });
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+    });
+
     it('RP should receive request closed status', async function() {
       this.timeout(10000);
       const testResult = await receiveRequestClosedStatusTest({
