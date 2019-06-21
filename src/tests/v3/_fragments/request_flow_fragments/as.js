@@ -45,6 +45,7 @@ export async function asReceiveDataRequestTest({
 
 export async function asSendDataTest({
   callApiAtNodeId,
+  nodeId,
   requestId,
   serviceId,
   asReferenceId,
@@ -54,6 +55,7 @@ export async function asSendDataTest({
 }) {
   const response = await asApi.sendData(callApiAtNodeId, {
     requestId,
+    node_id: nodeId,
     serviceId,
     reference_id: asReferenceId,
     callback_url: callbackUrl,

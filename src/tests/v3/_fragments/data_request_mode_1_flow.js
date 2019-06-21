@@ -42,7 +42,9 @@ export function mode1DataRequestFlowTest({
       idpResponseParams.node_id ? idpResponseParams.node_id : callIdpApiAtNodeId
   );
   const asNodeIds = asParams.map(({ callAsApiAtNodeId, asResponseParams }) =>
-    asResponseParams.node_id ? asResponseParams.node_id : callAsApiAtNodeId
+    asResponseParams[0].node_id
+      ? asResponseParams[0].node_id
+      : callAsApiAtNodeId
   );
 
   const createRequestResultPromise = createEventPromise(); // RP
@@ -83,7 +85,7 @@ export function mode1DataRequestFlowTest({
   const dataRequestReceivedPromises = asParams.reduce(
     (accumulator, asParam) => {
       let nodeId = asParam.asResponseParams[0].node_id
-        ? asParams.asResponseParams[0].node_id
+        ? asParam.asResponseParams[0].node_id
         : asParam.callAsApiAtNodeId;
       return {
         ...accumulator,
@@ -95,7 +97,7 @@ export function mode1DataRequestFlowTest({
 
   const sendDataResultPromises = asParams.reduce((accumulator, asParam) => {
     let nodeId = asParam.asResponseParams[0].node_id
-      ? asParams.asResponseParams[0].node_id
+      ? asParam.asResponseParams[0].node_id
       : asParam.callAsApiAtNodeId;
     return {
       ...accumulator,
@@ -106,7 +108,7 @@ export function mode1DataRequestFlowTest({
   const mqSendSuccessAsToRpCallbackPromises = asParams.reduce(
     (accumulator, asParam) => {
       let nodeId = asParam.asResponseParams[0].node_id
-        ? asParams.asResponseParams[0].node_id
+        ? asParam.asResponseParams[0].node_id
         : asParam.callAsApiAtNodeId;
       return {
         ...accumulator,
@@ -337,7 +339,7 @@ export function mode1DataRequestFlowTest({
         callbackData.type === 'message_queue_send_success' &&
         callbackData.request_id === requestId
       ) {
-        if (callbackData.node_id === 'rp1') {
+        if (callbackData.node_id.includes('rp')) {
           if (callbackData.destination_node_id.includes('idp')) {
             arrayMqSendSuccessRpToIdpCallback.push(callbackData);
             let idpReceiveRequestPromise = idpsReceiveRequestPromises.find(
@@ -655,6 +657,7 @@ export function mode1DataRequestFlowTest({
         let sendDataResultPromise = sendDataResultPromises[asNodeId][j];
         await asSendDataTest({
           callApiAtNodeId,
+          nodeId: asNodeId,
           requestId,
           serviceId,
           asReferenceId,

@@ -46,7 +46,7 @@ export function mode2And3DataRequestFlowTest({
       idpResponseParams.node_id ? idpResponseParams.node_id : callIdpApiAtNodeId
   );
   const asNodeIds = asParams.map(({ callAsApiAtNodeId, asResponseParams }) =>
-    asResponseParams.node_id ? asResponseParams.node_id : callAsApiAtNodeId
+    asResponseParams[0].node_id ? asResponseParams[0].node_id : callAsApiAtNodeId
   );
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
@@ -88,7 +88,7 @@ export function mode2And3DataRequestFlowTest({
   const dataRequestReceivedPromises = asParams.reduce(
     (accumulator, asParam) => {
       let nodeId = asParam.asResponseParams[0].node_id
-        ? asParams.asResponseParams[0].node_id
+        ? asParam.asResponseParams[0].node_id
         : asParam.callAsApiAtNodeId;
       return {
         ...accumulator,
@@ -100,7 +100,7 @@ export function mode2And3DataRequestFlowTest({
 
   const sendDataResultPromises = asParams.reduce((accumulator, asParam) => {
     let nodeId = asParam.asResponseParams[0].node_id
-      ? asParams.asResponseParams[0].node_id
+      ? asParam.asResponseParams[0].node_id
       : asParam.callAsApiAtNodeId;
     return {
       ...accumulator,
@@ -111,7 +111,7 @@ export function mode2And3DataRequestFlowTest({
   const mqSendSuccessAsToRpCallbackPromises = asParams.reduce(
     (accumulator, asParam) => {
       let nodeId = asParam.asResponseParams[0].node_id
-        ? asParams.asResponseParams[0].node_id
+        ? asParam.asResponseParams[0].node_id
         : asParam.callAsApiAtNodeId;
       return {
         ...accumulator,
@@ -365,7 +365,7 @@ export function mode2And3DataRequestFlowTest({
         callbackData.type === 'message_queue_send_success' &&
         callbackData.request_id === requestId
       ) {
-        if (callbackData.node_id === 'rp1') {
+        if (callbackData.node_id.includes('rp')) {
           if (callbackData.destination_node_id.includes('idp')) {
             arrayMqSendSuccessRpToIdpCallback.push(callbackData);
             let idpReceiveRequestPromise = idpsReceiveRequestPromises.find(
@@ -548,6 +548,7 @@ export function mode2And3DataRequestFlowTest({
     it(`IdP (${idpNodeId}) should receive accessor encrypt callback with correct data`, async function() {
       this.timeout(15000);
       let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId,
         idpNodeId,
         accessorEncryptPromise,
         accessorId: responseAccessorId,
@@ -688,7 +689,7 @@ export function mode2And3DataRequestFlowTest({
     it(`Should verify IdP (${idpNodeId}) response signature successfully`, async function() {
       this.timeout(15000);
       await verifyResponseSignature({
-        callApiAtNodeId: idpNodeId,
+        callApiAtNodeId: callIdpApiAtNodeId,
         requestId,
         idpNodeId,
         requestMessagePaddedHash,
@@ -744,6 +745,7 @@ export function mode2And3DataRequestFlowTest({
         let sendDataResultPromise = sendDataResultPromises[asNodeId][j];
         await asSendDataTest({
           callApiAtNodeId,
+          nodeId: asNodeId,
           requestId,
           serviceId,
           asReferenceId,
