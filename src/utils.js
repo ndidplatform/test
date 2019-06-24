@@ -2,10 +2,12 @@ import crypto from 'crypto';
 
 import uuidv4 from 'uuid/v4';
 
+const saltLength = 16;
+
 export function wait(ms, stoppable) {
   let setTimeoutFn;
   const promise = new Promise(
-    (resolve) => (setTimeoutFn = setTimeout(resolve, ms))
+    resolve => (setTimeoutFn = setTimeout(resolve, ms))
   );
   if (stoppable) {
     return {
@@ -59,6 +61,13 @@ export function createResponseSignature(privateKey, message_hash) {
     .toString('base64');
 }
 
+export function sha256(dataToHash) {
+  const hash = crypto.createHash('sha256');
+  hash.update(dataToHash);
+  const hashBuffer = hash.digest();
+  return hashBuffer;
+}
+
 function generateCustomPadding(initialSalt, blockLength = 2048) {
   const hashLength = 256;
   const padLengthInbyte = parseInt(Math.floor((blockLength - hashLength) / 8));
@@ -75,7 +84,11 @@ function generateCustomPadding(initialSalt, blockLength = 2048) {
   return paddingBuffer;
 }
 
-export function hashRequestMessageForConsent(request_message, initialSalt, request_id) {
+export function hashRequestMessageForConsent(
+  request_message,
+  initialSalt,
+  request_id
+) {
   const paddingBuffer = generateCustomPadding(initialSalt);
   const derivedSalt = Buffer.from(hash(request_id + initialSalt), 'base64')
     .slice(0, 16)
@@ -87,4 +100,13 @@ export function hashRequestMessageForConsent(request_message, initialSalt, reque
   );
 
   return Buffer.concat([paddingBuffer, normalHashBuffer]).toString('base64');
+}
+
+export function generateRequestParamSalt({
+  requestId,
+  serviceId,
+  initialSalt,
+}) {
+  const bufferHash = sha256(requestId + serviceId + initialSalt);
+  return bufferHash.slice(0, saltLength).toString('base64');
 }

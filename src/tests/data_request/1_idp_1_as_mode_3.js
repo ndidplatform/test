@@ -17,6 +17,7 @@ import {
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
+import { verifyRequestParamsHash } from '../_fragments/request_flow_fragments/rp';
 
 describe('1 IdP, 1 AS, mode 3', function() {
   let namespace;
@@ -56,6 +57,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
   });
 
   let requestId;
+  let initialSalt;
   let requestMessageSalt;
   let requestMessageHash;
 
@@ -201,6 +203,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
@@ -247,12 +250,22 @@ describe('1 IdP, 1 AS, mode 3', function() {
     lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
   });
 
+  it('RP should verify request_params_hash successfully', async function() {
+    this.timeout(15000);
+    await verifyRequestParamsHash({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      requestId,
+      initialSalt,
+    });
+  });
+
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -320,7 +333,7 @@ describe('1 IdP, 1 AS, mode 3', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -1028,6 +1041,7 @@ describe('1 IdP, 1 AS, mode 3 (as_id_list is empty array)', function() {
   });
 
   let requestId;
+  let initialSalt;
   let requestMessageSalt;
   let requestMessageHash;
 
@@ -1172,6 +1186,7 @@ describe('1 IdP, 1 AS, mode 3 (as_id_list is empty array)', function() {
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
@@ -1213,12 +1228,22 @@ describe('1 IdP, 1 AS, mode 3 (as_id_list is empty array)', function() {
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('RP should verify request_params_hash successfully', async function() {
+    this.timeout(15000);
+    await verifyRequestParamsHash({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      requestId,
+      initialSalt,
+    });
+  });
+
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -1245,7 +1270,7 @@ describe('1 IdP, 1 AS, mode 3 (as_id_list is empty array)', function() {
 
     incomingRequest.data_request_list.forEach((incomingRequestData, index) => {
       let data_request_list = createRequestParams.data_request_list.find(
-        (service) => service.service_id === incomingRequestData.service_id
+        service => service.service_id === incomingRequestData.service_id
       );
       expect(incomingRequestData.service_id).to.equal(
         data_request_list.service_id
@@ -1299,7 +1324,7 @@ describe('1 IdP, 1 AS, mode 3 (as_id_list is empty array)', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -1970,6 +1995,7 @@ describe('1 IdP, 1 AS, mode 3 (without as_id_list key)', function() {
   });
 
   let requestId;
+  let initialSalt;
   let requestMessageSalt;
   let requestMessageHash;
 
@@ -2113,6 +2139,7 @@ describe('1 IdP, 1 AS, mode 3 (without as_id_list key)', function() {
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
@@ -2154,12 +2181,22 @@ describe('1 IdP, 1 AS, mode 3 (without as_id_list key)', function() {
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('RP should verify request_params_hash successfully', async function() {
+    this.timeout(15000);
+    await verifyRequestParamsHash({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      requestId,
+      initialSalt,
+    });
+  });
+
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -2186,7 +2223,7 @@ describe('1 IdP, 1 AS, mode 3 (without as_id_list key)', function() {
 
     incomingRequest.data_request_list.forEach((incomingRequestData, index) => {
       let data_request_list = createRequestParams.data_request_list.find(
-        (service) => service.service_id === incomingRequestData.service_id
+        service => service.service_id === incomingRequestData.service_id
       );
       expect(incomingRequestData.service_id).to.equal(
         data_request_list.service_id
@@ -2240,7 +2277,7 @@ describe('1 IdP, 1 AS, mode 3 (without as_id_list key)', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -2911,6 +2948,7 @@ describe('1 IdP, 1 AS, mode 3 (without request_params key)', function() {
   });
 
   let requestId;
+  let initialSalt;
   let requestMessageSalt;
   let requestMessageHash;
 
@@ -3051,6 +3089,7 @@ describe('1 IdP, 1 AS, mode 3 (without request_params key)', function() {
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
@@ -3092,12 +3131,22 @@ describe('1 IdP, 1 AS, mode 3 (without request_params key)', function() {
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('RP should verify request_params_hash successfully', async function() {
+    this.timeout(15000);
+    await verifyRequestParamsHash({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      requestId,
+      initialSalt,
+    });
+  });
+
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -3124,7 +3173,7 @@ describe('1 IdP, 1 AS, mode 3 (without request_params key)', function() {
 
     incomingRequest.data_request_list.forEach((incomingRequestData, index) => {
       let data_request_list = createRequestParams.data_request_list.find(
-        (service) => service.service_id === incomingRequestData.service_id
+        service => service.service_id === incomingRequestData.service_id
       );
       expect(incomingRequestData.service_id).to.equal(
         data_request_list.service_id
@@ -3178,7 +3227,7 @@ describe('1 IdP, 1 AS, mode 3 (without request_params key)', function() {
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 
@@ -3848,6 +3897,7 @@ describe('1 IdP, 1 AS, mode 3 (with empty string request_params and request_mess
   });
 
   let requestId;
+  let initialSalt;
   let requestMessageSalt;
   let requestMessageHash;
 
@@ -3990,6 +4040,7 @@ describe('1 IdP, 1 AS, mode 3 (with empty string request_params and request_mess
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
@@ -4031,12 +4082,22 @@ describe('1 IdP, 1 AS, mode 3 (with empty string request_params and request_mess
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('RP should verify request_params_hash successfully', async function() {
+    this.timeout(15000);
+    await verifyRequestParamsHash({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      requestId,
+      initialSalt,
+    });
+  });
+
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -4104,7 +4165,7 @@ describe('1 IdP, 1 AS, mode 3 (with empty string request_params and request_mess
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
     const identity = db.idp1Identities.find(
-      (identity) =>
+      identity =>
         identity.namespace === namespace && identity.identifier === identifier
     );
 

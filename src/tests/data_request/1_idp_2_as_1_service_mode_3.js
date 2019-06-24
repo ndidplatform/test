@@ -19,6 +19,7 @@ import {
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
+import { verifyRequestParamsHash } from '../_fragments/request_flow_fragments/rp';
 
 describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
   let namespace;
@@ -52,6 +53,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
   });
 
   let requestId;
+  let initialSalt;
   let requestMessageSalt;
   let requestMessageHash;
 
@@ -185,6 +187,7 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
@@ -224,6 +227,16 @@ describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('RP should verify request_params_hash successfully', async function() {
+    this.timeout(15000);
+    await verifyRequestParamsHash({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      requestId,
+      initialSalt,
+    });
   });
 
   it('IdP should receive incoming request callback', async function() {

@@ -19,6 +19,7 @@ import {
   createResponseSignature,
 } from '../../utils';
 import * as config from '../../config';
+import { verifyRequestParamsHash } from '../_fragments/request_flow_fragments/rp';
 
 describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   let namespace;
@@ -51,6 +52,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   });
 
   let requestId;
+  let initialSalt;
   let requestMessageSalt;
   let requestMessageHash;
 
@@ -178,6 +180,7 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
@@ -219,13 +222,23 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('RP should verify request_params_hash successfully', async function() {
+    this.timeout(15000);
+    await verifyRequestParamsHash({
+      callApiAtNodeId: 'rp1',
+      createRequestParams,
+      requestId,
+      initialSalt,
+    });
+  });
+
   it('Both IdP (idp1 and idp2) should receive incoming request callback', async function() {
     this.timeout(20000);
     const idp1IncomingRequest = await idp1IncomingRequestPromise.promise;
     const idp2IncomingRequest = await idp2IncomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+      dataRequest => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -296,12 +309,12 @@ describe('2 IdP (min_idp = 2), 1 AS, mode 3', function() {
   it('Both IdP (idp1 and idp2) should create idp1Response (accept) successfully', async function() {
     this.timeout(20000);
     const idp1Identity = db.idp1Identities.find(
-      (idp1Identity) =>
+      idp1Identity =>
         idp1Identity.namespace === namespace &&
         idp1Identity.identifier === identifier
     );
     const idp2Identity = db.idp2Identities.find(
-      (idp2Identity) =>
+      idp2Identity =>
         idp2Identity.namespace === namespace &&
         idp2Identity.identifier === identifier
     );
