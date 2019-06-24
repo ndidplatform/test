@@ -20,6 +20,10 @@ import {
 import * as config from '../../../config';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
+import {
+  idpReceiveAccessorEncryptCallbackTest,
+  verifyResponseSignature,
+} from '../_fragments/request_flow_fragments/idp';
 
 describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2', function() {
   let namespace;
@@ -57,13 +61,13 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
   const as_requestStatusCompletedPromise = createEventPromise();
   const as_requestClosedPromise = createEventPromise();
 
-
   const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
   const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
   const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
   const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
 
   let createRequestParams;
+  let requestMessagePaddedHash;
   const data =
     'data:application/pdf;base64,dGVzdCBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=';
   const correct_request_message =
@@ -119,7 +123,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -266,7 +270,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     if (!updateNodeResult.success) {
       throw new Error('Unable to update node');
     }
-   await wait(3000);
+    await wait(3000);
   });
 
   it('RP should create a request with request_message has whitespace unsuccessfully', async function() {
@@ -306,6 +310,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    // initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
 
@@ -353,6 +358,16 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
   });
 
+    //   it('RP should verify request_params_hash successfully', async function() {
+  //   this.timeout(15000);
+  //   await verifyRequestParamsHash({
+  //     callApiAtNodeId: 'rp1',
+  //     createRequestParams,
+  //     requestId,
+  //     initialSalt,
+  //   });
+  // });
+
   it('RP should receive message queue send success (To idp1) callback', async function() {
     this.timeout(15000);
     await receiveMessagequeueSendSuccessCallback({
@@ -362,7 +377,6 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       destinationNodeId: 'idp1',
     });
   });
-
 
   it('IdP should receive incoming request callback', async function() {
     this.timeout(15000);
@@ -437,20 +451,23 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
 
   it('IdP should receive accessor encrypt callback with correct data', async function() {
     this.timeout(15000);
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idpReferenceId,
-      request_id: requestId,
+    let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+
+    let testResult = await idpReceiveAccessorEncryptCallbackTest({
+      callIdpApiAtNodeId: 'idp1',
+      accessorEncryptPromise,
+      accessorId: responseAccessorId,
+      requestId,
+      idpReferenceId: idpReferenceId,
+      incomingRequestPromise,
+      accessorPublicKey,
     });
-
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
@@ -511,6 +528,24 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       lastStatusUpdateBlockHeight
     );
     lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+  });
+
+  it('Should verify IdP response signature successfully', async function() {
+    this.timeout(15000);
+
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+    await verifyResponseSignature({
+      callApiAtNodeId: 'idp1',
+      requestId,
+      requestMessagePaddedHash,
+      accessorPrivateKey,
+    });
   });
 
   // it('IdP should receive confirmed request status without proofs', async function() {

@@ -211,6 +211,19 @@ export async function idpReceiveAccessorEncryptCallbackTest({
   incomingRequestPromise,
   accessorPublicKey,
 }) {
+  let data = {
+    request_id: requestId,
+  };
+
+  if (callIdpApiAtNodeId.includes('proxy')) {
+    data = {
+      ...data,
+      node_id: idpNodeId,
+    };
+  } else {
+    idpNodeId = callIdpApiAtNodeId;
+  }
+
   const accessorEncryptParams = await accessorEncryptPromise.promise;
   expect(accessorEncryptParams).to.deep.include({
     node_id: idpNodeId,
@@ -221,17 +234,6 @@ export async function idpReceiveAccessorEncryptCallbackTest({
     reference_id: idpReferenceId,
     request_id: requestId,
   });
-
-  let data = {
-    request_id: requestId,
-  };
-  
-  if (callIdpApiAtNodeId.includes('proxy')) {
-    data = {
-      ...data,
-      node_id: idpNodeId,
-    };
-  }
 
   const responsePrivateMessage = await commonApi.getPrivateMessages(
     callIdpApiAtNodeId,
@@ -273,9 +275,14 @@ export async function verifyResponseSignature({
   requestMessagePaddedHash,
   accessorPrivateKey,
 }) {
+  if (!idpNodeId) {
+    idpNodeId = callApiAtNodeId;
+  }
+
   let responseRequestDetail = await commonApi.getRequest(callApiAtNodeId, {
     requestId,
   });
+
   let responseBodyRequestDetail = await responseRequestDetail.json();
   const signatureFromBlockchain = responseBodyRequestDetail.response_list.find(
     responseList => responseList.idp_id === idpNodeId

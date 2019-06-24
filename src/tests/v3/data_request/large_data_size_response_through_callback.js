@@ -15,6 +15,10 @@ import { createEventPromise, generateReferenceId, hash } from '../../../utils';
 import * as config from '../../../config';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
+import {
+  idpReceiveAccessorEncryptCallbackTest,
+  verifyResponseSignature,
+} from '../_fragments/request_flow_fragments/idp';
 
 describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', function() {
   let namespace;
@@ -46,6 +50,7 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
   const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
 
   let requestId;
+  let requestMessagePaddedHash;
   let requestMessageSalt;
   let requestMessageHash;
   let responseAccessorId;
@@ -190,6 +195,7 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    // initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
@@ -230,6 +236,16 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
+
+  //   it('RP should verify request_params_hash successfully', async function() {
+  //   this.timeout(15000);
+  //   await verifyRequestParamsHash({
+  //     callApiAtNodeId: 'rp1',
+  //     createRequestParams,
+  //     requestId,
+  //     initialSalt,
+  //   });
+  // });
 
   it('RP should receive message queue send success (To idp1) callback', async function() {
     this.timeout(15000);
@@ -307,20 +323,22 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
 
   it('IdP should receive accessor encrypt callback with correct data', async function() {
     this.timeout(15000);
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+    let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idpReferenceId,
-      request_id: requestId,
+    let testResult = await idpReceiveAccessorEncryptCallbackTest({
+      callIdpApiAtNodeId: 'idp1',
+      accessorEncryptPromise,
+      accessorId: responseAccessorId,
+      requestId,
+      idpReferenceId: idpReferenceId,
+      incomingRequestPromise,
+      accessorPublicKey,
     });
-
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
@@ -377,6 +395,24 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
     expect(splittedBlockHeight).to.have.lengthOf(2);
     expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
+  it('Should verify IdP response signature successfully', async function() {
+    this.timeout(15000);
+
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+    await verifyResponseSignature({
+      callApiAtNodeId: 'idp1',
+      requestId,
+      requestMessagePaddedHash,
+      accessorPrivateKey,
+    });
   });
 
   it('RP should receive message queue send success (To as1) callback', async function() {
