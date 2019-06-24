@@ -100,6 +100,7 @@ export function mode1FlowTest({
   }
 
   let requestId;
+  let initialSalt;
   let lastStatusUpdateBlockHeight;
   let arrayMqSendSuccessRpToIdpCallback = [];
   const requestStatusUpdates = [];
@@ -258,6 +259,7 @@ export function mode1FlowTest({
     });
     requestId = testResult.requestId;
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+    initialSalt = testResult.initial_salt;
   });
 
   it('RP should receive pending request status', async function() {
@@ -313,6 +315,7 @@ export function mode1FlowTest({
         requestId,
         incomingRequestPromise,
         requesterNodeId: rpNodeId,
+        initialSalt,
       });
     });
 

@@ -13,9 +13,9 @@ export async function idpReceiveMode1IncomingRequestCallbackTest({
   requestId,
   incomingRequestPromise,
   requesterNodeId,
+  initialSalt
 }) {
   const incomingRequest = await incomingRequestPromise.promise;
-
   let dataRequestListArray = [];
   if (createRequestParams.data_request_list) {
     createRequestParams.data_request_list.forEach((dataRequestList, index) => {
@@ -73,6 +73,7 @@ export async function idpReceiveMode1IncomingRequestCallbackTest({
     //   : [],
     request_timeout: createRequestParams.request_timeout,
   });
+  expect(incomingRequest.initial_salt).to.equal(initialSalt);
   expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
     .empty;
   expect(incomingRequest.creation_time).to.be.a('number');
@@ -97,9 +98,9 @@ export async function idpReceiveMode2And3IncomingRequestCallbackTest({
   requestId,
   incomingRequestPromise,
   requesterNodeId,
+  initialSalt,
 }) {
   const incomingRequest = await incomingRequestPromise.promise;
-
   let dataRequestListArray = [];
   if (createRequestParams.data_request_list) {
     createRequestParams.data_request_list.forEach((dataRequestList, index) => {
@@ -154,6 +155,7 @@ export async function idpReceiveMode2And3IncomingRequestCallbackTest({
     //   : [],
     request_timeout: createRequestParams.request_timeout,
   });
+  expect(incomingRequest.initial_salt).to.equal(initialSalt);
   expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
     .empty;
   expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not

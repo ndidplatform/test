@@ -209,7 +209,7 @@ export function mode2And3DataRequestFlowTest({
     rpEventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
-        callbackData.reference_id === createRequestParams.reference_id
+        callbackData.reference_id === createRequestParams.reference_id 
       ) {
         createRequestResultPromise.resolve(callbackData);
       } else if (
@@ -499,6 +499,7 @@ export function mode2And3DataRequestFlowTest({
         requestId,
         incomingRequestPromise,
         requesterNodeId: rpNodeId,
+        initialSalt
       });
     });
 

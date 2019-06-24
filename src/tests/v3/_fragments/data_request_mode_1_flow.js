@@ -468,6 +468,7 @@ export function mode1DataRequestFlowTest({
         requestId,
         incomingRequestPromise,
         requesterNodeId: rpNodeId,
+        initialSalt,
       });
     });
 

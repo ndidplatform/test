@@ -99,6 +99,7 @@ export function mode2And3FlowTest({
   const idp_requestClosedPromises = idpParams.map(() => createEventPromise());
 
   let identity;
+  let initialSalt;
   let requestId;
   let lastStatusUpdateBlockHeight;
   let idpsReceiveRequestPromises;
@@ -293,6 +294,7 @@ export function mode2And3FlowTest({
     });
     requestId = testResult.requestId;
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+    initialSalt = testResult.initial_salt;
   });
 
   it('RP should receive pending request status', async function() {
@@ -353,6 +355,7 @@ export function mode2And3FlowTest({
         requestId,
         incomingRequestPromise,
         requesterNodeId: rpNodeId,
+        initialSalt,
       });
     });
 
