@@ -2,17 +2,14 @@ import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
 import { ndidAvailable, idp1Available } from '../..';
-import * as idpApi from '../../../api/v3/idp';
 import * as identityApi from '../../../api/v3/identity';
 import * as ndidApi from '../../../api/v3/ndid';
 import * as commonApi from '../../../api/v3/common';
-// import * as debugApi from '../../../api/v3/debug';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import {
   createEventPromise,
   generateReferenceId,
-  hash,
   wait,
 } from '../../../utils';
 import * as config from '../../../config';
