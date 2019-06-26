@@ -16,6 +16,12 @@ import {
   wait,
 } from '../../../utils';
 import * as config from '../../../config';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
+import {
+  idpReceiveAccessorEncryptCallbackTest,
+  verifyResponseSignature,
+} from '../_fragments/request_flow_fragments/idp';
 
 describe('Reject 2nd IdP create identity (mode 3) test', function() {
   const namespace = 'citizen_id';
@@ -29,7 +35,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
 
   //Keypair for 2nd IdP
   const keypair2 = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey2 = forge.pki.privateKeyToPem(keypair2.privateKey);
+  //const accessorPrivateKey2 = forge.pki.privateKeyToPem(keypair2.privateKey);
   const accessorPublicKey2 = forge.pki.publicKeyToPem(keypair2.publicKey);
 
   const referenceId = generateReferenceId();
@@ -44,8 +50,10 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
   const responseResultPromise = createEventPromise();
   const accessorEncryptPromise = createEventPromise();
 
+  const mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
+  const mqSendSuccessIdp1ToIdp2CallbackPromise = createEventPromise();
+
   //1st IdP
-  let requestId;
   let accessorId;
   let referenceGroupCode;
   let responseAccessorId;
@@ -55,6 +63,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
   let accessorId2ndIdPCreateIdentity;
 
   let requestMessageHash;
+  let requestMessagePaddedHash;
 
   before(function() {
     if (!idp2Available) {
@@ -107,6 +116,23 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
         IdP2createIdentityResultPromise.resolve(callbackData);
       }
     });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId2ndIdPCreateIdentity
+      ) {
+        if (callbackData.node_id === 'idp2') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessIdp2ToIdp1CallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'idp1') {
+          if (callbackData.destination_node_id === 'idp2') {
+            mqSendSuccessIdp1ToIdp2CallbackPromise.resolve(callbackData);
+          }
+        }
+      }
+    });
   });
 
   it('1st IdP should create identity request (mode 3) successfully', async function() {
@@ -124,27 +150,9 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    // expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
 
-    // requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
-
-    // const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
-    // expect(createIdentityRequestResult).to.deep.include({
-    //   reference_id: referenceId,
-    //   request_id: requestId,
-    //   exist: false,
-    //   accessor_id: accessorId,
-    //   success: true,
-    // });
-    // expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
-    // const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-    //   ':'
-    // );
-    // expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    // expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    // expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('1st IdP Identity should be created successfully', async function() {
@@ -239,6 +247,16 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     });
   });
 
+  it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp2',
+      requestId: requestId2ndIdPCreateIdentity,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1CallbackPromise,
+      destinationNodeId: 'idp1',
+    });
+  });
+
   it('1st IdP should receive create identity request', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
@@ -292,20 +310,22 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
 
   it('IdP should receive accessor encrypt callback with correct data', async function() {
     this.timeout(15000);
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+    let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idp1RejectRequestReferenceId,
-      request_id: requestId2ndIdPCreateIdentity,
+    let testResult = await idpReceiveAccessorEncryptCallbackTest({
+      callIdpApiAtNodeId: 'idp1',
+      accessorEncryptPromise,
+      accessorId: responseAccessorId,
+      requestId: requestId2ndIdPCreateIdentity,
+      idpReferenceId: idp1RejectRequestReferenceId,
+      incomingRequestPromise,
+      accessorPublicKey,
     });
-
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
@@ -316,6 +336,16 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
       reference_id: idp1RejectRequestReferenceId,
       request_id: requestId2ndIdPCreateIdentity,
       success: true,
+    });
+  });
+
+  it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp1',
+      requestId: requestId2ndIdPCreateIdentity,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp1ToIdp2CallbackPromise,
+      destinationNodeId: 'idp2',
     });
   });
 
@@ -336,6 +366,22 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     const idpNodes = await response.json();
     const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
     expect(idpNode).to.be.undefined;
+  });
+
+  it('Should verify IdP response signature successfully', async function() {
+    this.timeout(15000);
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+    let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+    await verifyResponseSignature({
+      callApiAtNodeId: 'idp1',
+      requestId: requestId2ndIdPCreateIdentity,
+      requestMessagePaddedHash,
+      accessorPrivateKey,
+    });
   });
 
   it('Special request status for create identity should be rejected and closed', async function() {
@@ -400,5 +446,12 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
     expect(responseBody.error.code).to.equal(20005);
+  });
+
+  after(function() {
+    idp1EventEmitter.removeAllListeners('callback');
+    idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 });

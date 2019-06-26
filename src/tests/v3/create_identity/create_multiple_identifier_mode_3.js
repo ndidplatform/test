@@ -8,9 +8,20 @@ import * as identityApi from '../../../api/v3/identity';
 import * as idpApi from '../../../api/v3/idp';
 import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
 import { ndidAvailable, idp2Available } from '../../';
-import { wait, generateReferenceId, createEventPromise, hash} from '../../../utils';
+import {
+  wait,
+  generateReferenceId,
+  createEventPromise,
+  hash,
+} from '../../../utils';
 import * as config from '../../../config';
 import * as db from '../../../db';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
+import {
+  idpReceiveAccessorEncryptCallbackTest,
+  verifyResponseSignature,
+} from '../_fragments/request_flow_fragments/idp';
 
 describe('Create identity with same namespace and multiple identifier (mode 3) tests', function() {
   before(function() {
@@ -329,7 +340,11 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       const responseResultPromise = createEventPromise();
       const accessorEncryptPromise = createEventPromise();
 
+      const mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
+      const mqSendSuccessIdp1ToIdp2CallbackPromise = createEventPromise();
+
       let accessorId;
+      let requestMessagePaddedHash;
       let referenceGroupCode;
       let requestId;
       let responseAccessorId;
@@ -369,6 +384,23 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
             callbackData.reference_id === idp2ReferenceId
           ) {
             idp2CreateIdentityResultPromise.resolve(callbackData);
+          }
+        });
+
+        nodeCallbackEventEmitter.on('callback', function(callbackData) {
+          if (
+            callbackData.type === 'message_queue_send_success' &&
+            callbackData.request_id === requestId
+          ) {
+            if (callbackData.node_id === 'idp2') {
+              if (callbackData.destination_node_id === 'idp1') {
+                mqSendSuccessIdp2ToIdp1CallbackPromise.resolve(callbackData);
+              }
+            } else if (callbackData.node_id === 'idp1') {
+              if (callbackData.destination_node_id === 'idp2') {
+                mqSendSuccessIdp1ToIdp2CallbackPromise.resolve(callbackData);
+              }
+            }
           }
         });
       });
@@ -483,6 +515,16 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         requestId = responseBody.request_id;
       });
 
+      it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+        this.timeout(15000);
+        await receiveMessagequeueSendSuccessCallback({
+          nodeId: 'idp2',
+          requestId,
+          mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1CallbackPromise,
+          destinationNodeId: 'idp1',
+        });
+      });
+
       it('1st IdP should receive create identity request', async function() {
         this.timeout(15000);
         const incomingRequest = await incomingRequestPromise.promise;
@@ -536,22 +578,24 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       });
 
       it('IdP should receive accessor encrypt callback with correct data', async function() {
-        this.timeout(15000);
+        this.timeout(10000);
+        const identity = db.idp1Identities.find(
+          identity =>
+            identity.namespace === namespace &&
+            identity.identifier === identifier
+        );
+        let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-        const accessorEncryptParams = await accessorEncryptPromise.promise;
-        expect(accessorEncryptParams).to.deep.include({
-          node_id: 'idp1',
-          type: 'accessor_encrypt',
-          accessor_id: responseAccessorId,
-          key_type: 'RSA',
-          padding: 'none',
-          reference_id: idpResponseReferenceId,
-          request_id: requestId,
+        let testResult = await idpReceiveAccessorEncryptCallbackTest({
+          callIdpApiAtNodeId: 'idp1',
+          accessorEncryptPromise,
+          accessorId: responseAccessorId,
+          requestId,
+          idpReferenceId: idpResponseReferenceId,
+          incomingRequestPromise,
+          accessorPublicKey,
         });
-
-        expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-          'string'
-        ).that.is.not.empty;
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
       });
 
       it('IdP shoud receive callback create response result with success = true', async function() {
@@ -562,6 +606,34 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           reference_id: idpResponseReferenceId,
           request_id: requestId,
           success: true,
+        });
+      });
+
+      it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+        this.timeout(15000);
+        await receiveMessagequeueSendSuccessCallback({
+          nodeId: 'idp1',
+          requestId,
+          mqSendSuccessCallbackPromise: mqSendSuccessIdp1ToIdp2CallbackPromise,
+          destinationNodeId: 'idp2',
+        });
+      });
+
+      it('Should verify IdP response signature successfully', async function() {
+        this.timeout(15000);
+        const identity = db.idp1Identities.find(
+          identity =>
+            identity.namespace === namespace &&
+            identity.identifier === identifier
+        );
+
+        let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+        await verifyResponseSignature({
+          callApiAtNodeId: 'idp1',
+          requestId,
+          requestMessagePaddedHash,
+          accessorPrivateKey,
         });
       });
 
@@ -590,6 +662,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
         idp1EventEmitter.removeAllListeners('identity_notification_callback');
         idp2EventEmitter.removeAllListeners('callback');
+        nodeCallbackEventEmitter.removeAllListeners('callback');
       });
     });
     describe('idp1 and idp2 should create identity request (mode 3) with identity_list namespace count (2) equal to allowed namespace count (2) successfully', async function() {
@@ -600,7 +673,6 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
       const identifier = uuidv4();
       const identifier2 = uuidv4();
-      const identifier3 = uuidv4();
       const referenceId = generateReferenceId();
       const idp2ReferenceId = generateReferenceId();
       const idpResponseReferenceId = generateReferenceId();
@@ -615,7 +687,11 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       const errorCaseCreateIdentityResultPromise = createEventPromise();
       const notificationCreateIdentityPromise = createEventPromise();
 
+      let mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
+      let mqSendSuccessIdp1ToIdp2CallbackPromise = createEventPromise();
+
       let accessorId;
+      let requestMessagePaddedHash;
       let referenceGroupCode;
       let requestId;
       let responseAccessorId;
@@ -672,6 +748,23 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
             callbackData.reference_id === idp2ReferenceId
           ) {
             idp2CreateIdentityResultPromise.resolve(callbackData);
+          }
+        });
+
+        nodeCallbackEventEmitter.on('callback', function(callbackData) {
+          if (
+            callbackData.type === 'message_queue_send_success' &&
+            callbackData.request_id === requestId
+          ) {
+            if (callbackData.node_id === 'idp2') {
+              if (callbackData.destination_node_id === 'idp1') {
+                mqSendSuccessIdp2ToIdp1CallbackPromise.resolve(callbackData);
+              }
+            } else if (callbackData.node_id === 'idp1') {
+              if (callbackData.destination_node_id === 'idp2') {
+                mqSendSuccessIdp1ToIdp2CallbackPromise.resolve(callbackData);
+              }
+            }
           }
         });
       });
@@ -771,6 +864,16 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         requestId = responseBody.request_id;
       });
 
+      it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+        this.timeout(15000);
+        await receiveMessagequeueSendSuccessCallback({
+          nodeId: 'idp2',
+          requestId,
+          mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1CallbackPromise,
+          destinationNodeId: 'idp1',
+        });
+      });
+
       it('1st IdP should receive create identity request', async function() {
         this.timeout(15000);
         const incomingRequest = await incomingRequestPromise.promise;
@@ -825,21 +928,23 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
 
       it('IdP should receive accessor encrypt callback with correct data', async function() {
         this.timeout(15000);
+        const identity = db.idp1Identities.find(
+          identity =>
+            identity.namespace === namespace &&
+            identity.identifier === identifier
+        );
+        let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-        const accessorEncryptParams = await accessorEncryptPromise.promise;
-        expect(accessorEncryptParams).to.deep.include({
-          node_id: 'idp1',
-          type: 'accessor_encrypt',
-          accessor_id: responseAccessorId,
-          key_type: 'RSA',
-          padding: 'none',
-          reference_id: idpResponseReferenceId,
-          request_id: requestId,
+        let testResult = await idpReceiveAccessorEncryptCallbackTest({
+          callIdpApiAtNodeId: 'idp1',
+          accessorEncryptPromise,
+          accessorId: responseAccessorId,
+          requestId,
+          idpReferenceId: idpResponseReferenceId,
+          incomingRequestPromise,
+          accessorPublicKey,
         });
-
-        expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-          'string'
-        ).that.is.not.empty;
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
       });
 
       it('IdP shoud receive callback create response result with success = true', async function() {
@@ -850,6 +955,33 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           reference_id: idpResponseReferenceId,
           request_id: requestId,
           success: true,
+        });
+      });
+
+      it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+        this.timeout(15000);
+        await receiveMessagequeueSendSuccessCallback({
+          nodeId: 'idp1',
+          requestId,
+          mqSendSuccessCallbackPromise: mqSendSuccessIdp1ToIdp2CallbackPromise,
+          destinationNodeId: 'idp2',
+        });
+      });
+
+      it('Should verify IdP response signature successfully', async function() {
+        this.timeout(15000);
+        const identity = db.idp1Identities.find(
+          identity =>
+            identity.namespace === namespace &&
+            identity.identifier === identifier
+        );
+        let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+        await verifyResponseSignature({
+          callApiAtNodeId: 'idp1',
+          requestId,
+          requestMessagePaddedHash,
+          accessorPrivateKey,
         });
       });
 
@@ -908,6 +1040,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
         idp1EventEmitter.removeAllListeners('identity_notification_callback');
         idp2EventEmitter.removeAllListeners('callback');
+        nodeCallbackEventEmitter.removeAllListeners('callback');
       });
     });
   });

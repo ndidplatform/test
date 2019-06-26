@@ -15,6 +15,12 @@ import {
 } from '../../../utils';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
+import {
+  idpReceiveAccessorEncryptCallbackTest,
+  verifyResponseSignature,
+} from '../_fragments/request_flow_fragments/idp';
 
 describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as 1st IdP', function() {
   const namespace = 'citizen_id';
@@ -168,8 +174,12 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     const createIdentityRequestResultPromise = createEventPromise(); // idp2
     const createIdentityResultPromise = createEventPromise(); // idp2
 
+    const mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
+    const mqSendSuccessIdp1ToIdp2CallbackPromise = createEventPromise();
+
     let requestId;
     let accessorId;
+    let requestMessagePaddedHash;
     let referenceGroupCode;
     //   let requestMessageHash;
     const createIdentityRequestMessage =
@@ -238,6 +248,23 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
           callbackData.reference_id === referenceId
         ) {
           createIdentityResultPromise.resolve(callbackData);
+        }
+      });
+
+      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === requestId
+        ) {
+          if (callbackData.node_id === 'idp2') {
+            if (callbackData.destination_node_id === 'idp1') {
+              mqSendSuccessIdp2ToIdp1CallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp1') {
+            if (callbackData.destination_node_id === 'idp2') {
+              mqSendSuccessIdp1ToIdp2CallbackPromise.resolve(callbackData);
+            }
+          }
         }
       });
     });
@@ -316,6 +343,16 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
+    it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp2',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1CallbackPromise,
+        destinationNodeId: 'idp1',
+      });
+    });
+
     it('1st IdP should receive create identity request', async function() {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
@@ -368,22 +405,23 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     });
 
     it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+      this.timeout(10000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idpReferenceId,
-        request_id: requestId,
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp1',
+        accessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idpReferenceId,
+        incomingRequestPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
@@ -394,6 +432,33 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         reference_id: idpReferenceId,
         request_id: requestId,
         success: true,
+      });
+    });
+
+    it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdp1ToIdp2CallbackPromise,
+        destinationNodeId: 'idp2',
+      });
+    });
+
+    it('Should verify IdP response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp1',
+        requestId,
+        requestMessagePaddedHash,
+        accessorPrivateKey,
       });
     });
 

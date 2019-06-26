@@ -13,21 +13,23 @@ import {
   hash,
 } from '../../../utils';
 import * as config from '../../../config';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 
 describe('Create identity request (mode 3) with duplicate reference id test', function() {
   const createIdentityRequestMessage =
-        'Create identity consent request custom message ข้อความสำหรับขอสร้าง identity บนระบบ';
+    'Create identity consent request custom message ข้อความสำหรับขอสร้าง identity บนระบบ';
   const namespace = 'citizen_id';
   const identifier = uuidv4();
 
   //Keypair for 1st IdP
   const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
+  //const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
   const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
 
   //Keypair for 2nd IdP
   const keypair2 = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey2 = forge.pki.privateKeyToPem(keypair2.privateKey);
+  //const accessorPrivateKey2 = forge.pki.privateKeyToPem(keypair2.privateKey);
   const accessorPublicKey2 = forge.pki.publicKeyToPem(keypair2.publicKey);
 
   const referenceId = generateReferenceId();
@@ -44,6 +46,9 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
   const IdP2createIdentityResultPromise = createEventPromise(); //2nd IDP
   const createIdentityRequestResultAftercloseRequestPromise = createEventPromise();
   const incomingRequestAftercloseRequestPromise = createEventPromise();
+
+  const mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
+  const mqSendSuccessIdp2ToIdp1AfterCloseCallbackPromise = createEventPromise();
 
   //1st IdP
   let requestId;
@@ -129,6 +134,31 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
         accessorSignPromise2.resolve(callbackData);
       }
     });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId2ndIdP
+      ) {
+        if (callbackData.node_id === 'idp2') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessIdp2ToIdp1CallbackPromise.resolve(callbackData);
+          }
+        }
+      }
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestIdAfterCloseRequest
+      ) {
+        if (callbackData.node_id === 'idp2') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessIdp2ToIdp1AfterCloseCallbackPromise.resolve(
+              callbackData
+            );
+          }
+        }
+      }
+    });
   });
 
   it('1st IdP should create identity request (mode 3) successfully', async function() {
@@ -150,27 +180,9 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
-    // expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
 
-    // requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
-
-    // const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
-    // expect(createIdentityRequestResult).to.deep.include({
-    //   reference_id: referenceId,
-    //   request_id: requestId,
-    //   exist: false,
-    //   accessor_id: accessorId,
-    //   success: true,
-    // });
-    // expect(createIdentityRequestResult.creation_block_height).to.be.a('string');
-    // const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-    //   ':'
-    // );
-    // expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    // expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    // expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('1st IdP Identity should be created successfully', async function() {
@@ -196,20 +208,6 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
     expect(idpNode.mode_list)
       .to.be.an('array')
       .that.include(2, 3);
-
-    // db.idp1Identities.push({
-    //   referenceGroupCode,
-    //   mode: 3,
-    //   namespace,
-    //   identifier,
-    //   accessors: [
-    //     {
-    //       accessorId,
-    //       accessorPrivateKey,
-    //       accessorPublicKey,
-    //     },
-    //   ],
-    // });
   });
 
   it('2nd IdP should create identity request successfully', async function() {
@@ -228,7 +226,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       //accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
-      request_message:createIdentityRequestMessage
+      request_message: createIdentityRequestMessage,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -248,6 +246,16 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
     });
   });
 
+  it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp2',
+      requestId: requestId2ndIdP,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1CallbackPromise,
+      destinationNodeId: 'idp1',
+    });
+  });
+
   it('2nd IdP should create identity request with duplicate reference id unsuccessfully', async function() {
     this.timeout(20000);
     const response = await identityApi.createIdentity('idp2', {
@@ -259,7 +267,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       //accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
-      request_message:createIdentityRequestMessage
+      request_message: createIdentityRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -282,7 +290,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       //accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
-      request_message:createIdentityRequestMessage
+      request_message: createIdentityRequestMessage,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
@@ -335,7 +343,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       //accessor_id: accessorId,
       ial: 2.3,
       mode: 3,
-      request_message:createIdentityRequestMessage
+      request_message: createIdentityRequestMessage,
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
@@ -352,6 +360,16 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       exist: true,
       accessor_id: accessorIdAfterCloseRequest,
       success: true,
+    });
+  });
+
+  it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp2',
+      requestId: requestIdAfterCloseRequest,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1AfterCloseCallbackPromise,
+      destinationNodeId: 'idp1',
     });
   });
 

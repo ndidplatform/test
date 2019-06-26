@@ -446,7 +446,7 @@ describe('Create identity errors', function() {
 
   it('IdP should get an error when input sid already onboard in this idp in identity_list', async function() {
     this.timeout(10000);
-
+    //if need to add new sid to existing ref group code should use addIdentity instead of createIdentity
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
