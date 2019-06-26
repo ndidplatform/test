@@ -22,6 +22,12 @@ import {
 } from '../../../utils';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
+import {
+  idpReceiveAccessorEncryptCallbackTest,
+  verifyResponseSignature,
+} from '../_fragments/request_flow_fragments/idp';
 
 describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', function() {
   const upgradeIdentityModeRequestMessage =
@@ -43,7 +49,10 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
   const upgradeIdentityModeResultPromise = createEventPromise();
   const upgradeIdentityModeRequestResultPromise = createEventPromise();
 
+  const mqSendSuccessIdp1ToIdp1CallbackPromise = createEventPromise();
+
   let accessorId;
+  let requestMessagePaddedHash;
   let referenceGroupCode;
 
   let requestId;
@@ -82,6 +91,19 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
       if (callbackData.request_id === requestId) {
         accessorEncryptPromise.resolve(callbackData);
+      }
+    });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId
+      ) {
+        if (callbackData.node_id === 'idp1') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessIdp1ToIdp1CallbackPromise.resolve(callbackData);
+          }
+        }
       }
     });
   });
@@ -233,6 +255,16 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('IdP (idp1) should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp1ToIdp1CallbackPromise,
+      destinationNodeId: 'idp1',
+    });
+  });
+
   it('1st IdP should receive upgrade identity request', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
@@ -286,20 +318,22 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
   it('IdP should receive accessor encrypt callback with correct data', async function() {
     this.timeout(15000);
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+    let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idpResponseReferenceId,
-      request_id: requestId,
+    let testResult = await idpReceiveAccessorEncryptCallbackTest({
+      callIdpApiAtNodeId: 'idp1',
+      accessorEncryptPromise,
+      accessorId: responseAccessorId,
+      requestId,
+      idpReferenceId: idpResponseReferenceId,
+      incomingRequestPromise,
+      accessorPublicKey,
     });
-
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
@@ -310,6 +344,23 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       reference_id: idpResponseReferenceId,
       request_id: requestId,
       success: true,
+    });
+  });
+
+  it('Should verify IdP response signature successfully', async function() {
+    this.timeout(15000);
+
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+    let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+    await verifyResponseSignature({
+      callApiAtNodeId: 'idp1',
+      requestId,
+      requestMessagePaddedHash,
+      accessorPrivateKey,
     });
   });
 
@@ -341,6 +392,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 
   describe('Create request with upgraded identity at idp1 (1 IdP, 1 AS, mode 3)', function() {
@@ -371,6 +423,11 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     const as_requestStatusCompletedPromise = createEventPromise();
     const as_requestClosedPromise = createEventPromise();
 
+    const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+    const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+    const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
+    const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
+
     let createRequestParams;
     const data = JSON.stringify({
       test: 'test',
@@ -382,6 +439,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     let requestMessageSalt;
     let requestMessageHash;
     let responseAccessorId;
+    let requestMessagePaddedHash;
 
     const requestStatusUpdates = [];
     const idp_requestStatusUpdates = [];
@@ -514,6 +572,29 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
           }
         }
       });
+
+      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === requestId
+        ) {
+          if (callbackData.node_id === 'rp1') {
+            if (callbackData.destination_node_id === 'idp1') {
+              mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'as1') {
+              mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'as1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+            }
+          }
+        }
+      });
     });
 
     it('RP should create a request successfully', async function() {
@@ -569,6 +650,16 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To idp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+        destinationNodeId: 'idp1',
+      });
     });
 
     it('IdP should receive incoming request callback', async function() {
@@ -639,21 +730,22 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
     it('IdP should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idpReferenceId,
-        request_id: requestId,
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp1',
+        accessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idpReferenceId,
+        incomingRequestPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
@@ -664,6 +756,32 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         reference_id: idpReferenceId,
         request_id: requestId,
         success: true,
+      });
+    });
+
+    it('IdP (idp1) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+        destinationNodeId: 'rp1',
+      });
+    });
+
+    it('Should verify IdP response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp1',
+        requestId,
+        requestMessagePaddedHash,
+        accessorPrivateKey,
       });
     });
 
@@ -704,6 +822,16 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To as1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+        destinationNodeId: 'as1',
+      });
     });
 
     it('AS should receive data request', async function() {
@@ -753,6 +881,16 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         type: 'send_data_result',
         reference_id: asReferenceId,
         success: true,
+      });
+    });
+
+    it('AS (as1) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'as1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+        destinationNodeId: 'rp1',
       });
     });
 
@@ -1234,6 +1372,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       as1EventEmitter.removeAllListeners('callback');
+      nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
 });
@@ -1262,7 +1401,11 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
   const notificationCreateIdentityPromise = createEventPromise();
   const notificationUpgradeIdentityModePromise = createEventPromise();
 
+  const mqSendSuccessIdp1ToIdp2CallbackPromise = createEventPromise();
+  const mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
+
   let accessorId;
+  let requestMessagePaddedHash;
   let referenceGroupCode;
 
   let requestId;
@@ -1332,6 +1475,23 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         callbackData.action === 'upgrade_identity_mode'
       ) {
         notificationUpgradeIdentityModePromise.resolve(callbackData);
+      }
+    });
+
+    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      if (
+        callbackData.type === 'message_queue_send_success' &&
+        callbackData.request_id === requestId
+      ) {
+        if (callbackData.node_id === 'idp1') {
+          if (callbackData.destination_node_id === 'idp2') {
+            mqSendSuccessIdp1ToIdp2CallbackPromise.resolve(callbackData);
+          }
+        } else if (callbackData.node_id === 'idp2') {
+          if (callbackData.destination_node_id === 'idp1') {
+            mqSendSuccessIdp2ToIdp1CallbackPromise.resolve(callbackData);
+          }
+        }
       }
     });
   });
@@ -1645,6 +1805,16 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp1',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp1ToIdp2CallbackPromise,
+      destinationNodeId: 'idp2',
+    });
+  });
+
   it('idp2 should receive upgrade identity request', async function() {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
@@ -1696,20 +1866,22 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
 
   it('IdP should receive accessor encrypt callback with correct data', async function() {
     this.timeout(15000);
+    const identity = db.idp2Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+    let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp2',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idpResponseReferenceId,
-      request_id: requestId,
+    let testResult = await idpReceiveAccessorEncryptCallbackTest({
+      callIdpApiAtNodeId: 'idp2',
+      accessorEncryptPromise,
+      accessorId: responseAccessorId,
+      requestId,
+      idpReferenceId: idpResponseReferenceId,
+      incomingRequestPromise,
+      accessorPublicKey,
     });
-
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
@@ -1720,6 +1892,32 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       reference_id: idpResponseReferenceId,
       request_id: requestId,
       success: true,
+    });
+  });
+
+  it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+    this.timeout(15000);
+    await receiveMessagequeueSendSuccessCallback({
+      nodeId: 'idp2',
+      requestId,
+      mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1CallbackPromise,
+      destinationNodeId: 'idp1',
+    });
+  });
+
+  it('Should verify IdP response signature successfully', async function() {
+    this.timeout(15000);
+    const identity = db.idp2Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+    let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+    await verifyResponseSignature({
+      callApiAtNodeId: 'idp2',
+      requestId,
+      requestMessagePaddedHash,
+      accessorPrivateKey,
     });
   });
 
@@ -1765,6 +1963,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     idp1EventEmitter.removeAllListeners('callback');
     idp2EventEmitter.removeAllListeners('callback');
     idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 
   describe('Create request with upgraded identity at idp1 (1 IdP, 1 AS, mode 3)', function() {
@@ -1796,6 +1995,12 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     const as_requestStatusCompletedPromise = createEventPromise();
     const as_requestClosedPromise = createEventPromise();
 
+    const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+    const mqSendSuccessRpToIdp2CallbackPromise = createEventPromise();
+    const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+    const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
+    const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
+
     let createRequestParams;
     const data = JSON.stringify({
       test: 'test',
@@ -1807,6 +2012,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     let requestMessageSalt;
     let requestMessageHash;
     let responseAccessorId;
+    let requestMessagePaddedHash;
 
     const requestStatusUpdates = [];
     const idp_requestStatusUpdates = [];
@@ -1948,6 +2154,31 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
           }
         }
       });
+
+      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === requestId
+        ) {
+          if (callbackData.node_id === 'rp1') {
+            if (callbackData.destination_node_id === 'idp1') {
+              mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'idp2') {
+              mqSendSuccessRpToIdp2CallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'as1') {
+              mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'as1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+            }
+          }
+        }
+      });
     });
 
     it('RP should create a request successfully', async function() {
@@ -2003,6 +2234,26 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To idp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+        destinationNodeId: 'idp1',
+      });
+    });
+
+    it('RP should receive message queue send success (To idp2) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdp2CallbackPromise,
+        destinationNodeId: 'idp2',
+      });
     });
 
     it('idp1 should receive incoming request callback', async function() {
@@ -2118,21 +2369,23 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
 
     it('IdP should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idpReferenceId,
-        request_id: requestId,
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp1',
+        accessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idpReferenceId,
+        incomingRequestPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
@@ -2143,6 +2396,33 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         reference_id: idpReferenceId,
         request_id: requestId,
         success: true,
+      });
+    });
+
+    it('IdP (idp1) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+        destinationNodeId: 'rp1',
+      });
+    });
+
+    it('Should verify IdP response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp1',
+        requestId,
+        requestMessagePaddedHash,
+        accessorPrivateKey,
       });
     });
 
@@ -2183,6 +2463,16 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To as1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+        destinationNodeId: 'as1',
+      });
     });
 
     it('AS should receive data request', async function() {
@@ -2232,6 +2522,16 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         type: 'send_data_result',
         reference_id: asReferenceId,
         success: true,
+      });
+    });
+
+    it('AS (as1) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'as1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+        destinationNodeId: 'rp1',
       });
     });
 
@@ -2719,6 +3019,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
+      nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
 });
