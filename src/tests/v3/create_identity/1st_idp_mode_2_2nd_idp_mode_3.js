@@ -572,6 +572,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('identity_notification_callback');
+      nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
   after(function() {

@@ -420,6 +420,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
     idp1EventEmitter.removeAllListeners('accessor_sign_callback');
     idp2EventEmitter.removeAllListeners('callback');
     idp2EventEmitter.removeAllListeners('accessor_sign_callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
     await wait(3000);
   });
 });

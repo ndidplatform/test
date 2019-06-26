@@ -414,6 +414,7 @@ describe('2nd IdP close identity request (mode 3) test', function() {
     idp1EventEmitter.removeAllListeners('accessor_sign_callback');
     idp2EventEmitter.removeAllListeners('callback');
     idp2EventEmitter.removeAllListeners('accessor_sign_callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 });
 
@@ -764,5 +765,6 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     idp2EventEmitter.removeAllListeners('callback');
+    nodeCallbackEventEmitter.removeAllListeners('callback');
   });
 });
