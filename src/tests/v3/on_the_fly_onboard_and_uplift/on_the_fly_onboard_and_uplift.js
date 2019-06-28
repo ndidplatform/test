@@ -21,6 +21,12 @@ import {
 import * as config from '../../../config';
 import { idp2Available } from '../..';
 import * as db from '../../../db';
+import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
+import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
+import {
+  idpReceiveAccessorEncryptCallbackTest,
+  verifyResponseSignature,
+} from '../_fragments/request_flow_fragments/idp';
 
 describe('On the fly onboard and uplift tests', function() {
   let namespace = 'citizen_id';
@@ -67,10 +73,17 @@ describe('On the fly onboard and uplift tests', function() {
     const idp1ResponseRequestReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
 
+    const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+    const mqSendSuccessRpToIdp2CallbackPromise = createEventPromise();
+    const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+    const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
+    const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
+
     let createRequestParams;
     let requestId;
     let lastStatusUpdateBlockHeight;
     let accessorId;
+    let requestMessagePaddedHash;
     let responseAccessorId;
 
     const data = JSON.stringify({
@@ -219,6 +232,32 @@ describe('On the fly onboard and uplift tests', function() {
           }
         }
       });
+
+      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === requestId
+        ) {
+          if (callbackData.node_id === 'rp1') {
+            if (callbackData.destination_node_id === 'idp1') {
+              mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+            }
+            if (callbackData.destination_node_id === 'idp2') {
+              mqSendSuccessRpToIdp2CallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'as1') {
+              mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'as1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+            }
+          }
+        }
+      });
     });
 
     it('RP create request bypass_identity_check = true to idp does not onboard successfully', async function() {
@@ -277,6 +316,29 @@ describe('On the fly onboard and uplift tests', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
+    it('RP should receive message queue send success (To idp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+        destinationNodeId: 'idp1',
+      });
+    });
+
+    it('RP should receive message queue send success (To idp2) callback', async function() {
+      this.timeout(15000);
+      if (!idp2Available) {
+        this.skip();
+      }
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdp2CallbackPromise,
+        destinationNodeId: 'idp2',
+      });
+    });
+
     it('idp1 should receive incoming request callback', async function() {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
@@ -322,7 +384,9 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('idp2 should receive incoming request callback', async function() {
       this.timeout(15000);
-      if (!idp2Available) this.skip();
+      if (!idp2Available) {
+        this.skip();
+      }
       const incomingRequest = await idp2IncomingRequestPromise.promise;
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
         dataRequest => {
@@ -366,7 +430,7 @@ describe('On the fly onboard and uplift tests', function() {
     });
 
     it('idp1 and idp2 should create response (accept) unsuccessfully', async function() {
-      this.timeout(15000);
+      this.timeout(30000);
       if (db.idp1Identities[0] == null) this.skip();
       responseAccessorId = db.idp1Identities[0].accessors[0].accessorId;
 
@@ -382,6 +446,24 @@ describe('On the fly onboard and uplift tests', function() {
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20020);
+
+      if (idp2Available && !db.idp2Identities[0] == null) {
+        let responseAccessorIdIdp2 =
+          db.idp2Identities[0].accessors[0].accessorId;
+
+        const response = await idpApi.createResponse('idp2', {
+          reference_id: idp1CreateIdentityReferenceId,
+          callback_url: config.IDP2_CALLBACK_URL,
+          request_id: requestId,
+          ial: 2.3,
+          aal: 3,
+          status: 'accept',
+          accessor_id: responseAccessorIdIdp2,
+        });
+        expect(response.status).to.equal(400);
+        const responseBody = await response.json();
+        expect(responseBody.error.code).to.equal(20020);
+      }
     });
 
     it('idp1 should create identity request (mode 2) successfully', async function() {
@@ -472,21 +554,23 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('IdP should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ResponseRequestReferenceId,
-        request_id: requestId,
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp1',
+        accessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idp1ResponseRequestReferenceId,
+        incomingRequestPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
@@ -497,6 +581,33 @@ describe('On the fly onboard and uplift tests', function() {
         reference_id: idp1ResponseRequestReferenceId,
         request_id: requestId,
         success: true,
+      });
+    });
+
+    it('IdP (idp1) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+        destinationNodeId: 'rp1',
+      });
+    });
+
+    it('Should verify IdP response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp1',
+        requestId,
+        requestMessagePaddedHash,
+        accessorPrivateKey,
       });
     });
 
@@ -537,6 +648,16 @@ describe('On the fly onboard and uplift tests', function() {
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To as1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+        destinationNodeId: 'as1',
+      });
     });
 
     it('AS should receive data request', async function() {
@@ -586,6 +707,16 @@ describe('On the fly onboard and uplift tests', function() {
         type: 'send_data_result',
         reference_id: asReferenceId,
         success: true,
+      });
+    });
+
+    it('AS should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'as1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+        destinationNodeId: 'rp1',
       });
     });
 
@@ -1064,6 +1195,7 @@ describe('On the fly onboard and uplift tests', function() {
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
+      nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
 
@@ -1097,10 +1229,16 @@ describe('On the fly onboard and uplift tests', function() {
     const asReferenceId = generateReferenceId();
     const updateIalReferenceId = generateReferenceId();
 
+    const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+    const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+    const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
+    const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
+
     let createRequestParams;
     let requestId;
     let lastStatusUpdateBlockHeight;
     let responseAccessorId;
+    let requestMessagePaddedHash;
 
     const data = JSON.stringify({
       test: 'test',
@@ -1244,6 +1382,29 @@ describe('On the fly onboard and uplift tests', function() {
           }
         }
       });
+
+      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === requestId
+        ) {
+          if (callbackData.node_id === 'rp1') {
+            if (callbackData.destination_node_id === 'idp1') {
+              mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'as1') {
+              mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'as1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+            }
+          }
+        }
+      });
     });
 
     it('RP create request bypass_identity_check = true min_ial = 3 to onboarded idp (ial = 2.3) successfully', async function() {
@@ -1300,6 +1461,16 @@ describe('On the fly onboard and uplift tests', function() {
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To idp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+        destinationNodeId: 'idp1',
+      });
     });
 
     it('idp1 should receive incoming request callback', async function() {
@@ -1411,21 +1582,22 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('IdP should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ResponseRequestReferenceId,
-        request_id: requestId,
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp1',
+        accessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idp1ResponseRequestReferenceId,
+        incomingRequestPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
@@ -1436,6 +1608,32 @@ describe('On the fly onboard and uplift tests', function() {
         reference_id: idp1ResponseRequestReferenceId,
         request_id: requestId,
         success: true,
+      });
+    });
+
+    it('IdP (idp1) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+        destinationNodeId: 'rp1',
+      });
+    });
+
+    it('Should verify IdP response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp1',
+        requestId,
+        requestMessagePaddedHash,
+        accessorPrivateKey,
       });
     });
 
@@ -1476,6 +1674,16 @@ describe('On the fly onboard and uplift tests', function() {
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To as1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+        destinationNodeId: 'as1',
+      });
     });
 
     it('AS should receive data request', async function() {
@@ -1525,6 +1733,16 @@ describe('On the fly onboard and uplift tests', function() {
         type: 'send_data_result',
         reference_id: asReferenceId,
         success: true,
+      });
+    });
+
+    it('AS should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'as1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+        destinationNodeId: 'rp1',
       });
     });
 
@@ -2011,6 +2229,7 @@ describe('On the fly onboard and uplift tests', function() {
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       rpEventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
+      nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
 
@@ -2045,17 +2264,29 @@ describe('On the fly onboard and uplift tests', function() {
     const as_requestStatusCompletedPromise = createEventPromise();
     const as_requestClosedPromise = createEventPromise();
 
+    const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+    const mqSendSuccessRpToIdp2CallbackPromise = createEventPromise();
+    const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+    const mqSendSuccessIdp2ToRpCallbackPromise = createEventPromise();
+    const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
+
+    const mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
+    const mqSendSuccessIdp1ToIdp2CallbackPromise = createEventPromise();
+
     const rpReferenceId = generateReferenceId();
     const idp2CreateIdentityReferenceId = generateReferenceId();
     const idp2ResponseRequestReferenceId = generateReferenceId();
     const idp1ResponseCreateIdentityReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
+
     let createRequestParams;
     let requestId;
     let lastStatusUpdateBlockHeight;
     let accessorId;
     let responseAccessorId;
     let createIdentityRequestId;
+    let requestMessagePaddedHash;
+    let requestMessagePaddedHashCreateIdentity;
 
     const data = JSON.stringify({
       test: 'test',
@@ -2222,6 +2453,47 @@ describe('On the fly onboard and uplift tests', function() {
           }
         }
       });
+
+      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === requestId
+        ) {
+          if (callbackData.node_id === 'rp1') {
+            if (callbackData.destination_node_id === 'idp1') {
+              mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+            }
+            if (callbackData.destination_node_id === 'idp2') {
+              mqSendSuccessRpToIdp2CallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'as1') {
+              mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp2') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessIdp2ToRpCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'as1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+            }
+          }
+        }
+
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === createIdentityRequestId
+        ) {
+          if (callbackData.node_id === 'idp2') {
+            if (callbackData.destination_node_id === 'idp1') {
+              mqSendSuccessIdp2ToIdp1CallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp1') {
+            if (callbackData.destination_node_id === 'idp2') {
+              mqSendSuccessIdp1ToIdp2CallbackPromise.resolve(callbackData);
+            }
+          }
+        }
+      });
     });
 
     it('RP create request bypass_identity_check = true to idp is not onboard successfully', async function() {
@@ -2280,6 +2552,29 @@ describe('On the fly onboard and uplift tests', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
+    it('RP should receive message queue send success (To idp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+        destinationNodeId: 'idp1',
+      });
+    });
+
+    it('RP should receive message queue send success (To idp2) callback', async function() {
+      this.timeout(15000);
+      if (!idp2Available) {
+        this.skip();
+      }
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdp2CallbackPromise,
+        destinationNodeId: 'idp2',
+      });
+    });
+
     it('idp1 (already onboard) should receive incoming request callback with reference_group_code', async function() {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
@@ -2326,7 +2621,9 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('idp2 (does not onboard) should receive incoming request callback with namespace,identifier', async function() {
       this.timeout(15000);
-      if (!idp2Available) this.skip();
+      if (!idp2Available) {
+        this.skip();
+      }
       const incomingRequest = await idp2IncomingRequestPromise.promise;
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
         dataRequest => {
@@ -2371,7 +2668,7 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('idp2 (does not onboard) should create response (accept) unsuccessfully', async function() {
       this.timeout(15000);
-      if (db.idp2Identities[0] == null) this.skip();
+      if (!idp2Available || db.idp2Identities[0] == null) this.skip();
       responseAccessorId = db.idp2Identities[0].accessors[0].accessorId;
 
       const response = await idpApi.createResponse('idp2', {
@@ -2414,6 +2711,16 @@ describe('On the fly onboard and uplift tests', function() {
 
       createIdentityRequestId = responseBody.request_id;
       accessorId = responseBody.accessor_id;
+    });
+
+    it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp2',
+        requestId: createIdentityRequestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToIdp1CallbackPromise,
+        destinationNodeId: 'idp1',
+      });
     });
 
     it('idp1 should receive create identity request', async function() {
@@ -2473,21 +2780,23 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('IdP should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ResponseCreateIdentityReferenceId,
-        request_id: createIdentityRequestId,
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp1',
+        accessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId: createIdentityRequestId,
+        idpReferenceId: idp1ResponseCreateIdentityReferenceId,
+        incomingRequestPromise: incomingRequestCreateIdentityPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHashCreateIdentity =
+        testResult.verifyRequestMessagePaddedHash;
     });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
@@ -2498,6 +2807,32 @@ describe('On the fly onboard and uplift tests', function() {
         reference_id: idp1ResponseCreateIdentityReferenceId,
         request_id: createIdentityRequestId,
         success: true,
+      });
+    });
+
+    it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp1',
+        requestId: createIdentityRequestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdp1ToIdp2CallbackPromise,
+        destinationNodeId: 'idp2',
+      });
+    });
+
+    it('Should verify IdP response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp1',
+        requestId: createIdentityRequestId,
+        requestMessagePaddedHash: requestMessagePaddedHashCreateIdentity,
+        accessorPrivateKey,
       });
     });
 
@@ -2566,21 +2901,23 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('IdP should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
+      const identity = db.idp2Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
 
-      const accessorEncryptParams = await idp2AccessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp2',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp2ResponseRequestReferenceId,
-        request_id: requestId,
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp2',
+        accessorEncryptPromise: idp2AccessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idp2ResponseRequestReferenceId,
+        incomingRequestPromise: idp2IncomingRequestPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
@@ -2591,6 +2928,32 @@ describe('On the fly onboard and uplift tests', function() {
         reference_id: idp2ResponseRequestReferenceId,
         request_id: requestId,
         success: true,
+      });
+    });
+
+    it('IdP (idp2) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp2',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToRpCallbackPromise,
+        destinationNodeId: 'rp1',
+      });
+    });
+
+    it('Should verify IdP response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp2Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp2',
+        requestId,
+        requestMessagePaddedHash,
+        accessorPrivateKey,
       });
     });
 
@@ -2631,6 +2994,16 @@ describe('On the fly onboard and uplift tests', function() {
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To as1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+        destinationNodeId: 'as1',
+      });
     });
 
     it('AS should receive data request', async function() {
@@ -2680,6 +3053,16 @@ describe('On the fly onboard and uplift tests', function() {
         type: 'send_data_result',
         reference_id: asReferenceId,
         success: true,
+      });
+    });
+
+    it('AS (as1) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'as1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+        destinationNodeId: 'rp1',
       });
     });
 
@@ -3159,6 +3542,7 @@ describe('On the fly onboard and uplift tests', function() {
       idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
+      nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
 
@@ -3189,6 +3573,13 @@ describe('On the fly onboard and uplift tests', function() {
     const as_requestStatusCompletedPromise = createEventPromise();
     const as_requestClosedPromise = createEventPromise();
 
+    const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+    const mqSendSuccessRpToIdp2CallbackPromise = createEventPromise();
+    const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+    const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
+    const mqSendSuccessIdp2ToRpCallbackPromise = createEventPromise();
+    const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
+
     const rpReferenceId = generateReferenceId();
     const idp1CreateIdentityReferenceId = generateReferenceId();
     const idp1ResponseRequestReferenceId = generateReferenceId();
@@ -3200,6 +3591,8 @@ describe('On the fly onboard and uplift tests', function() {
     let lastStatusUpdateBlockHeight;
     let accessorId;
     let responseAccessorId;
+    let requestMessagePaddedHashIdp1;
+    let requestMessagePaddedHashIdp2;
 
     const data = JSON.stringify({
       test: 'test',
@@ -3212,6 +3605,11 @@ describe('On the fly onboard and uplift tests', function() {
     const as_requestStatusUpdates = [];
 
     before(function() {
+      if (!idp2Available) {
+        this.test.parent.pending = true;
+        this.skip();
+      }
+
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -3360,9 +3758,38 @@ describe('On the fly onboard and uplift tests', function() {
           }
         }
       });
+
+      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === requestId
+        ) {
+          if (callbackData.node_id === 'rp1') {
+            if (callbackData.destination_node_id === 'idp1') {
+              mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'idp2') {
+              mqSendSuccessRpToIdp2CallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'as1') {
+              mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp2') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessIdp2ToRpCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'as1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+            }
+          }
+        }
+      });
     });
 
-    it('RP create request bypass_identity_check = true to idp does not onboard successfully', async function() {
+    it('RP create request bypass_identity_check = true successfully', async function() {
       this.timeout(10000);
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -3418,6 +3845,29 @@ describe('On the fly onboard and uplift tests', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
+    it('RP should receive message queue send success (To idp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+        destinationNodeId: 'idp1',
+      });
+    });
+
+    it('RP should receive message queue send success (To idp2) callback', async function() {
+      this.timeout(15000);
+      if (!idp2Available) {
+        this.skip();
+      }
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdp2CallbackPromise,
+        destinationNodeId: 'idp2',
+      });
+    });
+
     it('idp1 should receive incoming request callback', async function() {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
@@ -3463,7 +3913,9 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('idp2 should receive incoming request callback', async function() {
       this.timeout(15000);
-      if (!idp2Available) this.skip();
+      if (!idp2Available) {
+        this.skip();
+      }
       const incomingRequest = await idp2IncomingRequestPromise.promise;
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
         dataRequest => {
@@ -3528,21 +3980,23 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('IdP should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ResponseRequestReferenceId,
-        request_id: requestId,
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp1',
+        accessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idp1ResponseRequestReferenceId,
+        incomingRequestPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHashIdp1 = testResult.verifyRequestMessagePaddedHash;
     });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
@@ -3558,6 +4012,9 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('idp2 should create response (accept) successfully', async function() {
       this.timeout(15000);
+      if (!idp2Available) {
+        this.skip();
+      }
       const identity = db.idp2Identities.find(
         identity =>
           identity.namespace === namespace && identity.identifier === identifier
@@ -3579,30 +4036,88 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('IdP should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
-      const accessorEncryptParams = await idp2AccessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp2',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp2ResponseRequestReferenceId,
-        request_id: requestId,
-      });
+      const identity = db.idp2Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp2',
+        accessorEncryptPromise: idp2AccessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idp2ResponseRequestReferenceId,
+        incomingRequestPromise: idp2IncomingRequestPromise,
+        accessorPublicKey,
+      });
+      requestMessagePaddedHashIdp2 = testResult.verifyRequestMessagePaddedHash;
     });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await idp2ResponseResultPromise.promise;
+      if (!idp2Available) {
+        this.skip();
+      }
       expect(responseResult).to.deep.include({
         node_id: 'idp2',
         type: 'response_result',
         reference_id: idp2ResponseRequestReferenceId,
         request_id: requestId,
         success: true,
+      });
+    });
+
+    it('IdP (idp1) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+        destinationNodeId: 'rp1',
+      });
+    });
+
+    it('IdP (idp2) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp2',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdp2ToRpCallbackPromise,
+        destinationNodeId: 'rp1',
+      });
+    });
+
+    it('Should verify IdP (idp1) response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp1',
+        requestId,
+        requestMessagePaddedHash: requestMessagePaddedHashIdp1,
+        accessorPrivateKey,
+      });
+    });
+
+    it('Should verify IdP response (idp2) signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp2Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp2',
+        requestId,
+        requestMessagePaddedHash: requestMessagePaddedHashIdp2,
+        accessorPrivateKey,
       });
     });
 
@@ -3689,6 +4204,16 @@ describe('On the fly onboard and uplift tests', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
+    it('RP should receive message queue send success (To as1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+        destinationNodeId: 'as1',
+      });
+    });
+
     it('AS should receive data request', async function() {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
@@ -3736,6 +4261,16 @@ describe('On the fly onboard and uplift tests', function() {
         type: 'send_data_result',
         reference_id: asReferenceId,
         success: true,
+      });
+    });
+
+    it('AS should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'as1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+        destinationNodeId: 'rp1',
       });
     });
 
@@ -4281,6 +4816,7 @@ describe('On the fly onboard and uplift tests', function() {
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
+      nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
 
@@ -4319,12 +4855,22 @@ describe('On the fly onboard and uplift tests', function() {
     const upgradeIdentityReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
 
+    const mqSendSuccessRpToIdpCallbackPromise = createEventPromise();
+    const mqSendSuccessRpToIdp2CallbackPromise = createEventPromise();
+    const mqSendSuccessIdpToRpCallbackPromise = createEventPromise();
+    const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
+    const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
+
+    const mqSendSuccessUpgradeIdentityIdp1ToIdp2CallbackPromise = createEventPromise();
+
     let createRequestParams;
     let requestId;
     let lastStatusUpdateBlockHeight;
     let accessorId;
     let responseAccessorId;
     let upgradeIdentityModeRequestId;
+    let requestMessagePaddedHashUpgradeIdentity;
+    let requestMessagePaddedHash;
 
     const data = JSON.stringify({
       test: 'test',
@@ -4337,6 +4883,10 @@ describe('On the fly onboard and uplift tests', function() {
     const as_requestStatusUpdates = [];
 
     before(function() {
+      if (!idp2Available) {
+        this.parent.test.pending = true;
+        this.skip();
+      }
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -4493,6 +5043,45 @@ describe('On the fly onboard and uplift tests', function() {
           }
         }
       });
+
+      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === requestId
+        ) {
+          if (callbackData.node_id === 'rp1') {
+            if (callbackData.destination_node_id === 'idp1') {
+              mqSendSuccessRpToIdpCallbackPromise.resolve(callbackData);
+            }
+            if (callbackData.destination_node_id === 'idp2') {
+              mqSendSuccessRpToIdp2CallbackPromise.resolve(callbackData);
+            } else if (callbackData.destination_node_id === 'as1') {
+              mqSendSuccessRpToAsCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'idp1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
+            }
+          } else if (callbackData.node_id === 'as1') {
+            if (callbackData.destination_node_id === 'rp1') {
+              mqSendSuccessAsToRpCallbackPromise.resolve(callbackData);
+            }
+          }
+        }
+
+        if (
+          callbackData.type === 'message_queue_send_success' &&
+          callbackData.request_id === upgradeIdentityModeRequestId
+        ) {
+          if (callbackData.node_id === 'idp1') {
+            if (callbackData.destination_node_id === 'idp2') {
+              mqSendSuccessUpgradeIdentityIdp1ToIdp2CallbackPromise.resolve(
+                callbackData
+              );
+            }
+          }
+        }
+      });
     });
 
     it('RP create request bypass_identity_check = true to to idp mode 2,3 successfully', async function() {
@@ -4551,6 +5140,29 @@ describe('On the fly onboard and uplift tests', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
+    it('RP should receive message queue send success (To idp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdpCallbackPromise,
+        destinationNodeId: 'idp1',
+      });
+    });
+
+    it('RP should receive message queue send success (To idp2) callback', async function() {
+      this.timeout(15000);
+      if (!idp2Available) {
+        this.skip();
+      }
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToIdp2CallbackPromise,
+        destinationNodeId: 'idp2',
+      });
+    });
+
     it('idp1 should receive incoming request callback', async function() {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
@@ -4596,7 +5208,9 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('idp2 should receive incoming request callback', async function() {
       this.timeout(15000);
-      if (!idp2Available) this.skip();
+      if (!idp2Available) {
+        this.skip();
+      }
       const incomingRequest = await idp2IncomingRequestPromise.promise;
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
         dataRequest => {
@@ -4694,6 +5308,16 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
+    it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp1',
+        requestId: upgradeIdentityModeRequestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessUpgradeIdentityIdp1ToIdp2CallbackPromise,
+        destinationNodeId: 'idp2',
+      });
+    });
+
     it('idp2 should receive upgrade identity request', async function() {
       this.timeout(15000);
       const incomingRequest = await upgradeIdentityModeincomingRequestPromise.promise;
@@ -4745,21 +5369,23 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('idp2 should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
+      const identity = db.idp2Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      const accessorEncryptParams = await idp2UpgradeIdentityModeAccessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp2',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp2ResponseUpgradeIdentityModeReferenceId,
-        request_id: upgradeIdentityModeRequestId,
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp2',
+        accessorEncryptPromise: idp2UpgradeIdentityModeAccessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId: upgradeIdentityModeRequestId,
+        idpReferenceId: idp2ResponseUpgradeIdentityModeReferenceId,
+        incomingRequestPromise: upgradeIdentityModeincomingRequestPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHashUpgradeIdentity =
+        testResult.verifyRequestMessagePaddedHash;
     });
 
     it('idp2 shoud receive callback create response result with success = true', async function() {
@@ -4774,6 +5400,22 @@ describe('On the fly onboard and uplift tests', function() {
       });
 
       await wait(5000);
+    });
+
+    it('Should verify IdP response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp2Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp2',
+        requestId: upgradeIdentityModeRequestId,
+        requestMessagePaddedHash: requestMessagePaddedHashUpgradeIdentity,
+        accessorPrivateKey,
+      });
     });
 
     it('After idp1 upgrade identity mode should create response (accept) successfully', async function() {
@@ -4799,21 +5441,23 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('idp1 should receive accessor encrypt callback with correct data', async function() {
       this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ResponseRequestReferenceId,
-        request_id: requestId,
+      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+
+      let testResult = await idpReceiveAccessorEncryptCallbackTest({
+        callIdpApiAtNodeId: 'idp1',
+        accessorEncryptPromise,
+        accessorId: responseAccessorId,
+        requestId,
+        idpReferenceId: idp1ResponseRequestReferenceId,
+        incomingRequestPromise,
+        accessorPublicKey,
       });
-
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
     it('idp1 shoud receive callback create response result with success = true', async function() {
@@ -4824,6 +5468,32 @@ describe('On the fly onboard and uplift tests', function() {
         reference_id: idp1ResponseRequestReferenceId,
         request_id: requestId,
         success: true,
+      });
+    });
+
+    it('IdP (idp1) should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'idp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessIdpToRpCallbackPromise,
+        destinationNodeId: 'rp1',
+      });
+    });
+
+    it('Should verify IdP response signature successfully', async function() {
+      this.timeout(15000);
+      const identity = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace && identity.identifier === identifier
+      );
+      let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+      await verifyResponseSignature({
+        callApiAtNodeId: 'idp1',
+        requestId,
+        requestMessagePaddedHash,
+        accessorPrivateKey,
       });
     });
 
@@ -4864,6 +5534,16 @@ describe('On the fly onboard and uplift tests', function() {
         lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+    });
+
+    it('RP should receive message queue send success (To as1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'rp1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessRpToAsCallbackPromise,
+        destinationNodeId: 'as1',
+      });
     });
 
     it('AS should receive data request', async function() {
@@ -4913,6 +5593,16 @@ describe('On the fly onboard and uplift tests', function() {
         type: 'send_data_result',
         reference_id: asReferenceId,
         success: true,
+      });
+    });
+
+    it('AS should receive message queue send success (To rp1) callback', async function() {
+      this.timeout(15000);
+      await receiveMessagequeueSendSuccessCallback({
+        nodeId: 'as1',
+        requestId,
+        mqSendSuccessCallbackPromise: mqSendSuccessAsToRpCallbackPromise,
+        destinationNodeId: 'rp1',
       });
     });
 
@@ -5391,6 +6081,7 @@ describe('On the fly onboard and uplift tests', function() {
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
+      nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
 });
