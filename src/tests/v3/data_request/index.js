@@ -36,8 +36,12 @@ describe('Data request flow (Node behind proxy)', function() {
 
   after(async function() {
     this.timeout(15000);
+    if (!proxy1Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
     await idpApi.setCallbacks('proxy1', {
-      incoming_request_status_update_url: '',
+      incoming_request_status_update_url: config.PROXY2_CALLBACK_URL,
     });
   });
 });
