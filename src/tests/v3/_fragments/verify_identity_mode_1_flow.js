@@ -19,7 +19,7 @@ import {
   receiveMessagequeueSendSuccessCallback,
 } from './common';
 
-import { createEventPromise } from '../../../utils';
+import { createEventPromise, getPrivatekey } from '../../../utils';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 
 export function mode1FlowTest({
@@ -306,6 +306,8 @@ export function mode1FlowTest({
     const requestStatusRejectPromise = requestStatusRejectedPromises[i];
     let idpResponseParams = idpParams[i].idpResponseParams;
     const idpNodeId = idpNodeIds[i];
+    const createResponseSignature =
+      idpParams[i].idpResponseParams.createResponseSignature;
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function() {
       this.timeout(15000);
@@ -323,10 +325,25 @@ export function mode1FlowTest({
       idpResponseParams.status
     }) successfully`, async function() {
       this.timeout(10000);
+
       idpResponseParams = {
         ...idpResponseParams,
         request_id: requestId,
       };
+
+      if (createResponseSignature) {
+        let privateKey = getPrivatekey(idpNodeId);
+        let messageToSign = createRequestParams.request_message;
+        let signature = createResponseSignature(
+          privateKey,
+          messageToSign
+        );
+        idpResponseParams = {
+          ...idpResponseParams,
+          signature,
+        };
+      }
+
       await idpCreateResponseTest({
         callApiAtNodeId: callIdpApiAtNodeId,
         idpResponseParams,

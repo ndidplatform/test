@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import uuidv4 from 'uuid/v4';
 import { parseKey } from './asn1parser';
 import bignum from 'bignum';
+import fs from 'fs';
+import path from 'path';
 
 const saltLength = 16;
 
@@ -171,4 +173,16 @@ export function hashRequestMessageForConsent(
   );
 
   return hashWithPadding.toString('base64');
+}
+
+export function getPrivatekey(nodeId) {
+  try {
+    let publicKey = fs.readFileSync(
+      path.join(__dirname, '..', 'dev_key', `${nodeId}`),
+      'utf8'
+    );
+    return publicKey;
+  } catch (error) {
+    throw error;
+  }
 }
