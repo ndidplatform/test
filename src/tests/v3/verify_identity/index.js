@@ -36,7 +36,7 @@ describe('Verify identity flow (no data request) (Node behind proxy)', function(
   after(async function() {
     this.timeout(15000);
     await idpApi.setCallbacks('proxy1', {
-      incoming_request_status_update_url: '',
+      incoming_request_status_update_url: config.PROXY2_CALLBACK_URL,
     });
   });
 });
