@@ -18,12 +18,6 @@ describe('IdP response errors tests', function() {
   let namespace;
   let identifier;
 
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const invalidAccessorPrivateKey = forge.pki.privateKeyToPem(
-    keypair.privateKey
-  );
-  //const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
-
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const updateIalReferenceId = generateReferenceId();
