@@ -13,7 +13,7 @@ export async function idpReceiveMode1IncomingRequestCallbackTest({
   requestId,
   incomingRequestPromise,
   requesterNodeId,
-  initialSalt
+  initialSalt,
 }) {
   const incomingRequest = await incomingRequestPromise.promise;
   let dataRequestListArray = [];
@@ -213,16 +213,7 @@ export async function idpReceiveAccessorEncryptCallbackTest({
   incomingRequestPromise,
   accessorPublicKey,
 }) {
-  let data = {
-    request_id: requestId,
-  };
-
-  if (callIdpApiAtNodeId.includes('proxy')) {
-    data = {
-      ...data,
-      node_id: idpNodeId,
-    };
-  } else {
+  if (!callIdpApiAtNodeId.includes('proxy')) {
     idpNodeId = callIdpApiAtNodeId;
   }
 
@@ -237,26 +228,11 @@ export async function idpReceiveAccessorEncryptCallbackTest({
     request_id: requestId,
   });
 
-  const responsePrivateMessage = await commonApi.getPrivateMessages(
-    callIdpApiAtNodeId,
-    data
-  );
-  const responseBodyPrivateMessage = await responsePrivateMessage.json();
-
-  let inboundPrivateMessage = responseBodyPrivateMessage.find(
-    privateMessage => privateMessage.direction === 'inbound'
-  );
-
-  let initialSalt = inboundPrivateMessage.message.initial_salt;
-  let incomingRequest = await incomingRequestPromise.promise;
-  let requestMessage = incomingRequest.request_message;
-
-  let verifyRequestMessagePaddedHash = hashRequestMessageForConsent(
-    requestMessage,
-    initialSalt,
+  const verifyRequestMessagePaddedHash = await createRequestMessagePaddedHash({
     requestId,
-    accessorPublicKey
-  );
+    incomingRequestPromise,
+    accessorPublicKey,
+  });
 
   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
     .that.is.not.empty;
@@ -296,4 +272,66 @@ export async function verifyResponseSignature({
   );
 
   expect(signature).to.equal(signatureFromBlockchain);
+}
+
+export async function getAndVerifyRequestMessagePaddedHashTest({
+  callApiAtNodeId,
+  idpNodeId,
+  requestId,
+  incomingRequestPromise,
+  accessorPublicKey,
+  accessorId,
+}) {
+  let queryParams = {
+    request_id: requestId,
+    accessor_id: accessorId,
+  };
+
+  if (callApiAtNodeId !== idpNodeId) {
+    queryParams = {
+      ...queryParams,
+      node_id: idpNodeId,
+    };
+  }
+
+  const response = await idpApi.getRequestMessagePaddedHash(
+    callApiAtNodeId,
+    queryParams
+  );
+  const responseBody = await response.json();
+  expect(responseBody.request_message_padded_hash).to.be.a('string').that.is.not
+    .empty;
+
+  const verifyRequestMessagePaddedHash = await createRequestMessagePaddedHash({
+    requestId,
+    incomingRequestPromise,
+    accessorPublicKey,
+  });
+
+  expect(responseBody.request_message_padded_hash).to.equal(
+    verifyRequestMessagePaddedHash
+  );
+
+  return {
+    verifyRequestMessagePaddedHash,
+  };
+}
+
+export async function createRequestMessagePaddedHash({
+  requestId,
+  incomingRequestPromise,
+  accessorPublicKey,
+}) {
+  let incomingRequest = await incomingRequestPromise.promise;
+  let initialSalt = incomingRequest.initial_salt;
+  let requestMessage = incomingRequest.request_message;
+
+  let verifyRequestMessagePaddedHash = hashRequestMessageForConsent(
+    requestMessage,
+    initialSalt,
+    requestId,
+    accessorPublicKey
+  );
+
+  return verifyRequestMessagePaddedHash;
 }
