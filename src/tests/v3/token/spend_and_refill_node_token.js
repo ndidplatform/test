@@ -304,7 +304,6 @@ describe('Spend and refill node token test', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: 'Some signature',
     });
     expect(response.status).to.equal(202);
 
@@ -527,7 +526,6 @@ describe('Spend and refill node token test', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: 'Some signature',
     });
     expect(response.status).to.equal(202);
 
