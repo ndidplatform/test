@@ -168,7 +168,7 @@ export function mode1DataRequestFlowTest({
   let requestId;
   let initialSalt;
   let lastStatusUpdateBlockHeight;
-  let arrayMqSendSuccessRpToIdpCallback = [];
+  // let arrayMqSendSuccessRpToIdpCallback = [];
   const requestStatusUpdates = [];
   const idp_requestStatusUpdates = [];
   let finalRequestStatus;
@@ -341,7 +341,7 @@ export function mode1DataRequestFlowTest({
       ) {
         if (callbackData.node_id.includes('rp')) {
           if (callbackData.destination_node_id.includes('idp')) {
-            arrayMqSendSuccessRpToIdpCallback.push(callbackData);
+            // arrayMqSendSuccessRpToIdpCallback.push(callbackData);
             let idpReceiveRequestPromise = idpsReceiveRequestPromises.find(
               ({ node_id }) => node_id === callbackData.destination_node_id
             );
@@ -405,15 +405,15 @@ export function mode1DataRequestFlowTest({
     initialSalt = testResult.initial_salt;
   });
 
-  // it('RP should verify request_params_hash successfully', async function() {
-  //   this.timeout(15000);
-  //   await verifyRequestParamsHash({
-  //     callApiAtNodeId: callRpApiAtNodeId,
-  //     createRequestParams,
-  //     requestId,
-  //     initialSalt,
-  //   });
-  // });
+  it('RP should verify request_params_hash successfully', async function() {
+    this.timeout(15000);
+    await verifyRequestParamsHash({
+      callApiAtNodeId: callRpApiAtNodeId,
+      createRequestParams,
+      requestId,
+      initialSalt,
+    });
+  });
 
   it('RP should receive pending request status', async function() {
     this.timeout(10000);
@@ -429,14 +429,14 @@ export function mode1DataRequestFlowTest({
 
   it('RP should receive message queue send success (to IdP) callback', async function() {
     this.timeout(15000);
-    if (
-      idpsReceiveRequestPromises.length !=
-      arrayMqSendSuccessRpToIdpCallback.length
-    ) {
-      throw new Error(
-        'idps receive request not equal to MQ send success rp to idp callback'
-      );
-    }
+    // if (
+    //   idpsReceiveRequestPromises.length !=
+    //   arrayMqSendSuccessRpToIdpCallback.length
+    // ) {
+    //   throw new Error(
+    //     'idps receive request not equal to MQ send success rp to idp callback'
+    //   );
+    // }
 
     for (let i = 0; i < idpsReceiveRequestPromises.length; i++) {
       const mqSendSuccessCallbackPromise =
