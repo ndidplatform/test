@@ -10,6 +10,7 @@ import {
   idpReceiveAccessorEncryptCallbackTest,
   verifyResponseSignature,
   idpReceiveCreateResponseResultCallbackTest,
+  getAndVerifyRequestMessagePaddedHashTest,
 } from './request_flow_fragments/idp';
 import {
   asReceiveDataRequestTest,
@@ -46,7 +47,9 @@ export function mode2And3DataRequestFlowTest({
       idpResponseParams.node_id ? idpResponseParams.node_id : callIdpApiAtNodeId
   );
   const asNodeIds = asParams.map(({ callAsApiAtNodeId, asResponseParams }) =>
-    asResponseParams[0].node_id ? asResponseParams[0].node_id : callAsApiAtNodeId
+    asResponseParams[0].node_id
+      ? asResponseParams[0].node_id
+      : callAsApiAtNodeId
   );
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
@@ -209,7 +212,7 @@ export function mode2And3DataRequestFlowTest({
     rpEventEmitter.on('callback', function(callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
-        callbackData.reference_id === createRequestParams.reference_id 
+        callbackData.reference_id === createRequestParams.reference_id
       ) {
         createRequestResultPromise.resolve(callbackData);
       } else if (
@@ -487,6 +490,8 @@ export function mode2And3DataRequestFlowTest({
     let idpResponseParams = idpParams[i].idpResponseParams;
     const getAccessorForResponse = idpParams[i].getAccessorForResponse;
     const idpNodeId = idpNodeIds[i];
+    const createResponseSignature =
+      idpParams[i].idpResponseParams.createResponseSignature;
     let responseAccessorId;
     let accessorPublicKey;
     let accessorPrivateKey;
@@ -499,40 +504,56 @@ export function mode2And3DataRequestFlowTest({
         requestId,
         incomingRequestPromise,
         requesterNodeId: rpNodeId,
-        initialSalt
+        initialSalt,
       });
     });
 
-    // IdP may or may not get this request status callback
-    // it(`IdP (${idpNodeIds[i]}) should receive pending request status`, async function() {
-    //   this.timeout(10000);
-    //   const requestStatus = await idp_requestStatusPendingPromise.promise;
-    //   expect(requestStatus).to.deep.include({
-    //     request_id: requestId,
-    //     status: 'pending',
-    //     mode: createRequestParams.mode,
-    //     min_idp: createRequestParams.min_idp,
-    //     answered_idp_count: 0,
-    //     closed: false,
-    //     timed_out: false,
-    //     service_list: [],
-    //     response_valid_list: [],
-    //   });
-    //   expect(requestStatus).to.have.property('block_height');
-    //   expect(requestStatus.block_height).is.a('string');const splittedBlockHeight = requestStatus.block_height.split(':');expect(splittedBlockHeight).to.have.lengthOf(2);expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-    // });
+    if (createResponseSignature) {
+      it(`IdP (${idpNodeId}) should get request_message_padded_hash successfully`, async function() {
+        let accessor = getAccessorForResponse({
+          namespace: createRequestParams.namespace,
+          identifier: createRequestParams.identifier,
+        });
+
+        responseAccessorId = accessor.accessorId;
+        accessorPublicKey = accessor.accessorPublicKey;
+        accessorPrivateKey = accessor.accessorPrivateKey;
+
+        const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+          callApiAtNodeId: callIdpApiAtNodeId,
+          idpNodeId,
+          requestId,
+          incomingRequestPromise,
+          accessorPublicKey,
+          accessorId: responseAccessorId,
+        });
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+      });
+    }
 
     it(`IdP (${idpNodeId}) should create response (accept) successfully`, async function() {
       this.timeout(10000);
 
-      let accessor = getAccessorForResponse({
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
-      });
+      if (createResponseSignature) {
+        const signature = createResponseSignature(
+          accessorPrivateKey,
+          requestMessagePaddedHash
+        );
 
-      responseAccessorId = accessor.accessorId;
-      accessorPublicKey = accessor.accessorPublicKey;
-      accessorPrivateKey = accessor.accessorPrivateKey;
+        idpResponseParams = {
+          ...idpResponseParams,
+          signature,
+        };
+      } else {
+        let accessor = getAccessorForResponse({
+          namespace: createRequestParams.namespace,
+          identifier: createRequestParams.identifier,
+        });
+
+        responseAccessorId = accessor.accessorId;
+        accessorPublicKey = accessor.accessorPublicKey;
+        accessorPrivateKey = accessor.accessorPrivateKey;
+      }
 
       idpResponseParams = {
         ...idpResponseParams,
@@ -546,20 +567,22 @@ export function mode2And3DataRequestFlowTest({
       });
     });
 
-    it(`IdP (${idpNodeId}) should receive accessor encrypt callback with correct data`, async function() {
-      this.timeout(15000);
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId,
-        idpNodeId,
-        accessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idpResponseParams.reference_id,
-        incomingRequestPromise,
-        accessorPublicKey,
+    if (!createResponseSignature) {
+      it(`IdP (${idpNodeId}) should receive accessor encrypt callback with correct data`, async function() {
+        this.timeout(15000);
+        let testResult = await idpReceiveAccessorEncryptCallbackTest({
+          callIdpApiAtNodeId,
+          idpNodeId,
+          accessorEncryptPromise,
+          accessorId: responseAccessorId,
+          requestId,
+          idpReferenceId: idpResponseParams.reference_id,
+          incomingRequestPromise,
+          accessorPublicKey,
+        });
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
       });
-      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-    });
+    }
 
     it(`IdP (${idpNodeId}) should receive callback create response result with success = true`, async function() {
       await idpReceiveCreateResponseResultCallbackTest({
