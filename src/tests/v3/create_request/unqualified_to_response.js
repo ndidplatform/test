@@ -38,7 +38,7 @@ describe('RP create request errors (unqualified to response)', function() {
         node_id: 'idp3',
         max_ial: 1.1,
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(3000);
     });
 
@@ -101,7 +101,7 @@ describe('RP create request errors (unqualified to response)', function() {
         node_id: 'idp3',
         max_aal: 1,
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(3000);
     });
 

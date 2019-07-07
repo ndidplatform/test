@@ -168,7 +168,7 @@ describe('NDID disable RP node and enable RP node test', function() {
     const response = await ndidApi.disableNode('ndid1', {
       node_id: 'rp1',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -196,7 +196,7 @@ describe('NDID disable RP node and enable RP node test', function() {
     const response = await ndidApi.enableNode('ndid1', {
       node_id: 'rp1',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -607,7 +607,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     const response = await ndidApi.disableNode('ndid1', {
       node_id: 'idp1',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -633,7 +633,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     const response = await ndidApi.enableNode('ndid1', {
       node_id: 'idp1',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -1050,7 +1050,7 @@ describe('NDID disable AS node and enable AS node test', function() {
     const response = await ndidApi.disableNode('ndid1', {
       node_id: 'as1',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -1076,7 +1076,7 @@ describe('NDID disable AS node and enable AS node test', function() {
     const response = await ndidApi.enableNode('ndid1', {
       node_id: 'as1',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 

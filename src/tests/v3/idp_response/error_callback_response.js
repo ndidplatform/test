@@ -71,7 +71,7 @@ describe('IdP error callback response tests', function() {
         node_id: 'idp1',
         max_ial: 2.3,
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(3000);
     });
 
@@ -274,7 +274,7 @@ describe('IdP error callback response tests', function() {
         node_id: 'idp1',
         max_aal: 2.2,
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(3000);
     });
 

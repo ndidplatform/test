@@ -25,7 +25,7 @@ describe('NDID update nodes', function() {
       node_id: 'rp1',
       node_name: rp_node_name,
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(3000);
   });
 
@@ -44,7 +44,7 @@ describe('NDID update nodes', function() {
       node_id: 'idp1',
       node_name: idp_node_name,
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(3000);
   });
 
@@ -63,7 +63,7 @@ describe('NDID update nodes', function() {
       node_id: 'idp1',
       max_ial: max_ial,
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(3000);
   });
 
@@ -82,7 +82,7 @@ describe('NDID update nodes', function() {
       node_id: 'idp1',
       max_aal: max_aal,
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(3000);
   });
 
@@ -101,7 +101,7 @@ describe('NDID update nodes', function() {
       node_id: 'as1',
       node_name: as_node_name,
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(3000);
   });
 

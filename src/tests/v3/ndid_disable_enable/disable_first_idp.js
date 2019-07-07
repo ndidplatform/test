@@ -303,7 +303,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       const response = await ndidApi.disableNode('ndid1', {
         node_id: 'idp1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -796,7 +796,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       const response = await ndidApi.enableNode('ndid1', {
         node_id: 'idp1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -1266,7 +1266,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       const response = await ndidApi.disableNode('ndid1', {
         node_id: 'idp1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -1759,7 +1759,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       const response = await ndidApi.enableNode('ndid1', {
         node_id: 'idp1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -2229,7 +2229,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       const response = await ndidApi.disableNode('ndid1', {
         node_id: 'idp1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -2722,7 +2722,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       const response = await ndidApi.enableNode('ndid1', {
         node_id: 'idp1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 

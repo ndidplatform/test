@@ -167,7 +167,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const response = await ndidApi.disableNode('ndid1', {
         node_id: 'proxy1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -195,7 +195,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const response = await ndidApi.enableNode('ndid1', {
         node_id: 'proxy1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -610,7 +610,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const response = await ndidApi.disableNode('ndid1', {
         node_id: 'proxy1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -635,7 +635,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const response = await ndidApi.enableNode('ndid1', {
         node_id: 'proxy1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -1054,7 +1054,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const response = await ndidApi.disableNode('ndid1', {
         node_id: 'proxy1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -1082,7 +1082,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       const response = await ndidApi.enableNode('ndid1', {
         node_id: 'proxy1',
       });
-      expect(response.status).to.equal(200);
+      expect(response.status).to.equal(204);
       await wait(5000);
     });
 
@@ -1515,7 +1515,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     const response = await ndidApi.disableNode('ndid1', {
       node_id: 'proxy1_rp4',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -1543,7 +1543,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     const response = await ndidApi.enableNode('ndid1', {
       node_id: 'proxy1_rp4',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -1955,7 +1955,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     const response = await ndidApi.disableNode('ndid1', {
       node_id: 'proxy1_idp4',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -1980,7 +1980,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     const response = await ndidApi.enableNode('ndid1', {
       node_id: 'proxy1_idp4',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -2400,7 +2400,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     const response = await ndidApi.disableNode('ndid1', {
       node_id: 'proxy1_as4',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
@@ -2425,7 +2425,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     const response = await ndidApi.enableNode('ndid1', {
       node_id: 'proxy1_as4',
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(204);
     await wait(5000);
   });
 
