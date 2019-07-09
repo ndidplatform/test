@@ -1,8 +1,9 @@
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
-import forge from 'node-forge';
 
-import { setIdPAccessorEncryptWithRamdomByte } from '../../../callback_server';
+import {
+  setIdPAccessorEncryptWithRamdomByte,
+} from '../../../callback_server';
 import * as rpApi from '../../../api/v3/rp';
 import * as idpApi from '../../../api/v3/idp';
 import * as identityApi from '../../../api/v3/identity';
@@ -76,7 +77,7 @@ describe('IdP response errors tests', function() {
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -123,11 +124,6 @@ describe('IdP response errors tests', function() {
   });
 
   it('should get an error when making a response without accessor ID (mode 3)', async function() {
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -143,62 +139,6 @@ describe('IdP response errors tests', function() {
     expect(responseBody.error.code).to.equal(20014);
   });
 
-  // it('should get an error when making a response without secret (mode 3)', async function() {
-  //   const identity = db.idp1Identities.find(
-  //     identity =>
-  //       identity.namespace === namespace && identity.identifier === identifier
-  //   );
-
-  //   const response = await idpApi.createResponse('idp1', {
-  //     reference_id: idpReferenceId,
-  //     callback_url: config.IDP1_CALLBACK_URL,
-  //     request_id: requestId,
-  //     namespace: createRequestParams.namespace,
-  //     identifier: createRequestParams.identifier,
-  //     ial: 2.3,
-  //     aal: 3,
-  //     // secret: identity.accessors[0].secret,
-  //     status: 'accept',
-  //     signature: createResponseSignature(
-  //       identity.accessors[0].accessorPrivateKey,
-  //       requestMessageHash
-  //     ),
-  //     accessor_id: identity.accessors[0].accessorId,
-  //   });
-  //   const responseBody = await response.json();
-
-  //   expect(response.status).to.equal(400);
-  //   expect(responseBody.error.code).to.equal(20015);
-  // });
-
-  // it('should get an error when making a response without signature (mode 3)', async function() {
-  //   const identity = db.idp1Identities.find(
-  //     identity =>
-  //       identity.namespace === namespace && identity.identifier === identifier
-  //   );
-
-  //   const response = await idpApi.createResponse('idp1', {
-  //     reference_id: idpReferenceId,
-  //     callback_url: config.IDP1_CALLBACK_URL,
-  //     request_id: requestId,
-  //     namespace: createRequestParams.namespace,
-  //     identifier: createRequestParams.identifier,
-  //     ial: 2.3,
-  //     aal: 3,
-  //     secret: identity.accessors[0].secret,
-  //     status: 'accept',
-  //     // signature: createResponseSignature(
-  //     //   identity.accessors[0].accessorPrivateKey,
-  //     //   requestMessageHash
-  //     // ),
-  //     accessor_id: identity.accessors[0].accessorId,
-  //   });
-  //   const responseBody = await response.json();
-
-  //   expect(response.status).to.equal(400);
-  //   expect(responseBody.error.code).to.equal(20003);
-  // });
-
   it('should get an error when making a response with non-existent accessor ID (mode 3)', async function() {
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -212,7 +152,8 @@ describe('IdP response errors tests', function() {
     const responseBody = await response.json();
 
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20011);
+   //expect(responseBody.error.code).to.equal(20011);
+    expect(responseBody.error.code).to.equal(20077);
   });
 
   it('should get an error when making a response with invalid accessor signature (mode 3)', async function() {
@@ -440,7 +381,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -590,7 +531,7 @@ describe("IdP making response with aal less than request's min_aal and IdP makin
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -847,7 +788,7 @@ describe('IdP2 making response with request does not concern IdP2 (mode 3)', fun
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {

@@ -117,7 +117,7 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
     });
     expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -146,7 +146,7 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
       request_message: addAccessorRequestMessage,
       reference_group_code: referenceGroupCode,
       request_message_hash: hash(
-        addAccessorRequestMessage + incomingRequest.request_message_salt
+        addAccessorRequestMessage + incomingRequest.request_message_salt,
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -156,7 +156,7 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -207,7 +207,7 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
     this.timeout(10000);
     const identity = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
     const response = await idpApi.createResponse('idp1', {
       reference_id: idp1ReferenceId,
@@ -245,7 +245,7 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
     });
     expect(responseBody.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -303,7 +303,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -371,7 +371,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
         return {
           ...dataRequestWithoutParams,
         };
-      }
+      },
     );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -380,7 +380,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -392,7 +392,7 @@ describe('IdP (idp1) response with new accessor id test', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -416,7 +416,8 @@ describe('IdP (idp1) response with new accessor id test', function() {
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
-    expect(responseBody.error.code).to.equal(20011);
+   //expect(responseBody.error.code).to.equal(20011);
+    expect(responseBody.error.code).to.equal(20077);
   });
 
   after(async function() {

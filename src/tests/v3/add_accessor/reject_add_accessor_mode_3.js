@@ -129,7 +129,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       });
       expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -160,7 +160,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         reference_group_code: referenceGroupCode,
         request_message: addAccessorRequestMessage,
         request_message_hash: hash(
-          addAccessorRequestMessage + incomingRequest.request_message_salt
+          addAccessorRequestMessage + incomingRequest.request_message_salt,
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -170,7 +170,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -190,7 +190,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         reference_group_code: referenceGroupCode,
         request_message: addAccessorRequestMessage,
         request_message_hash: hash(
-          addAccessorRequestMessage + incomingRequest.request_message_salt
+          addAccessorRequestMessage + incomingRequest.request_message_salt,
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -200,7 +200,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -212,7 +212,8 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       this.timeout(10000);
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       responseAccessorId = identity.accessors[0].accessorId;
@@ -244,7 +245,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       });
 
       expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
+        'string',
       ).that.is.not.empty;
     });
 
@@ -292,7 +293,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       });
       expect(responseBody.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -373,7 +374,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
-        bypass_identity_check:false
+        bypass_identity_check: false,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -455,7 +456,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
@@ -464,7 +465,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -476,7 +477,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -500,7 +501,8 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
-      expect(responseBody.error.code).to.equal(20011);
+      //expect(responseBody.error.code).to.equal(20011);
+      expect(responseBody.error.code).to.equal(20077);
     });
 
     after(async function() {
