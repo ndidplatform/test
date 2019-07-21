@@ -50,87 +50,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
             identity =>
               (identity.namespace === namespace &&
                 identity.identifier === identifier) ||
-              identity.referenceGroupCode === referenceGroupCode
-          );
-          return identity.accessors[0];
-        },
-        idpResponseParams: {
-          reference_id: generateReferenceId(),
-          callback_url: config.IDP1_CALLBACK_URL,
-          ial: 2.3,
-          aal: 3,
-          status: 'accept',
-        },
-      },
-      {
-        callIdpApiAtNodeId: 'idp2',
-        idpEventEmitter: idp2EventEmitter,
-        getAccessorForResponse: ({
-          namespace,
-          identifier,
-          referenceGroupCode,
-        }) => {
-          const identity = db.idp2Identities.find(
-            identity =>
-              (identity.namespace === namespace &&
-                identity.identifier === identifier) ||
-              identity.referenceGroupCode === referenceGroupCode
-          );
-          return identity.accessors[0];
-        },
-        idpResponseParams: {
-          reference_id: generateReferenceId(),
-          callback_url: config.IDP2_CALLBACK_URL,
-          ial: 2.3,
-          aal: 3,
-          status: 'reject',
-        },
-      },
-    ],
-  });
-});
-
-describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mode 3 (idp response with signature)', function() {
-  before(function() {
-    if (!idp2Available) {
-      this.test.parent.pending = true;
-      this.skip();
-    }
-  });
-  mode2And3FlowTest({
-    callRpApiAtNodeId: 'rp1',
-    rpEventEmitter,
-    getIdentityForRequest: () => {
-      return db.idp1Identities.find(identity => identity.mode === 3);
-    },
-    createRequestParams: {
-      reference_id: generateReferenceId(),
-      callback_url: config.RP_CALLBACK_URL,
-      mode: 3,
-      idp_id_list: [],
-      data_request_list: [],
-      request_message:
-        'Test request message (mode 3) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
-      min_ial: 1.1,
-      min_aal: 1,
-      min_idp: 2,
-      request_timeout: 86400,
-      bypass_identity_check: false,
-    },
-    idpParams: [
-      {
-        callIdpApiAtNodeId: 'idp1',
-        idpEventEmitter: idp1EventEmitter,
-        getAccessorForResponse: ({
-          namespace,
-          identifier,
-          referenceGroupCode,
-        }) => {
-          const identity = db.idp1Identities.find(
-            identity =>
-              (identity.namespace === namespace &&
-                identity.identifier === identifier) ||
-              identity.referenceGroupCode === referenceGroupCode
+              identity.referenceGroupCode === referenceGroupCode,
           );
           return identity.accessors[0];
         },
@@ -143,7 +63,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
           createResponseSignature: (privatekey, request_message) => {
             const signature = createResponseSignature(
               privatekey,
-              request_message
+              request_message,
             );
             return signature;
           },
@@ -161,7 +81,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
             identity =>
               (identity.namespace === namespace &&
                 identity.identifier === identifier) ||
-              identity.referenceGroupCode === referenceGroupCode
+              identity.referenceGroupCode === referenceGroupCode,
           );
           return identity.accessors[0];
         },
@@ -174,7 +94,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
           createResponseSignature: (privatekey, request_message) => {
             const signature = createResponseSignature(
               privatekey,
-              request_message
+              request_message,
             );
             return signature;
           },
@@ -184,89 +104,183 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
   });
 });
 
-describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mode 3 (one idp response with signature)', function() {
-  before(function() {
-    if (!idp2Available) {
-      this.test.parent.pending = true;
-      this.skip();
-    }
-  });
-  mode2And3FlowTest({
-    callRpApiAtNodeId: 'rp1',
-    rpEventEmitter,
-    getIdentityForRequest: () => {
-      return db.idp1Identities.find(identity => identity.mode === 3);
-    },
-    createRequestParams: {
-      reference_id: generateReferenceId(),
-      callback_url: config.RP_CALLBACK_URL,
-      mode: 3,
-      idp_id_list: [],
-      data_request_list: [],
-      request_message:
-        'Test request message (mode 3) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
-      min_ial: 1.1,
-      min_aal: 1,
-      min_idp: 2,
-      request_timeout: 86400,
-      bypass_identity_check: false,
-    },
-    idpParams: [
-      {
-        callIdpApiAtNodeId: 'idp1',
-        idpEventEmitter: idp1EventEmitter,
-        getAccessorForResponse: ({
-          namespace,
-          identifier,
-          referenceGroupCode,
-        }) => {
-          const identity = db.idp1Identities.find(
-            identity =>
-              (identity.namespace === namespace &&
-                identity.identifier === identifier) ||
-              identity.referenceGroupCode === referenceGroupCode
-          );
-          return identity.accessors[0];
-        },
-        idpResponseParams: {
-          reference_id: generateReferenceId(),
-          callback_url: config.IDP1_CALLBACK_URL,
-          ial: 2.3,
-          aal: 3,
-          status: 'accept',
-        },
-      },
-      {
-        callIdpApiAtNodeId: 'idp2',
-        idpEventEmitter: idp2EventEmitter,
-        getAccessorForResponse: ({
-          namespace,
-          identifier,
-          referenceGroupCode,
-        }) => {
-          const identity = db.idp2Identities.find(
-            identity =>
-              (identity.namespace === namespace &&
-                identity.identifier === identifier) ||
-              identity.referenceGroupCode === referenceGroupCode
-          );
-          return identity.accessors[0];
-        },
-        idpResponseParams: {
-          reference_id: generateReferenceId(),
-          callback_url: config.IDP2_CALLBACK_URL,
-          ial: 2.3,
-          aal: 3,
-          status: 'reject',
-          createResponseSignature: (privatekey, request_message) => {
-            const signature = createResponseSignature(
-              privatekey,
-              request_message
-            );
-            return signature;
-          },
-        },
-      },
-    ],
-  });
-});
+// describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mode 3 (idp response with signature)', function() {
+//   before(function() {
+//     if (!idp2Available) {
+//       this.test.parent.pending = true;
+//       this.skip();
+//     }
+//   });
+//   mode2And3FlowTest({
+//     callRpApiAtNodeId: 'rp1',
+//     rpEventEmitter,
+//     getIdentityForRequest: () => {
+//       return db.idp1Identities.find(identity => identity.mode === 3);
+//     },
+//     createRequestParams: {
+//       reference_id: generateReferenceId(),
+//       callback_url: config.RP_CALLBACK_URL,
+//       mode: 3,
+//       idp_id_list: [],
+//       data_request_list: [],
+//       request_message:
+//         'Test request message (mode 3) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
+//       min_ial: 1.1,
+//       min_aal: 1,
+//       min_idp: 2,
+//       request_timeout: 86400,
+//       bypass_identity_check: false,
+//     },
+//     idpParams: [
+//       {
+//         callIdpApiAtNodeId: 'idp1',
+//         idpEventEmitter: idp1EventEmitter,
+//         getAccessorForResponse: ({
+//           namespace,
+//           identifier,
+//           referenceGroupCode,
+//         }) => {
+//           const identity = db.idp1Identities.find(
+//             identity =>
+//               (identity.namespace === namespace &&
+//                 identity.identifier === identifier) ||
+//               identity.referenceGroupCode === referenceGroupCode
+//           );
+//           return identity.accessors[0];
+//         },
+//         idpResponseParams: {
+//           reference_id: generateReferenceId(),
+//           callback_url: config.IDP1_CALLBACK_URL,
+//           ial: 2.3,
+//           aal: 3,
+//           status: 'accept',
+//           createResponseSignature: (privatekey, request_message) => {
+//             const signature = createResponseSignature(
+//               privatekey,
+//               request_message
+//             );
+//             return signature;
+//           },
+//         },
+//       },
+//       {
+//         callIdpApiAtNodeId: 'idp2',
+//         idpEventEmitter: idp2EventEmitter,
+//         getAccessorForResponse: ({
+//           namespace,
+//           identifier,
+//           referenceGroupCode,
+//         }) => {
+//           const identity = db.idp2Identities.find(
+//             identity =>
+//               (identity.namespace === namespace &&
+//                 identity.identifier === identifier) ||
+//               identity.referenceGroupCode === referenceGroupCode
+//           );
+//           return identity.accessors[0];
+//         },
+//         idpResponseParams: {
+//           reference_id: generateReferenceId(),
+//           callback_url: config.IDP2_CALLBACK_URL,
+//           ial: 2.3,
+//           aal: 3,
+//           status: 'reject',
+//           createResponseSignature: (privatekey, request_message) => {
+//             const signature = createResponseSignature(
+//               privatekey,
+//               request_message
+//             );
+//             return signature;
+//           },
+//         },
+//       },
+//     ],
+//   });
+// });
+
+// describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mode 3 (one idp response with signature)', function() {
+//   before(function() {
+//     if (!idp2Available) {
+//       this.test.parent.pending = true;
+//       this.skip();
+//     }
+//   });
+//   mode2And3FlowTest({
+//     callRpApiAtNodeId: 'rp1',
+//     rpEventEmitter,
+//     getIdentityForRequest: () => {
+//       return db.idp1Identities.find(identity => identity.mode === 3);
+//     },
+//     createRequestParams: {
+//       reference_id: generateReferenceId(),
+//       callback_url: config.RP_CALLBACK_URL,
+//       mode: 3,
+//       idp_id_list: [],
+//       data_request_list: [],
+//       request_message:
+//         'Test request message (mode 3) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
+//       min_ial: 1.1,
+//       min_aal: 1,
+//       min_idp: 2,
+//       request_timeout: 86400,
+//       bypass_identity_check: false,
+//     },
+//     idpParams: [
+//       {
+//         callIdpApiAtNodeId: 'idp1',
+//         idpEventEmitter: idp1EventEmitter,
+//         getAccessorForResponse: ({
+//           namespace,
+//           identifier,
+//           referenceGroupCode,
+//         }) => {
+//           const identity = db.idp1Identities.find(
+//             identity =>
+//               (identity.namespace === namespace &&
+//                 identity.identifier === identifier) ||
+//               identity.referenceGroupCode === referenceGroupCode
+//           );
+//           return identity.accessors[0];
+//         },
+//         idpResponseParams: {
+//           reference_id: generateReferenceId(),
+//           callback_url: config.IDP1_CALLBACK_URL,
+//           ial: 2.3,
+//           aal: 3,
+//           status: 'accept',
+//         },
+//       },
+//       {
+//         callIdpApiAtNodeId: 'idp2',
+//         idpEventEmitter: idp2EventEmitter,
+//         getAccessorForResponse: ({
+//           namespace,
+//           identifier,
+//           referenceGroupCode,
+//         }) => {
+//           const identity = db.idp2Identities.find(
+//             identity =>
+//               (identity.namespace === namespace &&
+//                 identity.identifier === identifier) ||
+//               identity.referenceGroupCode === referenceGroupCode
+//           );
+//           return identity.accessors[0];
+//         },
+//         idpResponseParams: {
+//           reference_id: generateReferenceId(),
+//           callback_url: config.IDP2_CALLBACK_URL,
+//           ial: 2.3,
+//           aal: 3,
+//           status: 'reject',
+//           createResponseSignature: (privatekey, request_message) => {
+//             const signature = createResponseSignature(
+//               privatekey,
+//               request_message
+//             );
+//             return signature;
+//           },
+//         },
+//       },
+//     ],
+//   });
+// });

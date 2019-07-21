@@ -36,42 +36,6 @@ describe('1 IdP, accept consent, mode 1, RP (proxy1_rp4) behind proxy', function
           ial: 2.3,
           aal: 3,
           status: 'accept',
-        },
-      },
-    ],
-  });
-});
-
-describe('1 IdP, accept consent (idp response with signature), mode 1, RP (proxy1_rp4) behind proxy', function() {
-  mode1FlowTest({
-    callRpApiAtNodeId: 'proxy1',
-    rpEventEmitter: proxy1EventEmitter,
-    createRequestParams: {
-      node_id: 'proxy1_rp4',
-      reference_id: generateReferenceId(),
-      callback_url: config.PROXY1_CALLBACK_URL,
-      mode: 1,
-      namespace: 'citizen_id',
-      identifier: '1234567890123',
-      idp_id_list: ['idp1'],
-      data_request_list: [],
-      request_message:
-        'Test request message (mode 1) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
-      min_ial: 1.1,
-      min_aal: 1,
-      min_idp: 1,
-      request_timeout: 86400,
-    },
-    idpParams: [
-      {
-        callIdpApiAtNodeId: 'idp1',
-        idpEventEmitter: idp1EventEmitter,
-        idpResponseParams: {
-          reference_id: generateReferenceId(),
-          callback_url: config.IDP1_CALLBACK_URL,
-          ial: 2.3,
-          aal: 3,
-          status: 'accept',
           createResponseSignature: (privatekey, request_message) => {
             const signature = createSignature(privatekey, request_message);
             return signature;
@@ -81,3 +45,43 @@ describe('1 IdP, accept consent (idp response with signature), mode 1, RP (proxy
     ],
   });
 });
+
+// describe('1 IdP, accept consent (idp response with signature), mode 1, RP (proxy1_rp4) behind proxy', function() {
+//   mode1FlowTest({
+//     callRpApiAtNodeId: 'proxy1',
+//     rpEventEmitter: proxy1EventEmitter,
+//     createRequestParams: {
+//       node_id: 'proxy1_rp4',
+//       reference_id: generateReferenceId(),
+//       callback_url: config.PROXY1_CALLBACK_URL,
+//       mode: 1,
+//       namespace: 'citizen_id',
+//       identifier: '1234567890123',
+//       idp_id_list: ['idp1'],
+//       data_request_list: [],
+//       request_message:
+//         'Test request message (mode 1) ทดสอบภาษาไทย should\\|be|able\\\\|to|send\\\\\\|this',
+//       min_ial: 1.1,
+//       min_aal: 1,
+//       min_idp: 1,
+//       request_timeout: 86400,
+//     },
+//     idpParams: [
+//       {
+//         callIdpApiAtNodeId: 'idp1',
+//         idpEventEmitter: idp1EventEmitter,
+//         idpResponseParams: {
+//           reference_id: generateReferenceId(),
+//           callback_url: config.IDP1_CALLBACK_URL,
+//           ial: 2.3,
+//           aal: 3,
+//           status: 'accept',
+//           createResponseSignature: (privatekey, request_message) => {
+//             const signature = createSignature(privatekey, request_message);
+//             return signature;
+//           },
+//         },
+//       },
+//     ],
+//   });
+// });
