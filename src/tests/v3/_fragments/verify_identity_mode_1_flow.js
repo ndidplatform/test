@@ -33,7 +33,9 @@ export function mode1FlowTest({
     : callRpApiAtNodeId;
   const idpNodeIds = idpParams.map(
     ({ callIdpApiAtNodeId, idpResponseParams }) =>
-      idpResponseParams.node_id ? idpResponseParams.node_id : callIdpApiAtNodeId
+      idpResponseParams.node_id
+        ? idpResponseParams.node_id
+        : callIdpApiAtNodeId,
   );
 
   const createRequestResultPromise = createEventPromise(); // RP
@@ -47,17 +49,17 @@ export function mode1FlowTest({
     };
   }); //IdPs
   const responseAcceptCount = idpParams.filter(
-    idpParam => idpParam.idpResponseParams.status === 'accept'
+    idpParam => idpParam.idpResponseParams.status === 'accept',
   ).length;
   const responseRejectCount = idpParams.filter(
-    idpParam => idpParam.idpResponseParams.status === 'reject'
+    idpParam => idpParam.idpResponseParams.status === 'reject',
   ).length;
 
   const requestStatusConfirmedPromises = idpParams.map((_, index) =>
-    index === idpParams.length - 1 ? null : createEventPromise()
+    index === idpParams.length - 1 ? null : createEventPromise(),
   ); // RP
   const requestStatusRejectedPromises = idpParams.map((_, index) =>
-    index === idpParams.length - 1 ? null : createEventPromise()
+    index === idpParams.length - 1 ? null : createEventPromise(),
   ); // RP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestStatusRejectedPromise = createEventPromise(); // RP
@@ -74,15 +76,15 @@ export function mode1FlowTest({
   });
 
   const idp_requestStatusCompletedPromises = idpParams.map(() =>
-    createEventPromise()
+    createEventPromise(),
   );
 
   const idp_requestStatusComplicatedPromises = idpParams.map(() =>
-    createEventPromise()
+    createEventPromise(),
   );
 
   const idp_requestStatusRejectedPromise = idpParams.map(() =>
-    createEventPromise()
+    createEventPromise(),
   );
 
   const idp_requestClosedPromises = idpParams.map(() => createEventPromise());
@@ -95,7 +97,7 @@ export function mode1FlowTest({
           node_id,
           MqSendSuccessRpToIdpCallbackPromise: createEventPromise(),
         };
-      }
+      },
     );
   }
 
@@ -220,11 +222,11 @@ export function mode1FlowTest({
           if (callbackData.destination_node_id.includes('idp')) {
             arrayMqSendSuccessRpToIdpCallback.push(callbackData);
             let idpReceiveRequestPromise = idpsReceiveRequestPromises.find(
-              ({ node_id }) => node_id === callbackData.destination_node_id
+              ({ node_id }) => node_id === callbackData.destination_node_id,
             );
             if (idpReceiveRequestPromise) {
               idpReceiveRequestPromise.MqSendSuccessRpToIdpCallbackPromise.resolve(
-                callbackData
+                callbackData,
               );
             }
           }
@@ -234,7 +236,7 @@ export function mode1FlowTest({
         } else if (callbackData.node_id.includes('idp')) {
           if (callbackData.destination_node_id.includes('rp')) {
             let idp = mqSendSuccessIdpToRpCallbackPromises.find(
-              ({ node_id }) => node_id === callbackData.node_id
+              ({ node_id }) => node_id === callbackData.node_id,
             );
             if (idp) {
               idp.mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
@@ -281,7 +283,7 @@ export function mode1FlowTest({
       arrayMqSendSuccessRpToIdpCallback.length
     ) {
       throw new Error(
-        'idps receive request not equal to MQ send success rp to idp callback'
+        'idps receive request not equal to MQ send success rp to idp callback',
       );
     }
 
@@ -306,8 +308,8 @@ export function mode1FlowTest({
     const requestStatusRejectPromise = requestStatusRejectedPromises[i];
     let idpResponseParams = idpParams[i].idpResponseParams;
     const idpNodeId = idpNodeIds[i];
-    const createResponseSignature =
-      idpParams[i].idpResponseParams.createResponseSignature;
+    // const createResponseSignature =
+    //   idpParams[i].idpResponseParams.createResponseSignature;
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function() {
       this.timeout(15000);
@@ -329,20 +331,21 @@ export function mode1FlowTest({
       idpResponseParams = {
         ...idpResponseParams,
         request_id: requestId,
+        signature: 'Some signature',
       };
 
-      if (createResponseSignature) {
-        let privateKey = getPrivatekey(idpNodeId);
-        let messageToSign = createRequestParams.request_message;
-        let signature = createResponseSignature(
-          privateKey,
-          messageToSign
-        );
-        idpResponseParams = {
-          ...idpResponseParams,
-          signature,
-        };
-      }
+      // if (createResponseSignature) {
+      //   let privateKey = getPrivatekey(idpNodeId);
+      //   let messageToSign = createRequestParams.request_message;
+      //   let signature = createResponseSignature(
+      //     privateKey,
+      //     messageToSign
+      //   );
+      //   idpResponseParams = {
+      //     ...idpResponseParams,
+      //     signature,
+      //   };
+      // }
 
       await idpCreateResponseTest({
         callApiAtNodeId: callIdpApiAtNodeId,
@@ -359,11 +362,11 @@ export function mode1FlowTest({
     it(`IdP (${idpNodeId}) should receive message queue send success (to RP) callback`, async function() {
       this.timeout(15000);
       let mqSendSuccessCallbackPromise = mqSendSuccessIdpToRpCallbackPromises.find(
-        ({ node_id }) => node_id === idpNodeId
+        ({ node_id }) => node_id === idpNodeId,
       ).mqSendSuccessIdpToRpCallbackPromise;
       if (!mqSendSuccessCallbackPromise) {
         throw new Error(
-          `${idpNodeId} not receive MQ send success idp to rp callback`
+          `${idpNodeId} not receive MQ send success idp to rp callback`,
         );
       }
       await receiveMessagequeueSendSuccessCallback({
@@ -384,7 +387,7 @@ export function mode1FlowTest({
             requestId,
             createRequestParams,
             answeredIdpCount: idpNodeIds.filter(
-              (idpNodeId, index) => index <= i
+              (idpNodeId, index) => index <= i,
             ).length,
             serviceList: [],
             responseValidList: idpNodeIds
@@ -407,7 +410,7 @@ export function mode1FlowTest({
             requestId,
             createRequestParams,
             answeredIdpCount: idpNodeIds.filter(
-              (idpNodeId, index) => index <= i
+              (idpNodeId, index) => index <= i,
             ).length,
             serviceList: [],
             responseValidList: idpNodeIds
@@ -440,7 +443,7 @@ export function mode1FlowTest({
             requestId,
             createRequestParams,
             answeredIdpCount: idpNodeIds.filter(
-              (idpNodeId, index) => index <= i
+              (idpNodeId, index) => index <= i,
             ).length,
             serviceList: [],
             responseValidList: idpNodeIds
@@ -491,7 +494,7 @@ export function mode1FlowTest({
             createRequestParams,
             serviceList: [],
             answeredIdpCount: idpNodeIds.filter(
-              (idpNodeId, index) => index <= i
+              (idpNodeId, index) => index <= i,
             ).length, // for request status rejected
             responseValidList: idpNodeIds
               .filter((idpNodeId, index) => index <= i)

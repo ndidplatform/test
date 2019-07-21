@@ -39,7 +39,9 @@ export function mode2And3FlowTest({
     : callRpApiAtNodeId;
   const idpNodeIds = idpParams.map(
     ({ callIdpApiAtNodeId, idpResponseParams }) =>
-      idpResponseParams.node_id ? idpResponseParams.node_id : callIdpApiAtNodeId
+      idpResponseParams.node_id
+        ? idpResponseParams.node_id
+        : callIdpApiAtNodeId,
   );
 
   const createRequestResultPromise = createEventPromise(); // RP
@@ -54,17 +56,17 @@ export function mode2And3FlowTest({
   }); //IdPs
   const accessorEncryptPromises = idpParams.map(() => createEventPromise()); // IdPs
   const responseAcceptCount = idpParams.filter(
-    idpParam => idpParam.idpResponseParams.status === 'accept'
+    idpParam => idpParam.idpResponseParams.status === 'accept',
   ).length;
   const responseRejectCount = idpParams.filter(
-    idpParam => idpParam.idpResponseParams.status === 'reject'
+    idpParam => idpParam.idpResponseParams.status === 'reject',
   ).length;
 
   const requestStatusConfirmedPromises = idpParams.map((_, index) =>
-    index === idpParams.length - 1 ? null : createEventPromise()
+    index === idpParams.length - 1 ? null : createEventPromise(),
   ); // RP
   const requestStatusRejectedPromises = idpParams.map((_, index) =>
-    index === idpParams.length - 1 ? null : createEventPromise()
+    index === idpParams.length - 1 ? null : createEventPromise(),
   ); // RP
 
   const requestStatusCompletedPromise = createEventPromise(); // RP
@@ -86,15 +88,15 @@ export function mode2And3FlowTest({
   });
 
   const idp_requestStatusCompletedPromises = idpParams.map(() =>
-    createEventPromise()
+    createEventPromise(),
   );
 
   const idp_requestStatusComplicatedPromises = idpParams.map(() =>
-    createEventPromise()
+    createEventPromise(),
   );
 
   const idp_requestStatusRejectedPromise = idpParams.map(() =>
-    createEventPromise()
+    createEventPromise(),
   );
 
   const idp_requestClosedPromises = idpParams.map(() => createEventPromise());
@@ -147,7 +149,7 @@ export function mode2And3FlowTest({
         identifier: identity.identifier,
         mode: createRequestParams.mode,
         min_ial: createRequestParams.min_ial,
-      }
+      },
     );
     const resposenBodyGetRelevantIdpNodesBySid = await responseGetRelevantIdpNodesBySid.json();
     idpsReceiveRequestPromises = resposenBodyGetRelevantIdpNodesBySid.map(
@@ -156,7 +158,7 @@ export function mode2And3FlowTest({
           node_id,
           MqSendSuccessRpToIdpCallbackPromise: createEventPromise(),
         };
-      }
+      },
     );
 
     createRequestParams.namespace = identity.namespace;
@@ -256,11 +258,11 @@ export function mode2And3FlowTest({
           if (callbackData.destination_node_id.includes('idp')) {
             arrayMqSendSuccessRpToIdpCallback.push(callbackData);
             let idpReceiveRequestPromise = idpsReceiveRequestPromises.find(
-              ({ node_id }) => node_id === callbackData.destination_node_id
+              ({ node_id }) => node_id === callbackData.destination_node_id,
             );
             if (idpReceiveRequestPromise) {
               idpReceiveRequestPromise.MqSendSuccessRpToIdpCallbackPromise.resolve(
-                callbackData
+                callbackData,
               );
             }
           }
@@ -270,7 +272,7 @@ export function mode2And3FlowTest({
         } else if (callbackData.node_id.includes('idp')) {
           if (callbackData.destination_node_id.includes('rp')) {
             let idp = mqSendSuccessIdpToRpCallbackPromises.find(
-              ({ node_id }) => node_id === callbackData.node_id
+              ({ node_id }) => node_id === callbackData.node_id,
             );
             if (idp) {
               idp.mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
@@ -317,7 +319,7 @@ export function mode2And3FlowTest({
       arrayMqSendSuccessRpToIdpCallback.length
     ) {
       throw new Error(
-        'idps receive request not equal to MQ send success rp to idp callback'
+        'idps receive request not equal to MQ send success rp to idp callback',
       );
     }
 
@@ -362,56 +364,39 @@ export function mode2And3FlowTest({
       });
     });
 
-    if (createResponseSignature) {
-      it(`IdP (${idpNodeId}) should get request_message_padded_hash successfully`, async function() {
-        let accessor = getAccessorForResponse({
-          namespace: createRequestParams.namespace,
-          identifier: createRequestParams.identifier,
-        });
-
-        responseAccessorId = accessor.accessorId;
-        accessorPublicKey = accessor.accessorPublicKey;
-        accessorPrivateKey = accessor.accessorPrivateKey;
-
-        const testResult = await getAndVerifyRequestMessagePaddedHashTest({
-          callApiAtNodeId: callIdpApiAtNodeId,
-          idpNodeId,
-          requestId,
-          incomingRequestPromise,
-          accessorPublicKey,
-          accessorId: responseAccessorId,
-        });
-        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    it(`IdP (${idpNodeId}) should get request_message_padded_hash successfully`, async function() {
+      let accessor = getAccessorForResponse({
+        namespace: createRequestParams.namespace,
+        identifier: createRequestParams.identifier,
       });
-    }
+
+      responseAccessorId = accessor.accessorId;
+      accessorPublicKey = accessor.accessorPublicKey;
+      accessorPrivateKey = accessor.accessorPrivateKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: callIdpApiAtNodeId,
+        idpNodeId,
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
 
     it(`IdP (${idpNodeId}) should create response (accept) successfully`, async function() {
       this.timeout(10000);
-      if (createResponseSignature) {
-        const signature = createResponseSignature(
-          accessorPrivateKey,
-          requestMessagePaddedHash
-        );
-
-        idpResponseParams = {
-          ...idpResponseParams,
-          signature,
-        };
-      } else {
-        let accessor = getAccessorForResponse({
-          namespace: createRequestParams.namespace,
-          identifier: createRequestParams.identifier,
-        });
-
-        responseAccessorId = accessor.accessorId;
-        accessorPublicKey = accessor.accessorPublicKey;
-        accessorPrivateKey = accessor.accessorPrivateKey;
-      }
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       idpResponseParams = {
         ...idpResponseParams,
         request_id: requestId,
         accessor_id: responseAccessorId,
+        signature,
       };
 
       await idpCreateResponseTest({
@@ -449,11 +434,11 @@ export function mode2And3FlowTest({
     it(`IdP (${idpNodeId}) should receive message queue send success (to RP) callback`, async function() {
       this.timeout(15000);
       let mqSendSuccessCallbackPromise = mqSendSuccessIdpToRpCallbackPromises.find(
-        ({ node_id }) => node_id === idpNodeId
+        ({ node_id }) => node_id === idpNodeId,
       ).mqSendSuccessIdpToRpCallbackPromise;
       if (!mqSendSuccessCallbackPromise) {
         throw new Error(
-          `${idpNodeId} not receive MQ send success idp to rp callback`
+          `${idpNodeId} not receive MQ send success idp to rp callback`,
         );
       }
       await receiveMessagequeueSendSuccessCallback({
@@ -474,7 +459,7 @@ export function mode2And3FlowTest({
             requestId,
             createRequestParams,
             answeredIdpCount: idpNodeIds.filter(
-              (idpNodeId, index) => index <= i
+              (idpNodeId, index) => index <= i,
             ).length,
             serviceList: [],
             responseValidList: idpNodeIds
@@ -497,7 +482,7 @@ export function mode2And3FlowTest({
             requestId,
             createRequestParams,
             answeredIdpCount: idpNodeIds.filter(
-              (idpNodeId, index) => index <= i
+              (idpNodeId, index) => index <= i,
             ).length,
             serviceList: [],
             responseValidList: idpNodeIds
@@ -529,7 +514,7 @@ export function mode2And3FlowTest({
             requestId,
             createRequestParams,
             answeredIdpCount: idpNodeIds.filter(
-              (idpNodeId, index) => index <= i
+              (idpNodeId, index) => index <= i,
             ).length,
             serviceList: [],
             responseValidList: idpNodeIds
@@ -580,7 +565,7 @@ export function mode2And3FlowTest({
             createRequestParams,
             serviceList: [],
             answeredIdpCount: idpNodeIds.filter(
-              (idpNodeId, index) => index <= i
+              (idpNodeId, index) => index <= i,
             ).length, // for request status rejected
             responseValidList: idpNodeIds
               .filter((idpNodeId, index) => index <= i)

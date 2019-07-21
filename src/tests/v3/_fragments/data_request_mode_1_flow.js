@@ -459,8 +459,8 @@ export function mode1DataRequestFlowTest({
     const requestStatusRejectPromise = requestStatusRejectedPromises[i];
     let idpResponseParams = idpParams[i].idpResponseParams;
     const idpNodeId = idpNodeIds[i];
-    const createResponseSignature =
-      idpParams[i].idpResponseParams.createResponseSignature;
+    // const createResponseSignature =
+    //   idpParams[i].idpResponseParams.createResponseSignature;
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function() {
       this.timeout(15000);
@@ -482,17 +482,18 @@ export function mode1DataRequestFlowTest({
       idpResponseParams = {
         ...idpResponseParams,
         request_id: requestId,
+        signature:'Some signature',
       };
 
-      if (createResponseSignature) {
-        let privateKey = getPrivatekey(idpNodeId);
-        let messageToSign = createRequestParams.request_message;
-        let signature = createResponseSignature(privateKey, messageToSign);
-        idpResponseParams = {
-          ...idpResponseParams,
-          signature,
-        };
-      }
+      // if (createResponseSignature) {
+      //   let privateKey = getPrivatekey(idpNodeId);
+      //   let messageToSign = createRequestParams.request_message;
+      //   let signature = createResponseSignature(privateKey, messageToSign);
+      //   idpResponseParams = {
+      //     ...idpResponseParams,
+      //     signature,
+      //   };
+      // }
 
       await idpCreateResponseTest({
         callApiAtNodeId: callIdpApiAtNodeId,
