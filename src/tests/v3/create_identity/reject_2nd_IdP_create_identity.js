@@ -14,13 +14,14 @@ import {
   generateReferenceId,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 import {
-  idpReceiveAccessorEncryptCallbackTest,
   verifyResponseSignature,
+  getAndVerifyRequestMessagePaddedHashTest,
 } from '../_fragments/request_flow_fragments/idp';
 
 describe('Reject 2nd IdP create identity (mode 3) test', function() {
@@ -63,6 +64,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
   let accessorId2ndIdPCreateIdentity;
 
   let requestMessageHash;
+  let identityForResponse;
   let requestMessagePaddedHash;
 
   before(function() {
@@ -265,7 +267,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
       request_id: requestId2ndIdPCreateIdentity,
       request_message: createIdentityRequestMessage,
       request_message_hash: hash(
-        createIdentityRequestMessage + incomingRequest.request_message_salt
+        createIdentityRequestMessage + incomingRequest.request_message_salt,
       ),
       requester_node_id: 'idp2',
       min_ial: 1.1,
@@ -277,7 +279,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -287,14 +289,38 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('1st IdP should create response (reject) successfully', async function() {
-    this.timeout(10000);
-    const identity = db.idp1Identities.find(
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    identityForResponse = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId: requestId2ndIdPCreateIdentity,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('1st IdP should create response (reject) successfully', async function() {
+    this.timeout(10000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idp1RejectRequestReferenceId,
@@ -304,29 +330,30 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
       aal: 3,
       status: 'reject',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-    let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
+  //   const identity = db.idp1Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier,
+  //   );
+  //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-    let testResult = await idpReceiveAccessorEncryptCallbackTest({
-      callIdpApiAtNodeId: 'idp1',
-      accessorEncryptPromise,
-      accessorId: responseAccessorId,
-      requestId: requestId2ndIdPCreateIdentity,
-      idpReferenceId: idp1RejectRequestReferenceId,
-      incomingRequestPromise,
-      accessorPublicKey,
-    });
-    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-  });
+  //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+  //     callIdpApiAtNodeId: 'idp1',
+  //     accessorEncryptPromise,
+  //     accessorId: responseAccessorId,
+  //     requestId: requestId2ndIdPCreateIdentity,
+  //     idpReferenceId: idp1RejectRequestReferenceId,
+  //     incomingRequestPromise,
+  //     accessorPublicKey,
+  //   });
+  //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
@@ -372,7 +399,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
     let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -407,7 +434,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     });
     expect(responseBody.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);

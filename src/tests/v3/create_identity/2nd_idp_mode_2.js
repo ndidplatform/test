@@ -13,14 +13,19 @@ import {
   as1EventEmitter,
 } from '../../../callback_server';
 import * as db from '../../../db';
-import { createEventPromise, generateReferenceId, hash } from '../../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  hash,
+  createResponseSignature,
+} from '../../../utils';
 import { idp2Available } from '../../';
 import * as config from '../../../config';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 import {
-  idpReceiveAccessorEncryptCallbackTest,
   verifyResponseSignature,
+  getAndVerifyRequestMessagePaddedHashTest,
 } from '../_fragments/request_flow_fragments/idp';
 
 describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as 2nd IdP', function() {
@@ -59,7 +64,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     referenceGroupCode = identity.referenceGroupCode;
 
     idp1EventEmitter.on('identity_notification_callback', function(
-      callbackData
+      callbackData,
     ) {
       if (
         callbackData.type === 'identity_modification_notification' &&
@@ -155,7 +160,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     });
 
     expect(createIdentityResult.reference_group_code).to.equal(
-      referenceGroupCode
+      referenceGroupCode,
     );
 
     //referenceGroupCode = createIdentityResult.reference_group_code;
@@ -273,6 +278,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     let requestId;
     let requestMessageSalt;
     let requestMessageHash;
+    let identityForResponse;
     let responseAccessorId;
 
     const requestStatusUpdates = [];
@@ -287,7 +293,8 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
 
       const identity = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       namespace = identity.namespace;
@@ -458,7 +465,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -494,7 +501,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -519,7 +526,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -529,7 +536,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -544,7 +551,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -554,19 +561,39 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
-      const identity = db.idp2Identities.find(
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      identityForResponse = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
 
-      // db.createResponseReferences.push({
-      //   referenceId: idpReferenceId,
-      //   accessorPrivateKey: identity.accessors[0].accessorPrivateKey,
-      // });
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp2',
+        idpNodeId: 'idp2',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('IdP should create response (accept) successfully', async function() {
+      this.timeout(10000);
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp2', {
         reference_id: idpReferenceId,
@@ -576,30 +603,31 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp2Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp2Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace && identity.identifier === identifier
+    //   );
 
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp2',
-        accessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idpReferenceId,
-        incomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp2',
+    //     accessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId,
+    //     idpReferenceId: idpReferenceId,
+    //     incomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       this.timeout(15000);
@@ -657,7 +685,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -666,7 +694,8 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       this.timeout(15000);
       const identity = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
       await verifyResponseSignature({
@@ -748,7 +777,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -852,7 +881,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -891,7 +920,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -929,7 +958,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -967,7 +996,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1006,7 +1035,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1044,7 +1073,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1083,7 +1112,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1123,7 +1152,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1161,7 +1190,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
