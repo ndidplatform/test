@@ -19,14 +19,15 @@ import {
   generateReferenceId,
   wait,
   hash,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 import {
-  idpReceiveAccessorEncryptCallbackTest,
   verifyResponseSignature,
+  getAndVerifyRequestMessagePaddedHashTest,
 } from '../_fragments/request_flow_fragments/idp';
 
 describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', function() {
@@ -52,11 +53,12 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
   const mqSendSuccessIdp1ToIdp1CallbackPromise = createEventPromise();
 
   let accessorId;
-  let requestMessagePaddedHash;
   let referenceGroupCode;
 
   let requestId;
+  let identityForResponse;
   let responseAccessorId;
+  let requestMessagePaddedHash;
 
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -245,10 +247,10 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       success: true,
     });
     expect(upgradeIdentityModeRequestResult.creation_block_height).to.be.a(
-      'string'
+      'string',
     );
     const splittedCreationBlockHeight = upgradeIdentityModeRequestResult.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -274,7 +276,8 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       reference_group_code: referenceGroupCode,
       request_message: upgradeIdentityModeRequestMessage,
       request_message_hash: hash(
-        upgradeIdentityModeRequestMessage + incomingRequest.request_message_salt
+        upgradeIdentityModeRequestMessage +
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -285,7 +288,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -295,14 +298,37 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     // requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('1st IdP should create response (accept) successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function() {
     this.timeout(15000);
-    const identity = db.idp1Identities.find(
+    identityForResponse = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('1st IdP should create response (accept) successfully', async function() {
+    this.timeout(15000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpResponseReferenceId,
@@ -312,29 +338,30 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-    let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
+  //   const identity = db.idp1Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier,
+  //   );
+  //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-    let testResult = await idpReceiveAccessorEncryptCallbackTest({
-      callIdpApiAtNodeId: 'idp1',
-      accessorEncryptPromise,
-      accessorId: responseAccessorId,
-      requestId,
-      idpReferenceId: idpResponseReferenceId,
-      incomingRequestPromise,
-      accessorPublicKey,
-    });
-    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-  });
+  //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+  //     callIdpApiAtNodeId: 'idp1',
+  //     accessorEncryptPromise,
+  //     accessorId: responseAccessorId,
+  //     requestId,
+  //     idpReferenceId: idpResponseReferenceId,
+  //     incomingRequestPromise,
+  //     accessorPublicKey,
+  //   });
+  //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
@@ -352,7 +379,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
     const identity = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
     let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -438,6 +465,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     let requestId;
     let requestMessageSalt;
     let requestMessageHash;
+    let identityForResponse;
     let responseAccessorId;
     let requestMessagePaddedHash;
 
@@ -611,7 +639,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -647,7 +675,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -672,7 +700,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -682,7 +710,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -697,7 +725,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -707,14 +735,39 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
-      const identity = db.idp1Identities.find(
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('IdP should create response (accept) successfully', async function() {
+      this.timeout(10000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
@@ -724,29 +777,31 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp1Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp1',
-        accessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idpReferenceId,
-        incomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp1',
+    //     accessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId,
+    //     idpReferenceId: idpReferenceId,
+    //     incomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -773,7 +828,8 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -819,7 +875,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -857,7 +913,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -928,7 +984,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -967,7 +1023,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1005,7 +1061,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1043,7 +1099,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1082,7 +1138,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1120,7 +1176,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1158,7 +1214,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1198,7 +1254,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1237,7 +1293,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1365,7 +1421,8 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     after(function() {
       let identityIndex = db.idp1Identities.findIndex(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       db.idp1Identities.splice(identityIndex, 1);
       rpEventEmitter.removeAllListeners('callback');
@@ -1405,11 +1462,11 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
   const mqSendSuccessIdp2ToIdp1CallbackPromise = createEventPromise();
 
   let accessorId;
-  let requestMessagePaddedHash;
   let referenceGroupCode;
-
   let requestId;
+  let identityForResponse;
   let responseAccessorId;
+  let requestMessagePaddedHash;
 
   before(function() {
     if (!idp2Available) {
@@ -1461,7 +1518,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     });
 
     idp2EventEmitter.on('identity_notification_callback', function(
-      callbackData
+      callbackData,
     ) {
       if (
         callbackData.type === 'identity_modification_notification' &&
@@ -1795,10 +1852,10 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       success: true,
     });
     expect(upgradeIdentityModeRequestResult.creation_block_height).to.be.a(
-      'string'
+      'string',
     );
     const splittedCreationBlockHeight = upgradeIdentityModeRequestResult.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1824,7 +1881,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       reference_group_code: referenceGroupCode,
       request_message: upgradeIdentityModeRequestMessage,
       request_message_hash: hash(
-        upgradeIdentityModeRequestMessage + incomingRequest.request_message_salt
+        upgradeIdentityModeRequestMessage +
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -1835,7 +1893,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1843,14 +1901,37 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     expect(incomingRequest.request_timeout).to.be.a('number');
   });
 
-  it('idp2 should create response (accept) successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function() {
     this.timeout(15000);
-    const identity = db.idp2Identities.find(
+    identityForResponse = db.idp2Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp2',
+      idpNodeId: 'idp2',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('idp2 should create response (accept) successfully', async function() {
+    this.timeout(15000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp2', {
       reference_id: idpResponseReferenceId,
@@ -1860,29 +1941,30 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
-    const identity = db.idp2Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
-    );
-    let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
+  //   const identity = db.idp2Identities.find(
+  //     identity =>
+  //       identity.namespace === namespace && identity.identifier === identifier,
+  //   );
+  //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-    let testResult = await idpReceiveAccessorEncryptCallbackTest({
-      callIdpApiAtNodeId: 'idp2',
-      accessorEncryptPromise,
-      accessorId: responseAccessorId,
-      requestId,
-      idpReferenceId: idpResponseReferenceId,
-      incomingRequestPromise,
-      accessorPublicKey,
-    });
-    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-  });
+  //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+  //     callIdpApiAtNodeId: 'idp2',
+  //     accessorEncryptPromise,
+  //     accessorId: responseAccessorId,
+  //     requestId,
+  //     idpReferenceId: idpResponseReferenceId,
+  //     incomingRequestPromise,
+  //     accessorPublicKey,
+  //   });
+  //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
@@ -1909,7 +1991,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     this.timeout(15000);
     const identity = db.idp2Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
     let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -2195,7 +2277,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2231,7 +2313,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -2266,7 +2348,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -2276,7 +2358,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -2291,7 +2373,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2311,7 +2393,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -2321,7 +2403,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -2336,7 +2418,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2346,14 +2428,39 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
-      const identity = db.idp1Identities.find(
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('IdP should create response (accept) successfully', async function() {
+      this.timeout(10000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
@@ -2363,30 +2470,32 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp1Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
 
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp1',
-        accessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idpReferenceId,
-        incomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp1',
+    //     accessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId,
+    //     idpReferenceId: idpReferenceId,
+    //     incomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -2413,7 +2522,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
@@ -2460,7 +2570,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -2498,7 +2608,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2569,7 +2679,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -2608,7 +2718,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -2646,7 +2756,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -2684,7 +2794,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -2723,7 +2833,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -2761,7 +2871,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -2799,7 +2909,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -2839,7 +2949,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -2878,7 +2988,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -3006,12 +3116,14 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     after(function() {
       let identityIndex = db.idp1Identities.findIndex(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       db.idp1Identities.splice(identityIndex, 1);
       identityIndex = db.idp2Identities.findIndex(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       db.idp2Identities.splice(identityIndex, 1);
       rpEventEmitter.removeAllListeners('callback');
