@@ -11,6 +11,7 @@ import {
   createEventPromise,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import {
   idp1EventEmitter,
@@ -24,8 +25,8 @@ import * as db from '../../../db';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 import {
-  idpReceiveAccessorEncryptCallbackTest,
   verifyResponseSignature,
+  getAndVerifyRequestMessagePaddedHashTest,
 } from '../_fragments/request_flow_fragments/idp';
 
 describe('On the fly onboard and uplift tests', function() {
@@ -83,8 +84,14 @@ describe('On the fly onboard and uplift tests', function() {
     let requestId;
     let lastStatusUpdateBlockHeight;
     let accessorId;
-    let requestMessagePaddedHash;
+
+    let identityForResponse;
     let responseAccessorId;
+    let requestMessagePaddedHash;
+
+    let idp2IdentityForResponse;
+    let idp2ResponseAccessorId;
+    let idp2RequestMessagePaddedHash;
 
     const data = JSON.stringify({
       test: 'test',
@@ -275,7 +282,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -311,7 +318,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -349,7 +356,7 @@ describe('On the fly onboard and uplift tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -361,7 +368,7 @@ describe('On the fly onboard and uplift tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -375,7 +382,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -395,7 +402,7 @@ describe('On the fly onboard and uplift tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -407,7 +414,7 @@ describe('On the fly onboard and uplift tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -422,17 +429,60 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp1Identities[0];
+
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+
+      idp2IdentityForResponse = db.idp2Identities[0];
+
+      idp2ResponseAccessorId = idp2IdentityForResponse.accessors[0].accessorId;
+      let idp2AccessorPublicKey =
+        idp2IdentityForResponse.accessors[0].accessorPublicKey;
+
+      const idp2TestResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp2',
+        idpNodeId: 'idp2',
+        requestId,
+        incomingRequestPromise: idp2IncomingRequestPromise,
+        accessorPublicKey: idp2AccessorPublicKey,
+        accessorId: idp2ResponseAccessorId,
+      });
+      idp2RequestMessagePaddedHash =
+        idp2TestResult.verifyRequestMessagePaddedHash;
+    });
+
     it('idp1 and idp2 should create response (accept) unsuccessfully', async function() {
       this.timeout(30000);
       if (db.idp1Identities[0] == null) this.skip();
-      responseAccessorId = db.idp1Identities[0].accessors[0].accessorId;
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1CreateIdentityReferenceId,
@@ -442,14 +492,20 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20020);
 
       if (idp2Available && !db.idp2Identities[0] == null) {
-        let responseAccessorIdIdp2 =
-          db.idp2Identities[0].accessors[0].accessorId;
+        let idp2AccessorPrivateKey =
+          idp2IdentityForResponse.accessors[0].accessorPrivateKey;
+
+        const idp2Signature = createResponseSignature(
+          idp2AccessorPrivateKey,
+          idp2RequestMessagePaddedHash,
+        );
 
         const response = await idpApi.createResponse('idp2', {
           reference_id: idp1CreateIdentityReferenceId,
@@ -458,7 +514,8 @@ describe('On the fly onboard and uplift tests', function() {
           ial: 2.3,
           aal: 3,
           status: 'accept',
-          accessor_id: responseAccessorIdIdp2,
+          accessor_id: idp2ResponseAccessorId,
+          signature: idp2Signature,
         });
         expect(response.status).to.equal(400);
         const responseBody = await response.json();
@@ -531,14 +588,39 @@ describe('On the fly onboard and uplift tests', function() {
       await wait(2000);
     });
 
-    it('After idp1 onboard this user should create response (accept) successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function() {
       this.timeout(15000);
-      const identity = db.idp1Identities.find(
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('After idp1 onboard this user should create response (accept) successfully', async function() {
+      this.timeout(15000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ResponseRequestReferenceId,
@@ -548,30 +630,32 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp1Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
 
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp1',
-        accessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idp1ResponseRequestReferenceId,
-        incomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp1',
+    //     accessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId,
+    //     idpReferenceId: idp1ResponseRequestReferenceId,
+    //     incomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -598,7 +682,8 @@ describe('On the fly onboard and uplift tests', function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
@@ -645,7 +730,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -683,7 +768,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -754,7 +839,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -793,7 +878,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -831,7 +916,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -869,7 +954,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -908,7 +993,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -946,7 +1031,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -985,7 +1070,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1025,7 +1110,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1064,7 +1149,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1239,6 +1324,7 @@ describe('On the fly onboard and uplift tests', function() {
     let lastStatusUpdateBlockHeight;
     let responseAccessorId;
     let requestMessagePaddedHash;
+    let identityForResponse;
 
     const data = JSON.stringify({
       test: 'test',
@@ -1422,7 +1508,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1458,7 +1544,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1483,7 +1569,7 @@ describe('On the fly onboard and uplift tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -1494,7 +1580,7 @@ describe('On the fly onboard and uplift tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1509,21 +1595,46 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('idp1 create response (accept) with ial = 2.3 unsuccessfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function() {
       this.timeout(15000);
-      const identity = db.idp1Identities.find(
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('idp1 create response (accept) with ial = 2.3 unsuccessfully', async function() {
+      this.timeout(15000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ResponseRequestReferenceId,
@@ -1533,6 +1644,7 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
@@ -1561,12 +1673,14 @@ describe('On the fly onboard and uplift tests', function() {
 
     it('idp1 create response (accept) with ial = 3 successfully', async function() {
       this.timeout(15000);
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ResponseRequestReferenceId,
@@ -1576,29 +1690,31 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp1Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp1',
-        accessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idp1ResponseRequestReferenceId,
-        incomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp1',
+    //     accessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId,
+    //     idpReferenceId: idp1ResponseRequestReferenceId,
+    //     incomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -1625,7 +1741,8 @@ describe('On the fly onboard and uplift tests', function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -1671,7 +1788,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1709,7 +1826,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1780,7 +1897,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1819,7 +1936,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1857,7 +1974,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1895,7 +2012,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1934,7 +2051,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1972,7 +2089,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -2011,7 +2128,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -2051,7 +2168,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -2090,7 +2207,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -2287,6 +2404,10 @@ describe('On the fly onboard and uplift tests', function() {
     let createIdentityRequestId;
     let requestMessagePaddedHash;
     let requestMessagePaddedHashCreateIdentity;
+    let identityForResponse;
+
+    let identityForResponseCreateIdentity;
+    let responseAccessorIdCreateIdentity;
 
     const data = JSON.stringify({
       test: 'test',
@@ -2511,7 +2632,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2547,7 +2668,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -2585,7 +2706,7 @@ describe('On the fly onboard and uplift tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -2596,7 +2717,7 @@ describe('On the fly onboard and uplift tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -2612,7 +2733,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2632,7 +2753,7 @@ describe('On the fly onboard and uplift tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -2644,7 +2765,7 @@ describe('On the fly onboard and uplift tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -2659,17 +2780,44 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp2Identities[0];
+
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp2',
+        idpNodeId: 'idp2',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
     it('idp2 (does not onboard) should create response (accept) unsuccessfully', async function() {
       this.timeout(15000);
       if (!idp2Available || db.idp2Identities[0] == null) this.skip();
-      responseAccessorId = db.idp2Identities[0].accessors[0].accessorId;
+      // responseAccessorId = db.idp2Identities[0].accessors[0].accessorId;
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp2', {
         reference_id: idp2CreateIdentityReferenceId,
@@ -2679,6 +2827,7 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
@@ -2749,7 +2898,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2757,14 +2906,42 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.request_timeout).to.be.a('number');
     });
 
-    it('idp1 should create response (accept) successfully', async function() {
-      this.timeout(10000);
-      const identity = db.idp1Identities.find(
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+
+      identityForResponseCreateIdentity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorIdCreateIdentity =
+        identityForResponseCreateIdentity.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponseCreateIdentity.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId: createIdentityRequestId,
+        incomingRequestPromise: incomingRequestCreateIdentityPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorIdCreateIdentity,
+      });
+      requestMessagePaddedHashCreateIdentity =
+        testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('idp1 should create response (accept) successfully', async function() {
+      this.timeout(10000);
+
+      let accessorPrivateKey =
+        identityForResponseCreateIdentity.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHashCreateIdentity,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ResponseCreateIdentityReferenceId,
@@ -2773,31 +2950,33 @@ describe('On the fly onboard and uplift tests', function() {
         ial: 2.3,
         aal: 3,
         status: 'accept',
-        accessor_id: responseAccessorId,
+        accessor_id: responseAccessorIdCreateIdentity,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp1Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp1',
-        accessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId: createIdentityRequestId,
-        idpReferenceId: idp1ResponseCreateIdentityReferenceId,
-        incomingRequestPromise: incomingRequestCreateIdentityPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHashCreateIdentity =
-        testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp1',
+    //     accessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId: createIdentityRequestId,
+    //     idpReferenceId: idp1ResponseCreateIdentityReferenceId,
+    //     incomingRequestPromise: incomingRequestCreateIdentityPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHashCreateIdentity =
+    //     testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -2824,7 +3003,8 @@ describe('On the fly onboard and uplift tests', function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -2847,7 +3027,7 @@ describe('On the fly onboard and uplift tests', function() {
         .is.not.empty;
 
       expect(createIdentityResult.reference_group_code).to.equal(
-        referenceGroupCode
+        referenceGroupCode,
       );
       //referenceGroupCode = createIdentityResult.reference_group_code;
 
@@ -2878,14 +3058,39 @@ describe('On the fly onboard and uplift tests', function() {
       await wait(2000);
     });
 
-    it('After idp2 onboard this user should create response (accept) successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function() {
       this.timeout(15000);
-      const identity = db.idp2Identities.find(
+      identityForResponse = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp2',
+        idpNodeId: 'idp2',
+        requestId,
+        incomingRequestPromise: idp2IncomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('After idp2 onboard this user should create response (accept) successfully', async function() {
+      this.timeout(15000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp2', {
         reference_id: idp2ResponseRequestReferenceId,
@@ -2895,30 +3100,33 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
+
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp2Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp2Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
 
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp2',
-        accessorEncryptPromise: idp2AccessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idp2ResponseRequestReferenceId,
-        incomingRequestPromise: idp2IncomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp2',
+    //     accessorEncryptPromise: idp2AccessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId,
+    //     idpReferenceId: idp2ResponseRequestReferenceId,
+    //     incomingRequestPromise: idp2IncomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await idp2ResponseResultPromise.promise;
@@ -2945,7 +3153,8 @@ describe('On the fly onboard and uplift tests', function() {
       this.timeout(15000);
       const identity = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -2991,7 +3200,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -3029,7 +3238,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -3100,7 +3309,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -3139,7 +3348,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -3177,7 +3386,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -3215,7 +3424,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -3254,7 +3463,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -3292,7 +3501,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -3331,7 +3540,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -3371,7 +3580,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -3410,7 +3619,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -3590,9 +3799,11 @@ describe('On the fly onboard and uplift tests', function() {
     let requestId;
     let lastStatusUpdateBlockHeight;
     let accessorId;
+
     let responseAccessorId;
     let requestMessagePaddedHashIdp1;
     let requestMessagePaddedHashIdp2;
+    let identityForResponse;
 
     const data = JSON.stringify({
       test: 'test',
@@ -3804,7 +4015,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -3840,7 +4051,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -3878,7 +4089,7 @@ describe('On the fly onboard and uplift tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -3889,7 +4100,7 @@ describe('On the fly onboard and uplift tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -3904,7 +4115,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -3924,7 +4135,7 @@ describe('On the fly onboard and uplift tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -3935,7 +4146,7 @@ describe('On the fly onboard and uplift tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -3950,21 +4161,46 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('idp1 should create response (accept) successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function() {
       this.timeout(15000);
-      const identity = db.idp1Identities.find(
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHashIdp1 = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('idp1 should create response (accept) successfully', async function() {
+      this.timeout(15000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHashIdp1,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ResponseRequestReferenceId,
@@ -3974,30 +4210,32 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp1Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
 
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp1',
-        accessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idp1ResponseRequestReferenceId,
-        incomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHashIdp1 = testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp1',
+    //     accessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId,
+    //     idpReferenceId: idp1ResponseRequestReferenceId,
+    //     incomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHashIdp1 = testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -4010,17 +4248,43 @@ describe('On the fly onboard and uplift tests', function() {
       });
     });
 
+    it('IdP (idp2) should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp2Identities.find(
+        identity =>
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
+      );
+
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp2',
+        idpNodeId: 'idp2',
+        requestId,
+        incomingRequestPromise: idp2IncomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+
+      requestMessagePaddedHashIdp2 = testResult.verifyRequestMessagePaddedHash;
+    });
+
     it('idp2 should create response (accept) successfully', async function() {
       this.timeout(15000);
       if (!idp2Available) {
         this.skip();
       }
-      const identity = db.idp2Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHashIdp2,
+      );
 
       const response = await idpApi.createResponse('idp2', {
         reference_id: idp2ResponseRequestReferenceId,
@@ -4030,30 +4294,32 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp2Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp2Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
 
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp2',
-        accessorEncryptPromise: idp2AccessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idp2ResponseRequestReferenceId,
-        incomingRequestPromise: idp2IncomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHashIdp2 = testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp2',
+    //     accessorEncryptPromise: idp2AccessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId,
+    //     idpReferenceId: idp2ResponseRequestReferenceId,
+    //     incomingRequestPromise: idp2IncomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHashIdp2 = testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await idp2ResponseResultPromise.promise;
@@ -4093,7 +4359,8 @@ describe('On the fly onboard and uplift tests', function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -4109,7 +4376,8 @@ describe('On the fly onboard and uplift tests', function() {
       this.timeout(15000);
       const identity = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -4155,7 +4423,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -4199,7 +4467,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -4237,7 +4505,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -4313,7 +4581,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -4357,7 +4625,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -4400,7 +4668,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -4443,7 +4711,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -4487,7 +4755,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -4530,7 +4798,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -4573,7 +4841,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -4617,7 +4885,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -4660,7 +4928,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -4871,6 +5139,7 @@ describe('On the fly onboard and uplift tests', function() {
     let upgradeIdentityModeRequestId;
     let requestMessagePaddedHashUpgradeIdentity;
     let requestMessagePaddedHash;
+    let identityForResponse;
 
     const data = JSON.stringify({
       test: 'test',
@@ -5076,7 +5345,7 @@ describe('On the fly onboard and uplift tests', function() {
           if (callbackData.node_id === 'idp1') {
             if (callbackData.destination_node_id === 'idp2') {
               mqSendSuccessUpgradeIdentityIdp1ToIdp2CallbackPromise.resolve(
-                callbackData
+                callbackData,
               );
             }
           }
@@ -5099,7 +5368,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -5135,7 +5404,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -5173,7 +5442,7 @@ describe('On the fly onboard and uplift tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -5184,7 +5453,7 @@ describe('On the fly onboard and uplift tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -5199,7 +5468,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -5219,7 +5488,7 @@ describe('On the fly onboard and uplift tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -5230,7 +5499,7 @@ describe('On the fly onboard and uplift tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -5245,22 +5514,46 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
+      );
+
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
     it('idp1 (identity mode 2) should create response (accept) unsuccessfully', async function() {
       this.timeout(15000);
 
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1CreateIdentityReferenceId,
@@ -5270,6 +5563,7 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
@@ -5298,10 +5592,10 @@ describe('On the fly onboard and uplift tests', function() {
         success: true,
       });
       expect(upgradeIdentityModeRequestResult.creation_block_height).to.be.a(
-        'string'
+        'string',
       );
       const splittedCreationBlockHeight = upgradeIdentityModeRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -5336,7 +5630,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -5346,14 +5640,40 @@ describe('On the fly onboard and uplift tests', function() {
       // requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('idp2 should create response (accept) successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function() {
       this.timeout(15000);
-      const identity = db.idp2Identities.find(
+      identityForResponse = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp2',
+        idpNodeId: 'idp2',
+        requestId: upgradeIdentityModeRequestId,
+        incomingRequestPromise: upgradeIdentityModeincomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHashUpgradeIdentity =
+        testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('idp2 should create response (accept) successfully', async function() {
+      this.timeout(15000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHashUpgradeIdentity,
+      );
 
       const response = await idpApi.createResponse('idp2', {
         reference_id: idp2ResponseUpgradeIdentityModeReferenceId,
@@ -5363,30 +5683,32 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('idp2 should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp2Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    // it('idp2 should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp2Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp2',
-        accessorEncryptPromise: idp2UpgradeIdentityModeAccessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId: upgradeIdentityModeRequestId,
-        idpReferenceId: idp2ResponseUpgradeIdentityModeReferenceId,
-        incomingRequestPromise: upgradeIdentityModeincomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHashUpgradeIdentity =
-        testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp2',
+    //     accessorEncryptPromise: idp2UpgradeIdentityModeAccessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId: upgradeIdentityModeRequestId,
+    //     idpReferenceId: idp2ResponseUpgradeIdentityModeReferenceId,
+    //     incomingRequestPromise: upgradeIdentityModeincomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHashUpgradeIdentity =
+    //     testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('idp2 shoud receive callback create response result with success = true', async function() {
       this.timeout(15000);
@@ -5406,7 +5728,8 @@ describe('On the fly onboard and uplift tests', function() {
       this.timeout(15000);
       const identity = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -5418,14 +5741,39 @@ describe('On the fly onboard and uplift tests', function() {
       });
     });
 
-    it('After idp1 upgrade identity mode should create response (accept) successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function() {
       this.timeout(15000);
-      const identity = db.idp1Identities.find(
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('After idp1 upgrade identity mode should create response (accept) successfully', async function() {
+      this.timeout(15000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ResponseRequestReferenceId,
@@ -5435,30 +5783,32 @@ describe('On the fly onboard and uplift tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('idp1 should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
+    // it('idp1 should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const identity = db.idp1Identities.find(
+    //     identity =>
+    //       identity.namespace === namespace &&
+    //       identity.identifier === identifier,
+    //   );
 
-      let accessorPublicKey = identity.accessors[0].accessorPublicKey;
+    //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
 
-      let testResult = await idpReceiveAccessorEncryptCallbackTest({
-        callIdpApiAtNodeId: 'idp1',
-        accessorEncryptPromise,
-        accessorId: responseAccessorId,
-        requestId,
-        idpReferenceId: idp1ResponseRequestReferenceId,
-        incomingRequestPromise,
-        accessorPublicKey,
-      });
-      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-    });
+    //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
+    //     callIdpApiAtNodeId: 'idp1',
+    //     accessorEncryptPromise,
+    //     accessorId: responseAccessorId,
+    //     requestId,
+    //     idpReferenceId: idp1ResponseRequestReferenceId,
+    //     incomingRequestPromise,
+    //     accessorPublicKey,
+    //   });
+    //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    // });
 
     it('idp1 shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -5485,7 +5835,8 @@ describe('On the fly onboard and uplift tests', function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -5531,7 +5882,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -5569,7 +5920,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -5640,7 +5991,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -5679,7 +6030,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -5717,7 +6068,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -5755,7 +6106,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -5794,7 +6145,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -5832,7 +6183,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -5871,7 +6222,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -5911,7 +6262,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -5950,7 +6301,7 @@ describe('On the fly onboard and uplift tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
