@@ -33,6 +33,9 @@ describe('IdP response errors tests', function() {
 
   let requestId;
   let requestMessageHash;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   before(async function() {
     this.timeout(30000);
@@ -105,10 +108,37 @@ describe('IdP response errors tests', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('should get an error when making a response with non-existent request ID', async function() {
-    const identity = db.idp1Identities.find(
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('should get an error when making a response with non-existent request ID', async function() {
+    this.timeout(15000);
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -118,8 +148,8 @@ describe('IdP response errors tests', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      accessor_id: identity.accessors[0].accessorId,
-      signature: 'Test signature',
+      accessor_id: responseAccessorId,
+      signature,
     });
     const responseBody = await response.json();
 
@@ -128,42 +158,13 @@ describe('IdP response errors tests', function() {
   });
 
   it('should get an error when making a response without accessor ID (mode 3)', async function() {
-    const response = await idpApi.createResponse('idp1', {
-      reference_id: idpReferenceId,
-      callback_url: config.IDP1_CALLBACK_URL,
-      request_id: requestId,
-      ial: 2.3,
-      aal: 3,
-      status: 'accept',
-      // accessor_id: identity.accessors[0].accessorId,
-      signature: 'Test signature',
-    });
-    const responseBody = await response.json();
+    this.timeout(15000);
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
 
-    expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20014);
-  });
-
-  // it('should get an error when making a response without signature (mode 2)', async function() {
-  //   const response = await idpApi.createResponse('idp1', {
-  //     reference_id: idpReferenceId,
-  //     callback_url: config.IDP1_CALLBACK_URL,
-  //     request_id: requestId,
-  //     ial: 2.3,
-  //     aal: 3,
-  //     status: 'accept',
-  //     // accessor_id: identity.accessors[0].accessorId,
-  //   });
-  //   const responseBody = await response.json();
-
-  //   expect(response.status).to.equal(400);
-  //   expect(responseBody.error.code).to.equal(20014);
-  // });
-
-  it('should get an error when making a response without signature (mode 3)', async function() {
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -173,7 +174,42 @@ describe('IdP response errors tests', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      accessor_id: identity.accessors[0].accessorId,
+      // accessor_id: identity.accessors[0].accessorId,
+      signature,
+    });
+    const responseBody = await response.json();
+
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20014);
+  });
+
+  it('should get an error when making a response without signature (mode 2)', async function() {
+    this.timeout(15000);
+    const response = await idpApi.createResponse('idp1', {
+      reference_id: idpReferenceId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      request_id: requestId,
+      ial: 2.3,
+      aal: 3,
+      status: 'accept',
+      accessor_id: responseAccessorId,
+    });
+    const responseBody = await response.json();
+
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20003);
+  });
+
+  it('should get an error when making a response without signature (mode 3)', async function() {
+    this.timeout(15000);
+    const response = await idpApi.createResponse('idp1', {
+      reference_id: idpReferenceId,
+      callback_url: config.IDP1_CALLBACK_URL,
+      request_id: requestId,
+      ial: 2.3,
+      aal: 3,
+      status: 'accept',
+      accessor_id: responseAccessorId,
     });
     const responseBody = await response.json();
 
@@ -182,6 +218,15 @@ describe('IdP response errors tests', function() {
   });
 
   it('should get an error when making a response with non-existent accessor ID (mode 3)', async function() {
+    this.timeout(15000);
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -190,7 +235,7 @@ describe('IdP response errors tests', function() {
       aal: 3,
       status: 'accept',
       accessor_id: 'non-existent-accessor-id',
-      signature: 'Test signature',
+      signature,
     });
     const responseBody = await response.json();
 
@@ -203,11 +248,6 @@ describe('IdP response errors tests', function() {
     this.timeout(25000);
     let random8Byte = util.randomByte(8);
 
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
-    );
-
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -215,7 +255,7 @@ describe('IdP response errors tests', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
       signature: random8Byte.toString(),
     });
     // const responseBody = await response.json();
@@ -236,9 +276,13 @@ describe('IdP response errors tests', function() {
   });
 
   it('should get an error when making a response with invalid ial (ial is not in enum) (mode 3)', async function() {
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
+    this.timeout(15000);
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -248,8 +292,8 @@ describe('IdP response errors tests', function() {
       ial: 5,
       aal: 1,
       status: 'accept',
-      accessor_id: identity.accessors[0].accessorId,
-      signature: 'Test signature',
+      accessor_id: responseAccessorId,
+      signature,
     });
     const responseBody = await response.json();
 
@@ -455,6 +499,7 @@ describe("IdP making response with ial less than request's min_ial and IdP makin
   });
 
   it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier,

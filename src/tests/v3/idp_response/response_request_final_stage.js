@@ -11,9 +11,15 @@ import {
   as1EventEmitter,
 } from '../../../callback_server';
 import * as db from '../../../db';
-import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  wait,
+  createResponseSignature,
+} from '../../../utils';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe('IdP response request already confirmed test', function() {
   let namespace;
@@ -30,9 +36,13 @@ describe('IdP response request already confirmed test', function() {
   const idp2ResponseResultPromise = createEventPromise(); // 2nd IDP
 
   let createRequestParams;
+  let idp1RequestMessagePaddedHash;
 
   let requestId;
   let requestMessageHash;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   before(async function() {
     this.timeout(30000);
@@ -47,14 +57,14 @@ describe('IdP response request already confirmed test', function() {
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation &&
-        identity.willCreateOnIdP2
+        identity.willCreateOnIdP2,
     );
 
     let identityOnIdp2 = db.idp2Identities.filter(
       identityIdP2 =>
         identityIdP2.namespace === identity[0].namespace &&
         identityIdP2.identifier === identity[0].identifier &&
-        identityIdP2.mode === identity[0].mode
+        identityIdP2.mode === identity[0].mode,
     );
 
     if (identity.length === 0 || identityOnIdp2.length === 0) {
@@ -89,7 +99,7 @@ describe('IdP response request already confirmed test', function() {
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -128,11 +138,55 @@ describe('IdP response request already confirmed test', function() {
     await idp2IncomingRequestPromise.promise;
   });
 
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(30000);
+    identityForResponse = db.idp2Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp2',
+      idpNodeId: 'idp2',
+      requestId,
+      incomingRequestPromise: idp2IncomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    let idp1AccessorPublicKey = identity.accessors[0].accessorPublicKey;
+    let idp1ResponseAccessorId = identity.accessors[0].accessorId;
+
+    const idp1TestResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise: idp1IncomingRequestPromise,
+      accessorPublicKey: idp1AccessorPublicKey,
+      accessorId: idp1ResponseAccessorId,
+    });
+    idp1RequestMessagePaddedHash =
+      idp1TestResult.verifyRequestMessagePaddedHash;
+  });
+
   it('IdP (idp2) should create response (accept) successfully', async function() {
     this.timeout(20000);
-    const idp2Identity = db.idp2Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
     );
 
     const idp2Response = await idpApi.createResponse('idp2', {
@@ -142,7 +196,8 @@ describe('IdP response request already confirmed test', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      accessor_id: idp2Identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
+      signature,
     });
 
     expect(idp2Response.status).to.equal(202);
@@ -159,7 +214,14 @@ describe('IdP response request already confirmed test', function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      idp1RequestMessagePaddedHash,
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -170,6 +232,7 @@ describe('IdP response request already confirmed test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: identity.accessors[0].accessorId,
+      signature,
     });
 
     expect(response.status).to.equal(202);
@@ -216,9 +279,13 @@ describe('IdP response request already closed test', function() {
   const dataRequestReceivedPromise = createEventPromise(); // AS
   const sendDataResultPromise = createEventPromise(); // AS
   let createRequestParams;
+  let idp1RequestMessagePaddedHash;
 
   let requestId;
   let requestMessageHash;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   before(async function() {
     this.timeout(30000);
@@ -233,14 +300,14 @@ describe('IdP response request already closed test', function() {
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation &&
-        identity.willCreateOnIdP2
+        identity.willCreateOnIdP2,
     );
 
     let identityOnIdp2 = db.idp2Identities.filter(
       identityIdP2 =>
         identityIdP2.namespace === identity[0].namespace &&
         identityIdP2.identifier === identity[0].identifier &&
-        identityIdP2.mode === identity[0].mode
+        identityIdP2.mode === identity[0].mode,
     );
 
     if (identity.length === 0 || identityOnIdp2.length === 0) {
@@ -275,7 +342,7 @@ describe('IdP response request already closed test', function() {
       min_aal: 3,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -341,11 +408,55 @@ describe('IdP response request already closed test', function() {
     await idp2IncomingRequestPromise.promise;
   });
 
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp2Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp2',
+      idpNodeId: 'idp2',
+      requestId,
+      incomingRequestPromise: idp2IncomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+
+    const identity = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    let idp1AccessorPublicKey = identity.accessors[0].accessorPublicKey;
+    let idp1ResponseAccessorId = identity.accessors[0].accessorId;
+
+    const idp1TestResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise: idp1IncomingRequestPromise,
+      accessorPublicKey: idp1AccessorPublicKey,
+      accessorId: idp1ResponseAccessorId,
+    });
+    idp1RequestMessagePaddedHash =
+      idp1TestResult.verifyRequestMessagePaddedHash;
+  });
+
   it('IdP (idp2) should create response (accept) successfully', async function() {
     this.timeout(20000);
-    const idp2Identity = db.idp2Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
     );
 
     const idp2Response = await idpApi.createResponse('idp2', {
@@ -355,7 +466,8 @@ describe('IdP response request already closed test', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      accessor_id: idp2Identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
+      signature,
     });
 
     expect(idp2Response.status).to.equal(202);
@@ -409,7 +521,14 @@ describe('IdP response request already closed test', function() {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    const accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      idp1RequestMessagePaddedHash,
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -420,6 +539,7 @@ describe('IdP response request already closed test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: identity.accessors[0].accessorId,
+      signature,
     });
 
     expect(response.status).to.equal(202);
@@ -466,6 +586,9 @@ describe('IdP response request already timed out test', function() {
 
   let requestId;
   let requestMessageHash;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   before(async function() {
     this.timeout(30000);
@@ -474,7 +597,7 @@ describe('IdP response request already timed out test', function() {
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -507,7 +630,7 @@ describe('IdP response request already timed out test', function() {
       min_aal: 3,
       min_idp: 1,
       request_timeout: 3,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -542,15 +665,41 @@ describe('IdP response request already timed out test', function() {
     requestId = responseBodyRp.request_id;
     const incomingRequest = await idp1IncomingRequestPromise.promise;
     requestMessageHash = incomingRequest.request_message_hash;
+  });
+
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise: idp1IncomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     await requestTimeoutPromise.promise;
   });
 
   it('IdP (idp1) should get an error callback response when making a response with request that already timed out', async function() {
     this.timeout(20000);
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
     );
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -558,7 +707,8 @@ describe('IdP response request already timed out test', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
+      signature,
     });
     const responseBody = await response.json();
 
