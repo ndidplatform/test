@@ -19,8 +19,10 @@ import {
   generateReferenceId,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 describe('Reject IdP add accessor (mode 3) test', function() {
   let accessorId;
   let namespace;
@@ -47,6 +49,8 @@ describe('Reject IdP add accessor (mode 3) test', function() {
     let requestId;
     let requestMessageHash;
     let responseAccessorId;
+    let identityForResponse;
+    let requestMessagePaddedHash;
 
     before(function() {
       if (db.idp1Identities[0] == null) {
@@ -208,15 +212,39 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       expect(incomingRequest.request_timeout).to.be.a('number');
     });
 
-    it('IdP (idp1) should create response (reject) successfully', async function() {
-      this.timeout(10000);
-      const identity = db.idp1Identities.find(
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp1Identities.find(
         identity =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('IdP (idp1) should create response (reject) successfully', async function() {
+      this.timeout(10000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ReferenceId,
@@ -226,28 +254,29 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         aal: 3,
         status: 'reject',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ReferenceId,
-        request_id: requestId,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp1',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: responseAccessorId,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idp1ReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string',
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       this.timeout(15000);
@@ -498,6 +527,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         aal: 3,
         status: 'accept',
         accessor_id: accessorId,
+        signature: 'Test signature',
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();

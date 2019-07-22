@@ -8,6 +8,7 @@ import * as idpApi from '../../../api/v3/idp';
 import * as asApi from '../../../api/v3/as';
 import * as commonApi from '../../../api/v3/common';
 import * as identityApi from '../../../api/v3/identity';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 import {
   idp1EventEmitter,
   rpEventEmitter,
@@ -15,7 +16,12 @@ import {
   idp2EventEmitter,
 } from '../../../callback_server';
 import * as db from '../../../db';
-import { createEventPromise, generateReferenceId, hash } from '../../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  hash,
+  createResponseSignature,
+} from '../../../utils';
 import * as config from '../../../config';
 
 describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and without providing accessor_id) test', function() {
@@ -61,7 +67,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
     });
 
     idp2EventEmitter.on('identity_notification_callback', function(
-      callbackData
+      callbackData,
     ) {
       if (
         callbackData.type === 'identity_modification_notification' &&
@@ -113,7 +119,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
 
     const identity = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
     identity.accessors.push({
@@ -186,6 +192,8 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
 
     let requestId;
     let responseAccessorId;
+    let identityForResponse;
+    let requestMessagePaddedHash;
 
     const requestStatusUpdates = [];
     const idp_requestStatusUpdates = [];
@@ -199,7 +207,8 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
 
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       //const identity = db.idp1Identities[0]
@@ -357,7 +366,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -393,7 +402,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -408,7 +417,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -418,7 +427,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -433,7 +442,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -450,7 +459,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -460,7 +469,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -475,31 +484,60 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
 
-      const identity = db.idp1Identities.find(
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       let latestAccessor;
-      if (identity) {
-        latestAccessor = identity.accessors.length - 1;
+      if (identityForResponse) {
+        latestAccessor = identityForResponse.accessors.length - 1;
       } else {
         throw new Error('Identity not found');
       }
 
-      responseAccessorId = identity.accessors[latestAccessor].accessorId;
+      responseAccessorId =
+        identityForResponse.accessors[latestAccessor].accessorId;
       if (accessorId != responseAccessorId) {
         responseAccessorId = accessorId;
       }
+
+      let accessorPublicKey =
+        identityForResponse.accessors[latestAccessor].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('IdP should create response (accept) successfully', async function() {
+      this.timeout(10000);
+
+      let latestAccessor = identityForResponse.accessors.length - 1;
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[latestAccessor].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
@@ -509,28 +547,29 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idpReferenceId,
-        request_id: requestId,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp1',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: responseAccessorId,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idpReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -577,7 +616,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -605,7 +644,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -666,7 +705,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -705,7 +744,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -743,7 +782,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -781,7 +820,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -820,7 +859,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -858,7 +897,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -897,7 +936,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -937,7 +976,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -976,7 +1015,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1149,7 +1188,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
     });
 
     idp1EventEmitter.on('identity_notification_callback', function(
-      callbackData
+      callbackData,
     ) {
       if (
         callbackData.type === 'identity_modification_notification' &&
@@ -1200,7 +1239,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
 
     const identity = db.idp2Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
     identity.accessors.push({
@@ -1279,6 +1318,9 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
     const as_requestStatusUpdates = [];
     let lastStatusUpdateBlockHeight;
 
+    let identityForResponse;
+    let requestMessagePaddedHash;
+
     before(function() {
       if (db.idp2Identities[0] == null) {
         throw new Error('No created identity to use');
@@ -1286,7 +1328,8 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
 
       const identity = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       //const identity = db.idp1Identities[0]
@@ -1444,7 +1487,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1480,7 +1523,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1495,7 +1538,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -1505,7 +1548,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1520,7 +1563,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1537,7 +1580,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -1547,7 +1590,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1562,31 +1605,59 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
-
-      const identity = db.idp2Identities.find(
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
+
       let latestAccessor;
-      if (identity) {
-        latestAccessor = identity.accessors.length - 1;
+      if (identityForResponse) {
+        latestAccessor = identityForResponse.accessors.length - 1;
       } else {
         throw new Error('Identity not found');
       }
 
-      responseAccessorId = identity.accessors[latestAccessor].accessorId;
+      responseAccessorId =
+        identityForResponse.accessors[latestAccessor].accessorId;
       if (accessorId != responseAccessorId) {
         responseAccessorId = accessorId;
       }
+
+      let accessorPublicKey =
+        identityForResponse.accessors[latestAccessor].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp2',
+        idpNodeId: 'idp2',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('IdP should create response (accept) successfully', async function() {
+      this.timeout(10000);
+      let latestAccessor = identityForResponse.accessors.length - 1;
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[latestAccessor].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp2', {
         reference_id: idpReferenceId,
@@ -1596,27 +1667,29 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
+
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp2',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idpReferenceId,
-        request_id: requestId,
-      });
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp2',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: responseAccessorId,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idpReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -1663,7 +1736,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1691,7 +1764,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1752,7 +1825,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1791,7 +1864,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1829,7 +1902,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1867,7 +1940,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1906,7 +1979,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1944,7 +2017,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1983,7 +2056,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -2023,7 +2096,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -2062,7 +2135,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 

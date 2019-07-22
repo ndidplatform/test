@@ -17,8 +17,10 @@ import {
   generateReferenceId,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 const accessorId = uuidv4();
 let namespace;
@@ -45,6 +47,9 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
   let requestId;
   //let accessorId;
   let requestMessageHash;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   before(function() {
     const identity = db.idp1Identities.find(identity => identity.mode === 3);
@@ -166,6 +171,27 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
   it('IdP (idp1) should close add accessor request successfully', async function() {
     this.timeout(25000);
     const response = await identityApi.closeIdentityRequest('idp1', {
@@ -205,10 +231,15 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
 
   it('After close add accessor request IdP (idp1) should create response (accept) unsuccessfully', async function() {
     this.timeout(10000);
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
     );
+
     const response = await idpApi.createResponse('idp1', {
       reference_id: idp1ReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -218,7 +249,8 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
+      signature,
     });
 
     expect(response.status).to.equal(400);
@@ -413,10 +445,11 @@ describe('IdP (idp1) response with new accessor id test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: accessorId, //acessor id from add new accessor request that already closed
+      signature: 'Test signature',
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
-   //expect(responseBody.error.code).to.equal(20011);
+    //expect(responseBody.error.code).to.equal(20011);
     expect(responseBody.error.code).to.equal(20077);
   });
 
