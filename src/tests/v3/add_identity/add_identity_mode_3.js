@@ -20,9 +20,11 @@ import {
   generateReferenceId,
   createEventPromise,
   hash,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
 import * as db from '../../../db';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe('Add identity (mode 3) tests', function() {
   let alreadyAddedNamespace;
@@ -58,7 +60,7 @@ describe('Add identity (mode 3) tests', function() {
         callbackData.reference_id === bankStatementReferenceIdAfterTest
       ) {
         addOrUpdateServiceBankStatementResultAfterTestPromise.resolve(
-          callbackData
+          callbackData,
         );
       }
     });
@@ -67,7 +69,7 @@ describe('Add identity (mode 3) tests', function() {
     const response = await commonApi.getNamespaces('ndid1');
     const responseBody = await response.json();
     alreadyAddedNamespace = responseBody.find(
-      ns => ns.namespace === 'test_add_identity'
+      ns => ns.namespace === 'test_add_identity',
     );
   });
 
@@ -97,7 +99,7 @@ describe('Add identity (mode 3) tests', function() {
     const response = await commonApi.getNamespaces('ndid1');
     const responseBody = await response.json();
     const namespace = responseBody.find(
-      ns => ns.namespace === 'test_add_identity'
+      ns => ns.namespace === 'test_add_identity',
     );
     expect(namespace).to.deep.equal({
       namespace: 'test_add_identity',
@@ -158,6 +160,8 @@ describe('Add identity (mode 3) tests', function() {
     let referenceGroupCode;
     let requestId;
     let responseAccessorId;
+    let identityForResponse;
+    let requestMessagePaddedHash;
 
     before(function() {
       idp1EventEmitter.on('callback', function(callbackData) {
@@ -306,7 +310,7 @@ describe('Add identity (mode 3) tests', function() {
       this.timeout(10000);
 
       const identity = db.idp1Identities.find(
-        identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+        identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
       );
       let already_onboard_namespace = identity.namespace;
       let already_onboard_identifier = identity.identifier;
@@ -357,7 +361,7 @@ describe('Add identity (mode 3) tests', function() {
 
       expect(addIdentityRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = addIdentityRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -373,7 +377,7 @@ describe('Add identity (mode 3) tests', function() {
         reference_group_code: referenceGroupCode,
         request_message: addIdentityRequestMessage,
         request_message_hash: hash(
-          addIdentityRequestMessage + incomingRequest.request_message_salt
+          addIdentityRequestMessage + incomingRequest.request_message_salt,
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -384,7 +388,7 @@ describe('Add identity (mode 3) tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -394,14 +398,39 @@ describe('Add identity (mode 3) tests', function() {
       // requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('1st IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
-      const identity = db.idp1Identities.find(
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('1st IdP should create response (accept) successfully', async function() {
+      this.timeout(10000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
@@ -411,28 +440,29 @@ describe('Add identity (mode 3) tests', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idpReferenceId,
-        request_id: requestId,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp1',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: responseAccessorId,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idpReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -543,6 +573,8 @@ describe('Add identity (mode 3) tests', function() {
       let requestMessageSalt;
       let requestMessageHash;
       let responseAccessorId;
+      let identityForResponse;
+      let requestMessagePaddedHash;
 
       const requestStatusUpdates = [];
       const idp_requestStatusUpdates = [];
@@ -639,7 +671,7 @@ describe('Add identity (mode 3) tests', function() {
         });
 
         idp1EventEmitter.on('accessor_encrypt_callback', function(
-          callbackData
+          callbackData,
         ) {
           if (callbackData.request_id === requestId) {
             accessorEncryptPromise.resolve(callbackData);
@@ -693,7 +725,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(createRequestResult.success).to.equal(true);
         expect(createRequestResult.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -729,7 +761,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -744,7 +776,7 @@ describe('Add identity (mode 3) tests', function() {
             return {
               ...dataRequestWithoutParams,
             };
-          }
+          },
         );
         expect(incomingRequest).to.deep.include({
           node_id: 'idp1',
@@ -754,7 +786,7 @@ describe('Add identity (mode 3) tests', function() {
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt
+              incomingRequest.request_message_salt,
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -769,7 +801,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -779,15 +811,39 @@ describe('Add identity (mode 3) tests', function() {
         requestMessageHash = incomingRequest.request_message_hash;
       });
 
-      it('IdP should create response (accept) successfully', async function() {
-        this.timeout(10000);
-        const identity = db.idp1Identities.find(
+      it('IdP should get request_message_padded_hash successfully', async function() {
+        this.timeout(15000);
+        identityForResponse = db.idp1Identities.find(
           identity =>
             identity.namespace === namespace &&
-            identity.identifier === identifier
+            identity.identifier === identifier,
         );
 
-        responseAccessorId = identity.accessors[0].accessorId;
+        responseAccessorId = identityForResponse.accessors[0].accessorId;
+        let accessorPublicKey =
+          identityForResponse.accessors[0].accessorPublicKey;
+
+        const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+          callApiAtNodeId: 'idp1',
+          idpNodeId: 'idp1',
+          requestId,
+          incomingRequestPromise,
+          accessorPublicKey,
+          accessorId: responseAccessorId,
+        });
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+      });
+
+      it('IdP should create response (accept) successfully', async function() {
+        this.timeout(10000);
+
+        let accessorPrivateKey =
+          identityForResponse.accessors[0].accessorPrivateKey;
+
+        const signature = createResponseSignature(
+          accessorPrivateKey,
+          requestMessagePaddedHash,
+        );
 
         const response = await idpApi.createResponse('idp1', {
           reference_id: idpReferenceId,
@@ -797,28 +853,29 @@ describe('Add identity (mode 3) tests', function() {
           aal: 3,
           status: 'accept',
           accessor_id: responseAccessorId,
+          signature,
         });
         expect(response.status).to.equal(202);
       });
 
-      it('IdP should receive accessor encrypt callback with correct data', async function() {
-        this.timeout(15000);
+      // it('IdP should receive accessor encrypt callback with correct data', async function() {
+      //   this.timeout(15000);
 
-        const accessorEncryptParams = await accessorEncryptPromise.promise;
-        expect(accessorEncryptParams).to.deep.include({
-          node_id: 'idp1',
-          type: 'accessor_encrypt',
-          accessor_id: responseAccessorId,
-          key_type: 'RSA',
-          padding: 'none',
-          reference_id: idpReferenceId,
-          request_id: requestId,
-        });
+      //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+      //   expect(accessorEncryptParams).to.deep.include({
+      //     node_id: 'idp1',
+      //     type: 'accessor_encrypt',
+      //     accessor_id: responseAccessorId,
+      //     key_type: 'RSA',
+      //     padding: 'none',
+      //     reference_id: idpReferenceId,
+      //     request_id: requestId,
+      //   });
 
-        expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-          'string'
-        ).that.is.not.empty;
-      });
+      //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+      //     'string',
+      //   ).that.is.not.empty;
+      // });
 
       it('IdP shoud receive callback create response result with success = true', async function() {
         this.timeout(15000);
@@ -866,7 +923,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -933,7 +990,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(dataRequest.creation_time).to.be.a('number');
         expect(dataRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1027,7 +1084,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -1066,7 +1123,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1104,7 +1161,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1142,7 +1199,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -1181,7 +1238,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1219,7 +1276,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1257,7 +1314,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -1296,7 +1353,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1334,7 +1391,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1485,7 +1542,7 @@ describe('Add identity (mode 3) tests', function() {
       const response = await commonApi.getNamespaces('ndid1');
       const responseBody = await response.json();
       const namespace = responseBody.find(
-        ns => ns.namespace === 'test_add_identity'
+        ns => ns.namespace === 'test_add_identity',
       );
       expect(namespace).to.deep.equal({
         namespace: 'test_add_identity',
@@ -1526,6 +1583,9 @@ describe('Add identity (mode 3) tests', function() {
       let accessorId;
       let requestId;
       let requestIdAddIdentity;
+      let identityForResponse;
+      let responseAccessorId;
+      let requestMessagePaddedHash;
 
       before(function() {
         if (!idp2Available) {
@@ -1586,7 +1646,7 @@ describe('Add identity (mode 3) tests', function() {
         });
 
         idp1EventEmitter.on('accessor_encrypt_callback', function(
-          callbackData
+          callbackData,
         ) {
           if (callbackData.request_id === requestId) {
             accessorEncryptPromise.resolve(callbackData);
@@ -1597,7 +1657,7 @@ describe('Add identity (mode 3) tests', function() {
         });
 
         idp1EventEmitter.on('identity_notification_callback', function(
-          callbackData
+          callbackData,
         ) {
           if (
             callbackData.type === 'identity_modification_notification' &&
@@ -1653,10 +1713,10 @@ describe('Add identity (mode 3) tests', function() {
           success: true,
         });
         expect(createIdentityRequestResult.creation_block_height).to.be.a(
-          'string'
+          'string',
         );
         const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1672,7 +1732,7 @@ describe('Add identity (mode 3) tests', function() {
           reference_group_code: referenceGroupCode,
           request_message: createIdentityRequestMessage,
           request_message_hash: hash(
-            createIdentityRequestMessage + incomingRequest.request_message_salt
+            createIdentityRequestMessage + incomingRequest.request_message_salt,
           ),
           requester_node_id: 'idp2',
           min_ial: 1.1,
@@ -1683,7 +1743,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1693,15 +1753,39 @@ describe('Add identity (mode 3) tests', function() {
         // requestMessageHash = incomingRequest.request_message_hash;
       });
 
-      it('1st IdP (idp1) should create response (accept) successfully', async function() {
-        this.timeout(10000);
-        const identity = db.idp1Identities.find(
+      it('IdP should get request_message_padded_hash successfully', async function() {
+        this.timeout(15000);
+        identityForResponse = db.idp1Identities.find(
           identity =>
             identity.namespace === namespace &&
-            identity.identifier === identifier
+            identity.identifier === identifier,
         );
 
-        responseAccessorId = identity.accessors[0].accessorId;
+        responseAccessorId = identityForResponse.accessors[0].accessorId;
+        let accessorPublicKey =
+          identityForResponse.accessors[0].accessorPublicKey;
+
+        const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+          callApiAtNodeId: 'idp1',
+          idpNodeId: 'idp1',
+          requestId,
+          incomingRequestPromise,
+          accessorPublicKey,
+          accessorId: responseAccessorId,
+        });
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+      });
+
+      it('1st IdP (idp1) should create response (accept) successfully', async function() {
+        this.timeout(10000);
+
+        let accessorPrivateKey =
+          identityForResponse.accessors[0].accessorPrivateKey;
+
+        const signature = createResponseSignature(
+          accessorPrivateKey,
+          requestMessagePaddedHash,
+        );
 
         const response = await idpApi.createResponse('idp1', {
           reference_id: idpResponseReferenceId,
@@ -1711,28 +1795,29 @@ describe('Add identity (mode 3) tests', function() {
           aal: 3,
           status: 'accept',
           accessor_id: responseAccessorId,
+          signature,
         });
         expect(response.status).to.equal(202);
       });
 
-      it('IdP should receive accessor encrypt callback with correct data', async function() {
-        this.timeout(15000);
+      // it('IdP should receive accessor encrypt callback with correct data', async function() {
+      //   this.timeout(15000);
 
-        const accessorEncryptParams = await accessorEncryptPromise.promise;
-        expect(accessorEncryptParams).to.deep.include({
-          node_id: 'idp1',
-          type: 'accessor_encrypt',
-          accessor_id: responseAccessorId,
-          key_type: 'RSA',
-          padding: 'none',
-          reference_id: idpResponseReferenceId,
-          request_id: requestId,
-        });
+      //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+      //   expect(accessorEncryptParams).to.deep.include({
+      //     node_id: 'idp1',
+      //     type: 'accessor_encrypt',
+      //     accessor_id: responseAccessorId,
+      //     key_type: 'RSA',
+      //     padding: 'none',
+      //     reference_id: idpResponseReferenceId,
+      //     request_id: requestId,
+      //   });
 
-        expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-          'string'
-        ).that.is.not.empty;
-      });
+      //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+      //     'string',
+      //   ).that.is.not.empty;
+      // });
 
       it('IdP shoud receive callback create response result with success = true', async function() {
         const responseResult = await responseResultPromise.promise;
@@ -1823,10 +1908,10 @@ describe('Add identity (mode 3) tests', function() {
           success: true,
         });
         expect(addIdentityRequestResult.creation_block_height).to.be.a(
-          'string'
+          'string',
         );
         const splittedCreationBlockHeight = addIdentityRequestResult.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1842,7 +1927,7 @@ describe('Add identity (mode 3) tests', function() {
           reference_group_code: referenceGroupCode,
           request_message: addIdentityRequestMessage,
           request_message_hash: hash(
-            addIdentityRequestMessage + incomingRequest.request_message_salt
+            addIdentityRequestMessage + incomingRequest.request_message_salt,
           ),
           requester_node_id: 'idp2',
           min_ial: 1.1,
@@ -1853,7 +1938,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1872,7 +1957,7 @@ describe('Add identity (mode 3) tests', function() {
           reference_group_code: referenceGroupCode,
           request_message: addIdentityRequestMessage,
           request_message_hash: hash(
-            addIdentityRequestMessage + incomingRequest.request_message_salt
+            addIdentityRequestMessage + incomingRequest.request_message_salt,
           ),
           requester_node_id: 'idp2',
           min_ial: 1.1,
@@ -1883,7 +1968,7 @@ describe('Add identity (mode 3) tests', function() {
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1893,15 +1978,39 @@ describe('Add identity (mode 3) tests', function() {
         // requestMessageHash = incomingRequest.request_message_hash;
       });
 
-      it('IdP (idp1) should create response (accept) successfully', async function() {
-        this.timeout(10000);
-        const identity = db.idp1Identities.find(
+      it('IdP should get request_message_padded_hash successfully', async function() {
+        this.timeout(15000);
+        identityForResponse = db.idp1Identities.find(
           identity =>
             identity.namespace === namespace &&
-            identity.identifier === identifier
+            identity.identifier === identifier,
         );
 
-        responseAccessorId = identity.accessors[0].accessorId;
+        responseAccessorId = identityForResponse.accessors[0].accessorId;
+        let accessorPublicKey =
+          identityForResponse.accessors[0].accessorPublicKey;
+
+        const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+          callApiAtNodeId: 'idp1',
+          idpNodeId: 'idp1',
+          requestId: requestIdAddIdentity,
+          incomingRequestPromise: idp1IncomingRequestAddIdentityPromise,
+          accessorPublicKey,
+          accessorId: responseAccessorId,
+        });
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+      });
+
+      it('IdP (idp1) should create response (accept) successfully', async function() {
+        this.timeout(10000);
+
+        let accessorPrivateKey =
+          identityForResponse.accessors[0].accessorPrivateKey;
+
+        const signature = createResponseSignature(
+          accessorPrivateKey,
+          requestMessagePaddedHash,
+        );
 
         const response = await idpApi.createResponse('idp1', {
           reference_id: idpResponseAddIdentityReferenceId,
@@ -1911,28 +2020,29 @@ describe('Add identity (mode 3) tests', function() {
           aal: 3,
           status: 'accept',
           accessor_id: responseAccessorId,
+          signature,
         });
         expect(response.status).to.equal(202);
       });
 
-      it('IdP should receive accessor encrypt callback with correct data', async function() {
-        this.timeout(15000);
+      // it('IdP should receive accessor encrypt callback with correct data', async function() {
+      //   this.timeout(15000);
 
-        const accessorEncryptParams = await accessorEncryptAddIdentityPromise.promise;
-        expect(accessorEncryptParams).to.deep.include({
-          node_id: 'idp1',
-          type: 'accessor_encrypt',
-          accessor_id: responseAccessorId,
-          key_type: 'RSA',
-          padding: 'none',
-          reference_id: idpResponseAddIdentityReferenceId,
-          request_id: requestIdAddIdentity,
-        });
+      //   const accessorEncryptParams = await accessorEncryptAddIdentityPromise.promise;
+      //   expect(accessorEncryptParams).to.deep.include({
+      //     node_id: 'idp1',
+      //     type: 'accessor_encrypt',
+      //     accessor_id: responseAccessorId,
+      //     key_type: 'RSA',
+      //     padding: 'none',
+      //     reference_id: idpResponseAddIdentityReferenceId,
+      //     request_id: requestIdAddIdentity,
+      //   });
 
-        expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-          'string'
-        ).that.is.not.empty;
-      });
+      //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+      //     'string',
+      //   ).that.is.not.empty;
+      // });
 
       it('IdP shoud receive callback create response result with success = true', async function() {
         const responseResult = await responseResultAddIdentityPromise.promise;
@@ -2039,6 +2149,8 @@ describe('Add identity (mode 3) tests', function() {
         let requestMessageSalt;
         let requestMessageHash;
         let responseAccessorId;
+        let identityForResponse;
+        let requestMessagePaddedHash;
 
         const requestStatusUpdates = [];
         const idp_requestStatusUpdates = [];
@@ -2144,7 +2256,7 @@ describe('Add identity (mode 3) tests', function() {
           });
 
           idp2EventEmitter.on('accessor_encrypt_callback', function(
-            callbackData
+            callbackData,
           ) {
             if (callbackData.request_id === requestId) {
               accessorEncryptPromise.resolve(callbackData);
@@ -2188,7 +2300,7 @@ describe('Add identity (mode 3) tests', function() {
           this.timeout(10000);
           const response = await rpApi.createRequest(
             'rp1',
-            createRequestParams
+            createRequestParams,
           );
           const responseBody = await response.json();
           expect(response.status).to.equal(202);
@@ -2201,13 +2313,13 @@ describe('Add identity (mode 3) tests', function() {
           expect(createRequestResult.success).to.equal(true);
           expect(createRequestResult.creation_block_height).to.be.a('string');
           const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-            ':'
+            ':',
           );
           expect(splittedCreationBlockHeight).to.have.lengthOf(2);
           expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
           lastStatusUpdateBlockHeight = parseInt(
-            splittedCreationBlockHeight[1]
+            splittedCreationBlockHeight[1],
           );
         });
 
@@ -2239,7 +2351,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.equal(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
           lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
         });
@@ -2257,7 +2369,7 @@ describe('Add identity (mode 3) tests', function() {
               return {
                 ...dataRequestWithoutParams,
               };
-            }
+            },
           );
           expect(incomingRequest).to.deep.include({
             node_id: 'idp1',
@@ -2267,7 +2379,7 @@ describe('Add identity (mode 3) tests', function() {
             request_message: createRequestParams.request_message,
             request_message_hash: hash(
               createRequestParams.request_message +
-                incomingRequest.request_message_salt
+                incomingRequest.request_message_salt,
             ),
             requester_node_id: 'rp1',
             min_ial: createRequestParams.min_ial,
@@ -2282,7 +2394,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(incomingRequest.creation_time).to.be.a('number');
           expect(incomingRequest.creation_block_height).to.be.a('string');
           const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-            ':'
+            ':',
           );
           expect(splittedCreationBlockHeight).to.have.lengthOf(2);
           expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2305,7 +2417,7 @@ describe('Add identity (mode 3) tests', function() {
               return {
                 ...dataRequestWithoutParams,
               };
-            }
+            },
           );
           expect(incomingRequest).to.deep.include({
             node_id: 'idp2',
@@ -2315,7 +2427,7 @@ describe('Add identity (mode 3) tests', function() {
             request_message: createRequestParams.request_message,
             request_message_hash: hash(
               createRequestParams.request_message +
-                incomingRequest.request_message_salt
+                incomingRequest.request_message_salt,
             ),
             requester_node_id: 'rp1',
             min_ial: createRequestParams.min_ial,
@@ -2330,7 +2442,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(incomingRequest.creation_time).to.be.a('number');
           expect(incomingRequest.creation_block_height).to.be.a('string');
           const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-            ':'
+            ':',
           );
           expect(splittedCreationBlockHeight).to.have.lengthOf(2);
           expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2340,15 +2452,39 @@ describe('Add identity (mode 3) tests', function() {
           requestMessageHash = incomingRequest.request_message_hash;
         });
 
-        it('IdP (idp2) should create response (accept) successfully', async function() {
-          this.timeout(10000);
-          const identity = db.idp2Identities.find(
+        it('IdP should get request_message_padded_hash successfully', async function() {
+          this.timeout(15000);
+          identityForResponse = db.idp2Identities.find(
             identity =>
               identity.namespace === namespace &&
-              identity.identifier === identifierAtIdP2
+              identity.identifier === identifierAtIdP2,
           );
 
-          responseAccessorId = identity.accessors[0].accessorId;
+          responseAccessorId = identityForResponse.accessors[0].accessorId;
+          let accessorPublicKey =
+            identityForResponse.accessors[0].accessorPublicKey;
+
+          const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+            callApiAtNodeId: 'idp2',
+            idpNodeId: 'idp2',
+            requestId,
+            incomingRequestPromise,
+            accessorPublicKey,
+            accessorId: responseAccessorId,
+          });
+          requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+        });
+
+        it('IdP (idp2) should create response (accept) successfully', async function() {
+          this.timeout(10000);
+
+          let accessorPrivateKey =
+            identityForResponse.accessors[0].accessorPrivateKey;
+
+          const signature = createResponseSignature(
+            accessorPrivateKey,
+            requestMessagePaddedHash,
+          );
 
           const response = await idpApi.createResponse('idp2', {
             reference_id: idpReferenceId,
@@ -2358,28 +2494,29 @@ describe('Add identity (mode 3) tests', function() {
             aal: 3,
             status: 'accept',
             accessor_id: responseAccessorId,
+            signature,
           });
           expect(response.status).to.equal(202);
         });
 
-        it('IdP should receive accessor encrypt callback with correct data', async function() {
-          this.timeout(15000);
+        // it('IdP should receive accessor encrypt callback with correct data', async function() {
+        //   this.timeout(15000);
 
-          const accessorEncryptParams = await accessorEncryptPromise.promise;
-          expect(accessorEncryptParams).to.deep.include({
-            node_id: 'idp2',
-            type: 'accessor_encrypt',
-            accessor_id: responseAccessorId,
-            key_type: 'RSA',
-            padding: 'none',
-            reference_id: idpReferenceId,
-            request_id: requestId,
-          });
+        //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+        //   expect(accessorEncryptParams).to.deep.include({
+        //     node_id: 'idp2',
+        //     type: 'accessor_encrypt',
+        //     accessor_id: responseAccessorId,
+        //     key_type: 'RSA',
+        //     padding: 'none',
+        //     reference_id: idpReferenceId,
+        //     request_id: requestId,
+        //   });
 
-          expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-            'string'
-          ).that.is.not.empty;
-        });
+        //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+        //     'string',
+        //   ).that.is.not.empty;
+        // });
 
         it('IdP shoud receive callback create response result with success = true', async function() {
           this.timeout(15000);
@@ -2427,7 +2564,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.be.above(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
           lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
         });
@@ -2494,7 +2631,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(dataRequest.creation_time).to.be.a('number');
           expect(dataRequest.creation_block_height).to.be.a('string');
           const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-            ':'
+            ':',
           );
           expect(splittedCreationBlockHeight).to.have.lengthOf(2);
           expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2588,7 +2725,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.be.above(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
           lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
         });
@@ -2627,7 +2764,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.equal(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
         });
 
@@ -2665,7 +2802,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.equal(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
         });
 
@@ -2703,7 +2840,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.be.above(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
           lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
         });
@@ -2742,7 +2879,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.equal(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
         });
 
@@ -2780,7 +2917,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.equal(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
         });
 
@@ -2818,7 +2955,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.be.above(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
           lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
         });
@@ -2857,7 +2994,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.equal(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
         });
 
@@ -2895,7 +3032,7 @@ describe('Add identity (mode 3) tests', function() {
           expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
           expect(parseInt(splittedBlockHeight[1])).to.equal(
-            lastStatusUpdateBlockHeight
+            lastStatusUpdateBlockHeight,
           );
         });
 
