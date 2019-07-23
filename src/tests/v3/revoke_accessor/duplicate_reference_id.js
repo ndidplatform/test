@@ -12,8 +12,10 @@ import {
   generateReferenceId,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe('Revoke accessor with duplicate reference id test', function() {
   const addAccessorRequestMessage =
@@ -39,6 +41,8 @@ describe('Revoke accessor with duplicate reference id test', function() {
   let requestIdAddAccessor;
   let referenceGroupCode;
   let responseAccessorId;
+  let identityForResponse;
+  let requestMessagePaddedHash;
 
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -218,7 +222,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     });
     expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -247,7 +251,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
       reference_group_code: referenceGroupCode,
       request_message: addAccessorRequestMessage,
       request_message_hash: hash(
-        addAccessorRequestMessage + incomingRequest.request_message_salt
+        addAccessorRequestMessage + incomingRequest.request_message_salt,
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -257,7 +261,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -265,14 +269,38 @@ describe('Revoke accessor with duplicate reference id test', function() {
     expect(incomingRequest.request_timeout).to.be.a('number');
   });
 
-  it('IdP (idp1) should create response (accept) successfully', async function() {
-    this.timeout(10000);
-    const identity = db.idp1Identities.find(
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+
+    identityForResponse = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId: requestIdAddAccessor,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP (idp1) should create response (accept) successfully', async function() {
+    this.timeout(10000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: referenceId,
@@ -282,27 +310,28 @@ describe('Revoke accessor with duplicate reference id test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: referenceId,
-      request_id: requestIdAddAccessor,
-    });
+  //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+  //   expect(accessorEncryptParams).to.deep.include({
+  //     node_id: 'idp1',
+  //     type: 'accessor_encrypt',
+  //     accessor_id: responseAccessorId,
+  //     key_type: 'RSA',
+  //     padding: 'none',
+  //     reference_id: referenceId,
+  //     request_id: requestIdAddAccessor,
+  //   });
 
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
-  });
+  //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+  //     .that.is.not.empty;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     this.timeout(15000);
@@ -327,7 +356,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
 
     const identity = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
     identity.accessors.push({
@@ -433,7 +462,8 @@ describe('Revoke accessor with duplicate reference id test', function() {
 
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       const latestAccessor = identity.accessors.length - 1;
       accessorId = identity.accessors[latestAccessor].accessorId;
@@ -457,7 +487,8 @@ describe('Revoke accessor with duplicate reference id test', function() {
 
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       const latestAccessor = identity.accessors.length - 1;
@@ -481,7 +512,8 @@ describe('Revoke accessor with duplicate reference id test', function() {
 
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       const latestAccessor = identity.accessors.length - 1;
@@ -533,7 +565,8 @@ describe('Revoke accessor with duplicate reference id test', function() {
 
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       const latestAccessor = identity.accessors.length - 1;
       accessorId = identity.accessors[latestAccessor].accessorId;
@@ -561,12 +594,12 @@ describe('Revoke accessor with duplicate reference id test', function() {
         requester_node_id: 'idp1',
         request_message: revokeAccessorRequestMessage,
         request_message_hash: hash(
-          revokeAccessorRequestMessage + incomingRequest.request_message_salt
+          revokeAccessorRequestMessage + incomingRequest.request_message_salt,
         ),
       });
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);

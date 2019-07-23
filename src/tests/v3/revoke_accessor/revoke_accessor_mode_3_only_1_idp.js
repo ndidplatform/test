@@ -4,7 +4,6 @@ import uuidv4 from 'uuid/v4';
 
 import * as rpApi from '../../../api/v3/rp';
 import * as idpApi from '../../../api/v3/idp';
-import * as asApi from '../../../api/v3/as';
 import * as commonApi from '../../../api/v3/common';
 import * as identityApi from '../../../api/v3/identity';
 import {
@@ -19,8 +18,10 @@ import {
   generateReferenceId,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is not last accessor id) test', function() {
   const addAccessorRequestMessage =
@@ -45,6 +46,8 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
   let requestIdAddAccessor;
   let referenceGroupCode;
   let responseAccessorId;
+  let identityForResponse;
+  let requestMessagePaddedHash;
 
   before(function() {
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -224,7 +227,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     });
     expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -253,7 +256,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       reference_group_code: referenceGroupCode,
       request_message: addAccessorRequestMessage,
       request_message_hash: hash(
-        addAccessorRequestMessage + incomingRequest.request_message_salt
+        addAccessorRequestMessage + incomingRequest.request_message_salt,
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -263,7 +266,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -271,14 +274,37 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     expect(incomingRequest.request_timeout).to.be.a('number');
   });
 
-  it('IdP (idp1) should create response (accept) successfully', async function() {
-    this.timeout(10000);
-    const identity = db.idp1Identities.find(
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId: requestIdAddAccessor,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP (idp1) should create response (accept) successfully', async function() {
+    this.timeout(10000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: referenceId,
@@ -288,27 +314,28 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: referenceId,
-      request_id: requestIdAddAccessor,
-    });
+  //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+  //   expect(accessorEncryptParams).to.deep.include({
+  //     node_id: 'idp1',
+  //     type: 'accessor_encrypt',
+  //     accessor_id: responseAccessorId,
+  //     key_type: 'RSA',
+  //     padding: 'none',
+  //     reference_id: referenceId,
+  //     request_id: requestIdAddAccessor,
+  //   });
 
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
-  });
+  //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+  //     .that.is.not.empty;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     this.timeout(15000);
@@ -333,7 +360,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
 
     const identity = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
     identity.accessors.push({
@@ -372,6 +399,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     let requestId;
     let accessorIdForRevoke;
     let responseAccessorId;
+    let identityForResponse;
 
     before(async function() {
       this.timeout(10000);
@@ -435,10 +463,10 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         success: true,
       });
       expect(revokeAccessorRequestResult.creation_block_height).to.be.a(
-        'string'
+        'string',
       );
       const splittedCreationBlockHeight = revokeAccessorRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -467,7 +495,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         reference_group_code: referenceGroupCode,
         request_message: revokeAccessorRequestMessage,
         request_message_hash: hash(
-          revokeAccessorRequestMessage + incomingRequest.request_message_salt
+          revokeAccessorRequestMessage + incomingRequest.request_message_salt,
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -477,7 +505,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -485,8 +513,47 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(incomingRequest.request_timeout).to.be.a('number');
     });
 
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+
+      identityForResponse = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
+      );
+
+      const accessor = identityForResponse.accessors.find(
+        accessor => accessor.accessorId === responseAccessorId,
+      );
+
+      responseAccessorId = accessor.accessorId;
+      let accessorPublicKey = accessor.accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
+
+      const accessor = identityForResponse.accessors.find(
+        accessor => accessor.accessorId === responseAccessorId,
+      );
+
+      let accessorPrivateKey = accessor.accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
+
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
@@ -495,28 +562,29 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ReferenceId,
-        request_id: requestId,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp1',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: responseAccessorId,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idp1ReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP should receive callback create response result with success = true', async function() {
       this.timeout(15000);
@@ -540,11 +608,12 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
 
       let identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       let indexAccessor = identity.accessors.findIndex(
-        accessor => accessor.accessorId === accessorIdForRevoke
+        accessor => accessor.accessorId === accessorIdForRevoke,
       );
 
       identity.accessors[indexAccessor] = {
@@ -588,6 +657,8 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     let accessorId2;
     let requestIdAddAccessor;
     let responseAccessorId;
+    let identityForResponse;
+    let requestMessagePaddedHash;
 
     before(function() {
       idp1EventEmitter.on('callback', function(callbackData) {
@@ -632,7 +703,8 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
 
       let identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       let accessor = identity.accessors.find(accessor => accessor.revoked);
@@ -664,7 +736,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       });
       expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -693,7 +765,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         reference_group_code: referenceGroupCode,
         request_message: addAccessorRequestMessage,
         request_message_hash: hash(
-          addAccessorRequestMessage + incomingRequest.request_message_salt
+          addAccessorRequestMessage + incomingRequest.request_message_salt,
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -703,7 +775,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -711,16 +783,46 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(incomingRequest.request_timeout).to.be.a('number');
     });
 
-    it('IdP (idp1) should create response (accept) successfully', async function() {
-      this.timeout(10000);
-      const identity = db.idp1Identities.find(
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      responseAccessorId = identity.accessors.find(
-        accessor => !accessor.revoked
-      ).accessorId;
+      let identity = identityForResponse.accessors.find(
+        accessor => !accessor.revoked,
+      );
+
+      responseAccessorId = identity.accessorId;
+
+      let accessorPublicKey = identity.accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId: requestIdAddAccessor,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('IdP (idp1) should create response (accept) successfully', async function() {
+      this.timeout(10000);
+
+      let identity = identityForResponse.accessors.find(
+        accessor => !accessor.revoked,
+      );
+
+      let accessorPrivateKey = identity.accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: referenceId,
@@ -730,28 +832,29 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: referenceId,
-        request_id: requestIdAddAccessor,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp1',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: responseAccessorId,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: referenceId,
+    //     request_id: requestIdAddAccessor,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       this.timeout(15000);
@@ -817,6 +920,9 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     });
 
     let requestId;
+    let identityForResponse;
+    let responseAccessorId;
+    let requestMessagePaddedHash;
 
     const requestStatusUpdates = [];
     const idp_requestStatusUpdates = [];
@@ -830,7 +936,8 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
 
       const identity = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       namespace = identity.namespace;
@@ -977,7 +1084,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1013,7 +1120,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1028,7 +1135,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -1038,7 +1145,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1053,43 +1160,82 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
 
-      const identity = db.idp1Identities.find(
+      identityForResponse = db.idp1Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
-      const revokedAccessor = identity.accessors.find(
-        accessor => accessor.revoked === true
+      const revokedAccessor = identityForResponse.accessors.find(
+        accessor => accessor.revoked === true,
       );
 
-      const response = await idpApi.createResponse('idp1', {
-        reference_id: idpReferenceId,
-        callback_url: config.IDP1_CALLBACK_URL,
+      responseAccessorId = revokedAccessor.accessorId;
+      // let accessorPublicKey = revokedAccessor.accessorPublicKey;
+
+      // const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      //   callApiAtNodeId: 'idp1',
+      //   idpNodeId: 'idp1',
+      //   requestId,
+      //   incomingRequestPromise,
+      //   accessorPublicKey,
+      //   accessorId: responseAccessorId,
+      // });
+      // requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+
+      const response = await idpApi.getRequestMessagePaddedHash('idp1', {
         request_id: requestId,
-        ial: 2.3,
-        aal: 3,
-        status: 'accept',
-        accessor_id: revokedAccessor.accessorId,
+        accessor_id: responseAccessorId,
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20011);
     });
 
+    // it('IdP should create response (accept) unsuccessfully', async function() {
+    //   this.timeout(10000);
+
+    //   const revokedAccessor = identityForResponse.accessors.find(
+    //     accessor => accessor.revoked === true,
+    //   );
+
+    //   let accessorPrivateKey = revokedAccessor.accessorPrivateKey;
+
+    //   const signature = createResponseSignature(
+    //     accessorPrivateKey,
+    //     requestMessagePaddedHash,
+    //   );
+
+    //   const response = await idpApi.createResponse('idp1', {
+    //     reference_id: idpReferenceId,
+    //     callback_url: config.IDP1_CALLBACK_URL,
+    //     request_id: requestId,
+    //     ial: 2.3,
+    //     aal: 3,
+    //     status: 'accept',
+    //     accessor_id: revokedAccessor.accessorId,
+    //     signature,
+    //   });
+    //   expect(response.status).to.equal(400);
+    //   const responseBody = await response.json();
+    //   expect(responseBody.error.code).to.equal(20011);
+    // });
+
     after(function() {
       let identityIndex = db.idp1Identities.findIndex(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       db.idp1Identities.splice(identityIndex, 1);
       rpEventEmitter.removeAllListeners('callback');

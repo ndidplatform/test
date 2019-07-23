@@ -13,8 +13,10 @@ import {
   generateReferenceId,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe('IdP (idp1) revoke last accessor (identity associated with one idp mode 3) test', function() {
   let namespace = 'citizen_id';
@@ -171,6 +173,9 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
 
     let requestId;
     let accessorIdForRevoke;
+    let identityForResponse;
+    let responseAccessorId;
+    let requestMessagePaddedHash;
 
     before(function() {
       accessorIdForRevoke = accessorId;
@@ -231,10 +236,10 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
         success: true,
       });
       expect(revokeAccessorRequestResult.creation_block_height).to.be.a(
-        'string'
+        'string',
       );
       const splittedCreationBlockHeight = revokeAccessorRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -263,7 +268,7 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
         reference_group_code: referenceGroupCode,
         request_message: revokeAccessorRequestMessage,
         request_message_hash: hash(
-          revokeAccessorRequestMessage + incomingRequest.request_message_salt
+          revokeAccessorRequestMessage + incomingRequest.request_message_salt,
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -273,7 +278,7 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -281,8 +286,46 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
       expect(incomingRequest.request_timeout).to.be.a('number');
     });
 
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+
+      identityForResponse = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
+      );
+
+      const identity = identityForResponse.accessors.find(
+        accessor => accessor.accessorId === accessorIdForRevoke,
+      );
+
+      responseAccessorId = identity.accessorId;
+
+      let accessorPublicKey = identity.accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
+
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
@@ -291,28 +334,29 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
         aal: 3,
         status: 'accept',
         accessor_id: accessorIdForRevoke,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: accessorIdForRevoke,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ReferenceId,
-        request_id: requestId,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp1',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: accessorIdForRevoke,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idp1ReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP should receive callback create response result with success = true', async function() {
       this.timeout(15000);
@@ -326,7 +370,7 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
       });
     });
 
-    it('Accessor id should be revoked successfully', async function() {
+    it('Accessor id should be revoked unsuccessfully', async function() {
       this.timeout(10000);
       const revokeAccessorResult = await revokeAccessorResultPromise.promise;
       expect(revokeAccessorResult).to.deep.include({
@@ -350,7 +394,8 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
     after(function() {
       let identityIndex = db.idp1Identities.findIndex(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       db.idp1Identities.splice(identityIndex, 1);
 
@@ -597,6 +642,9 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
 
     let requestId;
     let accessorIdForRevoke;
+    let identityForResponse;
+    let responseAccessorId;
+    let requestMessagePaddedHash;
 
     before(function() {
       if (!idp2Available) {
@@ -661,10 +709,10 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
         success: true,
       });
       expect(revokeAccessorRequestResult.creation_block_height).to.be.a(
-        'string'
+        'string',
       );
       const splittedCreationBlockHeight = revokeAccessorRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -693,7 +741,7 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
         reference_group_code: referenceGroupCode,
         request_message: revokeAccessorRequestMessage,
         request_message_hash: hash(
-          revokeAccessorRequestMessage + incomingRequest.request_message_salt
+          revokeAccessorRequestMessage + incomingRequest.request_message_salt,
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -703,7 +751,7 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -711,8 +759,47 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
       expect(incomingRequest.request_timeout).to.be.a('number');
     });
 
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+
+      identityForResponse = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
+      );
+
+      const identity = identityForResponse.accessors.find(
+        accessor => accessor.accessorId === accessorIdForRevoke,
+      );
+
+      responseAccessorId = identity.accessorId;
+      let accessorPublicKey = identity.accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
     it('IdP should create response (accept) successfully', async function() {
       this.timeout(10000);
+
+      const identity = identityForResponse.accessors.find(
+        accessor => accessor.accessorId === accessorIdForRevoke,
+      );
+
+      let accessorPrivateKey = identity.accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
+
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
@@ -721,28 +808,29 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
         aal: 3,
         status: 'accept',
         accessor_id: accessorIdForRevoke,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: accessorIdForRevoke,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ReferenceId,
-        request_id: requestId,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp1',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: accessorIdForRevoke,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idp1ReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP should receive callback create response result with success = true', async function() {
       this.timeout(15000);
@@ -756,7 +844,7 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
       });
     });
 
-    it('Accessor id should be revoked successfully', async function() {
+    it('Accessor id should be revoked unsuccessfully', async function() {
       this.timeout(10000);
       const revokeAccessorResult = await revokeAccessorResultPromise.promise;
       expect(revokeAccessorResult).to.deep.include({
@@ -779,13 +867,15 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
     after(function() {
       let identityIndex = db.idp1Identities.findIndex(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       db.idp1Identities.splice(identityIndex, 1);
 
       let idp2IdentityIndex = db.idp2Identities.findIndex(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
       db.idp2Identities.splice(idp2IdentityIndex, 1);
 
