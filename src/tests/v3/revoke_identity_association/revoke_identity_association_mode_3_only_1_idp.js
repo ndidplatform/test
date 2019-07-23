@@ -20,8 +20,10 @@ import {
   generateReferenceId,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe('IdP (idp1) revoke identity association (identity associated with one idp mode 3) test', function() {
   let namespace = 'citizen_id';
@@ -177,6 +179,9 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     const revokeIdentityAssociationRequestResultPromise = createEventPromise();
 
     let requestId;
+    let identityForResponse;
+    let responseAccessorId;
+    let requestMessagePaddedHash;
 
     before(function() {
       idp1EventEmitter.on('callback', function(callbackData) {
@@ -233,10 +238,10 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         success: true,
       });
       expect(
-        revokeIdentityAssociationRequestResult.creation_block_height
+        revokeIdentityAssociationRequestResult.creation_block_height,
       ).to.be.a('string');
       const splittedCreationBlockHeight = revokeIdentityAssociationRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -264,7 +269,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         reference_group_code: referenceGroupCode,
         request_message: requestMessage,
         request_message_hash: hash(
-          requestMessage + incomingRequest.request_message_salt
+          requestMessage + incomingRequest.request_message_salt,
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -274,7 +279,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -282,17 +287,41 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       expect(incomingRequest.request_timeout).to.be.a('number');
     });
 
-    it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
 
-      const identity = db.idp1Identities.find(
+      identityForResponse = db.idp1Identities.find(
         identity =>
           identity.namespace === namespace &&
           identity.identifier === identifier &&
-          identity.mode === 3
+          identity.mode === 3,
       );
 
-      accessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('IdP should create response (accept) successfully', async function() {
+      this.timeout(10000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ReferenceId,
@@ -302,28 +331,29 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         aal: 3,
         status: 'accept',
         accessor_id: accessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: accessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ReferenceId,
-        request_id: requestId,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp1',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: accessorId,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idp1ReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string'
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       this.timeout(15000);
@@ -458,7 +488,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         let identityIndex = db.idp1Identities.findIndex(
           identity =>
             identity.namespace === namespace &&
-            identity.identifier === identifier
+            identity.identifier === identifier,
         );
         db.idp1Identities.splice(identityIndex, 1);
 
@@ -644,6 +674,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       let requestMessageSalt;
       let requestMessageHash;
       let responseAccessorId;
+      let identityForResponse;
+      let requestMessagePaddedHash;
 
       const requestStatusUpdates = [];
       const idp_requestStatusUpdates = [];
@@ -740,7 +772,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         });
 
         idp1EventEmitter.on('accessor_encrypt_callback', function(
-          callbackData
+          callbackData,
         ) {
           if (callbackData.request_id === requestId) {
             accessorEncryptPromise.resolve(callbackData);
@@ -794,7 +826,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(createRequestResult.success).to.equal(true);
         expect(createRequestResult.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -830,7 +862,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -845,7 +877,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
             return {
               ...dataRequestWithoutParams,
             };
-          }
+          },
         );
         expect(incomingRequest).to.deep.include({
           node_id: 'idp1',
@@ -855,7 +887,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt
+              incomingRequest.request_message_salt,
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -870,7 +902,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -880,15 +912,46 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         requestMessageHash = incomingRequest.request_message_hash;
       });
 
+      it('IdP should get request_message_padded_hash successfully', async function() {
+        this.timeout(15000);
+        identityForResponse = db.idp1Identities.find(
+          identity =>
+            identity.namespace === namespace &&
+            identity.identifier === identifier,
+        );
+
+        let identity = identityForResponse.accessors.find(
+          accessor => accessor.accessorId === accessorId,
+        );
+
+        responseAccessorId = identity.accessorId;
+        let accessorPublicKey = identity.accessorPublicKey;
+
+        const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+          callApiAtNodeId: 'idp1',
+          idpNodeId: 'idp1',
+          requestId,
+          incomingRequestPromise,
+          accessorPublicKey,
+          accessorId: responseAccessorId,
+        });
+
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+      });
+
       it('IdP should create response (accept) successfully', async function() {
         this.timeout(10000);
-        // const identity = db.idp1Identities.find(
-        //   identity =>
-        //     identity.namespace === namespace &&
-        //     identity.identifier === identifier
-        // );
 
-        // responseAccessorId = identity.accessors[0].accessorId;
+        let identity = identityForResponse.accessors.find(
+          accessor => accessor.accessorId === accessorId,
+        );
+
+        let accessorPrivateKey = identity.accessorPrivateKey;
+
+        const signature = createResponseSignature(
+          accessorPrivateKey,
+          requestMessagePaddedHash,
+        );
 
         const response = await idpApi.createResponse('idp1', {
           reference_id: idpReferenceId,
@@ -898,28 +961,29 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           aal: 3,
           status: 'accept',
           accessor_id: accessorId,
+          signature,
         });
         expect(response.status).to.equal(202);
       });
 
-      it('IdP should receive accessor encrypt callback with correct data', async function() {
-        this.timeout(15000);
+      // it('IdP should receive accessor encrypt callback with correct data', async function() {
+      //   this.timeout(15000);
 
-        const accessorEncryptParams = await accessorEncryptPromise.promise;
-        expect(accessorEncryptParams).to.deep.include({
-          node_id: 'idp1',
-          type: 'accessor_encrypt',
-          accessor_id: accessorId,
-          key_type: 'RSA',
-          padding: 'none',
-          reference_id: idpReferenceId,
-          request_id: requestId,
-        });
+      //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+      //   expect(accessorEncryptParams).to.deep.include({
+      //     node_id: 'idp1',
+      //     type: 'accessor_encrypt',
+      //     accessor_id: accessorId,
+      //     key_type: 'RSA',
+      //     padding: 'none',
+      //     reference_id: idpReferenceId,
+      //     request_id: requestId,
+      //   });
 
-        expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-          'string'
-        ).that.is.not.empty;
-      });
+      //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+      //     'string',
+      //   ).that.is.not.empty;
+      // });
 
       it('IdP shoud receive callback create response result with success = true', async function() {
         const responseResult = await responseResultPromise.promise;
@@ -966,7 +1030,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -995,7 +1059,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(dataRequest.creation_time).to.be.a('number');
         expect(dataRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1056,7 +1120,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -1095,7 +1159,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1133,7 +1197,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1171,7 +1235,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -1210,7 +1274,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1248,7 +1312,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1286,7 +1350,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -1326,7 +1390,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1365,7 +1429,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -1520,6 +1584,9 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     const revokeIdentityAssociationRequestResultPromise = createEventPromise();
 
     let requestId;
+    let identityForResponse;
+    let responseAccessorId;
+    let requestMessagePaddedHash;
 
     before(function() {
       idp1EventEmitter.on('callback', function(callbackData) {
@@ -1576,10 +1643,10 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         success: true,
       });
       expect(
-        revokeIdentityAssociationRequestResult.creation_block_height
+        revokeIdentityAssociationRequestResult.creation_block_height,
       ).to.be.a('string');
       const splittedCreationBlockHeight = revokeIdentityAssociationRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1607,7 +1674,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         reference_group_code: referenceGroupCode,
         request_message: requestMessage,
         request_message_hash: hash(
-          requestMessage + incomingRequest.request_message_salt
+          requestMessage + incomingRequest.request_message_salt,
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -1617,7 +1684,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1625,17 +1692,40 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       expect(incomingRequest.request_timeout).to.be.a('number');
     });
 
-    it('IdP should create response (accept) successfully', async function() {
-      this.timeout(10000);
-
-      const identity = db.idp1Identities.find(
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp1Identities.find(
         identity =>
           identity.namespace === namespace &&
           identity.identifier === identifier &&
-          identity.mode === 3
+          identity.mode === 3,
       );
 
-      accessorId = identity.accessors[0].accessorId;
+      responseAccessorId = identityForResponse.accessors[0].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[0].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp1',
+        idpNodeId: 'idp1',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
+    it('IdP should create response (accept) successfully', async function() {
+      this.timeout(10000);
+
+      let accessorPrivateKey =
+        identityForResponse.accessors[0].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idp1ReferenceId,
@@ -1645,28 +1735,29 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         aal: 3,
         status: 'accept',
         accessor_id: accessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp1',
-        type: 'accessor_encrypt',
-        accessor_id: accessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idp1ReferenceId,
-        request_id: requestId,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp1',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: accessorId,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idp1ReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
       this.timeout(15000);
@@ -1826,7 +1917,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     before(function() {
       let identityIndex = db.idp1Identities.findIndex(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       revokedAccessorId =
@@ -1999,6 +2091,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       let requestMessageSalt;
       let requestMessageHash;
       let responseAccessorId;
+      let identityForResponse;
+      let requestMessagePaddedHash;
 
       const requestStatusUpdates = [];
       const idp_requestStatusUpdates = [];
@@ -2095,7 +2189,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         });
 
         idp1EventEmitter.on('accessor_encrypt_callback', function(
-          callbackData
+          callbackData,
         ) {
           if (callbackData.request_id === requestId) {
             accessorEncryptPromise.resolve(callbackData);
@@ -2149,7 +2243,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(createRequestResult.success).to.equal(true);
         expect(createRequestResult.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2185,7 +2279,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -2200,7 +2294,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
             return {
               ...dataRequestWithoutParams,
             };
-          }
+          },
         );
         expect(incomingRequest).to.deep.include({
           node_id: 'idp1',
@@ -2210,7 +2304,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt
+              incomingRequest.request_message_salt,
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -2225,7 +2319,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2233,6 +2327,29 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
 
         requestMessageSalt = incomingRequest.request_message_salt;
         requestMessageHash = incomingRequest.request_message_hash;
+      });
+
+      it('IdP should get request_message_padded_hash successfully', async function() {
+        this.timeout(15000);
+        identityForResponse = db.idp1Identities.find(
+          identity =>
+            identity.namespace === namespace &&
+            identity.identifier === identifier,
+        );
+
+        responseAccessorId = identityForResponse.accessors[0].accessorId;
+        let accessorPublicKey =
+          identityForResponse.accessors[0].accessorPublicKey;
+
+        const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+          callApiAtNodeId: 'idp1',
+          idpNodeId: 'idp1',
+          requestId,
+          incomingRequestPromise,
+          accessorPublicKey,
+          accessorId: responseAccessorId,
+        });
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
       });
 
       it('IdP should create response with revoked accessor unsuccessfully', async function() {
@@ -2246,6 +2363,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           aal: 3,
           status: 'accept',
           accessor_id: revokedAccessorId,
+          signature: 'Test signature',
         });
         expect(response.status).to.equal(400);
         const responseBody = await response.json();
@@ -2255,7 +2373,13 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       it('IdP should create response (accept) successfully', async function() {
         this.timeout(10000);
 
-        responseAccessorId = accessorId;
+        let accessorPrivateKey =
+          identityForResponse.accessors[0].accessorPrivateKey;
+
+        const signature = createResponseSignature(
+          accessorPrivateKey,
+          requestMessagePaddedHash,
+        );
 
         const response = await idpApi.createResponse('idp1', {
           reference_id: idpReferenceId,
@@ -2265,28 +2389,29 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           aal: 3,
           status: 'accept',
           accessor_id: responseAccessorId,
+          signature,
         });
         expect(response.status).to.equal(202);
       });
 
-      it('IdP should receive accessor encrypt callback with correct data', async function() {
-        this.timeout(15000);
+      // it('IdP should receive accessor encrypt callback with correct data', async function() {
+      //   this.timeout(15000);
 
-        const accessorEncryptParams = await accessorEncryptPromise.promise;
-        expect(accessorEncryptParams).to.deep.include({
-          node_id: 'idp1',
-          type: 'accessor_encrypt',
-          accessor_id: responseAccessorId,
-          key_type: 'RSA',
-          padding: 'none',
-          reference_id: idpReferenceId,
-          request_id: requestId,
-        });
+      //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+      //   expect(accessorEncryptParams).to.deep.include({
+      //     node_id: 'idp1',
+      //     type: 'accessor_encrypt',
+      //     accessor_id: responseAccessorId,
+      //     key_type: 'RSA',
+      //     padding: 'none',
+      //     reference_id: idpReferenceId,
+      //     request_id: requestId,
+      //   });
 
-        expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-          'string'
-        ).that.is.not.empty;
-      });
+      //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+      //     'string',
+      //   ).that.is.not.empty;
+      // });
 
       it('IdP shoud receive callback create response result with success = true', async function() {
         const responseResult = await responseResultPromise.promise;
@@ -2333,7 +2458,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -2362,7 +2487,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(dataRequest.creation_time).to.be.a('number');
         expect(dataRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2423,7 +2548,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -2462,7 +2587,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -2500,7 +2625,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -2538,7 +2663,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -2577,7 +2702,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -2615,7 +2740,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -2653,7 +2778,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -2693,7 +2818,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -2732,7 +2857,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight
+          lastStatusUpdateBlockHeight,
         );
       });
 
@@ -2861,7 +2986,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         let identityIndex = db.idp1Identities.findIndex(
           identity =>
             identity.namespace === namespace &&
-            identity.identifier === identifier
+            identity.identifier === identifier,
         );
         db.idp1Identities.splice(identityIndex, 1);
 

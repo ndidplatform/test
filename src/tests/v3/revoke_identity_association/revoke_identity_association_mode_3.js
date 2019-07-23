@@ -13,8 +13,14 @@ import {
   idp2EventEmitter,
 } from '../../../callback_server';
 import * as db from '../../../db';
-import { createEventPromise, generateReferenceId, hash } from '../../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  hash,
+  createResponseSignature,
+} from '../../../utils';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe('IdP (idp1) revoke identity association (mode 3) test', function() {
   let namespace;
@@ -36,6 +42,9 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
   let requestId;
   let referenceGroupCode;
   let accessorId;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   before(function() {
     if (db.idp1Identities[0] == null) {
@@ -94,7 +103,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     });
 
     idp2EventEmitter.on('identity_notification_callback', function(
-      callbackData
+      callbackData,
     ) {
       if (
         callbackData.type === 'identity_modification_notification' &&
@@ -128,10 +137,10 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       success: true,
     });
     expect(
-      revokeIdentityAssociationRequestResult.creation_block_height
+      revokeIdentityAssociationRequestResult.creation_block_height,
     ).to.be.a('string');
     const splittedCreationBlockHeight = revokeIdentityAssociationRequestResult.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -159,7 +168,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       reference_group_code: referenceGroupCode,
       request_message: requestMessage,
       request_message_hash: hash(
-        requestMessage + incomingRequest.request_message_salt
+        requestMessage + incomingRequest.request_message_salt,
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -169,7 +178,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -177,21 +186,46 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     expect(incomingRequest.request_timeout).to.be.a('number');
   });
 
-  it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
-
-    const identity = db.idp1Identities.find(
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace &&
         identity.identifier === identifier &&
-        identity.mode === 3
+        identity.mode === 3,
     );
 
-    const accessor = identity.accessors.find(
-      accessor => accessor.revoked != true
+    const accessor = identityForResponse.accessors.find(
+      accessor => accessor.revoked != true,
     );
 
-    accessorId = accessor.accessorId;
+    responseAccessorId = accessor.accessorId;
+    let accessorPublicKey = accessor.accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP should create response (accept) successfully', async function() {
+    this.timeout(10000);
+
+    const accessor = identityForResponse.accessors.find(
+      accessor => accessor.revoked != true,
+    );
+
+    let accessorPrivateKey = accessor.accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idp1ReferenceId,
@@ -200,28 +234,29 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      accessor_id: accessorId,
+      accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: accessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idp1ReferenceId,
-      request_id: requestId,
-    });
+  //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+  //   expect(accessorEncryptParams).to.deep.include({
+  //     node_id: 'idp1',
+  //     type: 'accessor_encrypt',
+  //     accessor_id: accessorId,
+  //     key_type: 'RSA',
+  //     padding: 'none',
+  //     reference_id: idp1ReferenceId,
+  //     request_id: requestId,
+  //   });
 
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
-  });
+  //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+  //     .that.is.not.empty;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     this.timeout(15000);
@@ -247,7 +282,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       identity =>
         identity.namespace === namespace &&
         identity.identifier === identifier &&
-        identity.mode === 3
+        identity.mode === 3,
     );
 
     let identityIndex = db.idp1Identities.findIndex(item => item === identity);
@@ -327,7 +362,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
           identity.namespace === namespace &&
           identity.identifier === identifier &&
           identity.mode === 3 &&
-          identity.revokeIdentityAssociation == true
+          identity.revokeIdentityAssociation == true,
       );
 
       namespace = identity.namespace;
@@ -422,7 +457,9 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     const idp_requestClosedPromise = createEventPromise();
 
     let createRequestParams;
-    let requestId;
+    let identityForResponse;
+    let responseAccessorId;
+    let requestMessagePaddedHash;
 
     const requestStatusUpdates = [];
     const idp_requestStatusUpdates = [];
@@ -438,7 +475,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
           identity.namespace === namespace &&
           identity.identifier === identifier &&
           identity.mode === 3 &&
-          identity.revokeIdentityAssociation == true
+          identity.revokeIdentityAssociation == true,
       );
 
       namespace = identity.namespace;
@@ -556,7 +593,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -592,7 +629,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -612,7 +649,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -622,7 +659,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -637,28 +674,38 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+
+      identityForResponse = db.idp1Identities.find(
+        identity =>
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
+      );
+
+      let latestAccessor = identityForResponse.accessors.length - 1;
+
+      responseAccessorId =
+        identityForResponse.accessors[latestAccessor].accessorId;
+
+      const response = await idpApi.getRequestMessagePaddedHash('idp1', {
+        request_id: requestId,
+        accessor_id: responseAccessorId,
+      });
+      expect(response.status).to.equal(400);
+      const responseBody = await response.json();
+      expect(responseBody.error.code).to.equal(20038);
+    });
+
     it('IdP (idp1) that revoked association with this sid should create response (accept) unsuccessfully', async function() {
       this.timeout(10000);
-
-      const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      let latestAccessor;
-      if (identity) {
-        latestAccessor = identity.accessors.length - 1;
-      } else {
-        throw new Error('Identity not found');
-      }
-
-      let responseAccessorId = identity.accessors[latestAccessor].accessorId;
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
@@ -668,6 +715,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature: 'Test signature',
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
@@ -724,6 +772,8 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     const idp_requestStatusUpdates = [];
     const as_requestStatusUpdates = [];
     let lastStatusUpdateBlockHeight;
+    let identityForResponse;
+    let requestMessagePaddedHash;
 
     before(function() {
       if (!idp2Available) {
@@ -733,7 +783,8 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
 
       const identity = db.idp2Identities.find(
         identity =>
-          identity.namespace === namespace && identity.identifier === identifier
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
       );
 
       //const identity = db.idp1Identities[0]
@@ -882,7 +933,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -918,7 +969,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -933,7 +984,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
           return {
             ...dataRequestWithoutParams,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -943,7 +994,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -958,28 +1009,51 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
+    it('IdP should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      identityForResponse = db.idp2Identities.find(
+        identity =>
+          identity.namespace === namespace &&
+          identity.identifier === identifier,
+      );
+
+      let latestAccessor = identityForResponse.accessors.length - 1;
+
+      responseAccessorId =
+        identityForResponse.accessors[latestAccessor].accessorId;
+      let accessorPublicKey =
+        identityForResponse.accessors[latestAccessor].accessorPublicKey;
+
+      const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+        callApiAtNodeId: 'idp2',
+        idpNodeId: 'idp2',
+        requestId,
+        incomingRequestPromise,
+        accessorPublicKey,
+        accessorId: responseAccessorId,
+      });
+      requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+    });
+
     it('IdP (idp2) should create response (accept) successfully', async function() {
       this.timeout(10000);
 
-      const identity = db.idp2Identities.find(
-        identity =>
-          identity.namespace === namespace && identity.identifier === identifier
-      );
-      let latestAccessor;
-      if (identity) {
-        latestAccessor = identity.accessors.length - 1;
-      } else {
-        throw new Error('Identity not found');
-      }
+      let latestAccessor = identityForResponse.accessors.length - 1;
 
-      responseAccessorId = identity.accessors[latestAccessor].accessorId;
+      let accessorPrivateKey =
+        identityForResponse.accessors[latestAccessor].accessorPrivateKey;
+
+      const signature = createResponseSignature(
+        accessorPrivateKey,
+        requestMessagePaddedHash,
+      );
 
       const response = await idpApi.createResponse('idp2', {
         reference_id: idpReferenceId,
@@ -989,28 +1063,29 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         aal: 3,
         status: 'accept',
         accessor_id: responseAccessorId,
+        signature,
       });
       expect(response.status).to.equal(202);
     });
 
-    it('IdP (idp2) should receive accessor encrypt callback with correct data', async function() {
-      this.timeout(15000);
+    // it('IdP (idp2) should receive accessor encrypt callback with correct data', async function() {
+    //   this.timeout(15000);
 
-      const accessorEncryptParams = await accessorEncryptPromise.promise;
-      expect(accessorEncryptParams).to.deep.include({
-        node_id: 'idp2',
-        type: 'accessor_encrypt',
-        accessor_id: responseAccessorId,
-        key_type: 'RSA',
-        padding: 'none',
-        reference_id: idpReferenceId,
-        request_id: requestId,
-      });
+    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+    //   expect(accessorEncryptParams).to.deep.include({
+    //     node_id: 'idp2',
+    //     type: 'accessor_encrypt',
+    //     accessor_id: responseAccessorId,
+    //     key_type: 'RSA',
+    //     padding: 'none',
+    //     reference_id: idpReferenceId,
+    //     request_id: requestId,
+    //   });
 
-      expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-        'string'
-      ).that.is.not.empty;
-    });
+    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+    //     'string',
+    //   ).that.is.not.empty;
+    // });
 
     it('IdP (idp2) shoud receive callback create response result with success = true', async function() {
       const responseResult = await responseResultPromise.promise;
@@ -1057,7 +1132,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1085,7 +1160,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1146,7 +1221,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1185,7 +1260,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1223,7 +1298,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1261,7 +1336,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1300,7 +1375,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1338,7 +1413,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1377,7 +1452,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.be.above(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1417,7 +1492,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
@@ -1456,7 +1531,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
     });
 
