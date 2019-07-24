@@ -15,7 +15,7 @@ export function getRelevantIdpNodesBySid(nodeId, data) {
   return httpGet(
     `${apiBaseUrl}/utility/idp/${namespace}/${identifier}${
       queryString ? `?${queryString}` : ''
-    }`
+    }`,
   );
 }
 
@@ -33,7 +33,7 @@ export function getRequest(nodeId, data) {
 export function getNodeInfo(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpGet(
-    `${apiBaseUrl}/utility/nodes/${data ? `${data.node_id}` : `${nodeId}`}`
+    `${apiBaseUrl}/utility/nodes/${data ? `${data.node_id}` : `${nodeId}`}`,
   );
 }
 
@@ -43,18 +43,18 @@ export function getServices(nodeId) {
 }
 
 export function getASByServiceId(nodeId, serviceId) {
-  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpGet(`${apiBaseUrl}/utility/as/${serviceId}`);
 }
 
 export function getServiceDataSchema(nodeId, data) {
-  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { serviceId } = data;
   return httpGet(`${apiBaseUrl}/utility/services/${serviceId}`);
 }
 
 export function getToken(nodeId) {
-  const apiBaseUrl = getApiAddressUrl(nodeId) + '/v3';
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpGet(`${apiBaseUrl}/utility/nodes/${nodeId}/token`);
 }
 
@@ -69,7 +69,7 @@ export function getPrivateMessages(nodeId, data) {
   return httpGet(
     `${apiBaseUrl}/utility/private_messages/${request_id}${
       node_id ? `?node_id=${node_id}` : ''
-    }`
+    }`,
   );
 }
 
@@ -78,7 +78,7 @@ export function removeAllPrivateMessages(nodeId, data) {
   const { node_id } = data;
   return httpPost(
     `${apiBaseUrl}/utility/private_message_removal`,
-    node_id ? { node_id } : {}
+    node_id ? { node_id } : {},
   );
 }
 
@@ -87,6 +87,6 @@ export function removePrivateMessages(nodeId, data) {
   const { request_id, node_id } = data;
   return httpPost(
     `${apiBaseUrl}/utility/private_message_removal/${request_id}`,
-    node_id ? { node_id } : {}
+    node_id ? { node_id } : {},
   );
 }
