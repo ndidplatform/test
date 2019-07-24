@@ -12,6 +12,7 @@ import {
   generateReferenceId,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
 
@@ -45,7 +46,7 @@ describe('AS data response errors', function() {
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -86,7 +87,7 @@ describe('AS data response errors', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     idp1EventEmitter.on('callback', function(callbackData) {
@@ -120,6 +121,22 @@ describe('AS data response errors', function() {
     requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;
 
+    const responseGetRequestMessagePaddedHash = await idpApi.getRequestMessagePaddedHash(
+      'idp1',
+      {
+        request_id: requestId,
+        accessor_id: identity[0].accessors[0].accessorId,
+      },
+    );
+    const responseBodyGetRequestMessagePaddedHash = await responseGetRequestMessagePaddedHash.json();
+
+    let accessorPrivateKey = identity[0].accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      responseBodyGetRequestMessagePaddedHash.request_message_padded_hash,
+    );
+
     await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -128,6 +145,7 @@ describe('AS data response errors', function() {
       aal: 3,
       status: 'accept',
       accessor_id: identity[0].accessors[0].accessorId,
+      signature,
     });
     await dataRequestReceivedPromise.promise;
   });

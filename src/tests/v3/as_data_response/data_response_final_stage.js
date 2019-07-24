@@ -44,13 +44,13 @@ describe('AS response data request already closed test', function() {
   let requestId;
 
   before(async function() {
-    this.timeout(20000);
+    this.timeout(50000);
 
     let identity = db.idp1Identities.filter(
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -83,7 +83,7 @@ describe('AS response data request already closed test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -128,6 +128,22 @@ describe('AS response data request already closed test', function() {
     requestId = responseBody.request_id;
     await createRequestResultPromise.promise;
     await incomingRequestPromise.promise;
+
+    const responseGetRequestMessagePaddedHash = await idpApi.getRequestMessagePaddedHash(
+      'idp1',
+      {
+        request_id: requestId,
+        accessor_id: identity[0].accessors[0].accessorId,
+      },
+    );
+    const responseBodyGetRequestMessagePaddedHash = await responseGetRequestMessagePaddedHash.json();
+
+    let accessorPrivateKey = identity[0].accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      responseBodyGetRequestMessagePaddedHash.request_message_padded_hash,
+    );
     //const identity = db.idp1Identities[0];
     await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -137,6 +153,7 @@ describe('AS response data request already closed test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: identity[0].accessors[0].accessorId,
+      signature,
     });
     await responseResultPromise.promise;
   });
@@ -228,7 +245,7 @@ describe('AS response data request already timed out test', function() {
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -261,7 +278,7 @@ describe('AS response data request already timed out test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 7,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -306,6 +323,23 @@ describe('AS response data request already timed out test', function() {
     requestId = responseBody.request_id;
     await createRequestResultPromise.promise;
     await incomingRequestPromise.promise;
+
+    const responseGetRequestMessagePaddedHash = await idpApi.getRequestMessagePaddedHash(
+      'idp1',
+      {
+        request_id: requestId,
+        accessor_id: identity[0].accessors[0].accessorId,
+      },
+    );
+    const responseBodyGetRequestMessagePaddedHash = await responseGetRequestMessagePaddedHash.json();
+
+    let accessorPrivateKey = identity[0].accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      responseBodyGetRequestMessagePaddedHash.request_message_padded_hash,
+    );
+
     //const identity = db.idp1Identities[0];
     await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -315,6 +349,7 @@ describe('AS response data request already timed out test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: identity[0].accessors[0].accessorId,
+      signature,
     });
     let responseResult = await responseResultPromise.promise;
     if (responseResult.success == false) {
@@ -406,7 +441,7 @@ describe('AS response data request already completed test', function() {
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -439,7 +474,7 @@ describe('AS response data request already completed test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -501,6 +536,23 @@ describe('AS response data request already completed test', function() {
     requestId = responseBody.request_id;
     await createRequestResultPromise.promise;
     await incomingRequestPromise.promise;
+
+    const responseGetRequestMessagePaddedHash = await idpApi.getRequestMessagePaddedHash(
+      'idp1',
+      {
+        request_id: requestId,
+        accessor_id: identity[0].accessors[0].accessorId,
+      },
+    );
+    const responseBodyGetRequestMessagePaddedHash = await responseGetRequestMessagePaddedHash.json();
+
+    let accessorPrivateKey = identity[0].accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      responseBodyGetRequestMessagePaddedHash.request_message_padded_hash,
+    );
+
     //const identity = db.idp1Identities[0];
     await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -510,6 +562,7 @@ describe('AS response data request already completed test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: identity[0].accessors[0].accessorId,
+      signature,
     });
     await responseResultPromise.promise;
   });
