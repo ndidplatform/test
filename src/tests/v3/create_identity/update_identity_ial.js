@@ -7,11 +7,7 @@ import * as ndidApi from '../../../api/v3/ndid';
 import * as commonApi from '../../../api/v3/common';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
-import {
-  createEventPromise,
-  generateReferenceId,
-  wait,
-} from '../../../utils';
+import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
 
 describe('IdP update identity ial test', function() {
@@ -31,7 +27,7 @@ describe('IdP update identity ial test', function() {
     }
 
     const identity = db.idp1Identities.filter(
-      identity => identity.namespace === 'citizen_id' && identity.mode === 3
+      identity => identity.namespace === 'citizen_id' && identity.mode === 3,
     );
 
     if (identity.length === 0) {
@@ -87,7 +83,19 @@ describe('IdP update identity ial test', function() {
     const responseBody = await response.json();
     expect(responseBody.ial).to.equal(3);
   });
-  1;
+
+  it('Should get relevant IdP nodes by sid successfully', async function() {
+    this.timeout(15000);
+
+    const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
+      namespace,
+      identifier,
+    });
+    const responseBody = await response.json();
+    const idp = responseBody.find(node => node.node_id === 'idp1');
+    expect(idp.ial).to.equal(3);
+  });
+
   after(async function() {
     this.timeout(10000);
     await identityApi.updateIdentityIal('idp1', {

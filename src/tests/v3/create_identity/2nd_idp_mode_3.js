@@ -474,6 +474,23 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     expect(responseBody.ial).to.equal(2.3);
   });
 
+  it('Should get relevant IdP nodes by sid successfully', async function() {
+    this.timeout(15000);
+
+    const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
+      namespace,
+      identifier,
+    });
+    const responseBody = await response.json();
+    expect(responseBody)
+      .to.be.an('array')
+      .that.to.have.lengthOf(2);
+    let idp = responseBody.find(node => node.node_id === 'idp1');
+    expect(idp.ial).to.equal(2.3);
+    idp = responseBody.find(node => node.node_id === 'idp2');
+    expect(idp.ial).to.equal(2.3);
+  });
+
   after(function() {
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
