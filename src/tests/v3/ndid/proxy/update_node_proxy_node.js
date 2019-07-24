@@ -7,9 +7,6 @@ import * as idpApi from '../../../../api/v3/idp';
 import * as asApi from '../../../../api/v3/as';
 import * as serverCommonApi from '../../../../api/common';
 import { wait, hash } from '../../../../utils';
-
-import { setIdPUseSpecificPrivateKeyForSign } from '../../../../callback_server';
-
 import {
   proxy1EventEmitter,
   proxy2EventEmitter,
@@ -17,8 +14,13 @@ import {
   rpEventEmitter,
 } from '../../../../callback_server';
 import * as db from '../../../../db';
-import { createEventPromise, generateReferenceId } from '../../../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  createResponseSignature,
+} from '../../../../utils';
 import * as config from '../../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../../_fragments/request_flow_fragments/idp';
 
 describe('NDID update node config', function() {
   it('NDID should update RP node (proxy1_rp4) config to KEY_ON_NODE', async function() {
@@ -77,11 +79,14 @@ describe('NDID update RP node to other proxy node', function() {
   let requestMessageHash;
   let responseAccessorId;
 
+  let identityForResponse;
+  let requestMessagePaddedHash;
+
   const requestStatusUpdates = [];
 
   before(function() {
     const identity = db.idp1Identities.find(
-      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
     );
 
     if (!identity) {
@@ -106,7 +111,7 @@ describe('NDID update RP node to other proxy node', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     proxy2EventEmitter.on('callback', function(callbackData) {
@@ -229,7 +234,7 @@ describe('NDID update RP node to other proxy node', function() {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: createRequestParams.node_id,
       min_ial: createRequestParams.min_ial,
@@ -243,7 +248,7 @@ describe('NDID update RP node to other proxy node', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -253,14 +258,37 @@ describe('NDID update RP node to other proxy node', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
-    const identity = db.idp1Identities.find(
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP should create response (accept) successfully', async function() {
+    this.timeout(10000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -270,27 +298,28 @@ describe('NDID update RP node to other proxy node', function() {
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-    });
+  //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+  //   expect(accessorEncryptParams).to.deep.include({
+  //     node_id: 'idp1',
+  //     type: 'accessor_encrypt',
+  //     accessor_id: responseAccessorId,
+  //     key_type: 'RSA',
+  //     padding: 'none',
+  //     reference_id: idpReferenceId,
+  //     request_id: requestId,
+  //   });
 
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
-  });
+  //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+  //     .that.is.not.empty;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
@@ -401,12 +430,14 @@ describe('NDID update IdP node to other proxy node', function() {
   let requestId;
   let requestMessageHash;
   let responseAccessorId;
+  let identityForResponse;
+  let requestMessagePaddedHash;
 
   const requestStatusUpdates = [];
 
   before(function() {
     const identity = db.proxy1Idp4Identities.find(
-      identity => identity.mode === 3
+      identity => identity.mode === 3,
     );
 
     if (!identity) {
@@ -431,7 +462,7 @@ describe('NDID update IdP node to other proxy node', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     proxy1EventEmitter.on('callback', function(callbackData) {
@@ -555,7 +586,7 @@ describe('NDID update IdP node to other proxy node', function() {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: createRequestParams.node_id,
       min_ial: createRequestParams.min_ial,
@@ -569,7 +600,7 @@ describe('NDID update IdP node to other proxy node', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -578,18 +609,37 @@ describe('NDID update IdP node to other proxy node', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.proxy1Idp4Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'proxy2',
+      idpNodeId: idpNodeId,
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
   it('IdP should create response (accept) successfully', async function() {
     this.timeout(10000);
 
-    const identity = db.proxy1Idp4Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
     );
-
-    responseAccessorId = identity.accessors[0].accessorId;
-    let privateKey = identity.accessors[0].accessorPrivateKey;
-
-    setIdPUseSpecificPrivateKeyForSign(true, privateKey);
 
     const response = await idpApi.createResponse('proxy2', {
       node_id: idpNodeId,
@@ -600,27 +650,28 @@ describe('NDID update IdP node to other proxy node', function() {
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: idpNodeId,
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-    });
+  //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+  //   expect(accessorEncryptParams).to.deep.include({
+  //     node_id: idpNodeId,
+  //     type: 'accessor_encrypt',
+  //     accessor_id: responseAccessorId,
+  //     key_type: 'RSA',
+  //     padding: 'none',
+  //     reference_id: idpReferenceId,
+  //     request_id: requestId,
+  //   });
 
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
-  });
+  //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+  //     .that.is.not.empty;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
@@ -632,7 +683,7 @@ describe('NDID update IdP node to other proxy node', function() {
       success: true,
     });
 
-    setIdPUseSpecificPrivateKeyForSign(false);
+    //setIdPUseSpecificPrivateKeyForSign(false);
   });
 
   it('RP should receive completed request status with valid proofs', async function() {
@@ -748,12 +799,14 @@ describe('NDID update AS node to other proxy node', function() {
   let requestMessageSalt;
   let requestMessageHash;
   let responseAccessorId;
+  let identityForResponse;
+  let requestMessagePaddedHash;
 
   const requestStatusUpdates = [];
 
   before(function() {
     const identity = db.idp1Identities.find(
-      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
     );
 
     if (!identity) {
@@ -785,7 +838,7 @@ describe('NDID update AS node to other proxy node', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -983,7 +1036,7 @@ describe('NDID update AS node to other proxy node', function() {
         return {
           ...dataRequestWithoutParams,
         };
-      }
+      },
     );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -991,7 +1044,7 @@ describe('NDID update AS node to other proxy node', function() {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1006,7 +1059,7 @@ describe('NDID update AS node to other proxy node', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1016,14 +1069,37 @@ describe('NDID update AS node to other proxy node', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
-    const identity = db.idp1Identities.find(
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP should create response (accept) successfully', async function() {
+    this.timeout(10000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -1033,27 +1109,28 @@ describe('NDID update AS node to other proxy node', function() {
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-    });
+  //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+  //   expect(accessorEncryptParams).to.deep.include({
+  //     node_id: 'idp1',
+  //     type: 'accessor_encrypt',
+  //     accessor_id: responseAccessorId,
+  //     key_type: 'RSA',
+  //     padding: 'none',
+  //     reference_id: idpReferenceId,
+  //     request_id: requestId,
+  //   });
 
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
-  });
+  //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+  //     .that.is.not.empty;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
