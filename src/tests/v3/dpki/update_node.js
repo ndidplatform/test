@@ -22,10 +22,12 @@ import {
   wait,
   createSignature,
   hash,
+  createResponseSignature,
 } from '../../../utils';
 import { ndidAvailable } from '../..';
 import * as db from '../../../db';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe("Update nodes's DPKI test", function() {
   const keypair = forge.pki.rsa.generateKeyPair(2048);
@@ -54,7 +56,7 @@ describe("Update nodes's DPKI test", function() {
 
   const IdPMasterKeypair = forge.pki.rsa.generateKeyPair(2048);
   const IdPMasterPrivKey = forge.pki.privateKeyToPem(
-    IdPMasterKeypair.privateKey
+    IdPMasterKeypair.privateKey,
   );
   const IdPMasterPubKey = forge.pki.publicKeyToPem(IdPMasterKeypair.publicKey);
 
@@ -96,7 +98,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(privateKey, check_string),
         master_signed_check_string: createSignature(
           masterPrivateKey,
-          check_string
+          check_string,
         ),
       });
       expect(response.status).to.equal(202);
@@ -249,7 +251,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(RPPrivKey, check_string),
         master_signed_check_string: createSignature(
           RPMasterPrivKey,
-          check_string
+          check_string,
         ),
       });
       expect(response.status).to.equal(202);
@@ -285,7 +287,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(IdPPriveKey, check_string),
         master_signed_check_string: createSignature(
           IdPMasterPrivKey,
-          check_string
+          check_string,
         ),
       });
       expect(response.status).to.equal(202);
@@ -321,7 +323,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(ASPrivKey, check_string),
         master_signed_check_string: createSignature(
           ASMasterPrivKey,
-          check_string
+          check_string,
         ),
       });
       expect(response.status).to.equal(202);
@@ -412,11 +414,14 @@ describe("Update nodes's DPKI test", function() {
     });
 
     describe("Create request tests after update node's master key and public key ", function() {
+      let identityForResponse;
+      let responseAccessorId;
+      let requestMessagePaddedHash;
       before(function() {
         const identity = db.idp1Identities.find(
           identity =>
             identity.namespace === namespace &&
-            identity.identifier === identifier
+            identity.identifier === identifier,
         );
 
         if (!identity) {
@@ -477,7 +482,7 @@ describe("Update nodes's DPKI test", function() {
             return {
               ...dataRequestWithoutParams,
             };
-          }
+          },
         );
         expect(incomingRequest).to.deep.include({
           mode: createRequestParams.mode,
@@ -485,7 +490,7 @@ describe("Update nodes's DPKI test", function() {
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt
+              incomingRequest.request_message_salt,
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -500,7 +505,7 @@ describe("Update nodes's DPKI test", function() {
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -509,15 +514,39 @@ describe("Update nodes's DPKI test", function() {
         requestMessageHash = incomingRequest.request_message_hash;
       });
 
-      it('IdP should create response (accept) successfully', async function() {
-        this.timeout(20000);
-        const identity = db.idp1Identities.find(
+      it('IdP should get request_message_padded_hash successfully', async function() {
+        this.timeout(15000);
+        identityForResponse = db.idp1Identities.find(
           identity =>
             identity.namespace === namespace &&
-            identity.identifier === identifier
+            identity.identifier === identifier,
         );
 
-        responseAccessorId = identity.accessors[0].accessorId;
+        responseAccessorId = identityForResponse.accessors[0].accessorId;
+        let accessorPublicKey =
+          identityForResponse.accessors[0].accessorPublicKey;
+
+        const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+          callApiAtNodeId: 'idp1',
+          idpNodeId: 'idp1',
+          requestId,
+          incomingRequestPromise,
+          accessorPublicKey,
+          accessorId: responseAccessorId,
+        });
+        requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+      });
+
+      it('IdP should create response (accept) successfully', async function() {
+        this.timeout(20000);
+
+        let accessorPrivateKey =
+          identityForResponse.accessors[0].accessorPrivateKey;
+
+        const signature = createResponseSignature(
+          accessorPrivateKey,
+          requestMessagePaddedHash,
+        );
 
         const response = await idpApi.createResponse('idp1', {
           reference_id: idpReferenceId,
@@ -527,35 +556,31 @@ describe("Update nodes's DPKI test", function() {
           identifier: createRequestParams.identifier,
           ial: 2.3,
           aal: 3,
-          // secret: identity.accessors[0].secret,
           status: 'accept',
-          // signature: createResponseSignature(
-          //   identity.accessors[0].accessorPrivateKey,
-          //   requestMessageHash
-          // ),
           accessor_id: responseAccessorId,
+          signature,
         });
         expect(response.status).to.equal(202);
       });
 
-      it('IdP should receive accessor encrypt callback with correct data', async function() {
-        this.timeout(15000);
+      // it('IdP should receive accessor encrypt callback with correct data', async function() {
+      //   this.timeout(15000);
 
-        const accessorEncryptParams = await accessorEncryptPromise.promise;
-        expect(accessorEncryptParams).to.deep.include({
-          node_id: 'idp1',
-          type: 'accessor_encrypt',
-          accessor_id: responseAccessorId,
-          key_type: 'RSA',
-          padding: 'none',
-          reference_id: idpReferenceId,
-          request_id: requestId,
-        });
+      //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+      //   expect(accessorEncryptParams).to.deep.include({
+      //     node_id: 'idp1',
+      //     type: 'accessor_encrypt',
+      //     accessor_id: responseAccessorId,
+      //     key_type: 'RSA',
+      //     padding: 'none',
+      //     reference_id: idpReferenceId,
+      //     request_id: requestId,
+      //   });
 
-        expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-          'string'
-        ).that.is.not.empty;
-      });
+      //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
+      //     'string',
+      //   ).that.is.not.empty;
+      // });
 
       it('IdP shoud receive callback create response result with success = true', async function() {
         const responseResult = await responseResultPromise.promise;
@@ -677,7 +702,7 @@ describe("Update nodes's DPKI test", function() {
         check_string,
         master_signed_check_string: createSignature(
           RPMasterPrivKey,
-          'invalid check_string'
+          'invalid check_string',
         ),
       });
       expect(response.status).to.equal(400);
