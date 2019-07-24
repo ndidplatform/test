@@ -266,7 +266,7 @@ describe('Spend and refill node token test', function() {
       identifier: identifier,
       request_message: 'Spend Token #5',
       request_message_hash: hash(
-        'Spend Token #5' + incomingRequest.request_message_salt
+        'Spend Token #5' + incomingRequest.request_message_salt,
       ),
       requester_node_id: 'rp1',
       min_ial: 1.1,
@@ -284,7 +284,7 @@ describe('Spend and refill node token test', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -304,6 +304,7 @@ describe('Spend and refill node token test', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
+      signature: 'Test signature',
     });
     expect(response.status).to.equal(202);
 
@@ -392,13 +393,13 @@ describe('Spend and refill node token test', function() {
     ]);
 
     rpNodeTokenBeforeAddNodeToken = parseInt(
-      responseBodyGetTokenBeforeAddNodeToken[0].amount
+      responseBodyGetTokenBeforeAddNodeToken[0].amount,
     );
     idpNodeTokenBeforeAddNodeToken = parseInt(
-      responseBodyGetTokenBeforeAddNodeToken[1].amount
+      responseBodyGetTokenBeforeAddNodeToken[1].amount,
     );
     asNodeTokenBeforeAddNodeToken = parseInt(
-      responseBodyGetTokenBeforeAddNodeToken[2].amount
+      responseBodyGetTokenBeforeAddNodeToken[2].amount,
     );
 
     await Promise.all([
@@ -430,13 +431,13 @@ describe('Spend and refill node token test', function() {
     ]);
 
     expect(responseBodyGetToken[0].amount).to.equal(
-      rpNodeTokenBeforeAddNodeToken + 5
+      rpNodeTokenBeforeAddNodeToken + 5,
     ); // RP node token
     expect(responseBodyGetToken[1].amount).to.equal(
-      idpNodeTokenBeforeAddNodeToken + 5
+      idpNodeTokenBeforeAddNodeToken + 5,
     ); // IdP node token
     expect(responseBodyGetToken[2].amount).to.equal(
-      asNodeTokenBeforeAddNodeToken + 5
+      asNodeTokenBeforeAddNodeToken + 5,
     ); // AS node token
   });
 
@@ -488,7 +489,7 @@ describe('Spend and refill node token test', function() {
       request_message: 'Test making a request after add node token',
       request_message_hash: hash(
         'Test making a request after add node token' +
-          incomingRequest.request_message_salt
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: 'rp1',
       min_ial: 1.1,
@@ -506,7 +507,7 @@ describe('Spend and refill node token test', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -526,6 +527,7 @@ describe('Spend and refill node token test', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
+      signature: 'Test signature',
     });
     expect(response.status).to.equal(202);
 
