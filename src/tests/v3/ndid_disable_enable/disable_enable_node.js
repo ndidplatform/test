@@ -18,8 +18,10 @@ import {
   generateReferenceId,
   wait,
   hash,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe('NDID disable RP node and enable RP node test', function() {
   let namespace;
@@ -47,6 +49,8 @@ describe('NDID disable RP node and enable RP node test', function() {
   let requestMessageHash;
   let referenceGroupCode;
   let responseAccessorId;
+  let identityForResponse;
+  let requestMessagePaddedHash;
 
   const data = JSON.stringify({
     test: 'test',
@@ -63,7 +67,7 @@ describe('NDID disable RP node and enable RP node test', function() {
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -97,7 +101,7 @@ describe('NDID disable RP node and enable RP node test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -255,7 +259,7 @@ describe('NDID disable RP node and enable RP node test', function() {
         return {
           ...dataRequestWithoutParams,
         };
-      }
+      },
     );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -263,7 +267,7 @@ describe('NDID disable RP node and enable RP node test', function() {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -281,14 +285,37 @@ describe('NDID disable RP node and enable RP node test', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
-    const identity = db.idp1Identities.find(
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId: enableNodeRequestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP should create response (accept) successfully', async function() {
+    this.timeout(10000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -298,27 +325,28 @@ describe('NDID disable RP node and enable RP node test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idpReferenceId,
-      request_id: enableNodeRequestId,
-    });
+  //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+  //   expect(accessorEncryptParams).to.deep.include({
+  //     node_id: 'idp1',
+  //     type: 'accessor_encrypt',
+  //     accessor_id: responseAccessorId,
+  //     key_type: 'RSA',
+  //     padding: 'none',
+  //     reference_id: idpReferenceId,
+  //     request_id: enableNodeRequestId,
+  //   });
 
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
-  });
+  //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+  //     .that.is.not.empty;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
@@ -492,6 +520,8 @@ describe('NDID disable IdP node and enable IdP node test', function() {
   let requestMessageSalt;
   let requestMessageHash;
   let responseAccessorId;
+  let identityForResponse;
+  let requestMessagePaddedHash;
 
   const data = JSON.stringify({
     test: 'test',
@@ -508,7 +538,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -541,7 +571,7 @@ describe('NDID disable IdP node and enable IdP node test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -700,14 +730,14 @@ describe('NDID disable IdP node and enable IdP node test', function() {
         return {
           ...dataRequestWithoutParams,
         };
-      }
+      },
     );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -725,14 +755,37 @@ describe('NDID disable IdP node and enable IdP node test', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
-    this.timeout(10000);
-    const identity = db.idp1Identities.find(
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId: enableNodeRequestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP should create response (accept) successfully', async function() {
+    this.timeout(10000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -742,27 +795,28 @@ describe('NDID disable IdP node and enable IdP node test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });
 
-  it('IdP should receive accessor encrypt callback with correct data', async function() {
-    this.timeout(15000);
+  // it('IdP should receive accessor encrypt callback with correct data', async function() {
+  //   this.timeout(15000);
 
-    const accessorEncryptParams = await accessorEncryptPromise.promise;
-    expect(accessorEncryptParams).to.deep.include({
-      node_id: 'idp1',
-      type: 'accessor_encrypt',
-      accessor_id: responseAccessorId,
-      key_type: 'RSA',
-      padding: 'none',
-      reference_id: idpReferenceId,
-      request_id: enableNodeRequestId,
-    });
+  //   const accessorEncryptParams = await accessorEncryptPromise.promise;
+  //   expect(accessorEncryptParams).to.deep.include({
+  //     node_id: 'idp1',
+  //     type: 'accessor_encrypt',
+  //     accessor_id: responseAccessorId,
+  //     key_type: 'RSA',
+  //     padding: 'none',
+  //     reference_id: idpReferenceId,
+  //     request_id: enableNodeRequestId,
+  //   });
 
-    expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
-      .that.is.not.empty;
-  });
+  //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a('string')
+  //     .that.is.not.empty;
+  // });
 
   it('IdP shoud receive callback create response result with success = true', async function() {
     const responseResult = await responseResultPromise.promise;
@@ -936,6 +990,8 @@ describe('NDID disable AS node and enable AS node test', function() {
   let requestMessageSalt;
   let requestMessageHash;
   let responseAccessorId;
+  let identityForResponse;
+  let requestMessagePaddedHash;
 
   const data = JSON.stringify({
     test: 'test',
@@ -952,7 +1008,7 @@ describe('NDID disable AS node and enable AS node test', function() {
       identity =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
-        !identity.revokeIdentityAssociation
+        !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -984,7 +1040,7 @@ describe('NDID disable AS node and enable AS node test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -1143,7 +1199,7 @@ describe('NDID disable AS node and enable AS node test', function() {
         return {
           ...dataRequestWithoutParams,
         };
-      }
+      },
     );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -1151,7 +1207,7 @@ describe('NDID disable AS node and enable AS node test', function() {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1169,14 +1225,37 @@ describe('NDID disable AS node and enable AS node test', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function() {
     this.timeout(15000);
-    const identity = db.idp1Identities.find(
+    identityForResponse = db.idp1Identities.find(
       identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+        identity.namespace === namespace && identity.identifier === identifier,
     );
 
-    responseAccessorId = identity.accessors[0].accessorId;
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId: enableNodeRequestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP should create response (accept) successfully', async function() {
+    this.timeout(15000);
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
+    );
 
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -1186,6 +1265,7 @@ describe('NDID disable AS node and enable AS node test', function() {
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(202);
   });

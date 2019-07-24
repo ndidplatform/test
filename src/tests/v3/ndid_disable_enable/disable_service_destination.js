@@ -75,7 +75,7 @@ describe('NDID disable service destination test', function() {
     const responseGetServices = await commonApi.getServices('ndid1');
     const responseBody = await responseGetServices.json();
     alreadyAddedService = responseBody.find(
-      service => service.service_id === 'test_disable_service_destination'
+      service => service.service_id === 'test_disable_service_destination',
     );
   });
 
@@ -104,7 +104,7 @@ describe('NDID disable service destination test', function() {
     const response = await commonApi.getServices('ndid1');
     const responseBody = await response.json();
     const service = responseBody.find(
-      service => service.service_id === 'test_disable_service_destination'
+      service => service.service_id === 'test_disable_service_destination',
     );
     expect(service).to.deep.equal({
       service_id: 'test_disable_service_destination',
@@ -296,7 +296,7 @@ describe('NDID disable service destination after RP create request test', functi
         return {
           ...dataRequestWithoutParams,
         };
-      }
+      },
     );
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
@@ -306,7 +306,7 @@ describe('NDID disable service destination after RP create request test', functi
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+          incomingRequest.request_message_salt,
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -318,7 +318,7 @@ describe('NDID disable service destination after RP create request test', functi
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
+      ':',
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -337,6 +337,7 @@ describe('NDID disable service destination after RP create request test', functi
       ial: 2.3,
       aal: 3,
       status: 'accept',
+      signature: 'Test signature',
     });
     expect(response.status).to.equal(202);
 

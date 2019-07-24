@@ -206,6 +206,7 @@ describe('NDID enable service test', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
+      signature:'Test signature'
     });
     expect(response.status).to.equal(202);
 
