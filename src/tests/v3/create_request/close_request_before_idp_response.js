@@ -9,8 +9,10 @@ import {
   generateReferenceId,
   hash,
   wait,
+  createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe('Close request before IdP response', function() {
   let namespace;
@@ -30,10 +32,13 @@ describe('Close request before IdP response', function() {
   let requestId;
   let requestMessageSalt;
   let requestMessageHash;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   before(async function() {
     let identity = db.idp1Identities.filter(
-      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+      identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -57,7 +62,7 @@ describe('Close request before IdP response', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
     rpEventEmitter.on('callback', function(callbackData) {
@@ -127,6 +132,60 @@ describe('Close request before IdP response', function() {
     expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('IdP should receive incoming request callback', async function() {
+    this.timeout(15000);
+    const incomingRequest = await incomingRequestPromise.promise;
+    expect(incomingRequest).to.deep.include({
+      mode: createRequestParams.mode,
+      request_id: requestId,
+      request_message: createRequestParams.request_message,
+      request_message_hash: hash(
+        createRequestParams.request_message +
+          incomingRequest.request_message_salt,
+      ),
+      requester_node_id: 'rp1',
+      min_ial: createRequestParams.min_ial,
+      min_aal: createRequestParams.min_aal,
+      data_request_list: createRequestParams.data_request_list,
+    });
+    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
+      .empty;
+    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
+      .empty;
+    expect(incomingRequest.creation_time).to.be.a('number');
+    expect(incomingRequest.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
+      ':',
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    requestMessageSalt = incomingRequest.request_message_salt;
+    requestMessageHash = incomingRequest.request_message_hash;
+  });
+
+  it('IdP should get request_message_padded_hash successfully', async function() {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
+      identity =>
+        identity.namespace === namespace && identity.identifier === identifier,
+    );
+
+    responseAccessorId = identityForResponse.accessors[0].accessorId;
+    let accessorPublicKey = identityForResponse.accessors[0].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
   it('RP should be able to close request', async function() {
     this.timeout(10000);
     const response = await rpApi.closeRequest('rp1', {
@@ -144,46 +203,17 @@ describe('Close request before IdP response', function() {
     });
   });
 
-  it('IdP should receive incoming request callback', async function() {
-    this.timeout(15000);
-    const incomingRequest = await incomingRequestPromise.promise;
-    expect(incomingRequest).to.deep.include({
-      mode: createRequestParams.mode,
-      request_id: requestId,
-      request_message: createRequestParams.request_message,
-      request_message_hash: hash(
-        createRequestParams.request_message +
-          incomingRequest.request_message_salt
-      ),
-      requester_node_id: 'rp1',
-      min_ial: createRequestParams.min_ial,
-      min_aal: createRequestParams.min_aal,
-      data_request_list: createRequestParams.data_request_list,
-    });
-    expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
-      .empty;
-    expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
-      .empty;
-    expect(incomingRequest.creation_time).to.be.a('number');
-    expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':'
-    );
-    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
-    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
-  });
-
   it('IdP should not be able to response closed request', async function() {
     this.timeout(15000);
 
     await wait(3000);
-    const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[0].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash,
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -193,7 +223,8 @@ describe('Close request before IdP response', function() {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      accessor_id: identity.accessors[0].accessorId,
+      accessor_id: responseAccessorId,
+      signature,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();

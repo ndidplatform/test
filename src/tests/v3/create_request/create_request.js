@@ -18,6 +18,7 @@ import {
 } from '../../../callback_server';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
+import * as db from '../../../db';
 
 describe('Create request tests', function() {
   //idp1 = mode 3, idp2 = mode 2
@@ -99,7 +100,7 @@ describe('Create request tests', function() {
       {
         namespace,
         identifier,
-      }
+      },
     );
 
     const idpNodes = await responseGetRelevantIdpNodesBySid.json();
@@ -149,7 +150,7 @@ describe('Create request tests', function() {
       {
         namespace,
         identifier,
-      }
+      },
     );
 
     const idpNodes = await responseGetRelevantIdpNodesBySid.json();
@@ -196,7 +197,7 @@ describe('Create request tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
-        bypass_identity_check:false
+        bypass_identity_check: false,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -249,7 +250,7 @@ describe('Create request tests', function() {
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -285,7 +286,7 @@ describe('Create request tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -300,7 +301,7 @@ describe('Create request tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -310,7 +311,7 @@ describe('Create request tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -325,7 +326,7 @@ describe('Create request tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -346,7 +347,7 @@ describe('Create request tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
@@ -356,7 +357,7 @@ describe('Create request tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -371,7 +372,7 @@ describe('Create request tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -396,6 +397,8 @@ describe('Create request tests', function() {
     let requestId;
     let lastStatusUpdateBlockHeight;
     let createRequestParams;
+    let identityForResponse;
+    let responseAccessorId;
 
     before(function() {
       createRequestParams = {
@@ -420,7 +423,7 @@ describe('Create request tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
-        bypass_identity_check:false
+        bypass_identity_check: false,
       };
 
       rpEventEmitter.on('callback', function(callbackData) {
@@ -464,7 +467,7 @@ describe('Create request tests', function() {
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -500,7 +503,7 @@ describe('Create request tests', function() {
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight
+        lastStatusUpdateBlockHeight,
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -515,7 +518,7 @@ describe('Create request tests', function() {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        }
+        },
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -525,7 +528,7 @@ describe('Create request tests', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt
+            incomingRequest.request_message_salt,
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -540,7 +543,7 @@ describe('Create request tests', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
+        ':',
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -550,22 +553,45 @@ describe('Create request tests', function() {
       // requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP (mode 2) should create response (accept) unsuccessfully', async function() {
-      this.timeout(10000);
+    it('IdP (mode 2) should get request_message_padded_hash successfully', async function() {
+      this.timeout(15000);
+      // identityForResponse = db.idp2Identities.find(
+      //   identity =>
+      //     identity.namespace === namespace &&
+      //     identity.identifier === identifier,
+      // );
 
-      const response = await idpApi.createResponse('idp2', {
-        reference_id: idpReferenceId,
-        callback_url: config.IDP2_CALLBACK_URL,
+      // const identity = identityForResponse.accessors.find(
+      //   accessor => accessor.accessorId === accessorIdMode2,
+      // );
+
+      responseAccessorId = accessorIdMode2;
+
+      const response = await idpApi.getRequestMessagePaddedHash('idp2', {
         request_id: requestId,
-        ial: 2.3,
-        aal: 3,
-        status: 'accept',
-        accessor_id: accessorIdMode2,
+        accessor_id: responseAccessorId,
       });
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20038);
     });
+
+    // it('IdP (mode 2) should create response (accept) unsuccessfully', async function() {
+    //   this.timeout(10000);
+
+    //   const response = await idpApi.createResponse('idp2', {
+    //     reference_id: idpReferenceId,
+    //     callback_url: config.IDP2_CALLBACK_URL,
+    //     request_id: requestId,
+    //     ial: 2.3,
+    //     aal: 3,
+    //     status: 'accept',
+    //     accessor_id: accessorIdMode2,
+    //   });
+    //   expect(response.status).to.equal(400);
+    //   const responseBody = await response.json();
+    //   expect(responseBody.error.code).to.equal(20038);
+    // });
 
     after(function() {
       idp1EventEmitter.removeAllListeners('callback');
@@ -636,7 +662,7 @@ describe('Create request with invalid mode tests', function() {
         {
           namespace,
           identifier,
-        }
+        },
       );
 
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
@@ -674,7 +700,7 @@ describe('Create request with invalid mode tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
-        bypass_identity_check:false
+        bypass_identity_check: false,
       };
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -708,7 +734,7 @@ describe('Create request with invalid mode tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
-        bypass_identity_check:false
+        bypass_identity_check: false,
       };
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -797,7 +823,7 @@ describe('Create request with invalid mode tests', function() {
         {
           namespace,
           identifier,
-        }
+        },
       );
 
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
@@ -847,7 +873,7 @@ describe('Create request with invalid mode tests', function() {
         {
           namespace,
           identifier,
-        }
+        },
       );
 
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
@@ -885,7 +911,7 @@ describe('Create request with invalid mode tests', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
-        bypass_identity_check:false
+        bypass_identity_check: false,
       };
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
