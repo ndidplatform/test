@@ -1,6 +1,9 @@
 import crypto from 'crypto';
-
 import uuidv4 from 'uuid/v4';
+import { parseKey } from './asn1parser';
+import bignum from 'bignum';
+import fs from 'fs';
+import path from 'path';
 
 const saltLength = 16;
 
@@ -35,6 +38,13 @@ export function generateReferenceId() {
   return uuidv4();
 }
 
+export function sha256(dataToHash) {
+  const hash = crypto.createHash('sha256');
+  hash.update(dataToHash);
+  const hashBuffer = hash.digest();
+  return hashBuffer;
+}
+
 export function hash(stringToHash) {
   const hash = crypto.createHash('sha256');
   hash.update(stringToHash);
@@ -61,13 +71,6 @@ export function createResponseSignature(privateKey, message_hash) {
     .toString('base64');
 }
 
-export function sha256(dataToHash) {
-  const hash = crypto.createHash('sha256');
-  hash.update(dataToHash);
-  const hashBuffer = hash.digest();
-  return hashBuffer;
-}
-
 function generateCustomPadding(initialSalt, blockLength = 2048) {
   const hashLength = 256;
   const padLengthInbyte = parseInt(Math.floor((blockLength - hashLength) / 8));
@@ -84,22 +87,26 @@ function generateCustomPadding(initialSalt, blockLength = 2048) {
   return paddingBuffer;
 }
 
-export function hashRequestMessageForConsent(
-  request_message,
-  initialSalt,
-  request_id
-) {
-  const paddingBuffer = generateCustomPadding(initialSalt);
-  const derivedSalt = Buffer.from(hash(request_id + initialSalt), 'base64')
-    .slice(0, 16)
-    .toString('base64');
+// export function hashRequestMessageForConsent(
+//   request_message,
+//   initialSalt,
+//   request_id
+// ) {
+//   const paddingBuffer = generateCustomPadding(initialSalt);
+//   const derivedSalt = Buffer.from(hash(request_id + initialSalt), 'base64')
+//     .slice(0, 16)
+//     .toString('base64');
 
-  const normalHashBuffer = Buffer.from(
-    hash(request_message + derivedSalt),
-    'base64'
-  );
+//   const normalHashBuffer = Buffer.from(
+//     hash(request_message + derivedSalt),
+//     'base64'
+//   );
 
-  return Buffer.concat([paddingBuffer, normalHashBuffer]).toString('base64');
+//   return Buffer.concat([paddingBuffer, normalHashBuffer]).toString('base64');
+// }
+
+export function randomByte(length) {
+  return crypto.randomBytes(length);
 }
 
 export function generateRequestParamSalt({
@@ -109,4 +116,73 @@ export function generateRequestParamSalt({
 }) {
   const bufferHash = sha256(requestId + serviceId + initialSalt);
   return bufferHash.slice(0, saltLength).toString('base64');
+}
+
+function getDataHashWithCustomPadding(
+  initialSalt,
+  keyModulus,
+  dataHash,
+  blockLength = 2048
+) {
+  const hashLength = 256;
+  const padLengthInbyte = parseInt(Math.floor((blockLength - hashLength) / 8));
+  let paddingBuffer = Buffer.alloc(0);
+
+  for (let i = 1; paddingBuffer.length + saltLength <= padLengthInbyte; i++) {
+    paddingBuffer = Buffer.concat([
+      paddingBuffer,
+      sha256(initialSalt + i.toString()).slice(0, saltLength),
+    ]);
+  }
+
+  const hashWithPaddingBeforeMod = Buffer.concat([paddingBuffer, dataHash]);
+
+  const hashWithPaddingBN = bignum.fromBuffer(hashWithPaddingBeforeMod);
+  const keyModulusBN = bignum.fromBuffer(keyModulus);
+
+  let hashWithPadding = hashWithPaddingBN.mod(keyModulusBN).toBuffer();
+
+  if (hashWithPadding.length < keyModulus.length) {
+    const zeros = Buffer.alloc(keyModulus.length - hashWithPadding.length);
+    hashWithPadding = Buffer.concat([zeros, hashWithPadding]);
+  }
+
+  return hashWithPadding;
+}
+
+export function hashRequestMessageForConsent(
+  request_message,
+  initial_salt,
+  request_id,
+  accessorPublicKey
+) {
+  const parsedKey = parseKey(accessorPublicKey);
+  const keyModulus = parsedKey.data.modulus.toBuffer();
+
+  const derivedSalt = sha256(request_id + initial_salt)
+    .slice(0, saltLength)
+    .toString('base64');
+
+  const normalHashBuffer = sha256(request_message + derivedSalt);
+
+  //should find block length if use another sign method
+  const hashWithPadding = getDataHashWithCustomPadding(
+    initial_salt,
+    keyModulus,
+    normalHashBuffer
+  );
+
+  return hashWithPadding.toString('base64');
+}
+
+export function getPrivatekey(nodeId) {
+  try {
+    let publicKey = fs.readFileSync(
+      path.join(__dirname, '..', 'dev_key', `${nodeId}`),
+      'utf8'
+    );
+    return publicKey;
+  } catch (error) {
+    throw error;
+  }
 }

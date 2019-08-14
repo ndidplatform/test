@@ -16,10 +16,30 @@ export const as2EventEmitter = new EventEmitter();
 export const proxy1EventEmitter = new EventEmitter();
 export const proxy2EventEmitter = new EventEmitter();
 
-export let asSendDataThroughCallback = false;
+let asSendDataThroughCallback = false;
+let useSpecificPrivateKeyForSign = false;
+let responseAccessorEncryptWithRandomByte = false;
+let privateKeyForSign;
+let responseRandomByte;
 
 export function setAsSendDataThroughCallback(sendThroughCallback) {
   asSendDataThroughCallback = sendThroughCallback;
+}
+
+export function setIdPUseSpecificPrivateKeyForSign(
+  specificPrivateKeyForSign,
+  privateKey = null
+) {
+  useSpecificPrivateKeyForSign = specificPrivateKeyForSign;
+  privateKeyForSign = privateKey;
+}
+
+export function setIdPAccessorEncryptWithRamdomByte(
+  accessorEncryptWithRandomByte,
+  randomByte = null
+) {
+  responseAccessorEncryptWithRandomByte = accessorEncryptWithRandomByte;
+  responseRandomByte = randomByte;
 }
 
 /*
@@ -76,6 +96,43 @@ idp1App.post('/idp/accessor/sign', async function(req, res) {
   });
 });
 
+idp1App.post('/idp/accessor/encrypt', async function(req, res) {
+  let signature;
+  const callbackData = req.body;
+  idp1EventEmitter.emit('accessor_encrypt_callback', callbackData);
+  let accessorPrivateKey;
+  if (useSpecificPrivateKeyForSign) {
+    accessorPrivateKey = privateKeyForSign;
+  } else {
+    db.idp1Identities.forEach(identity => {
+      identity.accessors.forEach(accessor => {
+        if (accessor.accessorId === callbackData.accessor_id) {
+          accessorPrivateKey = accessor.accessorPrivateKey;
+          return;
+        }
+        if (accessorPrivateKey) return;
+      });
+    });
+  }
+  if (responseAccessorEncryptWithRandomByte) {
+    signature = responseRandomByte;
+  } else {
+    signature = utils.createResponseSignature(
+      accessorPrivateKey,
+      callbackData.request_message_padded_hash
+    );
+  }
+  res.status(200).json({
+    signature,
+  });
+});
+
+idp1App.post('/idp/identity/notification', async function(req, res) {
+  const callbackData = req.body;
+  idp1EventEmitter.emit('identity_notification_callback', callbackData);
+  res.status(204).end();
+});
+
 /*
   IdP-2
 */
@@ -102,6 +159,33 @@ idp2App.post('/idp/accessor/sign', async function(req, res) {
       callbackData.sid
     ),
   });
+});
+
+idp2App.post('/idp/accessor/encrypt', async function(req, res) {
+  const callbackData = req.body;
+  idp2EventEmitter.emit('accessor_encrypt_callback', callbackData);
+  let accessorPrivateKey;
+  db.idp2Identities.forEach(identity => {
+    identity.accessors.forEach(accessor => {
+      if (accessor.accessorId === callbackData.accessor_id) {
+        accessorPrivateKey = accessor.accessorPrivateKey;
+        return;
+      }
+      if (accessorPrivateKey) return;
+    });
+  });
+  res.status(200).json({
+    signature: utils.createResponseSignature(
+      accessorPrivateKey,
+      callbackData.request_message_padded_hash
+    ),
+  });
+});
+
+idp2App.post('/idp/identity/notification', async function(req, res) {
+  const callbackData = req.body;
+  idp2EventEmitter.emit('identity_notification_callback', callbackData);
+  res.status(204).end();
 });
 
 /*
@@ -164,6 +248,37 @@ proxy1App.post('/proxy/accessor/sign', async function(req, res) {
   });
 });
 
+proxy1App.post('/proxy/accessor/encrypt', async function(req, res) {
+  const callbackData = req.body;
+  proxy1EventEmitter.emit('accessor_encrypt_callback', callbackData);
+  let accessorPrivateKey;
+  if (useSpecificPrivateKeyForSign) {
+    accessorPrivateKey = privateKeyForSign;
+  } else {
+    db.proxy1Idp4Identities.forEach(identity => {
+      identity.accessors.forEach(accessor => {
+        if (accessor.accessorId === callbackData.accessor_id) {
+          accessorPrivateKey = accessor.accessorPrivateKey;
+          return;
+        }
+        if (accessorPrivateKey) return;
+      });
+    });
+  }
+  res.status(200).json({
+    signature: utils.createResponseSignature(
+      accessorPrivateKey,
+      callbackData.request_message_padded_hash
+    ),
+  });
+});
+
+proxy1App.post('/proxy/identity/notification', async function(req, res) {
+  const callbackData = req.body;
+  proxy1App.emit('identity_notification_callback', callbackData);
+  res.status(204).end();
+});
+
 /*
   Proxy-2
 */
@@ -192,6 +307,36 @@ proxy2App.post('/proxy/accessor/sign', async function(req, res) {
   });
 });
 
+proxy2App.post('/proxy/accessor/encrypt', async function(req, res) {
+  const callbackData = req.body;
+  proxy2EventEmitter.emit('accessor_encrypt_callback', callbackData);
+  let accessorPrivateKey;
+  if (useSpecificPrivateKeyForSign) {
+    accessorPrivateKey = privateKeyForSign;
+  } else {
+    // db.proxy2Idp5Identities.forEach(identity => {
+    //   identity.accessors.forEach(accessor => {
+    //     if (accessor.accessorId === callbackData.accessor_id) {
+    //       accessorPrivateKey = accessor.accessorPrivateKey;
+    //       return;
+    //     }
+    //     if (accessorPrivateKey) return;
+    //   });
+    // });
+  }
+  res.status(200).json({
+    signature: utils.createResponseSignature(
+      accessorPrivateKey,
+      callbackData.request_message_padded_hash
+    ),
+  });
+});
+
+proxy2App.post('/proxy/identity/notification', async function(req, res) {
+  const callbackData = req.body;
+  proxy2App.emit('identity_notification_callback', callbackData);
+  res.status(204).end();
+});
 
 export function startCallbackServers() {
   ndidServer = ndidApp.listen(config.NDID_CALLBACK_PORT);
