@@ -658,6 +658,7 @@ describe('On the fly onboard and uplift tests', function() {
     // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
+      this.timeout(15000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -1494,7 +1495,7 @@ describe('On the fly onboard and uplift tests', function() {
     });
 
     it('RP create request bypass_identity_check = true min_ial = 3 to onboarded idp (ial = 2.3) successfully', async function() {
-      this.timeout(10000);
+      this.timeout(15000);
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
@@ -1517,7 +1518,7 @@ describe('On the fly onboard and uplift tests', function() {
     });
 
     it('RP should receive pending request status', async function() {
-      this.timeout(10000);
+      this.timeout(15000);
       const requestStatus = await requestStatusPendingPromise.promise;
       expect(requestStatus).to.deep.include({
         request_id: requestId,
@@ -1717,6 +1718,7 @@ describe('On the fly onboard and uplift tests', function() {
     // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
+      this.timeout(20000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -2212,6 +2214,7 @@ describe('On the fly onboard and uplift tests', function() {
     });
 
     it('RP should get the correct data received from AS', async function() {
+      this.timeout(15000);
       const response = await rpApi.getDataFromAS('rp1', {
         requestId,
       });
@@ -2249,6 +2252,7 @@ describe('On the fly onboard and uplift tests', function() {
     });
 
     it('RP should have no saved data requested from AS left after removal', async function() {
+      this.timeout(15000);
       const response = await rpApi.getDataFromAS('rp1', {
         requestId,
       });
@@ -2979,6 +2983,7 @@ describe('On the fly onboard and uplift tests', function() {
     // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
+      this.timeout(15000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -3129,6 +3134,7 @@ describe('On the fly onboard and uplift tests', function() {
     // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
+      this.timeout(15000);
       const responseResult = await idp2ResponseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',
@@ -4238,6 +4244,7 @@ describe('On the fly onboard and uplift tests', function() {
     // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
+      this.timeout(15000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -4322,6 +4329,7 @@ describe('On the fly onboard and uplift tests', function() {
     // });
 
     it('IdP shoud receive callback create response result with success = true', async function() {
+      this.timeout(15000);
       const responseResult = await idp2ResponseResultPromise.promise;
       if (!idp2Available) {
         this.skip();

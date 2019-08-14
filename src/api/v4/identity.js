@@ -24,7 +24,7 @@ export function getIdentityIal(nodeId, data) {
   return httpGet(
     `${apiBaseUrl}/identity/${namespace}/${identifier}/ial${
       node_id ? `?node_id=${node_id}` : ''
-    }`
+    }`,
   );
 }
 
@@ -33,7 +33,7 @@ export function addAccessor(nodeId, data) {
   const { namespace, identifier, ...rest } = data;
   return httpPost(
     `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors`,
-    rest
+    rest,
   );
 }
 
@@ -41,8 +41,8 @@ export function revokeAccessor(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier, ...rest } = data;
   return httpPost(
-    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors_revoke`,
-    rest
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessor_revoke`,
+    rest,
   );
 }
 
@@ -51,7 +51,7 @@ export function revokeIdentityAssociation(nodeId, data) {
   const { namespace, identifier, ...rest } = data;
   return httpPost(
     `${apiBaseUrl}/identity/${namespace}/${identifier}/association_revoke`,
-    rest
+    rest,
   );
 }
 
@@ -66,7 +66,7 @@ export function getRequestIdByReferenceId(nodeId, data) {
   return httpGet(
     `${apiBaseUrl}/identity_request/request_references/${reference_id}${
       node_id ? `?node_id=${node_id}` : ''
-    }`
+    }`,
   );
 }
 
@@ -75,7 +75,7 @@ export function updateIdentityIal(nodeId, data) {
   const { namespace, identifier, ...rest } = data;
   return httpPost(
     `${apiBaseUrl}/identity/${namespace}/${identifier}/ial`,
-    rest
+    rest,
   );
 }
 
@@ -84,7 +84,7 @@ export function upgradeIdentityMode(nodeId, data) {
   const { namespace, identifier, ...rest } = data;
   return httpPost(
     `${apiBaseUrl}/identity/${namespace}/${identifier}/mode`,
-    rest
+    rest,
   );
 }
 
@@ -92,7 +92,7 @@ export function revokeAndAddAccessor(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier, ...rest } = data;
   return httpPost(
-    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors_revoke_and_add`,
-    rest
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessor_revoke_and_add`,
+    rest,
   );
 }
