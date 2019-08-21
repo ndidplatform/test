@@ -7,8 +7,6 @@ import path from 'path';
 
 const saltLength = 16;
 
-const saltLength = 16;
-
 export function wait(ms, stoppable) {
   let setTimeoutFn;
   const promise = new Promise(
@@ -187,13 +185,4 @@ export function getPrivatekey(nodeId) {
   } catch (error) {
     throw error;
   }
-}
-
-export function generateRequestParamSalt({
-  requestId,
-  serviceId,
-  initialSalt,
-}) {
-  const bufferHash = sha256(requestId + serviceId + initialSalt);
-  return bufferHash.slice(0, saltLength).toString('base64');
 }
