@@ -82,7 +82,9 @@ app.post('/dpki/sign', (req, res) => {
     // Optional: Check hash equality
 
     // Hash then encrypt OR encrypt received hash
-    const signature = createSignature(key, hash_method, request_message);
+    
+    const requestMessageBuffer = Buffer.from(request_message, 'base64');
+    const signature = createSignature(key, hash_method, requestMessageBuffer);
     const json = {
       signature,
     };
@@ -119,7 +121,9 @@ app.post('/dpki/master/sign', (req, res) => {
     // Optional: Check hash equality
 
     // Hash then encrypt OR encrypt received hash
-    const signature = createSignature(key, hash_method, request_message);
+    const requestMessageBuffer = Buffer.from(request_message, 'base64');
+    const signature = createSignature(key, hash_method, requestMessageBuffer);
+    //const signature = createSignature(key, hash_method, request_message);
     const json = {
       signature,
     };
