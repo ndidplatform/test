@@ -29,6 +29,25 @@ describe('NDID update nodes', function() {
     await wait(3000);
   });
 
+  it("NDID should update IDP's agent status successfully", async function() {
+    this.timeout(10000);
+    const response1 = await ndidApi.updateNode('ndid1', {
+      node_id: 'idp1',
+      node_name: idp_node_name,
+      agent: true,
+    });
+    expect(response1.status).to.equal(204);
+
+    const response2 = await ndidApi.updateNode('ndid1', {
+      node_id: 'idp1',
+      node_name: idp_node_name,
+      agent: false,
+    });
+    expect(response2.status).to.equal(204);
+
+    await wait(3000);
+  });
+
   it("RP's node name should be updated successfully", async function() {
     this.timeout(10000);
     const response = await commonApi.getNodeInfo('rp1');
