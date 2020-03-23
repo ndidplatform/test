@@ -143,3 +143,81 @@ describe('NDID update nodes', function() {
     await wait(3000);
   });
 });
+
+describe('IdP1 whitelist RP1', function () {
+
+  const idp_node_name = 'test update node_name idp1';
+
+  before(async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'idp1',
+      node_name: idp_node_name,
+      node_id_whitelist_active: true,
+      node_id_whitelist: [],
+    });
+    expect(response.status).to.equal(204);
+    await wait(3000);
+  });
+
+  it('RP1 should not receive IdP1', async function() {
+    this.timeout(10000);
+    let response = await commonApi.getIdP('rp1');
+    expect(response.status).to.equal(200);
+
+    let responseBody = await response.json();
+    const idp1 = responseBody.find(idp => idp.node_id === 'idp1');
+    expect(idp1).to.be.undefined;
+  });
+
+  after(async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'idp1',
+      node_name: idp_node_name,
+      node_id_whitelist_active: false,
+    });
+    expect(response.status).to.equal(204);
+    await wait(3000);
+  });
+});
+
+describe('RP1 whitelist IdP1', function () {
+
+  const rp_node_name = 'test update node_name rp1';
+
+  before(async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'rp1',
+      node_name: rp_node_name,
+      node_id_whitelist_active: true,
+      node_id_whitelist: ['idp1'],
+    });
+    expect(response.status).to.equal(204);
+    await wait(3000);
+  });
+
+  it('RP1 should receive only IdP1', async function() {
+    this.timeout(10000);
+    let response = await commonApi.getIdP('rp1');
+    let responseBody = await response.json();
+    expect(responseBody)
+      .to.be.an('array')
+      .to.have.length(1);
+
+    const idp1 = responseBody.find(idp => idp.node_id === 'idp1');
+    expect(idp1).to.be.not.undefined;
+  });
+
+  after(async function() {
+    this.timeout(10000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'rp1',
+      node_name: rp_node_name,
+      node_id_whitelist_active: false,
+    });
+    expect(response.status).to.equal(204);
+    await wait(3000);
+  });
+});
