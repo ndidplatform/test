@@ -18,6 +18,11 @@ export function createResponse(nodeId, data) {
   return httpPost(`${apiBaseUrl}/idp/response`, data);
 }
 
+export function createErrorResponse(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  return httpPost(`${apiBaseUrl}/idp/error_response`, data);
+}
+
 export function getRequestMessagePaddedHash(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
 

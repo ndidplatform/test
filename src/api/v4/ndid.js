@@ -120,3 +120,19 @@ export function getAllowedMinIalForRegisterIdentityAtFirstIdp(nodeId) {
     {}
   );
 }
+
+export function addErrorCode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/add_error_code`,
+    data,
+  );
+}
+
+export function removeErrorCode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/remove_error_code`,
+    data,
+  );
+}
