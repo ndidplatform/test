@@ -23,6 +23,12 @@ export function sendData(nodeId, data) {
   return httpPost(`${apiBaseUrl}/as/data/${requestId}/${serviceId}`, rest);
 }
 
+export function sendDataError(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { requestId, serviceId, ...rest } = data;
+  return httpPost(`${apiBaseUrl}/as/error/${requestId}/${serviceId}`, rest);
+}
+
 export function getCallbacks(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpGet(
