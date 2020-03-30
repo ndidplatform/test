@@ -5,7 +5,7 @@ import * as rpApi from '../../../api/v5/rp';
 import * as idpApi from '../../../api/v5/idp';
 import * as ndidApi from '../../../api/v5/ndid';
 import * as asApi from '../../../api/v5/as';
-// import * as commonApi from '../../api/v2/common';
+import * as commonApi from '../../../api/v5/common';
 import { idp1EventEmitter, as1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import {
@@ -353,6 +353,22 @@ describe('AS data response with error code', function() {
       'fatal': false,
     });
     expect(response.status).to.equal(204);
+
+    await wait(2000);
+  });
+
+  it('response with non-existent error code', async function() {
+    this.timeout(15000);
+    const response = await asApi.sendDataError('as1', {
+      requestId,
+      serviceId: 'bank_statement',
+      reference_id: asReferenceId,
+      callback_url: config.AS1_CALLBACK_URL,
+      error_code: error_code + "-invalid",
+    });
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20078);
   });
 
   it('should successfully response with error code', async function() {
@@ -366,6 +382,22 @@ describe('AS data response with error code', function() {
     });
 
     expect(response.status).to.equal(202);
+    await wait(2000);
+  });
+
+  it('check AS error response in request status reading', async function() {
+    this.timeout(10000);
+    const response = await commonApi.getRequest('as1', {
+      requestId,
+    });
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    const service = responseBody.data_request_list
+      .find(service => service.service_id == 'bank_statement');
+    expect(service).to.not.be.undefined;
+    expect(service.response_list).to.be.an('array');
+    expect(service.response_list).to.have.length(1);
+    expect(service.response_list[0].error_code).to.equal(error_code);
   });
 
   after(async function() {
