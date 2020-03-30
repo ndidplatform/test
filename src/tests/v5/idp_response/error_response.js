@@ -5,7 +5,7 @@ import * as rpApi from '../../../api/v5/rp';
 import * as idpApi from '../../../api/v5/idp';
 import * as ndidApi from '../../../api/v5/ndid';
 import * as identityApi from '../../../api/v5/identity';
-// import * as commonApi from '../../api/v2/common';
+import * as commonApi from '../../../api/v5/common';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import * as util from '../../../utils';
@@ -1158,6 +1158,20 @@ describe('IdP successfully response with an error code', function() {
     });
 
     expect(response.status).to.equal(202);
+
+    await wait(2000);
+  });
+
+  it('check idp response status reading', async function() {
+    this.timeout(10000);
+    const response = await commonApi.getRequest('idp2', {
+      requestId,
+    });
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    expect(responseBody.response_list).to.be.an('array');
+    expect(responseBody.response_list).to.have.length(1);
+    expect(responseBody.response_list[0].error_code).to.equal(error_code);
   });
 
   // remove code
