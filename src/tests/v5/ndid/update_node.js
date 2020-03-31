@@ -38,6 +38,26 @@ describe('NDID update nodes', function() {
     });
     expect(response1.status).to.equal(204);
 
+    await wait(3000);
+
+    const response2 = await commonApi.getNodeInfo('ndid1', { node_id: 'idp1'});
+    const responseBody = await response2.json();
+    expect(response2.status).to.equal(200);
+    expect(responseBody.agent).to.be.true;
+  });
+
+  it('Test filter by IDP agent', async function() {
+    this.timeout(10000);
+    const response = await commonApi.getIdP('ndid1', { agent: true });
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.be.an('array');
+    expect(responseBody).to.have.length(1);
+    expect(responseBody[0].node_id).to.equal('idp1');
+  });
+
+  it("NDID should toggle IDP agent back to false successfully", async function() {
+    this.timeout(10000);
     const response2 = await ndidApi.updateNode('ndid1', {
       node_id: 'idp1',
       node_name: idp_node_name,

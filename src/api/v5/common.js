@@ -19,9 +19,13 @@ export function getRelevantIdpNodesBySid(nodeId, data) {
   );
 }
 
-export function getIdP(nodeId) {
+export function getIdP(nodeId, data = {}) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  return httpGet(`${apiBaseUrl}/utility/idp`);
+
+  let arrayQueryString = Object.keys(data).map(key => `${key}=${data[key]}`);
+  let queryString = arrayQueryString.join('&');
+
+  return httpGet(`${apiBaseUrl}/utility/idp${queryString ? `?${queryString}` : ''}`);
 }
 
 export function getRequest(nodeId, data) {
