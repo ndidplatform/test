@@ -1050,7 +1050,8 @@ describe('IdP successfully response with an error code', function() {
   let namespace;
   let identifier;
 
-  const error_code = 'error1';
+  const error_code = 10001;
+  const invalid_error_code = 10002;
   const error_description = 'error description';
 
   before(async function() {
@@ -1127,7 +1128,6 @@ describe('IdP successfully response with an error code', function() {
       'type': 'idp',
       'error_code': error_code,
       'description': error_description,
-      'fatal': false,
     });
     expect(response.status).to.equal(204);
   });
@@ -1139,7 +1139,7 @@ describe('IdP successfully response with an error code', function() {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
-      error_code: error_code + "-invalid",
+      error_code: invalid_error_code,
     });
 
     expect(response.status).to.equal(400);

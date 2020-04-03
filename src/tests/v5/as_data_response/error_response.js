@@ -232,7 +232,8 @@ describe('AS data response with error code', function() {
   let requestMessageSalt;
   let requestMessageHash;
 
-  const error_code = "AS Error 1";
+  const error_code = 20001;
+  const invalid_error_code = 20002;
   const error_description = "AS Error Description";
 
   before(async function() {
@@ -350,7 +351,6 @@ describe('AS data response with error code', function() {
       'type': 'as',
       'error_code': error_code,
       'description': error_description,
-      'fatal': false,
     });
     expect(response.status).to.equal(204);
 
@@ -364,7 +364,7 @@ describe('AS data response with error code', function() {
       serviceId: 'bank_statement',
       reference_id: asReferenceId,
       callback_url: config.AS1_CALLBACK_URL,
-      error_code: error_code + "-invalid",
+      error_code: invalid_error_code,
     });
     expect(response.status).to.equal(400);
     const responseBody = await response.json();
