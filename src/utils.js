@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import uuidv4 from 'uuid/v4';
 import { parseKey } from './asn1parser';
-import bignum from 'bignum';
+// import bignum from 'bignum';
+import { toBigIntBE, toBufferBE } from 'bigint-buffer';
 import fs from 'fs';
 import path from 'path';
 
@@ -118,34 +119,79 @@ export function generateRequestParamSalt({
   return bufferHash.slice(0, saltLength).toString('base64');
 }
 
+// function getDataHashWithCustomPadding(
+//   initialSalt,
+//   keyModulus,
+//   dataHash,
+//   blockLength = 2048
+// ) {
+//   const hashLength = 256;
+//   const padLengthInbyte = parseInt(Math.floor((blockLength - hashLength) / 8));
+//   let paddingBuffer = Buffer.alloc(0);
+
+//   for (let i = 1; paddingBuffer.length + saltLength <= padLengthInbyte; i++) {
+//     paddingBuffer = Buffer.concat([
+//       paddingBuffer,
+//       sha256(initialSalt + i.toString()).slice(0, saltLength),
+//     ]);
+//   }
+
+//   const hashWithPaddingBeforeMod = Buffer.concat([paddingBuffer, dataHash]);
+
+//   const hashWithPaddingBN = bignum.fromBuffer(hashWithPaddingBeforeMod);
+//   const keyModulusBN = bignum.fromBuffer(keyModulus);
+
+//   let hashWithPadding = hashWithPaddingBN.mod(keyModulusBN).toBuffer();
+
+//   if (hashWithPadding.length < keyModulus.length) {
+//     const zeros = Buffer.alloc(keyModulus.length - hashWithPadding.length);
+//     hashWithPadding = Buffer.concat([zeros, hashWithPadding]);
+//   }
+
+//   return hashWithPadding;
+// }
+
 function getDataHashWithCustomPadding(
   initialSalt,
   keyModulus,
   dataHash,
-  blockLength = 2048
+  blockLengthBits = 2048
 ) {
   const hashLength = 256;
-  const padLengthInbyte = parseInt(Math.floor((blockLength - hashLength) / 8));
+  const padLengthInbyte = parseInt(Math.floor((blockLengthBits - hashLength) / 8));
   let paddingBuffer = Buffer.alloc(0);
 
-  for (let i = 1; paddingBuffer.length + saltLength <= padLengthInbyte; i++) {
+  for (
+    let i = 1;
+    paddingBuffer.length + saltLength <= padLengthInbyte;
+    i++
+  ) {
     paddingBuffer = Buffer.concat([
       paddingBuffer,
-      sha256(initialSalt + i.toString()).slice(0, saltLength),
+        sha256(initialSalt + i.toString())
+        .slice(0, saltLength),
     ]);
   }
 
   const hashWithPaddingBeforeMod = Buffer.concat([paddingBuffer, dataHash]);
 
-  const hashWithPaddingBN = bignum.fromBuffer(hashWithPaddingBeforeMod);
-  const keyModulusBN = bignum.fromBuffer(keyModulus);
+  const hashWithPaddingBN = toBigIntBE(hashWithPaddingBeforeMod);
+  const keyModulusBN = toBigIntBE(keyModulus);
 
-  let hashWithPadding = hashWithPaddingBN.mod(keyModulusBN).toBuffer();
+  const hashWithPaddingModKeyModulusBN = hashWithPaddingBN % keyModulusBN;
+  const hashWithPadding = toBufferBE(
+    hashWithPaddingModKeyModulusBN,
+    blockLengthBits / 8
+  ); // Zeros padded in-front
 
-  if (hashWithPadding.length < keyModulus.length) {
-    const zeros = Buffer.alloc(keyModulus.length - hashWithPadding.length);
-    hashWithPadding = Buffer.concat([zeros, hashWithPadding]);
-  }
+  // const hashWithPaddingBN = new BN(hashWithPaddingBeforeMod);
+  // const keyModulusBN = new BN(keyModulus);
+
+  // let hashWithPadding = hashWithPaddingBN.mod(keyModulusBN).toBuffer();
+  // if (hashWithPadding.length < keyModulus.length) {
+  //   const zeros = Buffer.alloc(keyModulus.length - hashWithPadding.length);
+  //   hashWithPadding = Buffer.concat([zeros, hashWithPadding]);
+  // }
 
   return hashWithPadding;
 }
