@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as rpApi from '../../../api/v5/rp';
@@ -27,9 +27,17 @@ import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_
 describe('IdP (idp1) revoke and add accessor (mode 2) test', function() {
   let namespace = 'citizen_id';
   let identifier = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
 

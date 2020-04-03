@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as ndidApi from '../../../api/v5/ndid';
@@ -32,9 +32,17 @@ describe('Add identity (mode 3) tests', function() {
   const identifier = uuidv4();
   const identifier2 = uuidv4();
   const identifier3 = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const bankStatementReferenceId = generateReferenceId();
   const bankStatementReferenceIdAfterTest = generateReferenceId();

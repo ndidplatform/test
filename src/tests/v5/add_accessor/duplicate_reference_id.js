@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 
 import * as idpApi from '../../../api/v5/idp';
 import * as identityApi from '../../../api/v5/identity';
@@ -21,9 +21,17 @@ describe('Add accessor with duplicate reference id test', function() {
 
   const addAccessorRequestMessage =
     'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
   const idp1ReferenceId = generateReferenceId();
@@ -44,7 +52,7 @@ describe('Add accessor with duplicate reference id test', function() {
   let requestMessageHash;
 
   before(function() {
-    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+    const identity = db.idp1Identities.find((identity) => identity.mode === 3);
 
     if (!identity) {
       throw new Error('No created identity to use');

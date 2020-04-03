@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as ndidApi from '../../../api/v5/ndid';
@@ -37,9 +37,17 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
     const identifier = uuidv4();
     const identifier2 = uuidv4();
     const identifier3 = uuidv4();
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    //const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    // const accessorPrivateKey = keypair.privateKey.export({
+    //   type: 'pkcs8',
+    //   format: 'pem',
+    // });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     before(async function() {
       this.timeout(10000);
@@ -48,7 +56,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       const response = await commonApi.getNamespaces('ndid1');
       const responseBody = await response.json();
       alreadyAddedNamespace = responseBody.find(
-        ns => ns.namespace === 'same_idp_allowed_2',
+        (ns) => ns.namespace === 'same_idp_allowed_2'
       );
     });
 
@@ -78,7 +86,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       const response = await commonApi.getNamespaces('ndid1');
       const responseBody = await response.json();
       const namespace = responseBody.find(
-        ns => ns.namespace === 'same_idp_allowed_2',
+        (ns) => ns.namespace === 'same_idp_allowed_2'
       );
       expect(namespace).to.deep.equal({
         namespace: 'same_idp_allowed_2',
@@ -153,7 +161,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         let idpNodes = await response.json();
-        let idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        let idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.be.undefined;
 
         response = await commonApi.getRelevantIdpNodesBySid('idp1', {
@@ -162,7 +170,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         idpNodes = await response.json();
-        idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.be.undefined;
 
         response = await commonApi.getRelevantIdpNodesBySid('idp1', {
@@ -171,7 +179,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         idpNodes = await response.json();
-        idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.be.undefined;
       });
       after(function() {
@@ -242,7 +250,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         let idpNodes = await response.json();
-        let idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        let idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.not.be.undefined;
         expect(idpNode.mode_list)
           .to.be.an('array')
@@ -254,7 +262,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         idpNodes = await response.json();
-        idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.not.be.undefined;
         expect(idpNode.mode_list)
           .to.be.an('array')
@@ -272,9 +280,17 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
     const identifier = uuidv4();
     const identifier2 = uuidv4();
     const identifier3 = uuidv4();
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const accessorPrivateKey = keypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     before(async function() {
       this.timeout(10000);
@@ -287,7 +303,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       const response = await commonApi.getNamespaces('ndid1');
       const responseBody = await response.json();
       alreadyAddedNamespace = responseBody.find(
-        ns => ns.namespace === 'different_idp_allowed_2',
+        (ns) => ns.namespace === 'different_idp_allowed_2'
       );
     });
 
@@ -317,7 +333,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       const response = await commonApi.getNamespaces('ndid1');
       const responseBody = await response.json();
       const namespace = responseBody.find(
-        ns => ns.namespace === 'different_idp_allowed_2',
+        (ns) => ns.namespace === 'different_idp_allowed_2'
       );
       expect(namespace).to.deep.equal({
         namespace: 'different_idp_allowed_2',
@@ -373,7 +389,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         idp1EventEmitter.on('accessor_encrypt_callback', function(
-          callbackData,
+          callbackData
         ) {
           if (callbackData.request_id === requestId) {
             accessorEncryptPromise.resolve(callbackData);
@@ -454,7 +470,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         let idpNodes = await response.json();
-        let idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        let idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.not.be.undefined;
         expect(idpNode.mode_list)
           .to.be.an('array')
@@ -466,7 +482,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         idpNodes = await response.json();
-        idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.not.be.undefined;
         expect(idpNode.mode_list)
           .to.be.an('array')
@@ -536,7 +552,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           reference_group_code: referenceGroupCode,
           request_message: createIdentityRequestMessage,
           request_message_hash: hash(
-            createIdentityRequestMessage + incomingRequest.request_message_salt,
+            createIdentityRequestMessage + incomingRequest.request_message_salt
           ),
           requester_node_id: 'idp2',
           min_ial: 1.1,
@@ -547,7 +563,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':',
+          ':'
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -559,9 +575,9 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
 
       it('IdP should get request_message_padded_hash successfully', async function() {
         identityForResponse = db.idp1Identities.find(
-          identity =>
+          (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -588,7 +604,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
 
         const signature = createResponseSignature(
           accessorPrivateKey,
-          requestMessagePaddedHash,
+          requestMessagePaddedHash
         );
 
         const response = await idpApi.createResponse('idp1', {
@@ -649,9 +665,9 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       it('Should verify IdP response signature successfully', async function() {
         this.timeout(15000);
         const identity = db.idp1Identities.find(
-          identity =>
+          (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
@@ -681,7 +697,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         let idpNodes = await response.json();
-        let idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        let idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.be.undefined;
       });
       after(function() {
@@ -695,9 +711,17 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
     describe('idp1 and idp2 should create identity request (mode 3) with identity_list namespace count (2) equal to allowed namespace count (2) successfully', async function() {
       const createIdentityRequestMessage =
         'Create identity consent request custom message ข้อความสำหรับขอสร้าง identity บนระบบ';
-      const keypair = forge.pki.rsa.generateKeyPair(2048);
-      const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-      const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+      const keypair = crypto.generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+      });
+      const accessorPrivateKey = keypair.privateKey.export({
+        type: 'pkcs8',
+        format: 'pem',
+      });
+      const accessorPublicKey = keypair.publicKey.export({
+        type: 'spki',
+        format: 'pem',
+      });
       const identifier = uuidv4();
       const identifier2 = uuidv4();
       const referenceId = generateReferenceId();
@@ -752,7 +776,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         idp1EventEmitter.on('accessor_encrypt_callback', function(
-          callbackData,
+          callbackData
         ) {
           if (callbackData.request_id === requestId) {
             accessorEncryptPromise.resolve(callbackData);
@@ -760,7 +784,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         idp1EventEmitter.on('identity_notification_callback', function(
-          callbackData,
+          callbackData
         ) {
           if (
             callbackData.type === 'identity_modification_notification' &&
@@ -840,7 +864,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         let idpNodes = await response.json();
-        let idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        let idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.not.be.undefined;
         expect(idpNode.mode_list)
           .to.be.an('array')
@@ -911,7 +935,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
           reference_group_code: referenceGroupCode,
           request_message: createIdentityRequestMessage,
           request_message_hash: hash(
-            createIdentityRequestMessage + incomingRequest.request_message_salt,
+            createIdentityRequestMessage + incomingRequest.request_message_salt
           ),
           requester_node_id: 'idp2',
           min_ial: 1.1,
@@ -922,7 +946,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':',
+          ':'
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -934,9 +958,9 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
 
       it('IdP should get request_message_padded_hash successfully', async function() {
         identityForResponse = db.idp1Identities.find(
-          identity =>
+          (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -964,7 +988,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
 
         const signature = createResponseSignature(
           accessorPrivateKey,
-          requestMessagePaddedHash,
+          requestMessagePaddedHash
         );
 
         const response = await idpApi.createResponse('idp1', {
@@ -1025,9 +1049,9 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       it('Should verify IdP response signature successfully', async function() {
         this.timeout(15000);
         const identity = db.idp1Identities.find(
-          identity =>
+          (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
         let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -1058,7 +1082,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         let idpNodes = await response.json();
-        let idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+        let idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
         expect(idpNode).to.not.be.undefined;
         expect(idpNode.mode_list)
           .to.be.an('array')
@@ -1070,7 +1094,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
         });
 
         idpNodes = await response.json();
-        idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
+        idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
         expect(idpNode).to.not.be.undefined;
         expect(idpNode.mode_list)
           .to.be.an('array')

@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 
 import * as identityApi from '../../../api/v5/identity';
 import * as db from '../../../db';
@@ -19,7 +19,7 @@ describe('Revoke accessor error response tests', function() {
 
   before(function() {
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation
@@ -79,7 +79,7 @@ describe('Revoke accessor error response tests', function() {
 
   it('IdP (idp1) should get an error when revoke accessor with idp is not owner of accessor id', async function() {
     let identity = db.idp2Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation
@@ -115,15 +115,23 @@ describe('Revoke and add accessor error response tests', function() {
   let accessorId;
   let referenceGroupCode;
 
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  //const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  // const accessorPrivateKey = keypair.privateKey.export({
+  //   type: 'pkcs8',
+  //   format: 'pem',
+  // });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const idpReferenceIdRevoke = generateReferenceId();
 
   before(function() {
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation
@@ -206,7 +214,7 @@ describe('Revoke and add accessor error response tests', function() {
 
   it('IdP (idp1) should get an error when revoke and add accessor with idp is not owner of accessor id', async function() {
     let identity = db.idp2Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation

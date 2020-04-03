@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as identityApi from '../../../api/v5/identity';
@@ -12,9 +12,17 @@ import * as config from '../../../config';
 describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as 1st IdP', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
 
@@ -188,9 +196,17 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
 describe('IdP (idp1) create identity (mode 3) (for use in other test and will create on idp2) as 1st IdP ', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
 

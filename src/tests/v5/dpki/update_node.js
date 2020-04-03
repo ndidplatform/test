@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import fs from 'fs';
 import path from 'path';
 import uuidv4 from 'uuid/v4';
@@ -30,39 +30,101 @@ import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
 describe("Update nodes's DPKI test", function() {
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const privateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const publicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const privateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const publicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
-  const masterKeypair = forge.pki.rsa.generateKeyPair(2048);
-  const masterPrivateKey = forge.pki.privateKeyToPem(masterKeypair.privateKey);
-  const masterPublicKey = forge.pki.publicKeyToPem(masterKeypair.publicKey);
+  const masterKeypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const masterPrivateKey = masterKeypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const masterPublicKey = masterKeypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
-  const RPKeypair = forge.pki.rsa.generateKeyPair(2048);
-  const RPPrivKey = forge.pki.privateKeyToPem(RPKeypair.privateKey);
-  const RPPubKey = forge.pki.publicKeyToPem(RPKeypair.publicKey);
+  const RPKeypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const RPPrivKey = RPKeypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const RPPubKey = RPKeypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
-  const IdPKeypair = forge.pki.rsa.generateKeyPair(2048);
-  const IdPPriveKey = forge.pki.privateKeyToPem(IdPKeypair.privateKey);
-  const IdPPubKey = forge.pki.publicKeyToPem(IdPKeypair.publicKey);
+  const IdPKeypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const IdPPriveKey = IdPKeypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const IdPPubKey = IdPKeypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
-  const ASKeypair = forge.pki.rsa.generateKeyPair(2048);
-  const ASPrivKey = forge.pki.privateKeyToPem(ASKeypair.privateKey);
-  const ASPubKey = forge.pki.publicKeyToPem(ASKeypair.publicKey);
+  const ASKeypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const ASPrivKey = ASKeypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const ASPubKey = ASKeypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
-  const RPMasterKeypair = forge.pki.rsa.generateKeyPair(2048);
-  const RPMasterPrivKey = forge.pki.privateKeyToPem(RPMasterKeypair.privateKey);
-  const RPMasterPubKey = forge.pki.publicKeyToPem(RPMasterKeypair.publicKey);
+  const RPMasterKeypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const RPMasterPrivKey = RPMasterKeypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const RPMasterPubKey = RPMasterKeypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
-  const IdPMasterKeypair = forge.pki.rsa.generateKeyPair(2048);
-  const IdPMasterPrivKey = forge.pki.privateKeyToPem(
-    IdPMasterKeypair.privateKey,
-  );
-  const IdPMasterPubKey = forge.pki.publicKeyToPem(IdPMasterKeypair.publicKey);
+  const IdPMasterKeypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const IdPMasterPrivKey = IdPMasterKeypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const IdPMasterPubKey = IdPMasterKeypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
-  const ASMasterKeypair = forge.pki.rsa.generateKeyPair(2048);
-  const ASMasterPrivKey = forge.pki.privateKeyToPem(ASMasterKeypair.privateKey);
-  const ASMasterPubKey = forge.pki.publicKeyToPem(ASMasterKeypair.publicKey);
+  const ASMasterKeypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const ASMasterPrivKey = ASMasterKeypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const ASMasterPubKey = ASMasterKeypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   describe("NDID update nodes's DPKI test", function() {
     const NDIDUpdateNodeReferenceId = generateReferenceId();
@@ -98,7 +160,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(privateKey, check_string),
         master_signed_check_string: createSignature(
           masterPrivateKey,
-          check_string,
+          check_string
         ),
       });
       expect(response.status).to.equal(202);
@@ -143,9 +205,17 @@ describe("Update nodes's DPKI test", function() {
     const sendDataResultPromise = createEventPromise();
     const requestClosedPromise = createEventPromise();
 
-    const userKeypair = forge.pki.rsa.generateKeyPair(2048);
-    const userPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const userPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const userKeypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const userPrivateKey = userKeypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const userPublicKey = userKeypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     let referenceId = generateReferenceId();
 
@@ -251,7 +321,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(RPPrivKey, check_string),
         master_signed_check_string: createSignature(
           RPMasterPrivKey,
-          check_string,
+          check_string
         ),
       });
       expect(response.status).to.equal(202);
@@ -287,7 +357,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(IdPPriveKey, check_string),
         master_signed_check_string: createSignature(
           IdPMasterPrivKey,
-          check_string,
+          check_string
         ),
       });
       expect(response.status).to.equal(202);
@@ -323,7 +393,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(ASPrivKey, check_string),
         master_signed_check_string: createSignature(
           ASMasterPrivKey,
-          check_string,
+          check_string
         ),
       });
       expect(response.status).to.equal(202);
@@ -390,7 +460,7 @@ describe("Update nodes's DPKI test", function() {
         identifier,
       });
       const idpNodes = await response.json();
-      const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+      const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
       expect(idpNode).to.not.be.undefined;
       expect(idpNode.mode_list)
         .to.be.an('array')
@@ -419,9 +489,9 @@ describe("Update nodes's DPKI test", function() {
       let requestMessagePaddedHash;
       before(function() {
         const identity = db.idp1Identities.find(
-          identity =>
+          (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         if (!identity) {
@@ -477,12 +547,12 @@ describe("Update nodes's DPKI test", function() {
         const incomingRequest = await incomingRequestPromise.promise;
 
         const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-          dataRequest => {
+          (dataRequest) => {
             const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
             return {
               ...dataRequestWithoutParams,
             };
-          },
+          }
         );
         expect(incomingRequest).to.deep.include({
           mode: createRequestParams.mode,
@@ -490,7 +560,7 @@ describe("Update nodes's DPKI test", function() {
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt,
+              incomingRequest.request_message_salt
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -505,7 +575,7 @@ describe("Update nodes's DPKI test", function() {
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':',
+          ':'
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -517,9 +587,9 @@ describe("Update nodes's DPKI test", function() {
       it('IdP should get request_message_padded_hash successfully', async function() {
         this.timeout(15000);
         identityForResponse = db.idp1Identities.find(
-          identity =>
+          (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -545,7 +615,7 @@ describe("Update nodes's DPKI test", function() {
 
         const signature = createResponseSignature(
           accessorPrivateKey,
-          requestMessagePaddedHash,
+          requestMessagePaddedHash
         );
 
         const response = await idpApi.createResponse('idp1', {
@@ -702,7 +772,7 @@ describe("Update nodes's DPKI test", function() {
         check_string,
         master_signed_check_string: createSignature(
           RPMasterPrivKey,
-          'invalid check_string',
+          'invalid check_string'
         ),
       });
       expect(response.status).to.equal(400);
@@ -776,7 +846,7 @@ describe('Update node supported request message types only IdP node tests', func
 
     let response = await commonApi.getIdP('idp1');
     let responseBody = await response.json();
-    let idpNodeDetail = responseBody.find(idp => idp.node_id === 'idp1');
+    let idpNodeDetail = responseBody.find((idp) => idp.node_id === 'idp1');
     before_test_supported_request_message_data_url_type_list =
       idpNodeDetail.supported_request_message_data_url_type_list;
   });
@@ -807,7 +877,7 @@ describe('Update node supported request message types only IdP node tests', func
 
     let response = await commonApi.getIdP('idp1');
     let responseBody = await response.json();
-    let idpNodeDetail = responseBody.find(idp => idp.node_id === 'idp1');
+    let idpNodeDetail = responseBody.find((idp) => idp.node_id === 'idp1');
     expect(idpNodeDetail.supported_request_message_data_url_type_list)
       .to.be.an('array')
       .to.have.length(2)

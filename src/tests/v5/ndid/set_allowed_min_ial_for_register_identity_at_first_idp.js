@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as ndidApi from '../../../api/v5/ndid';
@@ -15,9 +15,17 @@ import { idp1EventEmitter } from '../../../callback_server';
 describe('NDID set allowed min ial for register identity at first idp test', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  //const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  // const accessorPrivateKey = keypair.privateKey.export({
+  //   type: 'pkcs8',
+  //   format: 'pem',
+  // });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const mode2ReferenceId = generateReferenceId();
   const mode3ReferenceId = generateReferenceId();

@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 import * as rpApi from '../../../api/v5/rp';
 import * as idpApi from '../../../api/v5/idp';
@@ -42,9 +42,17 @@ describe('On the fly onboard and uplift tests', function() {
   });
 
   describe('RP create request mode 2 with bypass_identity_check = true to idp does not onboard', function() {
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const accessorPrivateKey = keypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const createRequestResultPromise = createEventPromise();
     const requestStatusPendingPromise = createEventPromise();
@@ -2355,9 +2363,17 @@ describe('On the fly onboard and uplift tests', function() {
   });
 
   describe('RP create request mode 2 with bypass_identity_check = true to one idp does not onboard and one onboarded idp', function() {
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const accessorPrivateKey = keypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const createRequestResultPromise = createEventPromise();
     const requestStatusPendingPromise = createEventPromise();

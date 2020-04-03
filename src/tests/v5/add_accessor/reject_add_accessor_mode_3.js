@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import { as1Available, idp2Available } from '../..';
@@ -32,9 +32,17 @@ describe('Reject IdP add accessor (mode 3) test', function() {
   describe('IdP (idp1) add accessor method (providing custom request_message and without providing accessor_id) and 1st IdP (idp1) reject consent test', function() {
     const addAccessorRequestMessage =
       'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const accessorPrivateKey = keypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const referenceId = generateReferenceId();
     const idp1ReferenceId = generateReferenceId();
@@ -57,7 +65,9 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         throw new Error('No created identity to use');
       }
 
-      const identity = db.idp1Identities.find(identity => identity.mode === 3);
+      const identity = db.idp1Identities.find(
+        (identity) => identity.mode === 3
+      );
 
       namespace = identity.namespace;
       identifier = identity.identifier;
@@ -133,7 +143,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       });
       expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -164,7 +174,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         reference_group_code: referenceGroupCode,
         request_message: addAccessorRequestMessage,
         request_message_hash: hash(
-          addAccessorRequestMessage + incomingRequest.request_message_salt,
+          addAccessorRequestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -174,7 +184,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -194,7 +204,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         reference_group_code: referenceGroupCode,
         request_message: addAccessorRequestMessage,
         request_message_hash: hash(
-          addAccessorRequestMessage + incomingRequest.request_message_salt,
+          addAccessorRequestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -204,7 +214,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -215,9 +225,8 @@ describe('Reject IdP add accessor (mode 3) test', function() {
     it('IdP should get request_message_padded_hash successfully', async function() {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -243,7 +252,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -322,7 +331,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       });
       expect(responseBody.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -480,12 +489,12 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
+        }
       );
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
@@ -494,7 +503,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -506,7 +515,7 @@ describe('Reject IdP add accessor (mode 3) test', function() {
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);

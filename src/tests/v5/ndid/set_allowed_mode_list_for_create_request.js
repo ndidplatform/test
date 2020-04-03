@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as ndidApi from '../../../api/v5/ndid';
@@ -103,7 +103,7 @@ describe('NDID set allowed mode list for create request test', function() {
         min_aal: 1,
         min_idp: 1,
         request_timeout: 86400,
-        bypass_identity_check:false
+        bypass_identity_check: false,
       };
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -126,9 +126,17 @@ describe('NDID set allowed mode list for create request test', function() {
   describe('NDID set allowed mode list for create request with purpose (special transaction)', async function() {
     const namespace = 'citizen_id';
     const identifier = uuidv4();
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    //const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    // const accessorPrivateKey = keypair.privateKey.export({
+    //   type: 'pkcs8',
+    //   format: 'pem',
+    // });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const referenceId = generateReferenceId();
 
@@ -198,7 +206,7 @@ describe('NDID set allowed mode list for create request test', function() {
       });
 
       const idpNodes = await response.json();
-      const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+      const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
       expect(idpNode).to.be.undefined;
     });
     after(async function() {
