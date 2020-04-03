@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 
 import * as ndidApi from '../../../api/v5/ndid';
 import * as commonApi from '../../../api/v5/common';
@@ -8,9 +8,17 @@ import { wait } from '../../../utils';
 import { ndidAvailable, idp1Available } from '../..';
 
 describe('Reduce node token when tx fail test', function() {
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
   let nodeTokenBeforeTest = 0;
   before(async function() {
     if (!ndidAvailable || !idp1Available) {

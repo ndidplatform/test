@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as identityApi from '../../../api/v5/identity';
@@ -27,9 +27,17 @@ import {
 describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as 1st IdP', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
 
@@ -63,7 +71,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
   });
 
@@ -119,7 +127,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     });
 
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')
@@ -161,9 +169,17 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
   });
 
   describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as 2nd IdP', function() {
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const accessorPrivateKey = keypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const referenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
@@ -197,10 +213,10 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       }
 
       const identity = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier &&
-          identity.mode === 2,
+          identity.mode === 2
       );
       referenceGroupCode = identity.referenceGroupCode;
 
@@ -209,7 +225,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       }
 
       idp1EventEmitter.on('identity_notification_callback', function(
-        callbackData,
+        callbackData
       ) {
         if (
           callbackData.type === 'identity_modification_notification' &&
@@ -336,10 +352,10 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         success: true,
       });
       expect(createIdentityRequestResult.creation_block_height).to.be.a(
-        'string',
+        'string'
       );
       const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -365,7 +381,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         reference_group_code: referenceGroupCode,
         request_message: createIdentityRequestMessage,
         request_message_hash: hash(
-          createIdentityRequestMessage + incomingRequest.request_message_salt,
+          createIdentityRequestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp2',
         min_ial: 1.1,
@@ -376,7 +392,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -388,9 +404,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
 
     it('IdP should get request_message_padded_hash successfully', async function() {
       identityForResponse = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -418,7 +433,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -479,9 +494,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     it('Should verify IdP response signature successfully', async function() {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
@@ -503,7 +517,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         success: true,
       });
       expect(createIdentityResult.reference_group_code).to.equal(
-        referenceGroupCode,
+        referenceGroupCode
       );
 
       //referenceGroupCode = createIdentityResult.reference_group_code;
@@ -513,7 +527,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         identifier,
       });
       const idpNodes = await response.json();
-      const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
+      const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
       expect(idpNode).to.not.be.undefined;
       expect(idpNodes)
         .to.be.an('array')
@@ -572,7 +586,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       });
       expect(responseBody.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);

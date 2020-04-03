@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as commonApi from '../../../api/v5/common';
@@ -13,13 +13,26 @@ import { idp2Available } from '../../';
 describe('IdP error response add accessor test', function() {
   let namespace = 'citizen_id';
   let identifier = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
-  const keypairLengthShorterThan2048Bit = forge.pki.rsa.generateKeyPair(2047);
-  const accessorPublicKeyLengthShorterThan2048Bit = forge.pki.publicKeyToPem(
-    keypairLengthShorterThan2048Bit.publicKey
+  const keypairLengthShorterThan2048Bit = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2047,
+  });
+  const accessorPublicKeyLengthShorterThan2048Bit = keypairLengthShorterThan2048Bit.publicKey.export(
+    {
+      type: 'spki',
+      format: 'pem',
+    }
   );
 
   const referenceId = generateReferenceId();
@@ -54,7 +67,7 @@ describe('IdP error response add accessor test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
   });
 
@@ -109,7 +122,7 @@ describe('IdP error response add accessor test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')

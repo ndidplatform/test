@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import { idp2Available } from '../..';
@@ -30,14 +30,30 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
   const createIdentityRequestMessage =
     'Create identity consent request custom message ข้อความสำหรับขอสร้างตัวตนบนระบบ';
   //Keypair for 1st IdP
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   //Keypair for 2nd IdP
-  const keypair2 = forge.pki.rsa.generateKeyPair(2048);
-  //const accessorPrivateKey2 = forge.pki.privateKeyToPem(keypair2.privateKey);
-  const accessorPublicKey2 = forge.pki.publicKeyToPem(keypair2.publicKey);
+  const keypair2 = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  // const accessorPrivateKey2 = keypair2.privateKey.export({
+  //   type: 'pkcs8',
+  //   format: 'pem',
+  // });
+  const accessorPublicKey2 = keypair2.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
   const referenceIdIdp2 = generateReferenceId();
@@ -176,7 +192,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
     expect(idpNodes)
       .to.be.an('array')
@@ -267,7 +283,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
       request_id: requestId2ndIdPCreateIdentity,
       request_message: createIdentityRequestMessage,
       request_message_hash: hash(
-        createIdentityRequestMessage + incomingRequest.request_message_salt,
+        createIdentityRequestMessage + incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp2',
       min_ial: 1.1,
@@ -279,7 +295,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -291,8 +307,8 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
 
   it('IdP should get request_message_padded_hash successfully', async function() {
     identityForResponse = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -319,7 +335,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -391,15 +407,15 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp2');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
     expect(idpNode).to.be.undefined;
   });
 
   it('Should verify IdP response signature successfully', async function() {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
     );
     let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -434,7 +450,7 @@ describe('Reject 2nd IdP create identity (mode 3) test', function() {
     });
     expect(responseBody.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);

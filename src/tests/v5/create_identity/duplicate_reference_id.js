@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import { idp2Available } from '../..';
@@ -23,14 +23,30 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
   const identifier = uuidv4();
 
   //Keypair for 1st IdP
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  //const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  // const accessorPrivateKey = keypair.privateKey.export({
+  //   type: 'pkcs8',
+  //   format: 'pem',
+  // });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   //Keypair for 2nd IdP
-  const keypair2 = forge.pki.rsa.generateKeyPair(2048);
-  //const accessorPrivateKey2 = forge.pki.privateKeyToPem(keypair2.privateKey);
-  const accessorPublicKey2 = forge.pki.publicKeyToPem(keypair2.publicKey);
+  const keypair2 = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  // const accessorPrivateKey2 = keypair2.privateKey.export({
+  //   type: 'pkcs8',
+  //   format: 'pem',
+  // });
+  const accessorPublicKey2 = keypair2.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
   const referenceIdIdp2 = generateReferenceId();
@@ -203,7 +219,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
     });
 
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')

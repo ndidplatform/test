@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as identityApi from '../../../api/v5/identity';
@@ -12,9 +12,17 @@ import * as config from '../../../config';
 describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as 1st IdP', function() {
   const namespace = 'citizen_id';
   const identifier = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
 
@@ -48,7 +56,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
   });
 
@@ -104,7 +112,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     });
 
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')
@@ -154,9 +162,9 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     });
     const responseBody = await response.json();
     expect(responseBody)
-    .to.be.an('array')
-    .that.to.have.lengthOf(1);
-    const idp = responseBody.find(node => node.node_id === 'idp1');
+      .to.be.an('array')
+      .that.to.have.lengthOf(1);
+    const idp = responseBody.find((node) => node.node_id === 'idp1');
     expect(idp.ial).to.equal(2.3);
   });
 
@@ -168,9 +176,17 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
 // describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1st IdP', function() {
 //   const namespace = 'citizen_id';
 //   const identifier = uuidv4();
-//   const keypair = forge.pki.rsa.generateKeyPair(2048);
-//   const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-//   const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+//   const keypair = crypto.generateKeyPairSync('rsa', {
+//     modulusLength: 2048,
+//   });
+//   const accessorPrivateKey = keypair.privateKey.export({
+//     type: 'pkcs8',
+//     format: 'pem',
+//   });
+//   const accessorPublicKey = keypair.publicKey.export({
+//     type: 'spki',
+//     format: 'pem',
+//   });
 //   const accessorId = uuidv4();
 
 //   const referenceId = generateReferenceId();

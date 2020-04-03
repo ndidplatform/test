@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as ndidApi from '../../../api/v5/ndid';
@@ -30,9 +30,17 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
   describe('Disable first IdP and following IdP create identity (mode 2) test', function() {
     const namespace = 'citizen_id';
     const identifier = uuidv4();
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const accessorPrivateKey = keypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const referenceId = generateReferenceId();
     const rpReferenceIdAfterEnableNode = generateReferenceId();
@@ -1020,9 +1028,17 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
   describe('Disable first IdP and following IdP create identity (mode 3) test', function() {
     const namespace = 'citizen_id';
     const identifier = uuidv4();
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const accessorPrivateKey = keypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const referenceId = generateReferenceId();
     const rpReferenceIdAfterEnableNode = generateReferenceId();
@@ -2010,9 +2026,17 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
   describe('Disable first IdP (mode 2) and following IdP create identity (mode 3) test', function() {
     const namespace = 'citizen_id';
     const identifier = uuidv4();
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const accessorPrivateKey = keypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const referenceId = generateReferenceId();
     const rpReferenceIdAfterEnableNode = generateReferenceId();

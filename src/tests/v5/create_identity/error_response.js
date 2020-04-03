@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as identityApi from '../../../api/v5/identity';
@@ -15,20 +15,33 @@ describe('Create identity errors', function() {
   let identifier;
   let accessorId;
 
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  // const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  // const accessorPrivateKey = keypair.privateKey.export({
+  //   type: 'pkcs8',
+  //   format: 'pem',
+  // });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
-  const keypairLengthShorterThan2048Bit = forge.pki.rsa.generateKeyPair(2047);
-  const accessorPublicKeyLengthShorterThan2048Bit = forge.pki.publicKeyToPem(
-    keypairLengthShorterThan2048Bit.publicKey
+  const keypairLengthShorterThan2048Bit = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2047,
+  });
+  const accessorPublicKeyLengthShorterThan2048Bit = keypairLengthShorterThan2048Bit.publicKey.export(
+    {
+      type: 'spki',
+      format: 'pem',
+    }
   );
 
   const referenceId = generateReferenceId();
 
   before(function() {
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation
@@ -99,8 +112,13 @@ describe('Create identity errors', function() {
     this.timeout(10000);
     const namespace = 'namespace_is_not_registered';
     const identifier = '1234';
-    // const keypair = forge.pki.rsa.generateKeyPair(2048);
-    // const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    // const keypair = crypto.generateKeyPairSync('rsa', {
+    //   modulusLength: 2048,
+    // });
+    // const accessorPublicKey = keypair.publicKey.export({
+    //   type: 'spki',
+    //   format: 'pem',
+    // });
 
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -169,8 +187,13 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
 
   it('IdP should get an error when using accessor public key with length shorter than 2048-bit', async function() {
     this.timeout(30000);
-    // const keypair = forge.pki.rsa.generateKeyPair(2047);
-    // const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    // const keypair = crypto.generateKeyPairSync('rsa', {
+    //   modulusLength: 2047,
+    // });
+    // const accessorPublicKey = keypair.publicKey.export({
+    //   type: 'spki',
+    //   format: 'pem',
+    // });
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
       callback_url: config.IDP1_CALLBACK_URL,
@@ -196,8 +219,13 @@ describe('Create identity errors', function() {
   let namespace = 'citizen_id';
   let identifier = uuidv4();
   let identifier2 = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
   const referenceId2 = generateReferenceId();
@@ -238,7 +266,7 @@ describe('Create identity errors', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
   });
 
@@ -293,7 +321,7 @@ describe('Create identity errors', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')
@@ -335,7 +363,7 @@ describe('Create identity errors', function() {
       identifier: identifier2,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
   });
 
@@ -390,7 +418,7 @@ describe('Create identity errors', function() {
       identifier: identifier2,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')

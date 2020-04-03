@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import * as rpApi from '../../../api/v5/rp';
@@ -28,9 +28,17 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
   let namespace = 'citizen_id';
   let identifier = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
 
@@ -101,7 +109,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
   });
 
@@ -156,7 +164,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')
@@ -227,7 +235,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     });
     expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -256,7 +264,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       reference_group_code: referenceGroupCode,
       request_message: addAccessorRequestMessage,
       request_message_hash: hash(
-        addAccessorRequestMessage + incomingRequest.request_message_salt,
+        addAccessorRequestMessage + incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -266,7 +274,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -277,8 +285,8 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
   it('IdP should get request_message_padded_hash successfully', async function() {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -303,7 +311,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -359,8 +367,8 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     });
 
     const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     identity.accessors.push({
@@ -463,10 +471,10 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         success: true,
       });
       expect(revokeAccessorRequestResult.creation_block_height).to.be.a(
-        'string',
+        'string'
       );
       const splittedCreationBlockHeight = revokeAccessorRequestResult.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -495,7 +503,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         reference_group_code: referenceGroupCode,
         request_message: revokeAccessorRequestMessage,
         request_message_hash: hash(
-          revokeAccessorRequestMessage + incomingRequest.request_message_salt,
+          revokeAccessorRequestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -505,7 +513,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -517,13 +525,12 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       this.timeout(15000);
 
       identityForResponse = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       const accessor = identityForResponse.accessors.find(
-        accessor => accessor.accessorId === responseAccessorId,
+        (accessor) => accessor.accessorId === responseAccessorId
       );
 
       responseAccessorId = accessor.accessorId;
@@ -544,14 +551,14 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       this.timeout(10000);
 
       const accessor = identityForResponse.accessors.find(
-        accessor => accessor.accessorId === responseAccessorId,
+        (accessor) => accessor.accessorId === responseAccessorId
       );
 
       let accessorPrivateKey = accessor.accessorPrivateKey;
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -607,13 +614,12 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       });
 
       let identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       let indexAccessor = identity.accessors.findIndex(
-        accessor => accessor.accessorId === accessorIdForRevoke,
+        (accessor) => accessor.accessorId === accessorIdForRevoke
       );
 
       identity.accessors[indexAccessor] = {
@@ -640,9 +646,17 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
   describe('Add duplicate accessor id that is revoked unsuccessfully', function() {
     const addAccessorRequestMessage =
       'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    //const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    // const accessorPrivateKey = keypair.privateKey.export({
+    //   type: 'pkcs8',
+    //   format: 'pem',
+    // });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const referenceId = generateReferenceId();
 
@@ -702,12 +716,11 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       this.timeout(10000);
 
       let identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
-      let accessor = identity.accessors.find(accessor => accessor.revoked);
+      let accessor = identity.accessors.find((accessor) => accessor.revoked);
 
       const response = await identityApi.addAccessor('idp1', {
         namespace: namespace,
@@ -736,7 +749,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       });
       expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -765,7 +778,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         reference_group_code: referenceGroupCode,
         request_message: addAccessorRequestMessage,
         request_message_hash: hash(
-          addAccessorRequestMessage + incomingRequest.request_message_salt,
+          addAccessorRequestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -775,7 +788,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -786,13 +799,12 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
     it('IdP should get request_message_padded_hash successfully', async function() {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       let identity = identityForResponse.accessors.find(
-        accessor => !accessor.revoked,
+        (accessor) => !accessor.revoked
       );
 
       responseAccessorId = identity.accessorId;
@@ -814,14 +826,14 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       this.timeout(10000);
 
       let identity = identityForResponse.accessors.find(
-        accessor => !accessor.revoked,
+        (accessor) => !accessor.revoked
       );
 
       let accessorPrivateKey = identity.accessorPrivateKey;
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -935,9 +947,8 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       }
 
       const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       namespace = identity.namespace;
@@ -1084,7 +1095,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1120,7 +1131,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       expect(parseInt(splittedBlockHeight[1])).to.equal(
-        lastStatusUpdateBlockHeight,
+        lastStatusUpdateBlockHeight
       );
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
@@ -1130,12 +1141,12 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
+        }
       );
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
@@ -1145,7 +1156,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1160,7 +1171,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1171,13 +1182,12 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       this.timeout(15000);
 
       identityForResponse = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       const revokedAccessor = identityForResponse.accessors.find(
-        accessor => accessor.revoked === true,
+        (accessor) => accessor.revoked === true
       );
 
       responseAccessorId = revokedAccessor.accessorId;
@@ -1233,9 +1243,8 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
 
     after(function() {
       let identityIndex = db.idp1Identities.findIndex(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
       db.idp1Identities.splice(identityIndex, 1);
       rpEventEmitter.removeAllListeners('callback');

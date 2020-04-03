@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 
 import * as ndidApi from '../../../api/v5/ndid';
 import * as rpApi from '../../../api/v5/rp';
@@ -27,9 +27,17 @@ import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_
 describe('NDID disable namespace test', function() {
   let namespace;
   let identifier;
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const createIdentityreferenceId = generateReferenceId();
   const rpReferenceId = generateReferenceId();

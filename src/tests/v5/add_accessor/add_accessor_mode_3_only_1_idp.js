@@ -1,5 +1,5 @@
+import crypto from 'crypto';
 import { expect } from 'chai';
-import forge from 'node-forge';
 import uuidv4 from 'uuid/v4';
 
 import { idp2Available } from '../..';
@@ -27,9 +27,17 @@ import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_
 describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (providing custom request_message and without providing accessor_id) test', function() {
   let namespace = 'citizen_id';
   let identifier = uuidv4();
-  const keypair = forge.pki.rsa.generateKeyPair(2048);
-  const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-  const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+  const keypair = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+  const accessorPrivateKey = keypair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem',
+  });
+  const accessorPublicKey = keypair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  });
 
   const referenceId = generateReferenceId();
 
@@ -63,7 +71,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
   });
 
@@ -118,7 +126,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
     expect(idpNode.mode_list)
       .to.be.an('array')
@@ -166,9 +174,17 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
   describe('IdP (idp1) add accessor test', function() {
     const addAccessorRequestMessage =
       'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
-    const keypair = forge.pki.rsa.generateKeyPair(2048);
-    const accessorPrivateKey = forge.pki.privateKeyToPem(keypair.privateKey);
-    const accessorPublicKey = forge.pki.publicKeyToPem(keypair.publicKey);
+    const keypair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const accessorPrivateKey = keypair.privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    });
+    const accessorPublicKey = keypair.publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    });
 
     const referenceId = generateReferenceId();
     const idp1ReferenceId = generateReferenceId();
@@ -247,7 +263,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
       });
       expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -276,7 +292,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         reference_group_code: referenceGroupCode,
         request_message: addAccessorRequestMessage,
         request_message_hash: hash(
-          addAccessorRequestMessage + incomingRequest.request_message_salt,
+          addAccessorRequestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -286,7 +302,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
       const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
+        ':'
       );
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -297,9 +313,8 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
     it('IdP should get request_message_padded_hash successfully', async function() {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -325,7 +340,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -382,9 +397,8 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
       });
 
       const identity = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       identity.accessors.push({
@@ -459,9 +473,9 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         }
 
         const identity = db.idp1Identities.find(
-          identity =>
+          (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         namespace = identity.namespace;
@@ -556,7 +570,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         });
 
         idp1EventEmitter.on('accessor_encrypt_callback', function(
-          callbackData,
+          callbackData
         ) {
           if (callbackData.request_id === requestId) {
             accessorEncryptPromise.resolve(callbackData);
@@ -610,7 +624,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(createRequestResult.success).to.equal(true);
         expect(createRequestResult.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-          ':',
+          ':'
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -646,7 +660,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -656,12 +670,12 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         const incomingRequest = await incomingRequestPromise.promise;
 
         const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-          dataRequest => {
+          (dataRequest) => {
             const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
             return {
               ...dataRequestWithoutParams,
             };
-          },
+          }
         );
         expect(incomingRequest).to.deep.include({
           node_id: 'idp1',
@@ -671,7 +685,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt,
+              incomingRequest.request_message_salt
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -686,7 +700,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':',
+          ':'
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -697,9 +711,9 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         this.timeout(15000);
 
         identityForResponse = db.idp1Identities.find(
-          identity =>
+          (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         let latestAccessor;
@@ -737,7 +751,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
 
         const signature = createResponseSignature(
           accessorPrivateKey,
-          requestMessagePaddedHash,
+          requestMessagePaddedHash
         );
 
         const response = await idpApi.createResponse('idp1', {
@@ -817,7 +831,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -846,7 +860,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(dataRequest.creation_time).to.be.a('number');
         expect(dataRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-          ':',
+          ':'
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -907,7 +921,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -946,7 +960,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
       });
 
@@ -984,7 +998,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
       });
 
@@ -1022,7 +1036,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -1061,7 +1075,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
       });
 
@@ -1099,7 +1113,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
       });
 
@@ -1138,7 +1152,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.be.above(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
         lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
       });
@@ -1177,7 +1191,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
       });
 
@@ -1215,7 +1229,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
         expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
         expect(parseInt(splittedBlockHeight[1])).to.equal(
-          lastStatusUpdateBlockHeight,
+          lastStatusUpdateBlockHeight
         );
       });
 
@@ -1342,9 +1356,9 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
 
       after(function() {
         let identityIndex = db.idp1Identities.findIndex(
-          identity =>
+          (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
         db.idp1Identities.splice(identityIndex, 1);
         rpEventEmitter.removeAllListeners('callback');
