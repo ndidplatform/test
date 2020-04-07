@@ -1076,7 +1076,7 @@ describe('IdP successfully response with an error code', function() {
       mode: 3,
       namespace,
       identifier,
-      idp_id_list: [],
+      idp_id_list: ['idp1', 'idp2'],
       data_request_list: [
         {
           service_id: 'bank_statement',
@@ -1098,7 +1098,7 @@ describe('IdP successfully response with an error code', function() {
       request_message: 'Test request message (error data response) (mode 3)',
       min_ial: 2.3,
       min_aal: 3,
-      min_idp: 1,
+      min_idp: 2,
       request_timeout: 86400,
       bypass_identity_check: false,
     };
@@ -1164,7 +1164,7 @@ describe('IdP successfully response with an error code', function() {
 
   it('check idp response status reading', async function() {
     this.timeout(10000);
-    const response = await commonApi.getRequest('idp2', {
+    const response = await commonApi.getRequest('idp1', {
       requestId,
     });
     expect(response.status).to.equal(200);
@@ -1172,6 +1172,21 @@ describe('IdP successfully response with an error code', function() {
     expect(responseBody.response_list).to.be.an('array');
     expect(responseBody.response_list).to.have.length(1);
     expect(responseBody.response_list[0].error_code).to.equal(error_code);
+  });
+
+  it('idp2 should not be able to response as it is impossible to fulfill the request', async function() {
+    this.timeout(10000);
+
+    const response = await idpApi.createErrorResponse('idp2', {
+      reference_id: idpReferenceId,
+      callback_url: config.IDP2_CALLBACK_URL,
+      request_id: requestId,
+      error_code: error_code,
+    });
+
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20006);
   });
 
   // remove code
