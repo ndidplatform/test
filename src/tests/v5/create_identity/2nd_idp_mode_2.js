@@ -18,6 +18,7 @@ import {
   generateReferenceId,
   hash,
   createResponseSignature,
+  wait,
 } from '../../../utils';
 import { idp2Available } from '../../';
 import * as config from '../../../config';
@@ -236,7 +237,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
   });
 
   it('Should get relevant IdP nodes by sid successfully', async function() {
-    this.timeout(15000);
+    this.timeout(30000);
 
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
@@ -250,6 +251,8 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     expect(idp.ial).to.equal(2.3);
     idp = responseBody.find(node => node.node_id === 'idp2');
     expect(idp.ial).to.equal(2.3);
+
+    await wait(3000); // wait for data propagate
   });
 
   after(function() {
@@ -532,7 +535,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     });
 
     it('RP should receive message queue send success (To idp2) callback', async function() {
-      this.timeout(15000);
+      this.timeout(30000);
       await receiveMessagequeueSendSuccessCallback({
         nodeId: 'rp1',
         requestId,

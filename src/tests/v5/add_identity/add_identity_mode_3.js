@@ -525,7 +525,7 @@ describe('Add identity (mode 3) tests', function() {
     });
 
     it('idp1 should add identity greater than allowed namespace count unsuccessfully', async function() {
-      this.timeout(10000);
+      this.timeout(30000);
       const response = await identityApi.addIdentity('idp1', {
         namespace,
         identifier,
@@ -540,6 +540,8 @@ describe('Add identity (mode 3) tests', function() {
         request_message: addIdentityRequestMessage,
       });
       expect(response.status).to.equal(202);
+
+      await wait(3000); //Wait for data propagate
     });
 
     describe('Create request with new identity (1 IdP, 1 AS, mode 3)', function() {
@@ -2108,6 +2110,7 @@ describe('Add identity (mode 3) tests', function() {
       });
 
       it('After create identity should get identity ial successfully', async function() {
+        this.timeout(30000);
         const response = await identityApi.getIdentityIal('idp2', {
           namespace,
           identifier: identifier2AtIdP2,
@@ -2115,6 +2118,8 @@ describe('Add identity (mode 3) tests', function() {
         expect(response.status).to.equal(200);
         const responseBody = await response.json();
         expect(responseBody.ial).to.equal(2.3);
+
+        await wait(3000); //Wait for data propagate
       });
 
       describe('Create request with new identity (1 IdP, 1 AS, mode 3)', function() {
@@ -2305,11 +2310,12 @@ describe('Add identity (mode 3) tests', function() {
         });
 
         it('RP should create a request successfully', async function() {
-          this.timeout(10000);
+          this.timeout(30000);
           const response = await rpApi.createRequest(
             'rp1',
             createRequestParams,
           );
+          console.log(createRequestParams);
           const responseBody = await response.json();
           expect(response.status).to.equal(202);
           expect(responseBody.request_id).to.be.a('string').that.is.not.empty;

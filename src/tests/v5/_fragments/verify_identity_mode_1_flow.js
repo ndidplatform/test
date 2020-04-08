@@ -19,7 +19,7 @@ import {
   receiveMessagequeueSendSuccessCallback,
 } from './common';
 
-import { createEventPromise, getPrivatekey } from '../../../utils';
+import { createEventPromise, getPrivatekey, wait } from '../../../utils';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 
 export function mode1FlowTest({
@@ -265,7 +265,7 @@ export function mode1FlowTest({
   });
 
   it('RP should receive pending request status', async function() {
-    this.timeout(10000);
+    this.timeout(30000);
     await receivePendingRequestStatusTest({
       nodeId: rpNodeId,
       createRequestParams,
@@ -274,6 +274,7 @@ export function mode1FlowTest({
       requestStatusPendingPromise,
       serviceList: [],
     });
+    await wait(3000); // wait for receive message queue send success callback
   });
 
   it('RP should receive message queue send success (to IdP) callback', async function() {

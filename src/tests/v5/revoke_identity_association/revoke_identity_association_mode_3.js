@@ -18,11 +18,12 @@ import {
   generateReferenceId,
   hash,
   createResponseSignature,
+  wait,
 } from '../../../utils';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe('IdP (idp1) revoke identity association (mode 3) test', function() {
+describe('IdP (idp1) revoke identity association (mode 3) test', function () {
   let namespace;
   let identifier;
   const requestMessage =
@@ -46,7 +47,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
   let responseAccessorId;
   let requestMessagePaddedHash;
 
-  before(function() {
+  before(function () {
     if (db.idp1Identities[0] == null) {
       throw new Error('No created identity to use');
     }
@@ -56,13 +57,13 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       this.skip();
     }
 
-    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+    const identity = db.idp1Identities.find((identity) => identity.mode === 3);
 
     namespace = identity.namespace;
     identifier = identity.identifier;
     referenceGroupCode = identity.referenceGroupCode;
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -87,13 +88,13 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       }
     });
 
-    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === requestId) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
 
-    idp2EventEmitter.on('callback', function(callbackData) {
+    idp2EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -102,7 +103,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       }
     });
 
-    idp2EventEmitter.on('identity_notification_callback', function(
+    idp2EventEmitter.on('identity_notification_callback', function (
       callbackData,
     ) {
       if (
@@ -115,7 +116,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     });
   });
 
-  it('IdP (idp1) should revoke identity association successfully', async function() {
+  it('IdP (idp1) should revoke identity association successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.revokeIdentityAssociation('idp1', {
       namespace: namespace,
@@ -147,7 +148,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+  it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
@@ -159,7 +160,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     });
   });
 
-  it('idp1 should receive revoke identity association request', async function() {
+  it('idp1 should receive revoke identity association request', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
@@ -186,17 +187,17 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     expect(incomingRequest.request_timeout).to.be.a('number');
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace &&
         identity.identifier === identifier &&
         identity.mode === 3,
     );
 
     const accessor = identityForResponse.accessors.find(
-      accessor => accessor.revoked != true,
+      (accessor) => accessor.revoked != true,
     );
 
     responseAccessorId = accessor.accessorId;
@@ -213,11 +214,11 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     const accessor = identityForResponse.accessors.find(
-      accessor => accessor.revoked != true,
+      (accessor) => accessor.revoked != true,
     );
 
     let accessorPrivateKey = accessor.accessorPrivateKey;
@@ -258,7 +259,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function() {
+  it('IdP shoud receive callback create response result with success = true', async function () {
     this.timeout(15000);
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
@@ -270,7 +271,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     });
   });
 
-  it('Identity association should be revoked successfully', async function() {
+  it('Identity association should be revoked successfully', async function () {
     this.timeout(10000);
     const revokeIdentityAssociationResult = await revokeIdentityAssociationResultPromise.promise;
     expect(revokeIdentityAssociationResult).to.deep.include({
@@ -279,13 +280,15 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     });
 
     let identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace &&
         identity.identifier === identifier &&
         identity.mode === 3,
     );
 
-    let identityIndex = db.idp1Identities.findIndex(item => item === identity);
+    let identityIndex = db.idp1Identities.findIndex(
+      (item) => item === identity,
+    );
 
     db.idp1Identities[identityIndex] = {
       ...db.idp1Identities[identityIndex],
@@ -293,7 +296,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     };
   });
 
-  it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function() {
+  it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function () {
     this.timeout(15000);
 
     if (!idp2Available) {
@@ -310,7 +313,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     });
   });
 
-  it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+  it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function () {
     this.timeout(10000);
     const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
@@ -318,24 +321,26 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('After revoked identity association should query idp that associate with this sid not found', async function() {
+  it('After revoked identity association should query idp that associate with this sid not found', async function () {
+    this.timeout(30000);
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
     });
     expect(response.status).equal(200);
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.undefined;
+    await wait(3000); // wait for data propagate
   });
 
-  after(function() {
+  after(function () {
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     idp2EventEmitter.removeAllListeners('identity_notification_callback');
   });
 
-  describe('RP create request (mode 3) to idp that revoked identity association', function() {
+  describe('RP create request (mode 3) to idp that revoked identity association', function () {
     const rpReferenceId = generateReferenceId();
 
     const createRequestResultPromise = createEventPromise(); // RP
@@ -352,13 +357,13 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
 
     const requestStatusUpdates = [];
 
-    before(function() {
+    before(function () {
       if (db.idp1Identities[0] == null) {
         throw new Error('No created identity to use');
       }
 
       const identity = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier &&
           identity.mode === 3 &&
@@ -393,7 +398,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -423,7 +428,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       });
     });
 
-    it('RP should create a request unsuccessfully', async function() {
+    it('RP should create a request unsuccessfully', async function () {
       this.timeout(10000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
@@ -431,12 +436,12 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody.error.code).to.equal(20005);
     });
 
-    after(function() {
+    after(function () {
       rpEventEmitter.removeAllListeners('callback');
     });
   });
 
-  describe('RP create request (mode 3) and idp that revoked identity association response', function() {
+  describe('RP create request (mode 3) and idp that revoked identity association response', function () {
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
 
@@ -465,13 +470,13 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     const idp_requestStatusUpdates = [];
     let lastStatusUpdateBlockHeight;
 
-    before(function() {
+    before(function () {
       if (db.idp1Identities[0] == null) {
         throw new Error('No created identity to use');
       }
 
       const identity = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier &&
           identity.mode === 3 &&
@@ -506,7 +511,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -535,7 +540,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -569,7 +574,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         }
       });
 
-      idp2EventEmitter.on('callback', function(callbackData) {
+      idp2EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -579,7 +584,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       });
     });
 
-    it('RP should create a request successfully', async function() {
+    it('RP should create a request successfully', async function () {
       this.timeout(10000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
@@ -601,7 +606,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
     });
 
-    it('RP should receive pending request status', async function() {
+    it('RP should receive pending request status', async function () {
       this.timeout(10000);
       const requestStatus = await requestStatusPendingPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -634,7 +639,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
-    it('IdP (idp2) should receive incoming request callback', async function() {
+    it('IdP (idp2) should receive incoming request callback', async function () {
       this.timeout(15000);
 
       if (!idp2Available) {
@@ -644,7 +649,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       const incomingRequest = await idp2IncomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -681,11 +686,11 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
 
       identityForResponse = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -704,7 +709,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody.error.code).to.equal(20038);
     });
 
-    it('IdP (idp1) that revoked association with this sid should create response (accept) unsuccessfully', async function() {
+    it('IdP (idp1) that revoked association with this sid should create response (accept) unsuccessfully', async function () {
       this.timeout(10000);
 
       const response = await idpApi.createResponse('idp1', {
@@ -722,7 +727,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody.error.code).to.equal(20038);
     });
 
-    after(function() {
+    after(function () {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
       idp2EventEmitter.removeAllListeners('callback');
@@ -730,7 +735,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     });
   });
 
-  describe('RP create request to idp that association with user', function() {
+  describe('RP create request to idp that association with user', function () {
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
@@ -775,14 +780,14 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     let identityForResponse;
     let requestMessagePaddedHash;
 
-    before(function() {
+    before(function () {
       if (!idp2Available) {
         this.test.parent.pending = true;
         this.skip();
       }
 
       const identity = db.idp2Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -817,7 +822,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -846,7 +851,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         }
       });
 
-      idp2EventEmitter.on('callback', function(callbackData) {
+      idp2EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -880,13 +885,13 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
         }
       });
 
-      idp2EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp2EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      as1EventEmitter.on('callback', function(callbackData) {
+      as1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'data_request' &&
           callbackData.request_id === requestId
@@ -919,7 +924,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       });
     });
 
-    it('RP should create a request successfully', async function() {
+    it('RP should create a request successfully', async function () {
       this.timeout(10000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
@@ -941,7 +946,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
     });
 
-    it('RP should receive pending request status', async function() {
+    it('RP should receive pending request status', async function () {
       this.timeout(10000);
       const requestStatus = await requestStatusPendingPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -974,12 +979,12 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
-    it('IdP (idp2) should receive incoming request callback', async function() {
+    it('IdP (idp2) should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -1016,10 +1021,10 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
       identityForResponse = db.idp2Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -1042,7 +1047,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('IdP (idp2) should create response (accept) successfully', async function() {
+    it('IdP (idp2) should create response (accept) successfully', async function () {
       this.timeout(10000);
 
       let latestAccessor = identityForResponse.accessors.length - 1;
@@ -1087,7 +1092,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP (idp2) shoud receive callback create response result with success = true', async function() {
+    it('IdP (idp2) shoud receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',
@@ -1098,7 +1103,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       });
     });
 
-    it('RP should receive confirmed request status with valid proofs', async function() {
+    it('RP should receive confirmed request status with valid proofs', async function () {
       this.timeout(15000);
       const requestStatus = await requestStatusConfirmedPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1137,7 +1142,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
-    it('AS should receive data request', async function() {
+    it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
@@ -1167,7 +1172,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('AS should send data successfully', async function() {
+    it('AS should send data successfully', async function () {
       this.timeout(15000);
       const response = await asApi.sendData('as1', {
         requestId,
@@ -1187,7 +1192,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       });
     });
 
-    it('RP should receive request status with signed data count = 1', async function() {
+    it('RP should receive request status with signed data count = 1', async function () {
       this.timeout(15000);
       const requestStatus = await requestStatusSignedDataPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1226,7 +1231,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
-    it('IdP should receive request status with signed data count = 1', async function() {
+    it('IdP should receive request status with signed data count = 1', async function () {
       this.timeout(15000);
       const requestStatus = await idp_requestStatusSignedDataPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1264,7 +1269,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       );
     });
 
-    it('AS should receive request status with signed data count = 1', async function() {
+    it('AS should receive request status with signed data count = 1', async function () {
       this.timeout(15000);
       const requestStatus = await as_requestStatusSignedDataPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1302,7 +1307,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       );
     });
 
-    it('RP should receive completed request status with received data count = 1', async function() {
+    it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
       const requestStatus = await requestStatusCompletedPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1341,7 +1346,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
-    it('IdP should receive completed request status with received data count = 1', async function() {
+    it('IdP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
       const requestStatus = await idp_requestStatusCompletedPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1379,7 +1384,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       );
     });
 
-    it('AS should receive completed request status with received data count = 1', async function() {
+    it('AS should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
       const requestStatus = await as_requestStatusCompletedPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1417,7 +1422,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       );
     });
 
-    it('RP should receive request closed status', async function() {
+    it('RP should receive request closed status', async function () {
       this.timeout(10000);
       const requestStatus = await requestClosedPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1457,7 +1462,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
-    it('IdP should receive request closed status', async function() {
+    it('IdP should receive request closed status', async function () {
       this.timeout(10000);
       const requestStatus = await idp_requestClosedPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1496,7 +1501,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       );
     });
 
-    it('AS should receive request closed status', async function() {
+    it('AS should receive request closed status', async function () {
       this.timeout(10000);
       const requestStatus = await as_requestClosedPromise.promise;
       expect(requestStatus).to.deep.include({
@@ -1535,7 +1540,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       );
     });
 
-    it('RP should get the correct data received from AS', async function() {
+    it('RP should get the correct data received from AS', async function () {
       const response = await rpApi.getDataFromAS('rp1', {
         requestId,
       });
@@ -1553,26 +1558,26 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
 
-    it('RP should receive 5 request status updates', function() {
+    it('RP should receive 5 request status updates', function () {
       expect(requestStatusUpdates).to.have.lengthOf(5);
     });
 
-    it('IdP should receive 4 or 5 request status updates', function() {
+    it('IdP should receive 4 or 5 request status updates', function () {
       expect(idp_requestStatusUpdates).to.have.length.within(4, 5);
     });
 
-    it('AS should receive 3 or 4 request status updates', function() {
+    it('AS should receive 3 or 4 request status updates', function () {
       expect(as_requestStatusUpdates).to.have.length.within(3, 4);
     });
 
-    it('RP should remove data requested from AS successfully', async function() {
+    it('RP should remove data requested from AS successfully', async function () {
       const response = await rpApi.removeDataRequestedFromAS('rp1', {
         request_id: requestId,
       });
       expect(response.status).to.equal(204);
     });
 
-    it('RP should have no saved data requested from AS left after removal', async function() {
+    it('RP should have no saved data requested from AS left after removal', async function () {
       const response = await rpApi.getDataFromAS('rp1', {
         requestId,
       });
@@ -1581,7 +1586,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody).to.be.an('array').that.is.empty;
     });
 
-    it('RP should have and able to get saved private messages', async function() {
+    it('RP should have and able to get saved private messages', async function () {
       const response = await commonApi.getPrivateMessages('rp1', {
         request_id: requestId,
       });
@@ -1590,14 +1595,14 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody).to.be.an('array').that.is.not.empty;
     });
 
-    it('RP should remove saved private messages successfully', async function() {
+    it('RP should remove saved private messages successfully', async function () {
       const response = await commonApi.removePrivateMessages('rp1', {
         request_id: requestId,
       });
       expect(response.status).to.equal(204);
     });
 
-    it('RP should have no saved private messages left after removal', async function() {
+    it('RP should have no saved private messages left after removal', async function () {
       const response = await commonApi.getPrivateMessages('rp1', {
         request_id: requestId,
       });
@@ -1606,7 +1611,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody).to.be.an('array').that.is.empty;
     });
 
-    it('IdP (idp2) should have and able to get saved private messages', async function() {
+    it('IdP (idp2) should have and able to get saved private messages', async function () {
       const response = await commonApi.getPrivateMessages('idp2', {
         request_id: requestId,
       });
@@ -1615,14 +1620,14 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody).to.be.an('array').that.is.not.empty;
     });
 
-    it('IdP (idp2) should remove saved private messages successfully', async function() {
+    it('IdP (idp2) should remove saved private messages successfully', async function () {
       const response = await commonApi.removePrivateMessages('idp2', {
         request_id: requestId,
       });
       expect(response.status).to.equal(204);
     });
 
-    it('IdP (idp2) should have no saved private messages left after removal', async function() {
+    it('IdP (idp2) should have no saved private messages left after removal', async function () {
       const response = await commonApi.getPrivateMessages('idp2', {
         request_id: requestId,
       });
@@ -1631,7 +1636,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody).to.be.an('array').that.is.empty;
     });
 
-    it('AS should have and able to get saved private messages', async function() {
+    it('AS should have and able to get saved private messages', async function () {
       const response = await commonApi.getPrivateMessages('as1', {
         request_id: requestId,
       });
@@ -1640,14 +1645,14 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody).to.be.an('array').that.is.not.empty;
     });
 
-    it('AS should remove saved private messages successfully', async function() {
+    it('AS should remove saved private messages successfully', async function () {
       const response = await commonApi.removePrivateMessages('as1', {
         request_id: requestId,
       });
       expect(response.status).to.equal(204);
     });
 
-    it('AS should have no saved private messages left after removal', async function() {
+    it('AS should have no saved private messages left after removal', async function () {
       const response = await commonApi.getPrivateMessages('as1', {
         request_id: requestId,
       });
@@ -1656,7 +1661,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function() {
       expect(responseBody).to.be.an('array').that.is.empty;
     });
 
-    after(function() {
+    after(function () {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
       idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');

@@ -687,6 +687,7 @@ describe('Add identity (mode 2,3) tests', function() {
     });
 
     it('After create identity should get identity ial successfully', async function() {
+      this.timeout(30000)
       const response = await identityApi.getIdentityIal('idp1', {
         namespace,
         identifier: identifier3,
@@ -694,6 +695,8 @@ describe('Add identity (mode 2,3) tests', function() {
       expect(response.status).to.equal(200);
       const responseBody = await response.json();
       expect(responseBody.ial).to.equal(2.3);
+
+      await wait(3000); //Wait for data propagate
     });
 
     describe('Create request with new identity (1 IdP, 1 AS, mode 2)', function() {
@@ -1726,12 +1729,15 @@ describe('Add identity (mode 2,3) tests', function() {
       });
 
       it('AS should have no saved private messages left after removal', async function() {
+        this.timeout(30000);
         const response = await commonApi.getPrivateMessages('as1', {
           request_id: requestId,
         });
         const responseBody = await response.json();
         expect(response.status).to.equal(200);
         expect(responseBody).to.be.an('array').that.is.empty;
+
+        await wait(3000); //Wait for data propagate
       });
       // after(function() {
       //   rpEventEmitter.removeAllListeners('callback');

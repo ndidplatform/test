@@ -394,6 +394,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     });
 
     it('After revoked identity association should query idp that associate with this sid not found', async function() {
+      this.timeout(30000);
       const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
         namespace,
         identifier,
@@ -402,6 +403,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       const idpNodes = await response.json();
       const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
       expect(idpNode).to.be.undefined;
+      await wait(3000); // wait for data propagate
     });
 
     after(function() {
@@ -1806,6 +1808,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     });
 
     it('After revoked identity association should query idp that associate with this sid not found', async function() {
+      this.timeout(30000);
       const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
         namespace,
         identifier,
@@ -1814,6 +1817,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       const idpNodes = await response.json();
       const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
       expect(idpNode).to.be.undefined;
+      await wait(3000); // wait for data propagate
     });
 
     after(function() {
