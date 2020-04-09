@@ -1,46 +1,68 @@
 import { expect } from 'chai';
 
 import * as commonApi from '../../../api/v5/common';
-
+import {
+  generateRequestParamSalt,
+  hash,
+  generateRequestMessageSalt,
+} from '../../../utils';
 export async function receivePendingRequestStatusTest({
   nodeId,
   createRequestParams,
   requestId,
+  initialSalt,
+  idpIdList,
   lastStatusUpdateBlockHeight,
   requestStatusPendingPromise,
-  // serviceList = [
-  //   {
-  //     service_id: createRequestParams.data_request_list[0].service_id,
-  //     min_as: createRequestParams.data_request_list[0].min_as,
-  //     signed_data_count: 0,
-  //     received_data_count: 0,
-  //   },
-  // ],
+  requesterNodeId,
 }) {
-  let serviceList = [];
+  let data_request_list = [];
   if (createRequestParams.data_request_list) {
-    serviceList = createRequestParams.data_request_list.map(service => {
+    data_request_list = createRequestParams.data_request_list.map((service) => {
+      let request_params_salt = generateRequestParamSalt({
+        requestId,
+        serviceId: service.service_id,
+        initialSalt,
+      });
+
+      let request_params_hash = hash(
+        (service.request_params != null ? service.request_params : '') +
+          request_params_salt,
+      );
+
       return {
         service_id: service.service_id,
+        as_id_list: service.as_id_list,
         min_as: service.min_as,
-        signed_data_count: 0,
-        received_data_count: 0,
+        request_params_hash: request_params_hash,
+        response_list: [],
       };
     });
   }
 
+  let request_message_salt = generateRequestMessageSalt(initialSalt);
+  let request_message_hash = hash(
+    createRequestParams.request_message + request_message_salt,
+  );
+
   const requestStatus = await requestStatusPendingPromise.promise;
   expect(requestStatus).to.deep.include({
     node_id: nodeId,
+    type: 'request_status',
     request_id: requestId,
-    status: 'pending',
-    mode: createRequestParams.mode,
     min_idp: createRequestParams.min_idp,
-    answered_idp_count: 0,
+    min_aal: createRequestParams.min_aal,
+    min_ial: createRequestParams.min_ial,
+    request_timeout: createRequestParams.request_timeout,
+    idp_id_list: idpIdList,
+    data_request_list,
+    request_message_hash,
+    response_list: [],
     closed: false,
     timed_out: false,
-    service_list: serviceList,
-    response_valid_list: [],
+    mode: createRequestParams.mode,
+    status: 'pending',
+    requester_node_id: requesterNodeId,
   });
   expect(requestStatus).to.have.property('block_height');
   expect(requestStatus.block_height).is.a('string');
@@ -49,8 +71,13 @@ export async function receivePendingRequestStatusTest({
   expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   expect(parseInt(splittedBlockHeight[1])).to.equal(
-    lastStatusUpdateBlockHeight
+    lastStatusUpdateBlockHeight,
   );
+
+  return {
+    data_request_list,
+    request_message_hash,
+  };
 }
 
 export async function receiveConfirmedRequestStatusTest({
@@ -58,29 +85,57 @@ export async function receiveConfirmedRequestStatusTest({
   requestStatusConfirmedPromise,
   requestId,
   createRequestParams,
-  answeredIdpCount,
-  serviceList,
-  responseValidList,
+  dataRequestList,
+  idpResponse,
+  requestMessageHash,
+  idpIdList,
   lastStatusUpdateBlockHeight,
   testForEqualLastStatusUpdateBlockHeight,
   requestStatusPromise,
+  requesterNodeId,
+  isNotRp,
 }) {
   if (requestStatusPromise && !requestStatusConfirmedPromise) {
     requestStatusConfirmedPromise = requestStatusPromise;
   }
+
+  let response_list = idpResponse.map((idpResponse) => {
+    const {
+      reference_id,
+      callback_url,
+      request_id,
+      accessor_id,
+      node_id,
+      ...rest
+    } = idpResponse;
+
+    if (isNotRp || createRequestParams.mode === 1) {
+      rest.valid_signature = null;
+      rest.valid_ial = null;
+    }
+    return rest;
+  });
+
   const requestStatus = await requestStatusConfirmedPromise.promise;
   expect(requestStatus).to.deep.include({
     node_id: nodeId,
+    type: 'request_status',
     request_id: requestId,
-    status: 'confirmed',
-    mode: createRequestParams.mode,
     min_idp: createRequestParams.min_idp,
-    answered_idp_count: answeredIdpCount,
+    min_aal: createRequestParams.min_aal,
+    min_ial: createRequestParams.min_ial,
+    request_timeout: createRequestParams.request_timeout,
+    idp_id_list: idpIdList,
+    data_request_list: dataRequestList,
+    request_message_hash: requestMessageHash,
+    response_list,
     closed: false,
     timed_out: false,
-    service_list: serviceList,
-    response_valid_list: responseValidList,
+    mode: createRequestParams.mode,
+    status: 'confirmed',
+    requester_node_id: requesterNodeId,
   });
+
   expect(requestStatus).to.have.property('block_height');
   expect(requestStatus.block_height).is.a('string');
   const splittedBlockHeight = requestStatus.block_height.split(':');
@@ -89,11 +144,11 @@ export async function receiveConfirmedRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   }
   return {
@@ -106,28 +161,55 @@ export async function receiveRejectedRequestStatusTest({
   requestStatusRejectPromise,
   requestId,
   createRequestParams,
-  answeredIdpCount,
-  serviceList,
-  responseValidList,
+  dataRequestList,
+  idpResponse,
+  requestMessageHash,
+  idpIdList,
   lastStatusUpdateBlockHeight,
   testForEqualLastStatusUpdateBlockHeight,
   requestStatusPromise,
+  requesterNodeId,
+  isNotRp,
 }) {
   if (requestStatusPromise && !requestStatusRejectPromise) {
     requestStatusRejectPromise = requestStatusPromise;
   }
+
+  let response_list = idpResponse.map((idpResponse) => {
+    const {
+      reference_id,
+      callback_url,
+      request_id,
+      accessor_id,
+      node_id,
+      ...rest
+    } = idpResponse;
+
+    if (isNotRp || createRequestParams.mode === 1) {
+      rest.valid_signature = null;
+      rest.valid_ial = null;
+    }
+    return rest;
+  });
+
   const requestStatus = await requestStatusRejectPromise.promise;
   expect(requestStatus).to.deep.include({
     node_id: nodeId,
+    type: 'request_status',
     request_id: requestId,
-    status: 'rejected',
-    mode: createRequestParams.mode,
     min_idp: createRequestParams.min_idp,
-    answered_idp_count: answeredIdpCount,
+    min_aal: createRequestParams.min_aal,
+    min_ial: createRequestParams.min_ial,
+    request_timeout: createRequestParams.request_timeout,
+    idp_id_list: idpIdList,
+    data_request_list: dataRequestList,
+    request_message_hash: requestMessageHash,
+    response_list,
     closed: false,
     timed_out: false,
-    service_list: serviceList,
-    response_valid_list: responseValidList,
+    mode: createRequestParams.mode,
+    status: 'rejected',
+    requester_node_id: requesterNodeId,
   });
   expect(requestStatus).to.have.property('block_height');
   expect(requestStatus.block_height).is.a('string');
@@ -137,11 +219,11 @@ export async function receiveRejectedRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   }
   return {
@@ -154,27 +236,55 @@ export async function receiveCompletedRequestStatusTest({
   requestStatusCompletedPromise,
   requestId,
   createRequestParams,
-  serviceList,
-  responseValidList,
+  dataRequestList,
+  idpResponse,
+  requestMessageHash,
+  idpIdList,
   lastStatusUpdateBlockHeight,
   testForEqualLastStatusUpdateBlockHeight,
   requestStatusPromise,
+  requesterNodeId,
+  isNotRp,
 }) {
   if (requestStatusPromise && !requestStatusCompletedPromise) {
     requestStatusCompletedPromise = requestStatusPromise;
   }
+
+  let response_list = idpResponse.map((idpResponse) => {
+    const {
+      reference_id,
+      callback_url,
+      request_id,
+      accessor_id,
+      node_id,
+      ...rest
+    } = idpResponse;
+
+    if (isNotRp || createRequestParams.mode === 1) {
+      rest.valid_signature = null;
+      rest.valid_ial = null;
+    }
+    return rest;
+  });
+
   const requestStatus = await requestStatusCompletedPromise.promise;
   expect(requestStatus).to.deep.include({
     node_id: nodeId,
+    type: 'request_status',
     request_id: requestId,
-    status: 'completed',
-    mode: createRequestParams.mode,
     min_idp: createRequestParams.min_idp,
-    answered_idp_count: createRequestParams.min_idp,
+    min_aal: createRequestParams.min_aal,
+    min_ial: createRequestParams.min_ial,
+    request_timeout: createRequestParams.request_timeout,
+    idp_id_list: idpIdList,
+    data_request_list: dataRequestList,
+    request_message_hash: requestMessageHash,
+    response_list,
     closed: false,
     timed_out: false,
-    service_list: serviceList,
-    response_valid_list: responseValidList,
+    mode: createRequestParams.mode,
+    status: 'completed',
+    requester_node_id: requesterNodeId,
   });
   expect(requestStatus).to.have.property('block_height');
   expect(requestStatus.block_height).is.a('string');
@@ -184,11 +294,11 @@ export async function receiveCompletedRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   }
   return {
@@ -201,27 +311,55 @@ export async function receiveComplicatedRequestStatusTest({
   requestStatusComplicatedPromise,
   requestId,
   createRequestParams,
-  serviceList,
-  responseValidList,
+  dataRequestList,
+  idpResponse,
+  requestMessageHash,
+  idpIdList,
   lastStatusUpdateBlockHeight,
   testForEqualLastStatusUpdateBlockHeight,
   requestStatusPromise,
+  requesterNodeId,
+  isNotRp,
 }) {
   if (requestStatusPromise && !requestStatusComplicatedPromise) {
     requestStatusComplicatedPromise = requestStatusPromise;
   }
+
+  let response_list = idpResponse.map((idpResponse) => {
+    const {
+      reference_id,
+      callback_url,
+      request_id,
+      accessor_id,
+      node_id,
+      ...rest
+    } = idpResponse;
+
+    if (isNotRp || createRequestParams.mode === 1) {
+      rest.valid_signature = null;
+      rest.valid_ial = null;
+    }
+    return rest;
+  });
+
   const requestStatus = await requestStatusComplicatedPromise.promise;
   expect(requestStatus).to.deep.include({
     node_id: nodeId,
+    type: 'request_status',
     request_id: requestId,
-    status: 'complicated',
-    mode: createRequestParams.mode,
     min_idp: createRequestParams.min_idp,
-    answered_idp_count: createRequestParams.min_idp,
+    min_aal: createRequestParams.min_aal,
+    min_ial: createRequestParams.min_ial,
+    request_timeout: createRequestParams.request_timeout,
+    idp_id_list: idpIdList,
+    data_request_list: dataRequestList,
+    request_message_hash: requestMessageHash,
+    response_list,
     closed: false,
     timed_out: false,
-    service_list: serviceList,
-    response_valid_list: responseValidList,
+    mode: createRequestParams.mode,
+    status: 'complicated',
+    requester_node_id: requesterNodeId,
   });
   expect(requestStatus).to.have.property('block_height');
   expect(requestStatus.block_height).is.a('string');
@@ -231,11 +369,11 @@ export async function receiveComplicatedRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   }
   return {
@@ -248,23 +386,49 @@ export async function receiveRequestClosedStatusTest({
   requestClosedPromise,
   requestId,
   createRequestParams,
-  serviceList,
-  responseValidList,
+  dataRequestList,
+  idpResponse,
+  requestMessageHash,
+  idpIdList,
   lastStatusUpdateBlockHeight,
   testForEqualLastStatusUpdateBlockHeight,
+  requesterNodeId,
 }) {
+  let response_list = idpResponse.map((idpResponse) => {
+    const {
+      reference_id,
+      callback_url,
+      request_id,
+      accessor_id,
+      node_id,
+      ...rest
+    } = idpResponse;
+
+    if (createRequestParams.mode === 1) {
+      rest.valid_signature = null;
+      rest.valid_ial = null;
+    }
+    return rest;
+  });
+
   const requestStatus = await requestClosedPromise.promise;
   expect(requestStatus).to.deep.include({
     node_id: nodeId,
+    type: 'request_status',
     request_id: requestId,
-    status: 'completed',
-    mode: createRequestParams.mode,
     min_idp: createRequestParams.min_idp,
-    answered_idp_count: createRequestParams.min_idp,
+    min_aal: createRequestParams.min_aal,
+    min_ial: createRequestParams.min_ial,
+    request_timeout: createRequestParams.request_timeout,
+    idp_id_list: idpIdList,
+    data_request_list: dataRequestList,
+    request_message_hash: requestMessageHash,
+    response_list,
     closed: true,
     timed_out: false,
-    service_list: serviceList,
-    response_valid_list: responseValidList,
+    mode: createRequestParams.mode,
+    status: 'completed',
+    requester_node_id: requesterNodeId,
   });
   expect(requestStatus).to.have.property('block_height');
   expect(requestStatus.block_height).is.a('string');
@@ -274,11 +438,11 @@ export async function receiveRequestClosedStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight
+      lastStatusUpdateBlockHeight,
     );
   }
   return {
@@ -333,7 +497,6 @@ export async function receiveMessagequeueSendSuccessCallback({
   destinationNodeId,
 }) {
   const mqSendSuccess = await mqSendSuccessCallbackPromise.promise;
-
   expect(mqSendSuccess).to.deep.include({
     node_id: nodeId,
     type: 'message_queue_send_success',
