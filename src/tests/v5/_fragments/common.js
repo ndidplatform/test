@@ -10,41 +10,13 @@ export async function receivePendingRequestStatusTest({
   nodeId,
   createRequestParams,
   requestId,
-  initialSalt,
   idpIdList,
+  dataRequestList,
+  requestMessageHash,
   lastStatusUpdateBlockHeight,
   requestStatusPendingPromise,
   requesterNodeId,
 }) {
-  let data_request_list = [];
-  if (createRequestParams.data_request_list) {
-    data_request_list = createRequestParams.data_request_list.map((service) => {
-      let request_params_salt = generateRequestParamSalt({
-        requestId,
-        serviceId: service.service_id,
-        initialSalt,
-      });
-
-      let request_params_hash = hash(
-        (service.request_params != null ? service.request_params : '') +
-          request_params_salt,
-      );
-
-      return {
-        service_id: service.service_id,
-        as_id_list: service.as_id_list,
-        min_as: service.min_as,
-        request_params_hash: request_params_hash,
-        response_list: [],
-      };
-    });
-  }
-
-  let request_message_salt = generateRequestMessageSalt(initialSalt);
-  let request_message_hash = hash(
-    createRequestParams.request_message + request_message_salt,
-  );
-
   const requestStatus = await requestStatusPendingPromise.promise;
   expect(requestStatus).to.deep.include({
     node_id: nodeId,
@@ -55,8 +27,8 @@ export async function receivePendingRequestStatusTest({
     min_ial: createRequestParams.min_ial,
     request_timeout: createRequestParams.request_timeout,
     idp_id_list: idpIdList,
-    data_request_list,
-    request_message_hash,
+    data_request_list: dataRequestList,
+    request_message_hash: requestMessageHash,
     response_list: [],
     closed: false,
     timed_out: false,
@@ -73,11 +45,6 @@ export async function receivePendingRequestStatusTest({
   expect(parseInt(splittedBlockHeight[1])).to.equal(
     lastStatusUpdateBlockHeight,
   );
-
-  return {
-    data_request_list,
-    request_message_hash,
-  };
 }
 
 export async function receiveConfirmedRequestStatusTest({
