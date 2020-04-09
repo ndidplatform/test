@@ -203,7 +203,7 @@ describe('IdP making response with accessor does not associate with sid and refe
   });
 
   it('RP should receive pending status successfully', async function() {
-    this.timeout(15000);
+    this.timeout(20000);
     await receivePendingRequestStatusTest({
       nodeId: 'rp1',
       createRequestParams,
