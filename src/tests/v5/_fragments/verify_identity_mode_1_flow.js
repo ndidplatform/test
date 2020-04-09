@@ -20,7 +20,11 @@ import {
 } from './common';
 
 import { createEventPromise, wait } from '../../../utils';
-import { createIdpIdList } from './fragments_utils';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+} from './fragments_utils';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 
 export function mode1FlowTest({
@@ -276,39 +280,40 @@ export function mode1FlowTest({
   it('RP should receive pending request status', async function () {
     this.timeout(30000);
 
-    idpIdList = await createIdpIdList({
-      createRequestParams,
-      callRpApiAtNodeId,
-    });
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId,
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId,
+        initialSalt,
+        callRpApiAtNodeId,
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]);
 
-    let resultForExpectOtherTest = await receivePendingRequestStatusTest({
+    await receivePendingRequestStatusTest({
       nodeId: rpNodeId,
       createRequestParams,
       requestId,
-      initialSalt,
       idpIdList,
+      dataRequestList,
+      requestMessageHash,
       lastStatusUpdateBlockHeight,
       requestStatusPendingPromise,
       requesterNodeId: rpNodeId,
     });
-
-    dataRequestList = resultForExpectOtherTest.data_request_list;
-    requestMessageHash = resultForExpectOtherTest.request_message_hash;
 
     await wait(3000); // wait for receive message queue send success callback
   });
 
   it('RP should receive message queue send success (to IdP) callback', async function () {
     this.timeout(25000);
-    if (
-      idpsReceiveRequestPromises.length !=
-      arrayMqSendSuccessRpToIdpCallback.length
-    ) {
-      throw new Error(
-        'idps receive request not equal to MQ send success rp to idp callback',
-      );
-    }
-
     for (let i = 0; i < idpsReceiveRequestPromises.length; i++) {
       const mqSendSuccessCallbackPromise =
         idpsReceiveRequestPromises[i].MqSendSuccessRpToIdpCallbackPromise;
@@ -332,8 +337,6 @@ export function mode1FlowTest({
       i
     ].idpResponseParams;
     const idpNodeId = idpNodeIds[i];
-    // const createResponseSignature =
-    //   idpParams[i].idpResponseParams.createResponseSignature;
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function () {
       this.timeout(25000);

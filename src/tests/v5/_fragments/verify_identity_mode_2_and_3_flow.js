@@ -25,7 +25,11 @@ import {
 } from './common';
 
 import { createEventPromise, wait } from '../../../utils';
-import { createIdpIdList } from './fragments_utils';
+import {
+  createIdpIdList,
+  createRequestMessageHash,
+  createDataRequestList,
+} from './fragments_utils';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 
 export function mode2And3FlowTest({
@@ -311,24 +315,34 @@ export function mode2And3FlowTest({
   it('RP should receive pending request status', async function () {
     this.timeout(30000);
 
-    idpIdList = await createIdpIdList({
-      createRequestParams,
-      callRpApiAtNodeId,
-    });
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId,
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId,
+        initialSalt,
+        callRpApiAtNodeId,
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]); // create idp_id_list, as_id_list, request_message_hash for test
 
-    let resultForExpectOtherTest = await receivePendingRequestStatusTest({
+    await receivePendingRequestStatusTest({
       nodeId: rpNodeId,
       createRequestParams,
       requestId,
-      initialSalt,
       idpIdList,
+      dataRequestList,
+      requestMessageHash,
       lastStatusUpdateBlockHeight,
       requestStatusPendingPromise,
       requesterNodeId: rpNodeId,
     });
-
-    dataRequestList = resultForExpectOtherTest.data_request_list;
-    requestMessageHash = resultForExpectOtherTest.request_message_hash;
 
     await wait(3000); // wait for receive message queue send success callback
   });
