@@ -19,7 +19,6 @@ import { idp2Available } from '../..';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 import {
-  idpReceiveAccessorEncryptCallbackTest,
   verifyResponseSignature,
   getAndVerifyRequestMessagePaddedHashTest,
 } from '../_fragments/request_flow_fragments/idp';
