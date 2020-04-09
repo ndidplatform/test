@@ -25,6 +25,8 @@ import {
   setDataReceived,
   setDataSigned,
   createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
 } from '../_fragments/fragments_utils';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
@@ -676,26 +678,36 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     });
 
     it('RP should receive pending request status', async function () {
-      this.timeout(20000);
+      this.timeout(30000);
 
-      idpIdList = await createIdpIdList({
-        createRequestParams,
-        callRpApiAtNodeId: rp_node_id,
-      });
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
 
-      let result = await receivePendingRequestStatusTest({
+      await receivePendingRequestStatusTest({
         nodeId: rp_node_id,
         createRequestParams,
         requestId,
-        initialSalt,
         idpIdList,
+        dataRequestList,
+        requestMessageHash,
         lastStatusUpdateBlockHeight,
         requestStatusPendingPromise,
-        requesterNodeId: requester_node_id,
+        requesterNodeId: rp_node_id,
       });
-
-      dataRequestList = result.data_request_list;
-      requestMessageHash = result.request_message_hash;
 
       // const requestStatus = await requestStatusPendingPromise.promise;
       // expect(requestStatus).to.deep.include({
@@ -2509,26 +2521,36 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     });
 
     it('RP should receive pending request status', async function () {
-      this.timeout(20000);
+      this.timeout(30000);
 
-      idpIdList = await createIdpIdList({
-        createRequestParams,
-        callRpApiAtNodeId: rp_node_id,
-      });
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
 
-      let result = await receivePendingRequestStatusTest({
+      await receivePendingRequestStatusTest({
         nodeId: rp_node_id,
         createRequestParams,
         requestId,
-        initialSalt,
         idpIdList,
+        dataRequestList,
+        requestMessageHash,
         lastStatusUpdateBlockHeight,
         requestStatusPendingPromise,
-        requesterNodeId: requester_node_id,
+        requesterNodeId: rp_node_id,
       });
-
-      dataRequestList = result.data_request_list;
-      requestMessageHash = result.request_message_hash;
 
       // const requestStatus = await requestStatusPendingPromise.promise;
       // expect(requestStatus).to.deep.include({

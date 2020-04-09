@@ -22,6 +22,8 @@ import {
 } from '../../../utils';
 import {
   createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
   setDataReceived,
   setDataSigned,
 } from '../_fragments/fragments_utils';
@@ -522,24 +524,34 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     it('RP should receive pending request status', async function () {
       this.timeout(20000);
 
-      idpIdList = await createIdpIdList({
-        createRequestParams,
-        callRpApiAtNodeId: rp_node_id,
-      });
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
 
-      let result = await receivePendingRequestStatusTest({
+      await receivePendingRequestStatusTest({
         nodeId: rp_node_id,
         createRequestParams,
         requestId,
-        initialSalt,
         idpIdList,
+        dataRequestList,
+        requestMessageHash,
         lastStatusUpdateBlockHeight,
         requestStatusPendingPromise,
-        requesterNodeId: requester_node_id,
+        requesterNodeId: rp_node_id,
       });
-
-      dataRequestList = result.data_request_list;
-      requestMessageHash = result.request_message_hash;
 
       // const requestStatus = await requestStatusPendingPromise.promise;
       // expect(requestStatus).to.deep.include({
