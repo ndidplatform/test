@@ -312,8 +312,6 @@ describe('IdP (idp1) response with new accessor id test', function() {
   let createRequestParams;
 
   let requestId;
-  let requestMessageSalt;
-  let requestMessageHash;
 
   before(function() {
     if (!namespace || !identifier) {
@@ -357,8 +355,10 @@ describe('IdP (idp1) response with new accessor id test', function() {
         callbackData.request_id === requestId
       ) {
         if (callbackData.status === 'confirmed') {
-          if (callbackData.service_list[0].signed_data_count === 1) {
-            requestStatusSignedDataPromise.resolve(callbackData);
+          if (callbackData.data_request_list[0].response_list.length > 0) {
+            if (callbackData.data_request_list[0].response_list[0].signed) {
+              requestStatusSignedDataPromise.resolve(callbackData);
+            }
           } else {
             requestStatusConfirmedPromise.resolve(callbackData);
           }
@@ -438,8 +438,6 @@ describe('IdP (idp1) response with new accessor id test', function() {
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
   });
 
   it('IdP should create response (accept) with new accessor id (accessor id from add new accessor request that already closed) unsuccessfully', async function() {

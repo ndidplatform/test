@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import { expect } from 'chai';
 
-import * as idpApi from '../../../api/v5/idp';
 import * as identityApi from '../../../api/v5/identity';
 import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
@@ -39,7 +38,6 @@ describe('Add accessor with duplicate reference id test', function() {
 
   const addAccessorRequestResultPromise = createEventPromise();
   const addAccessorResultPromise = createEventPromise();
-  const accessorSignPromise = createEventPromise();
   const incomingRequestPromise = createEventPromise();
   const idp2IncomingRequestPromise = createEventPromise();
   const responseResultPromise = createEventPromise();
