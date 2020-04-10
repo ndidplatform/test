@@ -745,7 +745,6 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
 
     it('RP should receive confirmed request status with valid proofs', async function () {
       this.timeout(15000);
-      //const requestStatus = await requestStatusConfirmedPromise.promise;
 
       const testResult = await receiveConfirmedRequestStatusTest({
         nodeId: rp_node_id,
@@ -761,6 +760,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       });
       lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
 
+            //const requestStatus = await requestStatusConfirmedPromise.promise;
       // expect(requestStatus).to.deep.include({
       //   request_id: requestId,
       //   status: 'confirmed',
