@@ -3,8 +3,6 @@ import { expect } from 'chai';
 
 import * as rpApi from '../../../api/v5/rp';
 import * as idpApi from '../../../api/v5/idp';
-import * as asApi from '../../../api/v5/as';
-// import * as commonApi from '../../api/v2/common';
 import {
   rpEventEmitter,
   idp1EventEmitter,
@@ -18,16 +16,24 @@ import {
   hash,
   createResponseSignature,
 } from '../../../utils';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+} from '../_fragments/fragments_utils';
 import * as config from '../../../config';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
-import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 import {
-  idpReceiveAccessorEncryptCallbackTest,
   verifyResponseSignature,
   getAndVerifyRequestMessagePaddedHashTest,
 } from '../_fragments/request_flow_fragments/idp';
+import {
+  receivePendingRequestStatusTest,
+  receiveConfirmedRequestStatusTest,
+  receiveMessagequeueSendSuccessCallback,
+} from '../_fragments/common';
 
-describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3', function() {
+describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3', function () {
   let namespace;
   let identifier;
 
@@ -57,7 +63,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   const data = crypto.randomBytes(2499995).toString('hex'); // 4999990 bytes in hex string
 
   let requestId;
-  let requestMessageSalt;
+  let initialSalt;
   let requestMessageHash;
   let identityForResponse;
   let responseAccessorId;
@@ -65,8 +71,17 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
 
   const requestStatusUpdates = [];
 
-  before(function() {
-    const identity = db.idp1Identities.find(identity => identity.mode === 3);
+  let rp_node_id = 'rp1';
+  let requester_node_id = 'rp1';
+  let idp_node_id = 'idp1';
+  let as_node_id = 'as1';
+  let idpIdList;
+  let dataRequestList;
+  let idpResponseParams = [];
+  let lastStatusUpdateBlockHeight;
+
+  before(function () {
+    const identity = db.idp1Identities.find((identity) => identity.mode === 3);
 
     if (!identity) {
       throw new Error('No created identity to use');
@@ -102,7 +117,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
 
     setAsSendDataThroughCallback(true);
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -116,8 +131,10 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
-          if (callbackData.service_list[0].signed_data_count === 1) {
-            requestStatusSignedDataPromise.resolve(callbackData);
+          if (callbackData.data_request_list[0].response_list.length > 0) {
+            if (callbackData.data_request_list[0].response_list[0].signed) {
+              requestStatusSignedDataPromise.resolve(callbackData);
+            }
           } else {
             requestStatusConfirmedPromise.resolve(callbackData);
           }
@@ -131,7 +148,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -145,13 +162,13 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       }
     });
 
-    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === requestId) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
 
-    as1EventEmitter.on('callback', function(callbackData, sendData) {
+    as1EventEmitter.on('callback', function (callbackData, sendData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === requestId
@@ -170,7 +187,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       }
     });
 
-    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+    nodeCallbackEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'message_queue_send_success' &&
         callbackData.request_id === requestId
@@ -194,7 +211,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     });
   });
 
-  it('RP should create a request successfully', async function() {
+  it('RP should create a request successfully', async function () {
     this.timeout(10000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
@@ -203,7 +220,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
-    // initialSalt = responseBody.initial_salt;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
@@ -214,35 +231,66 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
   });
 
-  it('RP should receive pending request status', async function() {
-    this.timeout(10000);
-    const requestStatus = await requestStatusPendingPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [],
+  it('RP should receive pending request status', async function () {
+    this.timeout(20000);
+
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId,
+        initialSalt,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+    await receivePendingRequestStatusTest({
+      nodeId: rp_node_id,
+      createRequestParams,
+      requestId,
+      idpIdList,
+      dataRequestList,
+      requestMessageHash,
+      lastStatusUpdateBlockHeight,
+      requestStatusPendingPromise,
+      requesterNodeId: rp_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    // const requestStatus = await requestStatusPendingPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: requestId,
+    //   status: 'pending',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 0,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 0,
+    //       received_data_count: 0,
+    //     },
+    //   ],
+    //   response_valid_list: [],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   //   it('RP should verify request_params_hash successfully', async function() {
@@ -255,7 +303,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   //   });
   // });
 
-  it('RP should receive message queue send success (To idp1) callback', async function() {
+  it('RP should receive message queue send success (To idp1) callback', async function () {
     this.timeout(15000);
     await receiveMessagequeueSendSuccessCallback({
       nodeId: 'rp1',
@@ -265,12 +313,12 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     });
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -304,13 +352,12 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
-    requestMessageSalt = incomingRequest.request_message_salt;
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     identityForResponse = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -330,7 +377,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let accessorPrivateKey =
@@ -341,7 +388,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       requestMessagePaddedHash,
     );
 
-    const response = await idpApi.createResponse('idp1', {
+    let idpResponse = {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
@@ -350,7 +397,16 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       status: 'accept',
       accessor_id: responseAccessorId,
       signature,
+    };
+
+    idpResponseParams.push({
+      ...idpResponse,
+      idp_id: 'idp1',
+      valid_signature: true,
+      valid_ial: true,
     });
+
+    const response = await idpApi.createResponse('idp1', idpResponse);
     expect(response.status).to.equal(202);
   });
 
@@ -374,7 +430,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function() {
+  it('IdP shoud receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
@@ -385,7 +441,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     });
   });
 
-  it('IdP should receive message queue send success (To rp1) callback', async function() {
+  it('IdP should receive message queue send success (To rp1) callback', async function () {
     this.timeout(15000);
     await receiveMessagequeueSendSuccessCallback({
       nodeId: 'idp1',
@@ -395,45 +451,59 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     });
   });
 
-  it('RP should receive confirmed request status with valid proofs', async function() {
-    this.timeout(15000);
-    const requestStatus = await requestStatusConfirmedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'confirmed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+  it('RP should receive confirmed request status with valid proofs', async function () {
+    this.timeout(25000);
+
+    await receiveConfirmedRequestStatusTest({
+      nodeId: rp_node_id,
+      requestStatusConfirmedPromise,
+      requestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    // const requestStatus = await requestStatusConfirmedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: requestId,
+    //   status: 'confirmed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 0,
+    //       received_data_count: 0,
+    //     },
+    //   ],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'idp1',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('Should verify IdP response signature successfully', async function() {
+  it('Should verify IdP response signature successfully', async function () {
     this.timeout(15000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -447,7 +517,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     });
   });
 
-  it('RP should receive message queue send success (To as1) callback', async function() {
+  it('RP should receive message queue send success (To as1) callback', async function () {
     this.timeout(15000);
     await receiveMessagequeueSendSuccessCallback({
       nodeId: 'rp1',
@@ -457,7 +527,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     });
   });
 
-  it('AS should receive data request', async function() {
+  it('AS should receive data request', async function () {
     this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -476,7 +546,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
       .empty;
   });
 
-  it('AS should get error callback', async function() {
+  it('AS should get error callback', async function () {
     this.timeout(10000);
     const error = await errorCallbackPromise.promise;
     expect(error).to.have.property('error');
@@ -485,7 +555,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     });
   });
 
-  after(function() {
+  after(function () {
     setAsSendDataThroughCallback(false);
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
