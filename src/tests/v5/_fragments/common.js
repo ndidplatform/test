@@ -1,11 +1,6 @@
 import { expect } from 'chai';
 
 import * as commonApi from '../../../api/v5/common';
-import {
-  generateRequestParamSalt,
-  hash,
-  generateRequestMessageSalt,
-} from '../../../utils';
 export async function receivePendingRequestStatusTest({
   nodeId,
   createRequestParams,
