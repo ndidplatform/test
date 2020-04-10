@@ -747,7 +747,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       this.timeout(15000);
       //const requestStatus = await requestStatusConfirmedPromise.promise;
 
-      await receiveConfirmedRequestStatusTest({
+      const testResult = await receiveConfirmedRequestStatusTest({
         nodeId: rp_node_id,
         requestStatusConfirmedPromise,
         requestId,
@@ -759,6 +759,8 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         lastStatusUpdateBlockHeight,
         requesterNodeId: requester_node_id,
       });
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
       // expect(requestStatus).to.deep.include({
       //   request_id: requestId,
       //   status: 'confirmed',
@@ -783,16 +785,6 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       //     },
       //   ],
       // });
-      // expect(requestStatus).to.have.property('block_height');
-      // expect(requestStatus.block_height).is.a('string');
-      // const splittedBlockHeight = requestStatus.block_height.split(':');
-      // expect(splittedBlockHeight).to.have.lengthOf(2);
-      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-      // expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      //   lastStatusUpdateBlockHeight,
-      // );
-      // lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
     it('Should verify IdP response signature successfully', async function () {
@@ -944,7 +936,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        'as1',
+        as_node_id,
       );
     });
 
@@ -961,7 +953,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     it('RP should receive request status with signed data', async function () {
       this.timeout(15000);
 
-      await receiveConfirmedRequestStatusTest({
+      const testResult = await receiveConfirmedRequestStatusTest({
         nodeId: rp_node_id,
         requestStatusConfirmedPromise: requestStatusSignedDataPromise,
         requestId,
@@ -973,6 +965,8 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         lastStatusUpdateBlockHeight,
         requesterNodeId: requester_node_id,
       });
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
 
       // const requestStatus = await requestStatusSignedDataPromise.promise;
       // expect(requestStatus).to.deep.include({
@@ -1024,6 +1018,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         requestMessageHash,
         idpIdList,
         lastStatusUpdateBlockHeight,
+        testForEqualLastStatusUpdateBlockHeight: true,
         requesterNodeId: requester_node_id,
         isNotRp: true,
       });
@@ -1077,6 +1072,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         requestMessageHash,
         idpIdList,
         lastStatusUpdateBlockHeight,
+        testForEqualLastStatusUpdateBlockHeight: true,
         requesterNodeId: requester_node_id,
         isNotRp: true,
       });
@@ -1084,7 +1080,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        'as1',
+        as_node_id,
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -1126,7 +1122,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     it('RP should receive completed request status with received data', async function () {
       this.timeout(15000);
 
-      await receiveCompletedRequestStatusTest({
+      const testResult = await receiveCompletedRequestStatusTest({
         nodeId: rp_node_id,
         requestStatusCompletedPromise,
         requestId,
@@ -1138,6 +1134,8 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         lastStatusUpdateBlockHeight,
         requesterNodeId: requester_node_id,
       });
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
 
       // const requestStatus = await requestStatusCompletedPromise.promise;
       // expect(requestStatus).to.deep.include({
@@ -1173,7 +1171,6 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       // expect(parseInt(splittedBlockHeight[1])).to.be.above(
       //   lastStatusUpdateBlockHeight,
       // );
-      // lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
     it('IdP should receive completed request status with received data', async function () {
@@ -1189,6 +1186,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         requestMessageHash,
         idpIdList,
         lastStatusUpdateBlockHeight,
+        testForEqualLastStatusUpdateBlockHeight: true,
         requesterNodeId: requester_node_id,
         isNotRp: true,
       });
@@ -1242,6 +1240,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         requestMessageHash,
         idpIdList,
         lastStatusUpdateBlockHeight,
+        testForEqualLastStatusUpdateBlockHeight: true,
         requesterNodeId: requester_node_id,
         isNotRp: true,
       });
@@ -1285,7 +1284,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     it('RP should receive request closed status', async function () {
       this.timeout(10000);
 
-      await receiveRequestClosedStatusTest({
+      const testResult = await receiveRequestClosedStatusTest({
         nodeId: rp_node_id,
         requestClosedPromise,
         requestId,
@@ -1297,6 +1296,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         lastStatusUpdateBlockHeight,
         requesterNodeId: requester_node_id,
       });
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
 
       // const requestStatus = await requestClosedPromise.promise;
       // expect(requestStatus).to.deep.include({
@@ -1333,7 +1333,6 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
       // expect(parseInt(splittedBlockHeight[1])).to.be.above(
       //   lastStatusUpdateBlockHeight,
       // );
-      // lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
     it('IdP should receive request closed status', async function () {
@@ -1349,6 +1348,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         requestMessageHash,
         idpIdList,
         lastStatusUpdateBlockHeight,
+        testForEqualLastStatusUpdateBlockHeight: true,
         requesterNodeId: requester_node_id,
       });
 
@@ -1402,6 +1402,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
         requestMessageHash,
         idpIdList,
         lastStatusUpdateBlockHeight,
+        testForEqualLastStatusUpdateBlockHeight: true,
         requesterNodeId: requester_node_id,
       });
 
