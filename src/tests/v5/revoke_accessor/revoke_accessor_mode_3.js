@@ -1024,7 +1024,6 @@ describe('IdP (idp1) revoke accessor (mode 3) (providing custom request_message 
     it('IdP should receive request status with signed data count = 1', async function () {
       this.timeout(15000);
 
-
       await receiveConfirmedRequestStatusTest({
         nodeId: idp_node_id,
         requestStatusConfirmedPromise: idp_requestStatusSignedDataPromise,
