@@ -20,10 +20,23 @@ import {
   rpEventEmitter,
   as1EventEmitter,
 } from '../../../callback_server';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+  setDataReceived,
+  setDataSigned,
+} from '../_fragments/fragments_utils';
+import {
+  receivePendingRequestStatusTest,
+  receiveConfirmedRequestStatusTest,
+  receiveCompletedRequestStatusTest,
+  receiveRequestClosedStatusTest,
+} from '../_fragments/common';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe('Close Revoke accessor request test', function() {
+describe('Close Revoke accessor request test', function () {
   const addAccessorRequestMessage =
     'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
 
@@ -58,8 +71,8 @@ describe('Close Revoke accessor request test', function() {
   let identityForResponse;
   let requestMessagePaddedHash;
 
-  before(function() {
-    idp1EventEmitter.on('callback', function(callbackData) {
+  before(function () {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === referenceId
@@ -89,14 +102,14 @@ describe('Close Revoke accessor request test', function() {
       }
     });
 
-    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === requestIdAddAccessor) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
   });
 
-  it('Before create identity this sid should not exist on platform ', async function() {
+  it('Before create identity this sid should not exist on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -104,17 +117,17 @@ describe('Close Revoke accessor request test', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Before create identity this sid should not associated with idp1 ', async function() {
+  it('Before create identity this sid should not associated with idp1 ', async function () {
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
   });
 
-  it('Before create identity should not get identity ial', async function() {
+  it('Before create identity should not get identity ial', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -122,7 +135,7 @@ describe('Close Revoke accessor request test', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Should create identity request (mode 3) successfully', async function() {
+  it('Should create identity request (mode 3) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -147,7 +160,7 @@ describe('Close Revoke accessor request test', function() {
     accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created successfully', async function() {
+  it('Identity should be created successfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -165,11 +178,9 @@ describe('Close Revoke accessor request test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2, 3);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2, 3);
 
     db.idp1Identities.push({
       referenceGroupCode,
@@ -187,7 +198,7 @@ describe('Close Revoke accessor request test', function() {
     await wait(3000);
   });
 
-  it('After create identity this sid should be existing on platform ', async function() {
+  it('After create identity this sid should be existing on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -197,7 +208,7 @@ describe('Close Revoke accessor request test', function() {
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
-  it('After create identity should get identity ial successfully', async function() {
+  it('After create identity should get identity ial successfully', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -207,7 +218,7 @@ describe('Close Revoke accessor request test', function() {
     expect(responseBody.ial).to.equal(2.3);
   });
 
-  it('Should add accessor successfully', async function() {
+  it('Should add accessor successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
@@ -243,7 +254,7 @@ describe('Close Revoke accessor request test', function() {
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+  it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
@@ -256,7 +267,7 @@ describe('Close Revoke accessor request test', function() {
     });
   });
 
-  it('idp1 should receive add accessor request', async function() {
+  it('idp1 should receive add accessor request', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
@@ -283,10 +294,10 @@ describe('Close Revoke accessor request test', function() {
     expect(incomingRequest.request_timeout).to.be.a('number');
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -304,7 +315,7 @@ describe('Close Revoke accessor request test', function() {
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP (idp1) should create response (accept) successfully', async function() {
+  it('IdP (idp1) should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let accessorPrivateKey =
@@ -346,7 +357,7 @@ describe('Close Revoke accessor request test', function() {
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function() {
+  it('IdP shoud receive callback create response result with success = true', async function () {
     this.timeout(15000);
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
@@ -358,7 +369,7 @@ describe('Close Revoke accessor request test', function() {
     });
   });
 
-  it('Accessor id should be added successfully', async function() {
+  it('Accessor id should be added successfully', async function () {
     this.timeout(10000);
     const addAccessorResult = await addAccessorResultPromise.promise;
     expect(addAccessorResult).to.deep.include({
@@ -368,7 +379,7 @@ describe('Close Revoke accessor request test', function() {
     });
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -379,7 +390,7 @@ describe('Close Revoke accessor request test', function() {
     });
   });
 
-  it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+  it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function () {
     this.timeout(10000);
     const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
@@ -387,11 +398,11 @@ describe('Close Revoke accessor request test', function() {
     expect(response.status).to.equal(404);
   });
 
-  after(function() {
+  after(function () {
     idp1EventEmitter.removeAllListeners('callback');
   });
 
-  describe('IdP close revoke accessor request', function() {
+  describe('IdP close revoke accessor request', function () {
     const revokeAccessorRequestMessage =
       'Revoke accessor consent request custom message ข้อความสำหรับขอเพิกถอน accessor บนระบบ';
 
@@ -406,8 +417,8 @@ describe('Close Revoke accessor request test', function() {
 
     let requestIdRevokeAccessor;
 
-    before(function() {
-      idp1EventEmitter.on('callback', function(callbackData) {
+    before(function () {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestIdRevokeAccessor
@@ -432,11 +443,11 @@ describe('Close Revoke accessor request test', function() {
       });
     });
 
-    it('IdP (idp1) should revoke accessor successfully', async function() {
+    it('IdP (idp1) should revoke accessor successfully', async function () {
       this.timeout(15000);
 
       const identity = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -474,7 +485,7 @@ describe('Close Revoke accessor request test', function() {
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('Idp1 should get incoming request for revoke request', async function() {
+    it('Idp1 should get incoming request for revoke request', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestRevokeAccessorPromise.promise;
       expect(incomingRequest).to.deep.include({
@@ -500,7 +511,7 @@ describe('Close Revoke accessor request test', function() {
       //requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('1st IdP should close revoke accessor request successfully', async function() {
+    it('1st IdP should close revoke accessor request successfully', async function () {
       this.timeout(25000);
       const response = await identityApi.closeIdentityRequest('idp1', {
         request_id: requestIdRevokeAccessor,
@@ -528,10 +539,10 @@ describe('Close Revoke accessor request test', function() {
       });
     });
 
-    it('After close revoke accessor request 1st IdP should create response (accept) unsuccessfully', async function() {
+    it('After close revoke accessor request 1st IdP should create response (accept) unsuccessfully', async function () {
       this.timeout(20000);
       const identity = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -553,7 +564,7 @@ describe('Close Revoke accessor request test', function() {
       expect(responseBody.error.code).to.equal(20025);
     });
 
-    it('Special request status for revoke accessor should be closed', async function() {
+    it('Special request status for revoke accessor should be closed', async function () {
       this.timeout(10000);
       const response = await commonApi.getRequest('idp1', {
         requestId: requestIdRevokeAccessor,
@@ -581,12 +592,12 @@ describe('Close Revoke accessor request test', function() {
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    after(async function() {
+    after(async function () {
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     });
   });
-  describe('Accessor must still be usable', function() {
+  describe('Accessor must still be usable', function () {
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
@@ -610,11 +621,20 @@ describe('Close Revoke accessor request test', function() {
     });
 
     let requestId;
-    let requestMessageSalt;
-    let requestMessageHash;
+    let initialSalt;
     let responseAccessorId;
+    let lastStatusUpdateBlockHeight;
 
-    before(function() {
+    let rp_node_id = 'rp1';
+    let requester_node_id = 'rp1';
+    let idp_node_id = 'idp1';
+    let as_node_id = 'as1';
+    let idpIdList;
+    let dataRequestList;
+    let idpResponseParams = [];
+    let requestMessageHash;
+
+    before(function () {
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -641,7 +661,7 @@ describe('Close Revoke accessor request test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -652,8 +672,10 @@ describe('Close Revoke accessor request test', function() {
           callbackData.request_id === requestId
         ) {
           if (callbackData.status === 'confirmed') {
-            if (callbackData.service_list[0].signed_data_count === 1) {
-              requestStatusSignedDataPromise.resolve(callbackData);
+            if (callbackData.data_request_list[0].response_list.length > 0) {
+              if (callbackData.data_request_list[0].response_list[0].signed) {
+                requestStatusSignedDataPromise.resolve(callbackData);
+              }
             } else {
               requestStatusConfirmedPromise.resolve(callbackData);
             }
@@ -667,7 +689,7 @@ describe('Close Revoke accessor request test', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -681,13 +703,13 @@ describe('Close Revoke accessor request test', function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      as1EventEmitter.on('callback', function(callbackData) {
+      as1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'data_request' &&
           callbackData.request_id === requestId
@@ -702,8 +724,8 @@ describe('Close Revoke accessor request test', function() {
       });
     });
 
-    it('RP should create a request successfully', async function() {
-      this.timeout(10000);
+    it('RP should create a request successfully', async function () {
+      this.timeout(30000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -711,17 +733,43 @@ describe('Close Revoke accessor request test', function() {
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
       requestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
 
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
+      expect(createRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+        ':',
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
+
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -754,14 +802,12 @@ describe('Close Revoke accessor request test', function() {
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
 
-      requestMessageSalt = incomingRequest.request_message_salt;
-      requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -785,7 +831,7 @@ describe('Close Revoke accessor request test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('IdP should create response (accept) with new accessor id successfully', async function() {
+    it('IdP should create response (accept) with new accessor id successfully', async function () {
       this.timeout(15000);
 
       let latestAccessor = identityForResponse.accessors.length - 1;
@@ -797,6 +843,24 @@ describe('Close Revoke accessor request test', function() {
         accessorPrivateKey,
         requestMessagePaddedHash,
       );
+
+      let idpResponse = {
+        reference_id: idpReferenceId,
+        callback_url: config.IDP1_CALLBACK_URL,
+        request_id: requestId,
+        ial: 2.3,
+        aal: 3,
+        status: 'accept',
+        accessor_id: responseAccessorId,
+        signature,
+      };
+
+      idpResponseParams.push({
+        ...idpResponse,
+        idp_id: 'idp1',
+        valid_signature: true,
+        valid_ial: true,
+      });
 
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
@@ -830,7 +894,7 @@ describe('Close Revoke accessor request test', function() {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP shoud receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -841,42 +905,57 @@ describe('Close Revoke accessor request test', function() {
       });
     });
 
-    it('RP should receive confirmed request status with valid proofs', async function() {
+    it('RP should receive confirmed request status with valid proofs', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusConfirmedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'confirmed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 0,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveConfirmedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusConfirmedPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestStatusConfirmedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'confirmed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 0,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('AS should receive data request', async function() {
+    it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
@@ -895,7 +974,7 @@ describe('Close Revoke accessor request test', function() {
         .not.empty;
     });
 
-    it('AS should send data successfully', async function() {
+    it('AS should send data successfully', async function () {
       this.timeout(15000);
       const response = await asApi.sendData('as1', {
         requestId,
@@ -911,114 +990,173 @@ describe('Close Revoke accessor request test', function() {
         reference_id: asReferenceId,
         success: true,
       });
+
+      dataRequestList = setDataSigned(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
     });
 
-    it('RP should receive request status with signed data count = 1', async function() {
+    it('RP should receive request status with signed data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusSignedDataPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'confirmed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveConfirmedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusConfirmedPromise: requestStatusSignedDataPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      dataRequestList = setDataReceived(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
+
+      // const requestStatus = await requestStatusSignedDataPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'confirmed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive completed request status with received data count = 1', async function() {
+    it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusCompletedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveCompletedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusCompletedPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestStatusCompletedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive request closed status', async function() {
+    it('RP should receive request closed status', async function () {
       this.timeout(10000);
-      const requestStatus = await requestClosedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: true,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveRequestClosedStatusTest({
+        nodeId: rp_node_id,
+        requestClosedPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+      
+      // const requestStatus = await requestClosedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: true,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should get the correct data received from AS', async function() {
+    it('RP should get the correct data received from AS', async function () {
       const response = await rpApi.getDataFromAS('rp1', {
         requestId,
       });
@@ -1036,7 +1174,7 @@ describe('Close Revoke accessor request test', function() {
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
 
-    after(function() {
+    after(function () {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');

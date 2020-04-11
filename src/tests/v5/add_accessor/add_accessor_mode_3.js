@@ -812,8 +812,7 @@ describe('IdP (idp1) add accessor (mode 3) (providing custom request_message and
         valid_signature: true,
         valid_ial: true,
       });
-
-
+      
       const response = await idpApi.createResponse('idp1', idpResponse);
       expect(response.status).to.equal(202);
     });
