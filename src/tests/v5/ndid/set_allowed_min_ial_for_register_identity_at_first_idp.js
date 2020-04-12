@@ -3,9 +3,7 @@ import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
 
 import * as ndidApi from '../../../api/v5/ndid';
-import * as rpApi from '../../../api/v5/rp';
 import * as identityApi from '../../../api/v5/identity';
-import * as commonApi from '../../../api/v5/common';
 import { ndidAvailable } from '../../';
 import { generateReferenceId, wait, createEventPromise } from '../../../utils';
 import * as config from '../../../config';
