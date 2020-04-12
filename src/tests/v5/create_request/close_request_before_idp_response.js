@@ -11,10 +11,16 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+} from '../_fragments/fragments_utils';
+import { receivePendingRequestStatusTest } from '../_fragments/common';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe('Close request before IdP response', function() {
+describe('Close request before IdP response', function () {
   let namespace;
   let identifier;
 
@@ -30,15 +36,20 @@ describe('Close request before IdP response', function() {
   let createRequestParams;
 
   let requestId;
-  let requestMessageSalt;
-  let requestMessageHash;
+  let initialSalt;
   let identityForResponse;
   let responseAccessorId;
   let requestMessagePaddedHash;
+  let lastStatusUpdateBlockHeight;
 
-  before(async function() {
+  let rp_node_id = 'rp1';
+  let idpIdList;
+  let dataRequestList;
+  let requestMessageHash;
+
+  before(async function () {
     let identity = db.idp1Identities.filter(
-      identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -65,7 +76,7 @@ describe('Close request before IdP response', function() {
       bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -86,7 +97,7 @@ describe('Close request before IdP response', function() {
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -96,7 +107,7 @@ describe('Close request before IdP response', function() {
     });
   });
 
-  it('RP should create a request successfully', async function() {
+  it('RP should create a request successfully', async function () {
     this.timeout(10000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
@@ -105,34 +116,73 @@ describe('Close request before IdP response', function() {
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
+    expect(createRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+      ':',
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
   });
 
-  it('RP should receive pending request status', async function() {
+  it('RP should receive pending request status', async function () {
     this.timeout(10000);
-    const requestStatus = await requestStatusPendingPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [],
+
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId,
+        initialSalt,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+    await receivePendingRequestStatusTest({
+      nodeId: rp_node_id,
+      createRequestParams,
+      requestId,
+      idpIdList,
+      dataRequestList,
+      requestMessageHash,
+      lastStatusUpdateBlockHeight,
+      requestStatusPendingPromise,
+      requesterNodeId: rp_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    // const requestStatus = await requestStatusPendingPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: requestId,
+    //   status: 'pending',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 0,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [],
+    //   response_valid_list: [],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
@@ -160,15 +210,12 @@ describe('Close request before IdP response', function() {
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -186,7 +233,7 @@ describe('Close request before IdP response', function() {
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('RP should be able to close request', async function() {
+  it('RP should be able to close request', async function () {
     this.timeout(10000);
     const response = await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
@@ -203,7 +250,7 @@ describe('Close request before IdP response', function() {
     });
   });
 
-  it('IdP should not be able to response closed request', async function() {
+  it('IdP should not be able to response closed request', async function () {
     this.timeout(15000);
 
     await wait(3000);
@@ -230,7 +277,7 @@ describe('Close request before IdP response', function() {
     const responseBody = await response.json();
     expect(responseBody.error.code).to.equal(20025);
   });
-  after(function() {
+  after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
   });
