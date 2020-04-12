@@ -16,11 +16,18 @@ import {
   idp2EventEmitter,
   rpEventEmitter,
 } from '../../../callback_server';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+} from '../_fragments/fragments_utils';
+import {
+  receivePendingRequestStatusTest,
+} from '../_fragments/common';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
-import * as db from '../../../db';
 
-describe('Create request tests', function() {
+describe('Create request tests', function () {
   //idp1 = mode 3, idp2 = mode 2
   let namespace = 'citizen_id';
   let identifier = uuidv4();
@@ -46,13 +53,13 @@ describe('Create request tests', function() {
   let accessorIdMode3;
   let accessorIdMode2;
 
-  before(function() {
+  before(function () {
     if (!idp2Available) {
       this.test.parent.pending = true;
       this.skip();
     }
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === idpReferenceId
@@ -61,7 +68,7 @@ describe('Create request tests', function() {
       }
     });
 
-    idp2EventEmitter.on('callback', function(callbackData) {
+    idp2EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === idp2ReferenceId
@@ -71,7 +78,7 @@ describe('Create request tests', function() {
     });
   });
 
-  it('Should create identity request (mode 3) successfully', async function() {
+  it('Should create identity request (mode 3) successfully', async function () {
     this.timeout(30000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: idpReferenceId,
@@ -112,16 +119,14 @@ describe('Create request tests', function() {
     );
 
     const idpNodes = await responseGetRelevantIdpNodesBySid.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2, 3);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2, 3);
 
     await wait(1000);
   });
 
-  it('Should create identity request (mode 2) successfully', async function() {
+  it('Should create identity request (mode 2) successfully', async function () {
     this.timeout(30000);
     const response = await identityApi.createIdentity('idp2', {
       reference_id: idp2ReferenceId,
@@ -162,15 +167,13 @@ describe('Create request tests', function() {
     );
 
     const idpNodes = await responseGetRelevantIdpNodesBySid.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2);
 
     await wait(1000);
   });
-  describe('RP create request mode 2 with sid onboard with mode 2,3 (both idp mode 2,3 should receive incoming request) test', function() {
+  describe('RP create request mode 2 with sid onboard with mode 2,3 (both idp mode 2,3 should receive incoming request) test', function () {
     const createRequestResultPromise = createEventPromise();
     const requestStatusPendingPromise = createEventPromise(); // RP
     const incomingRequestPromise = createEventPromise(); // IDP
@@ -179,10 +182,20 @@ describe('Create request tests', function() {
     const rpReferenceId = generateReferenceId();
 
     let requestId;
+    let initialSalt;
     let lastStatusUpdateBlockHeight;
     let createRequestParams;
 
-    before(function() {
+    let rp_node_id = 'rp1';
+    let requester_node_id = 'rp1';
+    let idp_node_id = 'idp1';
+    let as_node_id = 'as1';
+    let idpIdList;
+    let dataRequestList;
+    let idpResponseParams = [];
+    let requestMessageHash;
+
+    before(function () {
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -208,7 +221,7 @@ describe('Create request tests', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -224,7 +237,7 @@ describe('Create request tests', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -233,7 +246,7 @@ describe('Create request tests', function() {
         }
       });
 
-      idp2EventEmitter.on('callback', function(callbackData) {
+      idp2EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -243,7 +256,7 @@ describe('Create request tests', function() {
       });
     });
 
-    it('RP should create a request successfully', async function() {
+    it('RP should create a request successfully', async function () {
       this.timeout(10000);
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -253,6 +266,7 @@ describe('Create request tests', function() {
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
       requestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
 
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
@@ -266,44 +280,74 @@ describe('Create request tests', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
     });
 
-    it('RP should receive pending request status', async function() {
+    it('RP should receive pending request status', async function () {
       this.timeout(10000);
-      const requestStatus = await requestStatusPendingPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'pending',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 0,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 0,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [],
-      });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-      expect(parseInt(splittedBlockHeight[1])).to.equal(
+
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+      await receivePendingRequestStatusTest({
+        nodeId: rp_node_id,
+        createRequestParams,
+        requestId,
+        idpIdList,
+        dataRequestList,
+        requestMessageHash,
         lastStatusUpdateBlockHeight,
-      );
-      lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+        requestStatusPendingPromise,
+        requesterNodeId: rp_node_id,
+      });
+
+      // const requestStatus = await requestStatusPendingPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'pending',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 0,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 0,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      // expect(parseInt(splittedBlockHeight[1])).to.equal(
+      //   lastStatusUpdateBlockHeight,
+      // );
+      // lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
-    it('IdP (mode 2) should receive incoming request callback', async function() {
+    it('IdP (mode 2) should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -344,12 +388,12 @@ describe('Create request tests', function() {
       // requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP (mode 3) should receive incoming request callback', async function() {
+    it('IdP (mode 3) should receive incoming request callback', async function () {
       this.timeout(15000);
       if (!idp2Available) this.skip();
       const incomingRequest = await idp2IncomingRequestPromise.promise;
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -389,13 +433,13 @@ describe('Create request tests', function() {
       // requestMessageSalt = incomingRequest.request_message_salt;
       // requestMessageHash = incomingRequest.request_message_hash;
     });
-    after(function() {
+    after(function () {
       idp1EventEmitter.removeAllListeners('callback');
       idp2EventEmitter.removeAllListeners('callback');
       rpEventEmitter.removeAllListeners('callback');
     });
   });
-  describe('RP create request mode 3 with sid onboard with mode 2,3 (only idp mode 3 should receive incoming request) test', function() {
+  describe('RP create request mode 3 with sid onboard with mode 2,3 (only idp mode 3 should receive incoming request) test', function () {
     const createRequestResultPromise = createEventPromise();
     const requestStatusPendingPromise = createEventPromise(); // RP
     const incomingRequestPromise = createEventPromise(); // IDP
@@ -403,12 +447,18 @@ describe('Create request tests', function() {
     const rpReferenceId = generateReferenceId();
 
     let requestId;
+    let initialSalt;
     let lastStatusUpdateBlockHeight;
     let createRequestParams;
-    let identityForResponse;
     let responseAccessorId;
 
-    before(function() {
+    let rp_node_id = 'rp1';
+    let idpIdList;
+    let dataRequestList;
+    let idpResponseParams = [];
+    let requestMessageHash;
+
+    before(function () {
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -434,7 +484,7 @@ describe('Create request tests', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -450,7 +500,7 @@ describe('Create request tests', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -460,7 +510,7 @@ describe('Create request tests', function() {
       });
     });
 
-    it('RP should create a request successfully', async function() {
+    it('RP should create a request successfully', async function () {
       this.timeout(10000);
 
       const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -470,6 +520,7 @@ describe('Create request tests', function() {
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
       requestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
 
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
@@ -483,44 +534,74 @@ describe('Create request tests', function() {
       lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
     });
 
-    it('RP should receive pending request status', async function() {
+    it('RP should receive pending request status', async function () {
       this.timeout(10000);
-      const requestStatus = await requestStatusPendingPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'pending',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 0,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 0,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [],
-      });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-      expect(parseInt(splittedBlockHeight[1])).to.equal(
+
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+      await receivePendingRequestStatusTest({
+        nodeId: rp_node_id,
+        createRequestParams,
+        requestId,
+        idpIdList,
+        dataRequestList,
+        requestMessageHash,
         lastStatusUpdateBlockHeight,
-      );
-      lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
+        requestStatusPendingPromise,
+        requesterNodeId: rp_node_id,
+      });
+
+      // const requestStatus = await requestStatusPendingPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'pending',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 0,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 0,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      // expect(parseInt(splittedBlockHeight[1])).to.equal(
+      //   lastStatusUpdateBlockHeight,
+      // );
+      // lastStatusUpdateBlockHeight = parseInt(splittedBlockHeight[1]);
     });
 
-    it('IdP (mode 3) should receive incoming request callback', async function() {
+    it('IdP (mode 3) should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -561,7 +642,7 @@ describe('Create request tests', function() {
       // requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP (mode 2) should get request_message_padded_hash successfully', async function() {
+    it('IdP (mode 2) should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
       // identityForResponse = db.idp2Identities.find(
       //   identity =>
@@ -601,15 +682,15 @@ describe('Create request tests', function() {
     //   expect(responseBody.error.code).to.equal(20038);
     // });
 
-    after(function() {
+    after(function () {
       idp1EventEmitter.removeAllListeners('callback');
       rpEventEmitter.removeAllListeners('callback');
     });
   });
 });
 
-describe('Create request with invalid mode tests', function() {
-  describe('RP create request mode 3 with sid onboard with mode 2 tests', function() {
+describe('Create request with invalid mode tests', function () {
+  describe('RP create request mode 3 with sid onboard with mode 2 tests', function () {
     let namespace = 'citizen_id';
     let identifier = uuidv4();
 
@@ -630,8 +711,8 @@ describe('Create request with invalid mode tests', function() {
 
     const createIdentityResultPromise = createEventPromise();
 
-    before(function() {
-      idp1EventEmitter.on('callback', function(callbackData) {
+    before(function () {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_identity_result' &&
           callbackData.reference_id === idpReferenceId
@@ -641,7 +722,7 @@ describe('Create request with invalid mode tests', function() {
       });
     });
 
-    it('Should create identity request (mode 2) successfully', async function() {
+    it('Should create identity request (mode 2) successfully', async function () {
       this.timeout(30000);
       const response = await identityApi.createIdentity('idp1', {
         reference_id: idpReferenceId,
@@ -682,16 +763,14 @@ describe('Create request with invalid mode tests', function() {
       );
 
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
-      const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+      const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
       expect(idpNode).to.not.be.undefined;
-      expect(idpNode.mode_list)
-        .to.be.an('array')
-        .that.include(2);
+      expect(idpNode.mode_list).to.be.an('array').that.include(2);
 
       await wait(1000);
     });
 
-    it('RP create request mode 3 with sid onboard with mode 2 (without providing idp_id_list) unsuccessfully', async function() {
+    it('RP create request mode 3 with sid onboard with mode 2 (without providing idp_id_list) unsuccessfully', async function () {
       this.timeout(10000);
 
       let createRequestParams = {
@@ -725,7 +804,7 @@ describe('Create request with invalid mode tests', function() {
       expect(responseBody.error.code).to.equal(20005);
     });
 
-    it('RP create request mode 3 with sid onboard with mode 2 (providing idp_id_list) unsuccessfully', async function() {
+    it('RP create request mode 3 with sid onboard with mode 2 (providing idp_id_list) unsuccessfully', async function () {
       this.timeout(10000);
 
       let createRequestParams = {
@@ -758,12 +837,12 @@ describe('Create request with invalid mode tests', function() {
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20005);
     });
-    after(function() {
+    after(function () {
       idp1EventEmitter.removeAllListeners('callback');
     });
   });
 
-  describe('RP create request mode 3 with sid onboard with mode 2,3 (providing idp_id_list with idp mode 2,3) tests', function() {
+  describe('RP create request mode 3 with sid onboard with mode 2,3 (providing idp_id_list with idp mode 2,3) tests', function () {
     let namespace = 'citizen_id';
     let identifier = uuidv4();
 
@@ -786,12 +865,12 @@ describe('Create request with invalid mode tests', function() {
     const createIdentityResultPromise = createEventPromise();
     const idp2CreateIdentityResultPromise = createEventPromise();
 
-    before(function() {
+    before(function () {
       if (!idp2Available) {
         this.test.parent.pending = true;
         this.skip();
       }
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_identity_result' &&
           callbackData.reference_id === idpReferenceId
@@ -800,7 +879,7 @@ describe('Create request with invalid mode tests', function() {
         }
       });
 
-      idp2EventEmitter.on('callback', function(callbackData) {
+      idp2EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_identity_result' &&
           callbackData.reference_id === idp2ReferenceId
@@ -810,7 +889,7 @@ describe('Create request with invalid mode tests', function() {
       });
     });
 
-    it('Should create identity request (mode 3) successfully', async function() {
+    it('Should create identity request (mode 3) successfully', async function () {
       this.timeout(30000);
       const response = await identityApi.createIdentity('idp1', {
         reference_id: idpReferenceId,
@@ -851,16 +930,14 @@ describe('Create request with invalid mode tests', function() {
       );
 
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
-      const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+      const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
       expect(idpNode).to.not.be.undefined;
-      expect(idpNode.mode_list)
-        .to.be.an('array')
-        .that.include(2, 3);
+      expect(idpNode.mode_list).to.be.an('array').that.include(2, 3);
 
       await wait(1000);
     });
 
-    it('Should create identity request (mode 2) successfully', async function() {
+    it('Should create identity request (mode 2) successfully', async function () {
       this.timeout(30000);
       const response = await identityApi.createIdentity('idp2', {
         reference_id: idp2ReferenceId,
@@ -901,16 +978,14 @@ describe('Create request with invalid mode tests', function() {
       );
 
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
-      const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+      const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
       expect(idpNode).to.not.be.undefined;
-      expect(idpNode.mode_list)
-        .to.be.an('array')
-        .that.include(2);
+      expect(idpNode.mode_list).to.be.an('array').that.include(2);
 
       await wait(1000);
     });
 
-    it('RP create request mode 3 with sid onboard with mode 2,3 (providing idp_id_list with idp mode 2,3) unsuccessfully', async function() {
+    it('RP create request mode 3 with sid onboard with mode 2,3 (providing idp_id_list with idp mode 2,3) unsuccessfully', async function () {
       this.timeout(10000);
 
       let createRequestParams = {
@@ -943,7 +1018,7 @@ describe('Create request with invalid mode tests', function() {
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20058);
     });
-    after(function() {
+    after(function () {
       idp1EventEmitter.removeAllListeners('callback');
       idp2EventEmitter.removeAllListeners('callback');
     });
