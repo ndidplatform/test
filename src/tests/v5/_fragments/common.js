@@ -412,6 +412,76 @@ export async function receiveRequestClosedStatusTest({
   };
 }
 
+export async function receiveRequestTimedoutStatusTest({
+  nodeId,
+  requestStatusPromise,
+  requestId,
+  createRequestParams,
+  dataRequestList,
+  idpResponse,
+  requestMessageHash,
+  idpIdList,
+  status,
+  lastStatusUpdateBlockHeight,
+  testForEqualLastStatusUpdateBlockHeight,
+  requesterNodeId,
+}) {
+  let response_list = idpResponse.map((idpResponse) => {
+    const {
+      reference_id,
+      callback_url,
+      request_id,
+      accessor_id,
+      node_id,
+      ...rest
+    } = idpResponse;
+
+    if (createRequestParams.mode === 1) {
+      rest.valid_signature = null;
+      rest.valid_ial = null;
+    }
+    return rest;
+  });
+
+  const requestStatus = await requestStatusPromise.promise;
+  expect(requestStatus).to.deep.include({
+    node_id: nodeId,
+    type: 'request_status',
+    request_id: requestId,
+    min_idp: createRequestParams.min_idp,
+    min_aal: createRequestParams.min_aal,
+    min_ial: createRequestParams.min_ial,
+    request_timeout: createRequestParams.request_timeout,
+    idp_id_list: idpIdList,
+    data_request_list: dataRequestList,
+    request_message_hash: requestMessageHash,
+    response_list,
+    closed: false,
+    timed_out: true,
+    mode: createRequestParams.mode,
+    status,
+    requester_node_id: requesterNodeId,
+  });
+  expect(requestStatus).to.have.property('block_height');
+  expect(requestStatus.block_height).is.a('string');
+  const splittedBlockHeight = requestStatus.block_height.split(':');
+  expect(splittedBlockHeight).to.have.lengthOf(2);
+  expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+  expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  if (testForEqualLastStatusUpdateBlockHeight) {
+    expect(parseInt(splittedBlockHeight[1])).to.equal(
+      lastStatusUpdateBlockHeight,
+    );
+  } else {
+    expect(parseInt(splittedBlockHeight[1])).to.be.above(
+      lastStatusUpdateBlockHeight,
+    );
+  }
+  return {
+    lastStatusUpdateBlockHeight: parseInt(splittedBlockHeight[1]),
+  };
+}
+
 export async function hasPrivateMessagesTest({
   callApiAtNodeId,
   nodeId,
