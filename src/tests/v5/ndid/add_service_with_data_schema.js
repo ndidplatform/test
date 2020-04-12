@@ -19,10 +19,23 @@ import {
   hash,
   createResponseSignature,
 } from '../../../utils';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+  setDataReceived,
+  setDataSigned,
+} from '../_fragments/fragments_utils';
+import {
+  receivePendingRequestStatusTest,
+  receiveConfirmedRequestStatusTest,
+  receiveCompletedRequestStatusTest,
+  receiveRequestClosedStatusTest,
+} from '../_fragments/common';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe('NDID add and update service with data_schema test', function() {
+describe('NDID add and update service with data_schema test', function () {
   const originalDataSchema = JSON.stringify({
     properties: {
       firstname: {
@@ -51,7 +64,7 @@ describe('NDID add and update service with data_schema test', function() {
     },
     required: ['firstname', 'lastname', 'citizen_id'],
   });
-  describe('NDID add new service with data_schema test', function() {
+  describe('NDID add new service with data_schema test', function () {
     let namespace;
     let identifier;
 
@@ -73,15 +86,24 @@ describe('NDID add and update service with data_schema test', function() {
 
     let alreadyAddedService = false;
     let requestId;
-    let requestMessageSalt;
-    let requestMessageHash;
+    let initialSalt;
     let responseAccessorId;
     let identityForResponse;
     let requestMessagePaddedHash;
 
     let createRequestParams;
 
-    before(async function() {
+    let rp_node_id = 'rp1';
+    let requester_node_id = 'rp1';
+    let idp_node_id = 'idp1';
+    let as_node_id = 'as1';
+    let idpIdList;
+    let dataRequestList;
+    let idpResponseParams = [];
+    let requestMessageHash;
+    let lastStatusUpdateBlockHeight;
+
+    before(async function () {
       this.timeout(15000);
       if (!ndidAvailable) {
         this.test.parent.pending = true;
@@ -89,7 +111,7 @@ describe('NDID add and update service with data_schema test', function() {
       }
 
       let identity = db.idp1Identities.filter(
-        identity =>
+        (identity) =>
           identity.namespace === 'citizen_id' &&
           identity.mode === 3 &&
           !identity.revokeIdentityAssociation,
@@ -128,7 +150,7 @@ describe('NDID add and update service with data_schema test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -139,8 +161,10 @@ describe('NDID add and update service with data_schema test', function() {
           callbackData.request_id === requestId
         ) {
           if (callbackData.status === 'confirmed') {
-            if (callbackData.service_list[0].signed_data_count === 1) {
-              requestStatusSignedDataPromise.resolve(callbackData);
+            if (callbackData.data_request_list[0].response_list.length > 0) {
+              if (callbackData.data_request_list[0].response_list[0].signed) {
+                requestStatusSignedDataPromise.resolve(callbackData);
+              }
             }
           } else if (callbackData.status === 'completed') {
             if (callbackData.closed) {
@@ -152,7 +176,7 @@ describe('NDID add and update service with data_schema test', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -166,13 +190,13 @@ describe('NDID add and update service with data_schema test', function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      as1EventEmitter.on('callback', function(callbackData) {
+      as1EventEmitter.on('callback', function (callbackData) {
         if (callbackData.type === 'add_or_update_service_result') {
           if (callbackData.reference_id === serviceWithDataSchemaReferenceId) {
             addOrUpdateServiceResultPromise.resolve(callbackData);
@@ -194,11 +218,11 @@ describe('NDID add and update service with data_schema test', function() {
       const responseGetServices = await commonApi.getServices('ndid1');
       const responseBody = await responseGetServices.json();
       alreadyAddedService = responseBody.find(
-        service => service.service_id === 'service_with_data_schema',
+        (service) => service.service_id === 'service_with_data_schema',
       );
     });
 
-    it('NDID should add new service (service_with_data_schema) with data_schema successfully', async function() {
+    it('NDID should add new service (service_with_data_schema) with data_schema successfully', async function () {
       this.timeout(15000);
       if (alreadyAddedService) {
         const response = await ndidApi.updateService('ndid1', {
@@ -220,12 +244,12 @@ describe('NDID add and update service with data_schema test', function() {
       await wait(3000);
     });
 
-    it('Service (service_with_data_schema) should be added successfully', async function() {
+    it('Service (service_with_data_schema) should be added successfully', async function () {
       this.timeout(15000);
       const response = await commonApi.getServices('ndid1');
       const responseBody = await response.json();
       const service = responseBody.find(
-        service => service.service_id === 'service_with_data_schema',
+        (service) => service.service_id === 'service_with_data_schema',
       );
       expect(service).to.deep.equal({
         service_id: 'service_with_data_schema',
@@ -234,7 +258,7 @@ describe('NDID add and update service with data_schema test', function() {
       });
     });
 
-    it('Data schema for service (service_with_data_schema) should be added successfully', async function() {
+    it('Data schema for service (service_with_data_schema) should be added successfully', async function () {
       this.timeout(15000);
       const response = await commonApi.getServiceDataSchema('ndid1', {
         serviceId: 'service_with_data_schema',
@@ -249,7 +273,7 @@ describe('NDID add and update service with data_schema test', function() {
       });
     });
 
-    it('NDID should approve service (service_with_data_schema) for as1 successfully', async function() {
+    it('NDID should approve service (service_with_data_schema) for as1 successfully', async function () {
       this.timeout(10000);
       const response = await ndidApi.approveService('ndid1', {
         node_id: 'as1',
@@ -259,7 +283,7 @@ describe('NDID add and update service with data_schema test', function() {
       await wait(3000);
     });
 
-    it('AS should add offered service (service_with_data_schema) successfully', async function() {
+    it('AS should add offered service (service_with_data_schema) successfully', async function () {
       this.timeout(30000);
       const response = await asApi.addOrUpdateService('as1', {
         serviceId: 'service_with_data_schema',
@@ -280,8 +304,8 @@ describe('NDID add and update service with data_schema test', function() {
       await wait(5000);
     });
 
-    it('RP should create a request successfully', async function() {
-      this.timeout(10000);
+    it('RP should create a request successfully', async function () {
+      this.timeout(30000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -289,6 +313,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
       requestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
 
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
@@ -299,14 +324,32 @@ describe('NDID add and update service with data_schema test', function() {
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
+
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(20000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -339,15 +382,12 @@ describe('NDID add and update service with data_schema test', function() {
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-
-      requestMessageSalt = incomingRequest.request_message_salt;
-      requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -367,7 +407,7 @@ describe('NDID add and update service with data_schema test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('IdP should create response (accept) successfully', async function() {
+    it('IdP should create response (accept) successfully', async function () {
       this.timeout(10000);
 
       let accessorPrivateKey =
@@ -378,7 +418,7 @@ describe('NDID add and update service with data_schema test', function() {
         requestMessagePaddedHash,
       );
 
-      const response = await idpApi.createResponse('idp1', {
+      let idpResponse = {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: requestId,
@@ -387,30 +427,20 @@ describe('NDID add and update service with data_schema test', function() {
         status: 'accept',
         accessor_id: responseAccessorId,
         signature,
+      };
+
+      idpResponseParams.push({
+        ...idpResponse,
+        idp_id: 'idp1',
+        valid_signature: true,
+        valid_ial: true,
       });
+
+      const response = await idpApi.createResponse('idp1', idpResponse);
       expect(response.status).to.equal(202);
     });
 
-    // it('IdP should receive accessor encrypt callback with correct data', async function() {
-    //   this.timeout(15000);
-
-    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
-    //   expect(accessorEncryptParams).to.deep.include({
-    //     node_id: 'idp1',
-    //     type: 'accessor_encrypt',
-    //     accessor_id: responseAccessorId,
-    //     key_type: 'RSA',
-    //     padding: 'none',
-    //     reference_id: idpReferenceId,
-    //     request_id: requestId,
-    //   });
-
-    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-    //     'string',
-    //   ).that.is.not.empty;
-    // });
-
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP shoud receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -421,7 +451,7 @@ describe('NDID add and update service with data_schema test', function() {
       });
     });
 
-    it('AS should receive data request', async function() {
+    it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
@@ -449,7 +479,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('AS should send data with invalid data_schema (does not send required field (citizen_id)) unsuccessfully', async function() {
+    it('AS should send data with invalid data_schema (does not send required field (citizen_id)) unsuccessfully', async function () {
       this.timeout(15000);
 
       const data = JSON.stringify({
@@ -473,7 +503,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(responseBody.error.message).to.equal('Data validation failed');
     });
 
-    it('AS should send data with invalid data schema (does not match citizen_id type) unsuccessfully', async function() {
+    it('AS should send data with invalid data schema (does not match citizen_id type) unsuccessfully', async function () {
       this.timeout(15000);
 
       const data = JSON.stringify({
@@ -498,7 +528,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(responseBody.error.message).to.equal('Data validation failed');
     });
 
-    it('AS should send data with valid data schema successfully', async function() {
+    it('AS should send data with valid data schema successfully', async function () {
       this.timeout(15000);
 
       const data = JSON.stringify({
@@ -524,114 +554,172 @@ describe('NDID add and update service with data_schema test', function() {
         reference_id: asReferenceId,
         success: true,
       });
+
+      dataRequestList = setDataSigned(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
     });
 
-    it('RP should receive request status with signed data count = 1', async function() {
+    it('RP should receive request status with signed data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusSignedDataPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'confirmed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveConfirmedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusConfirmedPromise: requestStatusSignedDataPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      dataRequestList = setDataReceived(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
+
+      // const requestStatus = await requestStatusSignedDataPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'confirmed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive completed request status with received data count = 1', async function() {
+    it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusCompletedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveCompletedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusCompletedPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+      // const requestStatus = await requestStatusCompletedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive request closed status', async function() {
+    it('RP should receive request closed status', async function () {
       this.timeout(10000);
-      const requestStatus = await requestClosedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: true,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveRequestClosedStatusTest({
+        nodeId: rp_node_id,
+        requestClosedPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestClosedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: true,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should get the correct data received from AS', async function() {
+    it('RP should get the correct data received from AS', async function () {
       const data = JSON.stringify({
         firstname: 'NDID',
         lastname: 'NDID',
@@ -658,7 +746,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
 
-    after(function() {
+    after(function () {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
@@ -666,7 +754,7 @@ describe('NDID add and update service with data_schema test', function() {
     });
   });
 
-  describe('NDID update service with new data_schema test', function() {
+  describe('NDID update service with new data_schema test', function () {
     let namespace;
     let identifier;
 
@@ -690,13 +778,22 @@ describe('NDID add and update service with data_schema test', function() {
 
     let alreadyAddedService = false;
     let requestId;
-    let requestMessageSalt;
-    let requestMessageHash;
+    let initialSalt;
     let responseAccessorId;
     let identityForResponse;
     let requestMessagePaddedHash;
+    let lastStatusUpdateBlockHeight;
 
     let createRequestParams;
+
+    let rp_node_id = 'rp1';
+    let requester_node_id = 'rp1';
+    let idp_node_id = 'idp1';
+    let as_node_id = 'as1';
+    let idpIdList;
+    let dataRequestList;
+    let idpResponseParams = [];
+    let requestMessageHash;
 
     const dataSchema = JSON.stringify({
       properties: {
@@ -718,7 +815,7 @@ describe('NDID add and update service with data_schema test', function() {
       required: ['firstname', 'lastname', 'citizen_id', 'passport_no'],
     });
 
-    before(async function() {
+    before(async function () {
       this.timeout(15000);
       if (!ndidAvailable) {
         this.test.parent.pending = true;
@@ -726,7 +823,8 @@ describe('NDID add and update service with data_schema test', function() {
       }
 
       let identity = db.idp1Identities.filter(
-        identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
+        (identity) =>
+          identity.mode === 3 && !identity.revokeIdentityAssociation,
       );
 
       if (identity.length === 0) {
@@ -762,7 +860,7 @@ describe('NDID add and update service with data_schema test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -775,8 +873,10 @@ describe('NDID add and update service with data_schema test', function() {
           if (callbackData.status === 'pending') {
             requestStatusPendingPromise.resolve(callbackData);
           } else if (callbackData.status === 'confirmed') {
-            if (callbackData.service_list[0].signed_data_count === 1) {
-              requestStatusSignedDataPromise.resolve(callbackData);
+            if (callbackData.data_request_list[0].response_list.length > 0) {
+              if (callbackData.data_request_list[0].response_list[0].signed) {
+                requestStatusSignedDataPromise.resolve(callbackData);
+              }
             } else {
               requestStatusConfirmedPromise.resolve(callbackData);
             }
@@ -790,7 +890,7 @@ describe('NDID add and update service with data_schema test', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -804,13 +904,13 @@ describe('NDID add and update service with data_schema test', function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      as1EventEmitter.on('callback', function(callbackData) {
+      as1EventEmitter.on('callback', function (callbackData) {
         if (callbackData.type === 'add_or_update_service_result') {
           if (callbackData.reference_id === serviceWithDataSchemaReferenceId) {
             addOrUpdateServiceResultPromise.resolve(callbackData);
@@ -832,11 +932,11 @@ describe('NDID add and update service with data_schema test', function() {
       const responseGetServices = await commonApi.getServices('ndid1');
       const responseBody = await responseGetServices.json();
       alreadyAddedService = responseBody.find(
-        service => service.service_id === 'service_with_data_schema',
+        (service) => service.service_id === 'service_with_data_schema',
       );
     });
 
-    it('NDID should update service service (service_with_data_schema) with new data_schema successfully', async function() {
+    it('NDID should update service service (service_with_data_schema) with new data_schema successfully', async function () {
       this.timeout(15000);
       const response = await ndidApi.updateService('ndid1', {
         service_id: 'service_with_data_schema',
@@ -848,7 +948,7 @@ describe('NDID add and update service with data_schema test', function() {
       await wait(3000);
     });
 
-    it('Data schema for service (service_with_data_schema) should be added successfully', async function() {
+    it('Data schema for service (service_with_data_schema) should be added successfully', async function () {
       this.timeout(15000);
       const response = await commonApi.getServiceDataSchema('ndid1', {
         serviceId: 'service_with_data_schema',
@@ -863,8 +963,8 @@ describe('NDID add and update service with data_schema test', function() {
       });
     });
 
-    it('RP should create a request successfully', async function() {
-      this.timeout(10000);
+    it('RP should create a request successfully', async function () {
+      this.timeout(30000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -872,6 +972,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
       requestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
 
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
@@ -882,14 +983,32 @@ describe('NDID add and update service with data_schema test', function() {
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
+
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(20000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -922,15 +1041,12 @@ describe('NDID add and update service with data_schema test', function() {
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-
-      requestMessageSalt = incomingRequest.request_message_salt;
-      requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -950,7 +1066,7 @@ describe('NDID add and update service with data_schema test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('IdP should create response (accept) successfully', async function() {
+    it('IdP should create response (accept) successfully', async function () {
       this.timeout(10000);
 
       let accessorPrivateKey =
@@ -961,7 +1077,7 @@ describe('NDID add and update service with data_schema test', function() {
         requestMessagePaddedHash,
       );
 
-      const response = await idpApi.createResponse('idp1', {
+      let idpResponse = {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: requestId,
@@ -970,7 +1086,16 @@ describe('NDID add and update service with data_schema test', function() {
         status: 'accept',
         accessor_id: responseAccessorId,
         signature,
+      };
+
+      idpResponseParams.push({
+        ...idpResponse,
+        idp_id: 'idp1',
+        valid_signature: true,
+        valid_ial: true,
       });
+
+      const response = await idpApi.createResponse('idp1', idpResponse);
       expect(response.status).to.equal(202);
     });
 
@@ -993,7 +1118,7 @@ describe('NDID add and update service with data_schema test', function() {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP shoud receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -1004,7 +1129,7 @@ describe('NDID add and update service with data_schema test', function() {
       });
     });
 
-    it('AS should receive data request', async function() {
+    it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
@@ -1032,7 +1157,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('AS should send data with invalid data_schema (does not send required field (passport_no)) unsuccessfully', async function() {
+    it('AS should send data with invalid data_schema (does not send required field (passport_no)) unsuccessfully', async function () {
       this.timeout(15000);
 
       const data = JSON.stringify({
@@ -1057,7 +1182,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(responseBody.error.message).to.equal('Data validation failed');
     });
 
-    it('AS should send data with invalid data schema (does not match passport_no type) unsuccessfully', async function() {
+    it('AS should send data with invalid data schema (does not match passport_no type) unsuccessfully', async function () {
       this.timeout(15000);
 
       const data = JSON.stringify({
@@ -1083,7 +1208,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(responseBody.error.message).to.equal('Data validation failed');
     });
 
-    it('AS should send data with valid data_schema successfully', async function() {
+    it('AS should send data with valid data_schema successfully', async function () {
       this.timeout(15000);
       const data = JSON.stringify({
         firstname: 'NDID',
@@ -1106,114 +1231,173 @@ describe('NDID add and update service with data_schema test', function() {
         reference_id: asReferenceId,
         success: true,
       });
+
+      dataRequestList = setDataSigned(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
     });
 
-    it('RP should receive request status with signed data count = 1', async function() {
+    it('RP should receive request status with signed data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusSignedDataPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'confirmed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveConfirmedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusConfirmedPromise: requestStatusSignedDataPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      dataRequestList = setDataReceived(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
+
+      // const requestStatus = await requestStatusSignedDataPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'confirmed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive completed request status with received data count = 1', async function() {
+    it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusCompletedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveCompletedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusCompletedPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestStatusCompletedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive request closed status', async function() {
+    it('RP should receive request closed status', async function () {
       this.timeout(10000);
-      const requestStatus = await requestClosedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: true,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveRequestClosedStatusTest({
+        nodeId: rp_node_id,
+        requestClosedPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestClosedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: true,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should get the correct data received from AS', async function() {
+    it('RP should get the correct data received from AS', async function () {
       const data = JSON.stringify({
         firstname: 'NDID',
         lastname: 'NDID',
@@ -1237,7 +1421,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
 
-    after(async function() {
+    after(async function () {
       this.timeout(15000);
       await ndidApi.updateService('ndid1', {
         service_id: 'service_with_data_schema',
@@ -1254,7 +1438,7 @@ describe('NDID add and update service with data_schema test', function() {
     as1EventEmitter.removeAllListeners('callback');
   });
 
-  describe('NDID update service with data_schema = n/a (does not validate data) test', function() {
+  describe('NDID update service with data_schema = n/a (does not validate data) test', function () {
     let namespace;
     let identifier;
 
@@ -1278,15 +1462,24 @@ describe('NDID add and update service with data_schema test', function() {
 
     let alreadyAddedService = false;
     let requestId;
-    let requestMessageSalt;
-    let requestMessageHash;
+    let initialSalt;
     let responseAccessorId;
     let identityForResponse;
     let requestMessagePaddedHash;
+    let lastStatusUpdateBlockHeight;
 
     let createRequestParams;
 
-    before(async function() {
+    let rp_node_id = 'rp1';
+    let requester_node_id = 'rp1';
+    let idp_node_id = 'idp1';
+    let as_node_id = 'as1';
+    let idpIdList;
+    let dataRequestList;
+    let idpResponseParams = [];
+    let requestMessageHash;
+
+    before(async function () {
       this.timeout(15000);
       if (!ndidAvailable) {
         this.test.parent.pending = true;
@@ -1294,7 +1487,8 @@ describe('NDID add and update service with data_schema test', function() {
       }
 
       let identity = db.idp1Identities.filter(
-        identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
+        (identity) =>
+          identity.mode === 3 && !identity.revokeIdentityAssociation,
       );
 
       if (identity.length === 0) {
@@ -1330,7 +1524,7 @@ describe('NDID add and update service with data_schema test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -1343,8 +1537,10 @@ describe('NDID add and update service with data_schema test', function() {
           if (callbackData.status === 'pending') {
             requestStatusPendingPromise.resolve(callbackData);
           } else if (callbackData.status === 'confirmed') {
-            if (callbackData.service_list[0].signed_data_count === 1) {
-              requestStatusSignedDataPromise.resolve(callbackData);
+            if (callbackData.data_request_list[0].response_list.length > 0) {
+              if (callbackData.data_request_list[0].response_list[0].signed) {
+                requestStatusSignedDataPromise.resolve(callbackData);
+              }
             } else {
               requestStatusConfirmedPromise.resolve(callbackData);
             }
@@ -1358,7 +1554,7 @@ describe('NDID add and update service with data_schema test', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -1372,13 +1568,13 @@ describe('NDID add and update service with data_schema test', function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      as1EventEmitter.on('callback', function(callbackData) {
+      as1EventEmitter.on('callback', function (callbackData) {
         if (callbackData.type === 'add_or_update_service_result') {
           if (callbackData.reference_id === serviceWithDataSchemaReferenceId) {
             addOrUpdateServiceResultPromise.resolve(callbackData);
@@ -1400,11 +1596,11 @@ describe('NDID add and update service with data_schema test', function() {
       const responseGetServices = await commonApi.getServices('ndid1');
       const responseBody = await responseGetServices.json();
       alreadyAddedService = responseBody.find(
-        service => service.service_id === 'service_with_data_schema',
+        (service) => service.service_id === 'service_with_data_schema',
       );
     });
 
-    it('NDID should update service service (service_with_data_schema) with new data_schema successfully', async function() {
+    it('NDID should update service service (service_with_data_schema) with new data_schema successfully', async function () {
       this.timeout(15000);
       const response = await ndidApi.updateService('ndid1', {
         service_id: 'service_with_data_schema',
@@ -1416,7 +1612,7 @@ describe('NDID add and update service with data_schema test', function() {
       await wait(3000);
     });
 
-    it('Data schema for service (service_with_data_schema) should be added successfully', async function() {
+    it('Data schema for service (service_with_data_schema) should be added successfully', async function () {
       this.timeout(15000);
       const response = await commonApi.getServiceDataSchema('ndid1', {
         serviceId: 'service_with_data_schema',
@@ -1429,8 +1625,8 @@ describe('NDID add and update service with data_schema test', function() {
       });
     });
 
-    it('RP should create a request successfully', async function() {
-      this.timeout(10000);
+    it('RP should create a request successfully', async function () {
+      this.timeout(30000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -1438,6 +1634,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
       requestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
 
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
@@ -1448,14 +1645,32 @@ describe('NDID add and update service with data_schema test', function() {
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
+
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(20000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -1488,15 +1703,12 @@ describe('NDID add and update service with data_schema test', function() {
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-
-      requestMessageSalt = incomingRequest.request_message_salt;
-      requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -1516,7 +1728,7 @@ describe('NDID add and update service with data_schema test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('IdP should create response (accept) successfully', async function() {
+    it('IdP should create response (accept) successfully', async function () {
       this.timeout(10000);
 
       let accessorPrivateKey =
@@ -1527,7 +1739,7 @@ describe('NDID add and update service with data_schema test', function() {
         requestMessagePaddedHash,
       );
 
-      const response = await idpApi.createResponse('idp1', {
+      let idpResponse = {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: requestId,
@@ -1536,30 +1748,20 @@ describe('NDID add and update service with data_schema test', function() {
         status: 'accept',
         accessor_id: responseAccessorId,
         signature,
+      };
+
+      idpResponseParams.push({
+        ...idpResponse,
+        idp_id: 'idp1',
+        valid_signature: true,
+        valid_ial: true,
       });
+
+      const response = await idpApi.createResponse('idp1', idpResponse);
       expect(response.status).to.equal(202);
     });
 
-    // it('IdP should receive accessor encrypt callback with correct data', async function() {
-    //   this.timeout(15000);
-
-    //   const accessorEncryptParams = await accessorEncryptPromise.promise;
-    //   expect(accessorEncryptParams).to.deep.include({
-    //     node_id: 'idp1',
-    //     type: 'accessor_encrypt',
-    //     accessor_id: responseAccessorId,
-    //     key_type: 'RSA',
-    //     padding: 'none',
-    //     reference_id: idpReferenceId,
-    //     request_id: requestId,
-    //   });
-
-    //   expect(accessorEncryptParams.request_message_padded_hash).to.be.a(
-    //     'string',
-    //   ).that.is.not.empty;
-    // });
-
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP shoud receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -1570,7 +1772,7 @@ describe('NDID add and update service with data_schema test', function() {
       });
     });
 
-    it('AS should receive data request', async function() {
+    it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
@@ -1598,7 +1800,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('AS should send whatever data successfully', async function() {
+    it('AS should send whatever data successfully', async function () {
       this.timeout(15000);
       const data = JSON.stringify({
         data: 'whatever data',
@@ -1618,114 +1820,173 @@ describe('NDID add and update service with data_schema test', function() {
         reference_id: asReferenceId,
         success: true,
       });
+
+      dataRequestList = setDataSigned(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
+
     });
 
-    it('RP should receive request status with signed data count = 1', async function() {
+    it('RP should receive request status with signed data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusSignedDataPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'confirmed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveConfirmedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusConfirmedPromise: requestStatusSignedDataPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      dataRequestList = setDataReceived(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
+      // const requestStatus = await requestStatusSignedDataPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'confirmed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive completed request status with received data count = 1', async function() {
+    it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusCompletedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveCompletedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusCompletedPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestStatusCompletedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive request closed status', async function() {
+    it('RP should receive request closed status', async function () {
       this.timeout(10000);
-      const requestStatus = await requestClosedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: true,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveRequestClosedStatusTest({
+        nodeId: rp_node_id,
+        requestClosedPromise,
+        requestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+      
+      // const requestStatus = await requestClosedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: requestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: true,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should get the correct data received from AS', async function() {
+    it('RP should get the correct data received from AS', async function () {
       const data = JSON.stringify({
         data: 'whatever data',
       });
@@ -1746,7 +2007,7 @@ describe('NDID add and update service with data_schema test', function() {
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
 
-    after(async function() {
+    after(async function () {
       this.timeout(15000);
       await ndidApi.updateService('ndid1', {
         service_id: 'service_with_data_schema',
