@@ -283,14 +283,6 @@ describe('Add identity (mode 2) tests', function () {
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20071);
-
-      // const addIdentityResult = await idp2AddIdentityResultPromise.promise;
-      // console.log(addIdentityResult);
-      // expect(addIdentityResult).to.deep.include({
-      //   reference_id: referenceId,
-      //   success: false,
-      // });
-      // expect(addIdentityResult.error.code).to.equal(25059);
     });
 
     it('idp1 should add identity to not exist namespace unsuccessfully', async function () {

@@ -2528,7 +2528,6 @@ describe('Add identity (mode 3) tests', function () {
             'rp1',
             createRequestParams,
           );
-          console.log(createRequestParams);
           const responseBody = await response.json();
           expect(response.status).to.equal(202);
           expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
