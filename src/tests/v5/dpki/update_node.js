@@ -24,12 +24,25 @@ import {
   hash,
   createResponseSignature,
 } from '../../../utils';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+  setDataReceived,
+  setDataSigned,
+} from '../_fragments/fragments_utils';
+import {
+  receivePendingRequestStatusTest,
+  receiveConfirmedRequestStatusTest,
+  receiveCompletedRequestStatusTest,
+  receiveRequestClosedStatusTest,
+} from '../_fragments/common';
 import { ndidAvailable } from '../..';
 import * as db from '../../../db';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe("Update nodes's DPKI test", function() {
+describe("Update nodes's DPKI test", function () {
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -126,14 +139,14 @@ describe("Update nodes's DPKI test", function() {
     format: 'pem',
   });
 
-  describe("NDID update nodes's DPKI test", function() {
+  describe("NDID update nodes's DPKI test", function () {
     const NDIDUpdateNodeReferenceId = generateReferenceId();
 
     const NDIDUpdateNodeResultPromise = createEventPromise();
 
     let keyPath = path.join(__dirname, '..', '..', '..', '..', 'dev_key');
 
-    ndidEventEmitter.on('callback', function(callbackData) {
+    ndidEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'update_node_result' &&
         callbackData.reference_id === NDIDUpdateNodeReferenceId
@@ -142,13 +155,13 @@ describe("Update nodes's DPKI test", function() {
       }
     });
 
-    before(function() {
+    before(function () {
       if (!ndidAvailable) {
         this.skip();
       }
     });
 
-    it("NDID should update node's master key and public key with check_string, signed_check_string, master_signed_check_string successfully", async function() {
+    it("NDID should update node's master key and public key with check_string, signed_check_string, master_signed_check_string successfully", async function () {
       this.timeout(15000);
       const check_string = 'NDID test update public key and master public key';
       const response = await nodeApi.updateNode('ndid1', {
@@ -160,7 +173,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(privateKey, check_string),
         master_signed_check_string: createSignature(
           masterPrivateKey,
-          check_string
+          check_string,
         ),
       });
       expect(response.status).to.equal(202);
@@ -175,7 +188,7 @@ describe("Update nodes's DPKI test", function() {
       await wait(3000);
     });
 
-    it("NDID node's master key and public key should be updated successfully", async function() {
+    it("NDID node's master key and public key should be updated successfully", async function () {
       this.timeout(10000);
       const response = await commonApi.getNodeInfo('ndid1');
       const responseBody = await response.json();
@@ -186,7 +199,7 @@ describe("Update nodes's DPKI test", function() {
     });
   });
 
-  describe("RP, IdP, AS update nodes's DPKI tests", function() {
+  describe("RP, IdP, AS update nodes's DPKI tests", function () {
     const RPUpdateNodeReferenceId = generateReferenceId();
     const IdPUpdateNodeReferenceId = generateReferenceId();
     const ASUpdateNodeReferenceId = generateReferenceId();
@@ -232,10 +245,10 @@ describe("Update nodes's DPKI test", function() {
     let accessorId;
     let referenceGroupCode;
 
-    before(async function() {
+    before(async function () {
       this.timeout(35000);
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'update_node_result' &&
           callbackData.reference_id === RPUpdateNodeReferenceId
@@ -258,7 +271,7 @@ describe("Update nodes's DPKI test", function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'update_node_result' &&
           callbackData.reference_id === IdPUpdateNodeReferenceId
@@ -283,13 +296,13 @@ describe("Update nodes's DPKI test", function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      as1EventEmitter.on('callback', function(callbackData) {
+      as1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'update_node_result' &&
           callbackData.reference_id === ASUpdateNodeReferenceId
@@ -309,7 +322,7 @@ describe("Update nodes's DPKI test", function() {
       });
     });
 
-    it("RP should update node's master key and public key with check_string, signed_check_string, master_signed_check_string successfully", async function() {
+    it("RP should update node's master key and public key with check_string, signed_check_string, master_signed_check_string successfully", async function () {
       this.timeout(30000);
       const check_string = 'RP test update public key and master public key';
       const response = await nodeApi.updateNode('rp1', {
@@ -321,7 +334,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(RPPrivKey, check_string),
         master_signed_check_string: createSignature(
           RPMasterPrivKey,
-          check_string
+          check_string,
         ),
       });
       expect(response.status).to.equal(202);
@@ -336,7 +349,7 @@ describe("Update nodes's DPKI test", function() {
       await wait(3000);
     });
 
-    it("RP node's master key and public key should be updated successfully", async function() {
+    it("RP node's master key and public key should be updated successfully", async function () {
       this.timeout(15000);
       const response = await commonApi.getNodeInfo('rp1');
       const responseBody = await response.json();
@@ -345,7 +358,7 @@ describe("Update nodes's DPKI test", function() {
       expect(responseBody.master_public_key).to.equal(RPMasterPubKey);
     });
 
-    it("IdP should update node's master key and public key with check_string, signed_check_string, master_signed_check_string successfully", async function() {
+    it("IdP should update node's master key and public key with check_string, signed_check_string, master_signed_check_string successfully", async function () {
       this.timeout(30000);
       const check_string = 'IdP test update public key and master public key';
       const response = await nodeApi.updateNode('idp1', {
@@ -357,7 +370,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(IdPPriveKey, check_string),
         master_signed_check_string: createSignature(
           IdPMasterPrivKey,
-          check_string
+          check_string,
         ),
       });
       expect(response.status).to.equal(202);
@@ -372,7 +385,7 @@ describe("Update nodes's DPKI test", function() {
       await wait(3000);
     });
 
-    it("IdP node's master key and public key should be updated successfully", async function() {
+    it("IdP node's master key and public key should be updated successfully", async function () {
       this.timeout(15000);
       const response = await commonApi.getNodeInfo('idp1');
       const responseBody = await response.json();
@@ -381,7 +394,7 @@ describe("Update nodes's DPKI test", function() {
       expect(responseBody.master_public_key).to.equal(IdPMasterPubKey);
     });
 
-    it("AS should update node's master key and public key with check_string, signed_check_string, master_signed_check_string successfully", async function() {
+    it("AS should update node's master key and public key with check_string, signed_check_string, master_signed_check_string successfully", async function () {
       this.timeout(30000);
       const check_string = 'AS test update public key and master public key';
       const response = await nodeApi.updateNode('as1', {
@@ -393,7 +406,7 @@ describe("Update nodes's DPKI test", function() {
         signed_check_string: createSignature(ASPrivKey, check_string),
         master_signed_check_string: createSignature(
           ASMasterPrivKey,
-          check_string
+          check_string,
         ),
       });
       expect(response.status).to.equal(202);
@@ -408,7 +421,7 @@ describe("Update nodes's DPKI test", function() {
       await wait(3000);
     });
 
-    it("AS node's master key and public key should be updated successfully", async function() {
+    it("AS node's master key and public key should be updated successfully", async function () {
       this.timeout(15000);
       const response = await commonApi.getNodeInfo('as1');
       const responseBody = await response.json();
@@ -417,7 +430,7 @@ describe("Update nodes's DPKI test", function() {
       expect(responseBody.master_public_key).to.equal(ASMasterPubKey);
     });
 
-    it('Should create identity request (mode 3) successfully', async function() {
+    it('Should create identity request (mode 3) successfully', async function () {
       this.timeout(10000);
       const response = await identityApi.createIdentity('idp1', {
         reference_id: referenceId,
@@ -442,7 +455,7 @@ describe("Update nodes's DPKI test", function() {
       accessorId = responseBody.accessor_id;
     });
 
-    it('Identity should be created successfully', async function() {
+    it('Identity should be created successfully', async function () {
       this.timeout(15000);
       const createIdentityResult = await createIdentityResultPromise.promise;
       expect(createIdentityResult).to.deep.include({
@@ -462,9 +475,7 @@ describe("Update nodes's DPKI test", function() {
       const idpNodes = await response.json();
       const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
       expect(idpNode).to.not.be.undefined;
-      expect(idpNode.mode_list)
-        .to.be.an('array')
-        .that.include(2, 3);
+      expect(idpNode.mode_list).to.be.an('array').that.include(2, 3);
 
       db.idp1Identities.push({
         referenceGroupCode,
@@ -483,15 +494,26 @@ describe("Update nodes's DPKI test", function() {
       await wait(2000);
     });
 
-    describe("Create request tests after update node's master key and public key ", function() {
+    describe("Create request tests after update node's master key and public key ", function () {
       let identityForResponse;
       let responseAccessorId;
       let requestMessagePaddedHash;
-      before(function() {
+
+      let lastStatusUpdateBlockHeight;
+      let initialSalt;
+      let rp_node_id = 'rp1';
+      let requester_node_id = 'rp1';
+      let as_node_id = 'as1';
+      let idpIdList;
+      let dataRequestList;
+      let idpResponseParams = [];
+      let requestMessageHash;
+
+      before(function () {
         const identity = db.idp1Identities.find(
           (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier
+            identity.identifier === identifier,
         );
 
         if (!identity) {
@@ -528,8 +550,8 @@ describe("Update nodes's DPKI test", function() {
           bypass_identity_check: false,
         };
       });
-      it('RP should create a request successfully', async function() {
-        this.timeout(10000);
+      it('RP should create a request successfully', async function () {
+        this.timeout(30000);
         const response = await rpApi.createRequest('rp1', createRequestParams);
         const responseBody = await response.json();
         expect(response.status).to.equal(202);
@@ -537,12 +559,38 @@ describe("Update nodes's DPKI test", function() {
         expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
         requestId = responseBody.request_id;
+        initialSalt = responseBody.initial_salt;
 
         const createRequestResult = await createRequestResultPromise.promise;
         expect(createRequestResult.success).to.equal(true);
+        expect(createRequestResult.creation_block_height).to.be.a('string');
+        const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+          ':',
+        );
+        expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+        expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+        expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+        lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
+
+        [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+          createIdpIdList({
+            createRequestParams,
+            callRpApiAtNodeId: rp_node_id,
+          }),
+          createDataRequestList({
+            createRequestParams,
+            requestId,
+            initialSalt,
+            callRpApiAtNodeId: rp_node_id,
+          }),
+          createRequestMessageHash({
+            createRequestParams,
+            initialSalt,
+          }),
+        ]); // create idp_id_list, as_id_list, request_message_hash for test
       });
 
-      it('IdP should receive incoming request callback', async function() {
+      it('IdP should receive incoming request callback', async function () {
         this.timeout(15000);
         const incomingRequest = await incomingRequestPromise.promise;
 
@@ -552,7 +600,7 @@ describe("Update nodes's DPKI test", function() {
             return {
               ...dataRequestWithoutParams,
             };
-          }
+          },
         );
         expect(incomingRequest).to.deep.include({
           mode: createRequestParams.mode,
@@ -560,7 +608,7 @@ describe("Update nodes's DPKI test", function() {
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt
+              incomingRequest.request_message_salt,
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -575,7 +623,7 @@ describe("Update nodes's DPKI test", function() {
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
         const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':'
+          ':',
         );
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -584,12 +632,12 @@ describe("Update nodes's DPKI test", function() {
         requestMessageHash = incomingRequest.request_message_hash;
       });
 
-      it('IdP should get request_message_padded_hash successfully', async function() {
+      it('IdP should get request_message_padded_hash successfully', async function () {
         this.timeout(15000);
         identityForResponse = db.idp1Identities.find(
           (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier
+            identity.identifier === identifier,
         );
 
         responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -607,7 +655,7 @@ describe("Update nodes's DPKI test", function() {
         requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
       });
 
-      it('IdP should create response (accept) successfully', async function() {
+      it('IdP should create response (accept) successfully', async function () {
         this.timeout(20000);
 
         let accessorPrivateKey =
@@ -615,21 +663,28 @@ describe("Update nodes's DPKI test", function() {
 
         const signature = createResponseSignature(
           accessorPrivateKey,
-          requestMessagePaddedHash
+          requestMessagePaddedHash,
         );
 
-        const response = await idpApi.createResponse('idp1', {
+        let idpResponse = {
           reference_id: idpReferenceId,
           callback_url: config.IDP1_CALLBACK_URL,
           request_id: requestId,
-          namespace: createRequestParams.namespace,
-          identifier: createRequestParams.identifier,
           ial: 2.3,
           aal: 3,
           status: 'accept',
           accessor_id: responseAccessorId,
           signature,
+        };
+
+        idpResponseParams.push({
+          ...idpResponse,
+          idp_id: 'idp1',
+          valid_signature: true,
+          valid_ial: true,
         });
+
+        const response = await idpApi.createResponse('idp1', idpResponse);
         expect(response.status).to.equal(202);
       });
 
@@ -652,7 +707,7 @@ describe("Update nodes's DPKI test", function() {
       //   ).that.is.not.empty;
       // });
 
-      it('IdP shoud receive callback create response result with success = true', async function() {
+      it('IdP shoud receive callback create response result with success = true', async function () {
         const responseResult = await responseResultPromise.promise;
         expect(responseResult).to.deep.include({
           node_id: 'idp1',
@@ -663,7 +718,7 @@ describe("Update nodes's DPKI test", function() {
         });
       });
 
-      it('AS should receive data request', async function() {
+      it('AS should receive data request', async function () {
         this.timeout(20000);
         const dataRequest = await dataRequestReceivedPromise.promise;
         expect(dataRequest).to.deep.include({
@@ -683,7 +738,7 @@ describe("Update nodes's DPKI test", function() {
           .not.empty;
       });
 
-      it('AS should send data successfully', async function() {
+      it('AS should send data successfully', async function () {
         this.timeout(20000);
         const response = await asApi.sendData('as1', {
           requestId,
@@ -699,44 +754,71 @@ describe("Update nodes's DPKI test", function() {
           reference_id: asReferenceId,
           success: true,
         });
+
+        dataRequestList = setDataSigned(
+          dataRequestList,
+          createRequestParams.data_request_list[0].service_id,
+          as_node_id,
+        );
+
+        dataRequestList = setDataReceived(
+          dataRequestList,
+          createRequestParams.data_request_list[0].service_id,
+          as_node_id,
+        );
       });
 
-      it('RP should receive request closed status', async function() {
+      it('RP should receive request closed status', async function () {
         this.timeout(25000);
-        const requestStatus = await requestClosedPromise.promise;
-        expect(requestStatus).to.deep.include({
-          request_id: requestId,
-          status: 'completed',
-          mode: createRequestParams.mode,
-          min_idp: createRequestParams.min_idp,
-          answered_idp_count: 1,
-          closed: true,
-          timed_out: false,
-          service_list: [
-            {
-              service_id: createRequestParams.data_request_list[0].service_id,
-              min_as: createRequestParams.data_request_list[0].min_as,
-              signed_data_count: 1,
-              received_data_count: 1,
-            },
-          ],
-          response_valid_list: [
-            {
-              idp_id: 'idp1',
-              valid_signature: true,
-              valid_ial: true,
-            },
-          ],
+
+        const testResult = await receiveRequestClosedStatusTest({
+          nodeId: rp_node_id,
+          requestClosedPromise,
+          requestId,
+          createRequestParams,
+          dataRequestList,
+          idpResponse: idpResponseParams,
+          requestMessageHash,
+          idpIdList,
+          lastStatusUpdateBlockHeight,
+          requesterNodeId: requester_node_id,
         });
-        expect(requestStatus).to.have.property('block_height');
-        expect(requestStatus.block_height).is.a('string');
-        const splittedBlockHeight = requestStatus.block_height.split(':');
-        expect(splittedBlockHeight).to.have.lengthOf(2);
-        expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-        expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+        lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+        // const requestStatus = await requestClosedPromise.promise;
+        // expect(requestStatus).to.deep.include({
+        //   request_id: requestId,
+        //   status: 'completed',
+        //   mode: createRequestParams.mode,
+        //   min_idp: createRequestParams.min_idp,
+        //   answered_idp_count: 1,
+        //   closed: true,
+        //   timed_out: false,
+        //   service_list: [
+        //     {
+        //       service_id: createRequestParams.data_request_list[0].service_id,
+        //       min_as: createRequestParams.data_request_list[0].min_as,
+        //       signed_data_count: 1,
+        //       received_data_count: 1,
+        //     },
+        //   ],
+        //   response_valid_list: [
+        //     {
+        //       idp_id: 'idp1',
+        //       valid_signature: true,
+        //       valid_ial: true,
+        //     },
+        //   ],
+        // });
+        // expect(requestStatus).to.have.property('block_height');
+        // expect(requestStatus.block_height).is.a('string');
+        // const splittedBlockHeight = requestStatus.block_height.split(':');
+        // expect(splittedBlockHeight).to.have.lengthOf(2);
+        // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+        // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
       });
     });
-    after(function() {
+    after(function () {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
@@ -744,10 +826,10 @@ describe("Update nodes's DPKI test", function() {
     });
   });
 
-  describe("Update node's DPKI error response tests", function() {
+  describe("Update node's DPKI error response tests", function () {
     const RPUpdateNodeReferenceId = generateReferenceId();
 
-    it("RP should get an error when update node's public key with signed check string mismatched", async function() {
+    it("RP should get an error when update node's public key with signed check string mismatched", async function () {
       this.timeout(30000);
       const check_string = 'RP test update public key';
       const response = await nodeApi.updateNode('rp1', {
@@ -762,7 +844,7 @@ describe("Update nodes's DPKI test", function() {
       expect(responseBody.error.code).to.equal(20063);
     });
 
-    it("RP should get an error when update node's public key with master signed check string mismatched", async function() {
+    it("RP should get an error when update node's public key with master signed check string mismatched", async function () {
       this.timeout(30000);
       const check_string = 'RP test update master public key';
       const response = await nodeApi.updateNode('rp1', {
@@ -772,7 +854,7 @@ describe("Update nodes's DPKI test", function() {
         check_string,
         master_signed_check_string: createSignature(
           RPMasterPrivKey,
-          'invalid check_string'
+          'invalid check_string',
         ),
       });
       expect(response.status).to.equal(400);
@@ -782,12 +864,12 @@ describe("Update nodes's DPKI test", function() {
   });
 });
 
-describe('Update node without any of property node_key or node_master_key or supported_request_message_data_url_type_list tests', function() {
+describe('Update node without any of property node_key or node_master_key or supported_request_message_data_url_type_list tests', function () {
   const rpUpdateNodeReferenceId = generateReferenceId();
   const idpUpdateNodeReferenceId = generateReferenceId();
   const asUpdateNodeReferenceId = generateReferenceId();
 
-  it('RP should get an error when update node  without any of property node_key or node_master_key or supported_request_message_data_url_type_list', async function() {
+  it('RP should get an error when update node  without any of property node_key or node_master_key or supported_request_message_data_url_type_list', async function () {
     this.timeout(10000);
 
     const response = await nodeApi.updateNode('rp1', {
@@ -799,7 +881,7 @@ describe('Update node without any of property node_key or node_master_key or sup
     expect(responseBody.error.code).to.equal(20003);
   });
 
-  it('IDP should get an error when update node  without any of property node_key or node_master_key or supported_request_message_data_url_type_list', async function() {
+  it('IDP should get an error when update node  without any of property node_key or node_master_key or supported_request_message_data_url_type_list', async function () {
     this.timeout(10000);
 
     const response = await nodeApi.updateNode('idp1', {
@@ -811,7 +893,7 @@ describe('Update node without any of property node_key or node_master_key or sup
     expect(responseBody.error.code).to.equal(20003);
   });
 
-  it('AS should get an error when update node  without any of property node_key or node_master_key or supported_request_message_data_url_type_list', async function() {
+  it('AS should get an error when update node  without any of property node_key or node_master_key or supported_request_message_data_url_type_list', async function () {
     this.timeout(10000);
 
     const response = await nodeApi.updateNode('as1', {
@@ -824,7 +906,7 @@ describe('Update node without any of property node_key or node_master_key or sup
   });
 });
 
-describe('Update node supported request message types only IdP node tests', function() {
+describe('Update node supported request message types only IdP node tests', function () {
   const rpUpdateNodeReferenceId = generateReferenceId();
   const asUpdateNodeReferenceId = generateReferenceId();
   const IdPUpdateNodeReferenceId = generateReferenceId();
@@ -833,9 +915,9 @@ describe('Update node supported request message types only IdP node tests', func
 
   let before_test_supported_request_message_data_url_type_list;
 
-  before(async function() {
+  before(async function () {
     this.timeout(15000);
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'update_node_result' &&
         callbackData.reference_id === IdPUpdateNodeReferenceId
@@ -851,7 +933,7 @@ describe('Update node supported request message types only IdP node tests', func
       idpNodeDetail.supported_request_message_data_url_type_list;
   });
 
-  it('IdP should update node supported request message types successfully', async function() {
+  it('IdP should update node supported request message types successfully', async function () {
     this.timeout(10000);
 
     const response = await nodeApi.updateNode('idp1', {
@@ -872,7 +954,7 @@ describe('Update node supported request message types only IdP node tests', func
     });
   });
 
-  it('IdP should get idp node detail successfully', async function() {
+  it('IdP should get idp node detail successfully', async function () {
     this.timeout(10000);
 
     let response = await commonApi.getIdP('idp1');
@@ -884,7 +966,7 @@ describe('Update node supported request message types only IdP node tests', func
       .to.includes('application/pdf', 'text/plain');
   });
 
-  it('RP should get an error when update node supported request message types', async function() {
+  it('RP should get an error when update node supported request message types', async function () {
     this.timeout(10000);
 
     const response = await nodeApi.updateNode('rp1', {
@@ -897,7 +979,7 @@ describe('Update node supported request message types only IdP node tests', func
     expect(responseBody.error.code).to.equal(20072);
   });
 
-  it('AS should get an error when update node supported request message types', async function() {
+  it('AS should get an error when update node supported request message types', async function () {
     this.timeout(10000);
 
     const response = await nodeApi.updateNode('as1', {
@@ -910,7 +992,7 @@ describe('Update node supported request message types only IdP node tests', func
     expect(responseBody.error.code).to.equal(20072);
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(15000);
     const response = await nodeApi.updateNode('idp1', {
       reference_id: IdPUpdateNodeReferenceId,
