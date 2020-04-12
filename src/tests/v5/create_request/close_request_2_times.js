@@ -11,10 +11,20 @@ import {
   hash,
   createResponseSignature,
 } from '../../../utils';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+} from '../_fragments/fragments_utils';
+import {
+  receivePendingRequestStatusTest,
+  receiveCompletedRequestStatusTest,
+  receiveRequestClosedStatusTest,
+} from '../_fragments/common';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe('Close request the 2 times test', function() {
+describe('Close request the 2 times test', function () {
   let namespace;
   let identifier;
 
@@ -34,17 +44,26 @@ describe('Close request the 2 times test', function() {
   let createRequestParams;
 
   let requestId;
-  let requestMessageSalt;
-  let requestMessageHash;
+  let initialSalt;
   let responseAccessorId;
   let identityForResponse;
   let requestMessagePaddedHash;
 
   const requestStatusUpdates = [];
+  let lastStatusUpdateBlockHeight;
 
-  before(function() {
+  let rp_node_id = 'rp1';
+  let requester_node_id = 'rp1';
+  let idp_node_id = 'idp1';
+  let as_node_id = 'as1';
+  let idpIdList;
+  let dataRequestList;
+  let idpResponseParams = [];
+  let requestMessageHash;
+
+  before(function () {
     let identity = db.idp1Identities.filter(
-      identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -71,7 +90,7 @@ describe('Close request the 2 times test', function() {
       bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -99,7 +118,7 @@ describe('Close request the 2 times test', function() {
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -110,14 +129,14 @@ describe('Close request the 2 times test', function() {
       }
     });
 
-    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === requestId) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
   });
 
-  it('RP should create a request successfully', async function() {
+  it('RP should create a request successfully', async function () {
     this.timeout(10000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
@@ -126,34 +145,73 @@ describe('Close request the 2 times test', function() {
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
+    expect(createRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+      ':',
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
   });
 
-  it('RP should receive pending request status', async function() {
+  it('RP should receive pending request status', async function () {
     this.timeout(10000);
-    const requestStatus = await requestStatusPendingPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [],
+
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId,
+        initialSalt,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+    await receivePendingRequestStatusTest({
+      nodeId: rp_node_id,
+      createRequestParams,
+      requestId,
+      idpIdList,
+      dataRequestList,
+      requestMessageHash,
+      lastStatusUpdateBlockHeight,
+      requestStatusPendingPromise,
+      requesterNodeId: rp_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    // const requestStatus = await requestStatusPendingPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: requestId,
+    //   status: 'pending',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 0,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [],
+    //   response_valid_list: [],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
@@ -181,15 +239,12 @@ describe('Close request the 2 times test', function() {
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -207,7 +262,7 @@ describe('Close request the 2 times test', function() {
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let accessorPrivateKey =
@@ -218,7 +273,7 @@ describe('Close request the 2 times test', function() {
       requestMessagePaddedHash,
     );
 
-    const response = await idpApi.createResponse('idp1', {
+    let idpResponse = {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
@@ -227,7 +282,16 @@ describe('Close request the 2 times test', function() {
       status: 'accept',
       accessor_id: responseAccessorId,
       signature,
+    };
+
+    idpResponseParams.push({
+      ...idpResponse,
+      idp_id: 'idp1',
+      valid_signature: true,
+      valid_ial: true,
     });
+
+    const response = await idpApi.createResponse('idp1', idpResponse);
     expect(response.status).to.equal(202);
   });
 
@@ -249,7 +313,7 @@ describe('Close request the 2 times test', function() {
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function() {
+  it('IdP shoud receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
@@ -260,63 +324,92 @@ describe('Close request the 2 times test', function() {
     });
   });
 
-  it('RP should receive completed request status with valid proofs', async function() {
+  it('RP should receive completed request status with valid proofs', async function () {
     this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+    const testResult = await receiveCompletedRequestStatusTest({
+      nodeId: rp_node_id,
+      requestStatusCompletedPromise,
+      requestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+    // const requestStatus = await requestStatusCompletedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: requestId,
+    //   status: 'completed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'idp1',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should receive request closed status', async function() {
+  it('RP should receive request closed status', async function () {
     this.timeout(10000);
-    const requestStatus = await requestClosedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: true,
-      timed_out: false,
-      service_list: [],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+
+    const testResult = await receiveRequestClosedStatusTest({
+      nodeId: rp_node_id,
+      requestClosedPromise,
+      requestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    // const requestStatus = await requestClosedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: requestId,
+    //   status: 'completed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: true,
+    //   timed_out: false,
+    //   service_list: [],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'idp1',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should not be able to close request the 2 times', async function() {
+  it('RP should not be able to close request the 2 times', async function () {
     this.timeout(10000);
     const response = await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
@@ -334,7 +427,7 @@ describe('Close request the 2 times test', function() {
     });
   });
 
-  after(function() {
+  after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
   });
