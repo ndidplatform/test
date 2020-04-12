@@ -3,10 +3,16 @@ import { expect } from 'chai';
 import * as rpApi from '../../../api/v5/rp';
 import { rpEventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+} from '../_fragments/fragments_utils';
+import { receiveRequestTimedoutStatusTest } from '../_fragments/common';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
 
-describe('Create request with duplicate reference id test', function() {
+describe('Create request with duplicate reference id test', function () {
   let namespace;
   let identifier;
 
@@ -18,11 +24,11 @@ describe('Create request with duplicate reference id test', function() {
   let createRequestParams;
   let requestId;
 
-  before(async function() {
+  before(async function () {
     this.timeout(10000);
 
     let identity = db.idp1Identities.filter(
-      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -45,10 +51,10 @@ describe('Create request with duplicate reference id test', function() {
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400,
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -64,7 +70,7 @@ describe('Create request with duplicate reference id test', function() {
     await wait(2000);
   });
 
-  it('RP should create a request with duplicate reference id unsuccessfully', async function() {
+  it('RP should create a request with duplicate reference id unsuccessfully', async function () {
     this.timeout(10000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
@@ -72,7 +78,7 @@ describe('Create request with duplicate reference id test', function() {
     expect(responseBody.error.code).to.equal(20045);
   });
 
-  it('RP should create a request with duplicate reference id unsuccessfully', async function() {
+  it('RP should create a request with duplicate reference id unsuccessfully', async function () {
     this.timeout(10000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
@@ -80,7 +86,7 @@ describe('Create request with duplicate reference id test', function() {
     expect(responseBody.error.code).to.equal(20045);
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(15000);
     await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
@@ -92,7 +98,7 @@ describe('Create request with duplicate reference id test', function() {
   });
 });
 
-describe('Create request with duplicate reference id that is not in progress (closed) test', function() {
+describe('Create request with duplicate reference id that is not in progress (closed) test', function () {
   let namespace;
   let identifier;
 
@@ -107,11 +113,11 @@ describe('Create request with duplicate reference id that is not in progress (cl
   let requestId1st;
   let requestId2nd;
 
-  before(async function() {
+  before(async function () {
     this.timeout(10000);
 
     let identity = db.idp1Identities.filter(
-      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -121,7 +127,6 @@ describe('Create request with duplicate reference id that is not in progress (cl
     namespace = identity[0].namespace;
     identifier = identity[0].identifier;
     createRequestParams = {
-      
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
       mode: 3,
@@ -135,10 +140,10 @@ describe('Create request with duplicate reference id that is not in progress (cl
       min_aal: 1,
       min_idp: 1,
       request_timeout: 86400, //sec
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.request_id === requestId1st
@@ -164,7 +169,7 @@ describe('Create request with duplicate reference id that is not in progress (cl
     await wait(2000);
   });
 
-  it('RP should create a request with duplicate reference id unsuccessfully', async function() {
+  it('RP should create a request with duplicate reference id unsuccessfully', async function () {
     this.timeout(10000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
@@ -172,7 +177,7 @@ describe('Create request with duplicate reference id that is not in progress (cl
     expect(responseBody.error.code).to.equal(20045);
   });
 
-  it('RP should be able to close request successfully', async function() {
+  it('RP should be able to close request successfully', async function () {
     this.timeout(10000);
     const response = await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
@@ -190,7 +195,7 @@ describe('Create request with duplicate reference id that is not in progress (cl
     await wait(3000);
   });
 
-  it('After request duplicate reference id is not in progress (closed) RP should create a request successfully', async function() {
+  it('After request duplicate reference id is not in progress (closed) RP should create a request successfully', async function () {
     this.timeout(10000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
@@ -204,7 +209,7 @@ describe('Create request with duplicate reference id that is not in progress (cl
     expect(createRequestResult.success).to.equal(true);
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(5000);
     await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
@@ -216,7 +221,7 @@ describe('Create request with duplicate reference id that is not in progress (cl
   });
 });
 
-describe('Create request with duplicate reference id that is not in progress (timed out) test', function() {
+describe('Create request with duplicate reference id that is not in progress (timed out) test', function () {
   let namespace;
   let identifier;
 
@@ -229,13 +234,22 @@ describe('Create request with duplicate reference id that is not in progress (ti
 
   let createRequestParams;
   let requestId1st;
+  let initialSalt;
   let requestId2nd;
+  let lastStatusUpdateBlockHeight;
 
-  before(async function() {
-    this.timeout(10000);
+  let rp_node_id = 'rp1';
+  let requester_node_id = 'rp1';
+  let idpIdList;
+  let dataRequestList;
+  let idpResponseParams = [];
+  let requestMessageHash;
+
+  before(async function () {
+    this.timeout(50000);
 
     let identity = db.idp1Identities.filter(
-      identity => identity.mode === 3 && !identity.revokeIdentityAssociation
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation,
     );
 
     if (identity.length === 0) {
@@ -259,10 +273,10 @@ describe('Create request with duplicate reference id that is not in progress (ti
       min_aal: 1,
       min_idp: 1,
       request_timeout: 7, //sec
-      bypass_identity_check:false
+      bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.request_id === requestId1st
@@ -288,11 +302,20 @@ describe('Create request with duplicate reference id that is not in progress (ti
     let response = await rpApi.createRequest('rp1', createRequestParams);
     let responseBody = await response.json();
     requestId1st = responseBody.request_id;
-    await createRequestResultPromise1st.promise;
+    initialSalt = responseBody.initial_salt;
+    let createRequestResult = await createRequestResultPromise1st.promise;
+    expect(createRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+      ':',
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
     await wait(2000);
   });
 
-  it('RP should create a request with duplicate reference id unsuccessfully', async function() {
+  it('RP should create a request with duplicate reference id unsuccessfully', async function () {
     this.timeout(10000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
@@ -300,29 +323,62 @@ describe('Create request with duplicate reference id that is not in progress (ti
     expect(responseBody.error.code).to.equal(20045);
   });
 
-  it('RP should receive request timed out status', async function() {
+  it('RP should receive request timed out status', async function () {
     this.timeout(20000);
-    const requestStatus = await requestStatusTimedOutPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId1st,
+
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId: requestId1st,
+        initialSalt,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+    const testResult = await receiveRequestTimedoutStatusTest({
+      nodeId: rp_node_id,
+      requestStatusPromise: requestStatusTimedOutPromise,
+      requestId: requestId1st,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
       status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: true,
-      service_list: [],
-      response_valid_list: [],
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    // const requestStatus = await requestStatusTimedOutPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: requestId1st,
+    //   status: 'pending',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 0,
+    //   closed: false,
+    //   timed_out: true,
+    //   service_list: [],
+    //   response_valid_list: [],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('After request duplicate reference id is not in progress (timed out) RP should create a request successfully', async function() {
+  it('After request duplicate reference id is not in progress (timed out) RP should create a request successfully', async function () {
     this.timeout(12000);
     await wait(2000);
     const response = await rpApi.createRequest('rp1', createRequestParams);
@@ -337,7 +393,7 @@ describe('Create request with duplicate reference id that is not in progress (ti
     expect(createRequestResult.success).to.equal(true);
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(5000);
     await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
