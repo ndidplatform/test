@@ -68,3 +68,32 @@ describe('IdP (idp2) setup', function() {
     });
   });
 });
+
+describe('IdP (idp3) setup', function() {
+  it('should set callbacks successfully', async function() {
+    const response = await idpApi.setCallbacks('idp3', {
+      incoming_request_url: config.IDP3_CALLBACK_URL,
+      incoming_request_status_update_url: config.IDP3_CALLBACK_URL,
+      // accessor_sign_url: config.IDP1_ACCESSOR_SIGN_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.IDP3_NOTIFICATION_CALLBACK_URL,
+      // accessor_encrypt_url: config.IDP1_ACCESSOR_ENCRYPT_CALLBACK_URL,
+      error_url: config.IDP3_CALLBACK_URL,
+    });
+    expect(response.status).to.equal(204);
+  });
+  it('should have set callbacks', async function() {
+    const response = await idpApi.getCallbacks('idp3');
+    const responseBody = await response.json();
+    expect(response.status).to.equal(200);
+    expect(responseBody).to.deep.equal({
+      incoming_request_url: config.IDP3_CALLBACK_URL,
+      incoming_request_status_update_url: config.IDP3_CALLBACK_URL,
+      // accessor_sign_url: config.IDP1_ACCESSOR_SIGN_CALLBACK_URL,
+      identity_modification_notification_url:
+        config.IDP3_NOTIFICATION_CALLBACK_URL,
+      // accessor_encrypt_url: config.IDP1_ACCESSOR_ENCRYPT_CALLBACK_URL,
+      error_url: config.IDP3_CALLBACK_URL,
+    });
+  });
+});
