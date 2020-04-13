@@ -53,10 +53,21 @@ describe('NDID disable namespace test', function() {
 
   let createRequestParams;
   let requestId;
-  let requestMessageHash;
+  let initialSalt;
   let responseAccessorId;
   let identityForResponse;
   let requestMessagePaddedHash;
+
+  let lastStatusUpdateBlockHeight;
+
+  let rp_node_id = 'rp1';
+  let requester_node_id = 'rp1';
+  let idp_node_id = 'idp1';
+  let as_node_id = 'as1';
+  let idpIdList;
+  let dataRequestList;
+  let idpResponseParams = [];
+  let requestMessageHash;
 
   before(function() {
     if (!ndidAvailable) {
@@ -199,9 +210,18 @@ describe('NDID disable namespace test', function() {
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
 
     requestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
 
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
+    expect(createRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+      ':',
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
   });
 
   it('IdP should receive incoming request callback', async function() {
