@@ -388,7 +388,7 @@ export function mode2And3FlowTest({
     let accessorPrivateKey;
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function () {
-      this.timeout(25000);
+      this.timeout(50000);
       await idpReceiveMode2And3IncomingRequestCallbackTest({
         nodeId: idpNodeId,
         createRequestParams,

@@ -339,7 +339,7 @@ export function mode1FlowTest({
     const idpNodeId = idpNodeIds[i];
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function () {
-      this.timeout(25000);
+      this.timeout(50000);
       await idpReceiveMode1IncomingRequestCallbackTest({
         nodeId: idpNodeId,
         createRequestParams,

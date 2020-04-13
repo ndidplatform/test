@@ -495,7 +495,7 @@ export function mode1DataRequestFlowTest({
     const idpNodeId = idpNodeIds[i];
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function () {
-      this.timeout(25000);
+      this.timeout(50000);
       await idpReceiveMode1IncomingRequestCallbackTest({
         nodeId: idpNodeId,
         createRequestParams,
@@ -732,6 +732,7 @@ export function mode1DataRequestFlowTest({
           createRequestParams,
           serviceId,
           requestParams,
+          requesterNodeId: rpNodeId,
         });
       });
 
@@ -950,7 +951,7 @@ export function mode1DataRequestFlowTest({
       });
     });
     await rpGotDataFromAsTest({
-      callApiAtNodeId: 'rp1',
+      callApiAtNodeId: callRpApiAtNodeId,
       createRequestParams,
       requestId,
       asResponseDataArr,
