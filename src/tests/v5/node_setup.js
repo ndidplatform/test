@@ -58,6 +58,28 @@ describe('Node (external crypto) callback setup', function () {
     });
   });
 
+  describe('RP (rp2) node callback setup', function () {
+    it('should set callbacks successfully', async function () {
+      const response = await nodeApi.setCallbacks('rp2', {
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('should have set callbacks', async function () {
+      const response = await nodeApi.getCallbacks('rp2');
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.deep.include({
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+    });
+  });
+
   describe('IdP (idp1) node callback setup', function () {
     it('should set callbacks successfully', async function () {
       const response = await nodeApi.setCallbacks('idp1', {
@@ -98,6 +120,28 @@ describe('Node (external crypto) callback setup', function () {
 
     it('should have set callbacks', async function () {
       const response = await nodeApi.getCallbacks('idp2');
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.deep.include({
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+    });
+  });
+
+  describe('IdP (idp3) node callback setup', function () {
+    it('should set callbacks successfully', async function () {
+      const response = await nodeApi.setCallbacks('idp3', {
+        sign_url: config.DPKI_SIGN_CALLBACK_URL,
+        master_sign_url: config.DPKI_MASTER_SIGN_CALLBACK_URL,
+        decrypt_url: config.DPKI_DECRYPT_CALLBACK_URL,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('should have set callbacks', async function () {
+      const response = await nodeApi.getCallbacks('idp3');
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
       expect(responseBody).to.deep.include({
