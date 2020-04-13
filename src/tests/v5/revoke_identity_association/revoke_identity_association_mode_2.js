@@ -18,6 +18,7 @@ import {
   generateReferenceId,
   hash,
   createResponseSignature,
+  wait
 } from '../../../utils';
 import {
   createIdpIdList,
@@ -157,6 +158,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function () {
   });
 
   it('After revoked identity association should query idp that associate with this sid not found', async function () {
+    this.timeout(10000);
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
@@ -165,6 +167,7 @@ describe('IdP (idp1) revoke identity association (mode 2) test', function () {
     const idpNodes = await response.json();
     const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.undefined;
+    await wait(3000); //wait for data propagate
   });
 
   after(function () {
