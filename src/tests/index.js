@@ -12,8 +12,10 @@ import * as config from '../config';
 
 export let ndidAvailable;
 export let rpAvailable;
+export let rp2Available;
 export let idp1Available;
 export let idp2Available;
+export let idp3Available;
 export let as1Available;
 export let as2Available;
 export let proxy1Available;
@@ -23,8 +25,10 @@ async function checkForAvailableNodes() {
   const [
     _ndidAvailable,
     _rpAvailable,
+    _rp2Available,
     _idp1Available,
     _idp2Available,
+    _idp3Available,
     _as1Available,
     _as2Available,
     _proxy1Available,
@@ -32,8 +36,10 @@ async function checkForAvailableNodes() {
   ] = await Promise.all([
     isNodeAvailable('ndid1'),
     isNodeAvailable('rp1'),
+    isNodeAvailable('rp2'),
     isNodeAvailable('idp1'),
     isNodeAvailable('idp2'),
+    isNodeAvailable('idp3'),
     isNodeAvailable('as1'),
     isNodeAvailable('as2'),
     isNodeAvailable('proxy1'),
@@ -42,8 +48,10 @@ async function checkForAvailableNodes() {
 
   ndidAvailable = _ndidAvailable;
   rpAvailable = _rpAvailable;
+  rp2Available = _rp2Available;
   idp1Available = _idp1Available;
   idp2Available = _idp2Available;
+  idp3Available = _idp3Available;
   as1Available = _as1Available;
   as2Available = _as2Available;
   proxy1Available = _proxy1Available;

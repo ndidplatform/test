@@ -3,9 +3,11 @@ export const CALLBACK_IP = process.env.CALLBACK_IP || 'localhost';
 export const nodeIdMappingAddress = false;
 
 export const RP_CALLBACK_PORT = 9200;
+export const RP2_CALLBACK_PORT = 9201;
 
 export const IDP1_CALLBACK_PORT = 9100;
 export const IDP2_CALLBACK_PORT = 9101;
+export const IDP3_CALLBACK_PORT = 9102;
 
 export const AS1_CALLBACK_PORT = 9300;
 export const AS2_CALLBACK_PORT = 9301;
@@ -20,6 +22,7 @@ export const DPKI_CALLBACK_PORT = 12000;
 export const NODE_CALLBACK_PORT = 14000;
 
 export const RP_CALLBACK_URL = `http://${CALLBACK_IP}:${RP_CALLBACK_PORT}/rp/callback`;
+export const RP2_CALLBACK_URL = `http://${CALLBACK_IP}:${RP2_CALLBACK_PORT}/rp/callback`;
 
 export const IDP1_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP1_CALLBACK_PORT}/idp/callback`;
 export const IDP1_ACCESSOR_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP1_CALLBACK_PORT}/idp/accessor/sign`;
@@ -30,6 +33,11 @@ export const IDP2_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP2_CALLBACK_PORT}/id
 export const IDP2_ACCESSOR_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP2_CALLBACK_PORT}/idp/accessor/sign`;
 export const IDP2_ACCESSOR_ENCRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP2_CALLBACK_PORT}/idp/accessor/encrypt`;
 export const IDP2_NOTIFICATION_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP2_CALLBACK_PORT}/idp/identity/notification`;
+
+export const IDP3_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP3_CALLBACK_PORT}/idp/callback`;
+export const IDP3_ACCESSOR_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP3_CALLBACK_PORT}/idp/accessor/sign`;
+export const IDP3_ACCESSOR_ENCRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP3_CALLBACK_PORT}/idp/accessor/encrypt`;
+export const IDP3_NOTIFICATION_CALLBACK_URL = `http://${CALLBACK_IP}:${IDP3_CALLBACK_PORT}/idp/identity/notification`;
 
 export const AS1_CALLBACK_URL = `http://${CALLBACK_IP}:${AS1_CALLBACK_PORT}/as/callback`;
 export const AS2_CALLBACK_URL = `http://${CALLBACK_IP}:${AS2_CALLBACK_PORT}/as/callback`;

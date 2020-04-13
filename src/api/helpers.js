@@ -7,10 +7,14 @@ export function getApiAddressUrl(nodeId) {
   }
   if (nodeId === 'rp1') {
     return 'http://localhost:8200';
+  } else if (nodeId === 'rp2') {
+    return 'http://localhost:8201';
   } else if (nodeId === 'idp1') {
     return 'http://localhost:8100';
   } else if (nodeId === 'idp2') {
     return 'http://localhost:8101';
+  } else if (nodeId === 'idp3') {
+    return 'http://localhost:8102';
   } else if (nodeId === 'as1') {
     return 'http://localhost:8300';
   } else if (nodeId === 'as2') {
