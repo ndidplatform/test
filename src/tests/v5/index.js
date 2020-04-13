@@ -21,3 +21,5 @@ require('./idp_response');
 require('./as_data_response');
 require('./token');
 require('./ndid_disable_enable');
+require('./idp_agent');
+require('./whitelist');
