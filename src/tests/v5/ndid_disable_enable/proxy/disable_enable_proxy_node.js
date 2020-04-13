@@ -6,7 +6,7 @@ import * as idpApi from '../../../../api/v5/idp';
 import * as ndidApi from '../../../../api/v5/ndid';
 import * as commonApi from '../../../../api/v5/common';
 import * as db from '../../../../db';
-import { ndidAvailable, proxy1Available, idp2Available } from '../../..';
+import { ndidAvailable, proxy1Available } from '../../..';
 import {
   as1EventEmitter,
   idp1EventEmitter,
@@ -20,11 +20,24 @@ import {
   hash,
   createResponseSignature,
 } from '../../../../utils';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+  setDataReceived,
+  setDataSigned,
+} from '../../_fragments/fragments_utils';
+import {
+  receivePendingRequestStatusTest,
+  receiveConfirmedRequestStatusTest,
+  receiveCompletedRequestStatusTest,
+  receiveRequestClosedStatusTest,
+} from '../../_fragments/common';
 import * as config from '../../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../../_fragments//request_flow_fragments/idp';
 
-describe('NDID disable proxy node and enable proxy node test', function() {
-  describe('RP node behind disabled proxy node (proxy1_rp4) making request to IdP node outside proxy (idp1) test', function() {
+describe('NDID disable proxy node and enable proxy node test', function () {
+  describe('RP node behind disabled proxy node (proxy1_rp4) making request to IdP node outside proxy (idp1) test', function () {
     let namespace;
     let identifier;
 
@@ -46,12 +59,22 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     let createRequestParams;
     let disableNodeRequestId;
     let enableNodeRequestId;
-    let requestMessageSalt;
-    let requestMessageHash;
+    let initialSalt;
 
     let responseAccessorId;
     let identityForResponse;
     let requestMessagePaddedHash;
+
+    let lastStatusUpdateBlockHeight;
+
+    let rp_node_id = 'proxy1_rp4';
+    let requester_node_id = 'proxy1_rp4';
+    let idp_node_id = 'idp1';
+    let as_node_id = 'as1';
+    let idpIdList;
+    let dataRequestList;
+    let idpResponseParams = [];
+    let requestMessageHash;
 
     const data = JSON.stringify({
       test: 'test',
@@ -59,14 +82,15 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       arr: [1, 2, 3],
     });
 
-    before(async function() {
+    before(async function () {
       if (!ndidAvailable || !proxy1Available) {
         this.test.parent.pending = true;
         this.skip();
       }
 
       const identity = db.idp1Identities.find(
-        identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
+        (identity) =>
+          identity.mode === 3 && !identity.revokeIdentityAssociation,
       );
 
       if (!identity) {
@@ -103,7 +127,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         bypass_identity_check: false,
       };
 
-      proxy1EventEmitter.on('callback', function(callbackData) {
+      proxy1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.request_id === disableNodeRequestId
@@ -130,7 +154,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === enableNodeRequestId
@@ -144,13 +168,13 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === enableNodeRequestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      as1EventEmitter.on('callback', function(callbackData) {
+      as1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'data_request' &&
           callbackData.request_id === enableNodeRequestId
@@ -165,7 +189,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       });
     });
 
-    it('NDID should disable node proxy (proxy1) successfully', async function() {
+    it('NDID should disable node proxy (proxy1) successfully', async function () {
       this.timeout(10000);
 
       const response = await ndidApi.disableNode('ndid1', {
@@ -175,14 +199,17 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       await wait(5000);
     });
 
-    it('After NDID disable node proxy (proxy1) RP (proxy1_rp4) behind proxy should create a request unsuccessfully', async function() {
+    it('After NDID disable node proxy (proxy1) RP (proxy1_rp4) behind proxy should create a request unsuccessfully', async function () {
       this.timeout(15000);
       const response = await rpApi.createRequest('proxy1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
       expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+
       disableNodeRequestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
+
       const createRequestResult = await disableNodeCreateRequestResultPromise.promise;
       expect(createRequestResult).to.deep.include({
         type: 'create_request_result',
@@ -193,7 +220,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(createRequestResult.error.code).to.equal(15026);
     });
 
-    it('NDID should enable node proxy (proxy1) successfully', async function() {
+    it('NDID should enable node proxy (proxy1) successfully', async function () {
       this.timeout(10000);
 
       const response = await ndidApi.enableNode('ndid1', {
@@ -203,14 +230,17 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       await wait(5000);
     });
 
-    it('After NDID enable node proxy (proxy1) RP (proxy1_rp4) behind proxy should create a request successfully', async function() {
+    it('After NDID enable node proxy (proxy1) RP (proxy1_rp4) behind proxy should create a request successfully', async function () {
       this.timeout(15000);
       const response = await rpApi.createRequest('proxy1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
       expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+
       enableNodeRequestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
+
       const createRequestResult = await enableNodeCreateRequestResultPromise.promise;
       expect(createRequestResult).to.deep.include({
         type: 'create_request_result',
@@ -218,42 +248,81 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         reference_id: createRequestParams.reference_id,
         request_id: enableNodeRequestId,
       });
+      expect(createRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+        ':',
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
     });
 
-    it('RP should receive pending request status', async function() {
-      const requestStatus = await requestStatusPendingPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: enableNodeRequestId,
-        status: 'pending',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 0,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 0,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [],
+    it('RP should receive pending request status', async function () {
+      this.timeout(30000);
+
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: 'proxy1',
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId: enableNodeRequestId,
+          initialSalt,
+          callRpApiAtNodeId: 'proxy1',
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+      await receivePendingRequestStatusTest({
+        nodeId: rp_node_id,
+        createRequestParams,
+        requestId: enableNodeRequestId,
+        idpIdList,
+        dataRequestList,
+        requestMessageHash,
+        lastStatusUpdateBlockHeight,
+        requestStatusPendingPromise,
+        requesterNodeId: rp_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      // const requestStatus = await requestStatusPendingPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: enableNodeRequestId,
+      //   status: 'pending',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 0,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 0,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -279,15 +348,12 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
-
-      requestMessageSalt = incomingRequest.request_message_salt;
-      requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -307,7 +373,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('IdP should create response (accept) successfully', async function() {
+    it('IdP should create response (accept) successfully', async function () {
       this.timeout(10000);
 
       let accessorPrivateKey =
@@ -318,7 +384,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         requestMessagePaddedHash,
       );
 
-      const response = await idpApi.createResponse('idp1', {
+      let idpResponse = {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: enableNodeRequestId,
@@ -327,7 +393,16 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         status: 'accept',
         accessor_id: responseAccessorId,
         signature,
+      };
+
+      idpResponseParams.push({
+        ...idpResponse,
+        idp_id: 'idp1',
+        valid_signature: true,
+        valid_ial: true,
       });
+
+      const response = await idpApi.createResponse('idp1', idpResponse);
       expect(response.status).to.equal(202);
     });
 
@@ -350,7 +425,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP shoud receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -361,7 +436,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       });
     });
 
-    it('AS should receive data request', async function() {
+    it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
@@ -380,7 +455,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         .not.empty;
     });
 
-    it('AS should send data successfully', async function() {
+    it('AS should send data successfully', async function () {
       this.timeout(15000);
       const response = await asApi.sendData('as1', {
         requestId: enableNodeRequestId,
@@ -396,79 +471,122 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         reference_id: asReferenceId,
         success: true,
       });
+
+      dataRequestList = setDataSigned(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
+
+      dataRequestList = setDataReceived(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
     });
 
-    it('RP should receive completed request status with received data count = 1', async function() {
+    it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusCompletedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: enableNodeRequestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveCompletedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusCompletedPromise,
+        requestId: enableNodeRequestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestStatusCompletedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: enableNodeRequestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive request closed status', async function() {
+    it('RP should receive request closed status', async function () {
       this.timeout(10000);
-      const requestStatus = await requestClosedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: enableNodeRequestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: true,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveRequestClosedStatusTest({
+        nodeId: rp_node_id,
+        requestClosedPromise,
+        requestId: enableNodeRequestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestClosedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: enableNodeRequestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: true,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should get the correct data received from AS', async function() {
+    it('RP should get the correct data received from AS', async function () {
       const response = await rpApi.getDataFromAS('proxy1', {
         node_id: createRequestParams.node_id,
         requestId: enableNodeRequestId,
@@ -487,7 +605,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
 
-    after(async function() {
+    after(async function () {
       this.timeout(10000);
       await ndidApi.enableNode('ndid1', {
         node_id: 'proxy1',
@@ -501,7 +619,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     });
   });
 
-  describe('RP node outside proxy (rp1) making request to IdP node behind disabled proxy node (proxy1_idp4) test', function() {
+  describe('RP node outside proxy (rp1) making request to IdP node behind disabled proxy node (proxy1_idp4) test', function () {
     let namespace;
     let identifier;
 
@@ -521,12 +639,22 @@ describe('NDID disable proxy node and enable proxy node test', function() {
 
     let createRequestParams;
     let enableNodeRequestId;
-    let requestMessageSalt;
-    let requestMessageHash;
+    let initialSalt;
 
     let responseAccessorId;
     let identityForResponse;
     let requestMessagePaddedHash;
+
+    let lastStatusUpdateBlockHeight;
+
+    let rp_node_id = 'rp1';
+    let requester_node_id = 'rp1';
+    let idp_node_id = 'proxy1_idp4';
+    let as_node_id = 'as1';
+    let idpIdList;
+    let dataRequestList;
+    let idpResponseParams = [];
+    let requestMessageHash;
 
     const data = JSON.stringify({
       test: 'test',
@@ -534,14 +662,14 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       arr: [1, 2, 3],
     });
 
-    before(async function() {
+    before(async function () {
       if (!ndidAvailable || !proxy1Available) {
         this.test.parent.pending = true;
         this.skip();
       }
 
       const identity = db.proxy1Idp4Identities.find(
-        identity => identity.mode === 3,
+        (identity) => identity.mode === 3,
       );
 
       if (!identity) {
@@ -577,7 +705,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.request_id === enableNodeRequestId
@@ -599,7 +727,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         }
       });
 
-      proxy1EventEmitter.on('callback', function(callbackData) {
+      proxy1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === enableNodeRequestId
@@ -613,7 +741,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         }
       });
 
-      proxy1EventEmitter.on('accessor_encrypt_callback', function(
+      proxy1EventEmitter.on('accessor_encrypt_callback', function (
         callbackData,
       ) {
         if (callbackData.request_id === enableNodeRequestId) {
@@ -621,7 +749,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         }
       });
 
-      as1EventEmitter.on('callback', function(callbackData) {
+      as1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'data_request' &&
           callbackData.request_id === enableNodeRequestId
@@ -636,7 +764,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       });
     });
 
-    it('NDID should disable proxy node (proxy1) successfully', async function() {
+    it('NDID should disable proxy node (proxy1) successfully', async function () {
       this.timeout(10000);
 
       const response = await ndidApi.disableNode('ndid1', {
@@ -654,7 +782,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     //   expect(foundIdp).to.be.an('undefined');
     // });
 
-    it('After NDID disable proxy node (proxy1) RP should create a request to idp (proxy1_idp4) behind disabled proxy node (proxy1) unsuccessfully', async function() {
+    it('After NDID disable proxy node (proxy1) RP should create a request to idp (proxy1_idp4) behind disabled proxy node (proxy1) unsuccessfully', async function () {
       this.timeout(15000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
@@ -662,7 +790,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(responseBody.error.code).to.equal(20005);
     });
 
-    it('NDID should enable proxy node (proxy1) successfully', async function() {
+    it('NDID should enable proxy node (proxy1) successfully', async function () {
       this.timeout(10000);
       const response = await ndidApi.enableNode('ndid1', {
         node_id: 'proxy1',
@@ -671,22 +799,27 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       await wait(5000);
     });
 
-    it('After NDID enable proxy node (proxy1) RP should query IdP behind proxy node (proxy1_idp4) found', async function() {
+    it('After NDID enable proxy node (proxy1) RP should query IdP behind proxy node (proxy1_idp4) found', async function () {
       this.timeout(15000);
       const response = await commonApi.getIdP('rp1');
       const responseBody = await response.json();
-      const foundIdp = responseBody.find(idp => idp.node_id === 'proxy1_idp4');
+      const foundIdp = responseBody.find(
+        (idp) => idp.node_id === 'proxy1_idp4',
+      );
       expect(foundIdp).to.be.an('object');
     });
 
-    it('After NDID enable proxy node (proxy1) RP should create a request to proxy1_idp4 successfully', async function() {
+    it('After NDID enable proxy node (proxy1) RP should create a request to proxy1_idp4 successfully', async function () {
       this.timeout(15000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
       expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+
       enableNodeRequestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
+
       const createRequestResult = await enableNodeCreateRequestResultPromise.promise;
       expect(createRequestResult).to.deep.include({
         type: 'create_request_result',
@@ -694,42 +827,79 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         reference_id: createRequestParams.reference_id,
         request_id: enableNodeRequestId,
       });
+      expect(createRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+        ':',
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
     });
 
-    it('RP should receive pending request status', async function() {
-      const requestStatus = await requestStatusPendingPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: enableNodeRequestId,
-        status: 'pending',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 0,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 0,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [],
+    it('RP should receive pending request status', async function () {
+      this.timeout(20000);
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId: enableNodeRequestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+      await receivePendingRequestStatusTest({
+        nodeId: rp_node_id,
+        createRequestParams,
+        requestId: enableNodeRequestId,
+        idpIdList,
+        dataRequestList,
+        requestMessageHash,
+        lastStatusUpdateBlockHeight,
+        requestStatusPendingPromise,
+        requesterNodeId: rp_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      // const requestStatus = await requestStatusPendingPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: enableNodeRequestId,
+      //   status: 'pending',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 0,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 0,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -755,16 +925,13 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
-
-      requestMessageSalt = incomingRequest.request_message_salt;
-      requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
 
       identityForResponse = db.proxy1Idp4Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -784,7 +951,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('IdP should create response (accept) successfully', async function() {
+    it('IdP should create response (accept) successfully', async function () {
       this.timeout(10000);
 
       let accessorPrivateKey =
@@ -795,7 +962,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         requestMessagePaddedHash,
       );
 
-      const response = await idpApi.createResponse('proxy1', {
+      let idpResponse = {
         node_id: 'proxy1_idp4',
         reference_id: idpReferenceId,
         callback_url: config.PROXY1_CALLBACK_URL,
@@ -805,7 +972,16 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         status: 'accept',
         accessor_id: responseAccessorId,
         signature,
+      };
+
+      idpResponseParams.push({
+        ...idpResponse,
+        idp_id: 'proxy1_idp4',
+        valid_signature: true,
+        valid_ial: true,
       });
+
+      const response = await idpApi.createResponse('proxy1', idpResponse);
       expect(response.status).to.equal(202);
     });
 
@@ -828,7 +1004,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP shoud receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'proxy1_idp4',
@@ -839,7 +1015,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       });
     });
 
-    it('AS should receive data request', async function() {
+    it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
@@ -858,7 +1034,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         .not.empty;
     });
 
-    it('AS should send data successfully', async function() {
+    it('AS should send data successfully', async function () {
       this.timeout(15000);
       const response = await asApi.sendData('as1', {
         requestId: enableNodeRequestId,
@@ -874,79 +1050,122 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         reference_id: asReferenceId,
         success: true,
       });
+
+      dataRequestList = setDataSigned(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
+
+      dataRequestList = setDataReceived(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
     });
 
-    it('RP should receive completed request status with received data count = 1', async function() {
+    it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusCompletedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: enableNodeRequestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'proxy1_idp4',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveCompletedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusCompletedPromise,
+        requestId: enableNodeRequestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestStatusCompletedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: enableNodeRequestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'proxy1_idp4',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive request closed status', async function() {
+    it('RP should receive request closed status', async function () {
       this.timeout(10000);
-      const requestStatus = await requestClosedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: enableNodeRequestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: true,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'proxy1_idp4',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveRequestClosedStatusTest({
+        nodeId: rp_node_id,
+        requestClosedPromise,
+        requestId: enableNodeRequestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestClosedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: enableNodeRequestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: true,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'proxy1_idp4',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should get the correct data received from AS', async function() {
+    it('RP should get the correct data received from AS', async function () {
       const response = await rpApi.getDataFromAS('rp1', {
         requestId: enableNodeRequestId,
       });
@@ -964,7 +1183,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
 
-    after(async function() {
+    after(async function () {
       this.timeout(10000);
       await ndidApi.enableNode('ndid1', {
         node_id: 'proxy1',
@@ -977,7 +1196,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       as1EventEmitter.removeAllListeners('callback');
     });
   });
-  describe('RP node outside proxy (rp1) making request with data request to AS node behind disabled proxy node (proxy1_as4) test', function() {
+  describe('RP node outside proxy (rp1) making request with data request to AS node behind disabled proxy node (proxy1_as4) test', function () {
     let namespace;
     let identifier;
 
@@ -997,11 +1216,21 @@ describe('NDID disable proxy node and enable proxy node test', function() {
 
     let createRequestParams;
     let enableNodeRequestId;
-    let requestMessageSalt;
-    let requestMessageHash;
+    let initialSalt;
     let identityForResponse;
     let responseAccessorId;
     let requestMessagePaddedHash;
+
+    let lastStatusUpdateBlockHeight;
+
+    let rp_node_id = 'rp1';
+    let requester_node_id = 'rp1';
+    let idp_node_id = 'idp1';
+    let as_node_id = 'proxy1_as4';
+    let idpIdList;
+    let dataRequestList;
+    let idpResponseParams = [];
+    let requestMessageHash;
 
     const data = JSON.stringify({
       test: 'test',
@@ -1009,13 +1238,14 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       arr: [1, 2, 3],
     });
 
-    before(async function() {
+    before(async function () {
       if (!ndidAvailable || !proxy1Available) {
         this.skip();
       }
 
       const identity = db.idp1Identities.find(
-        identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
+        (identity) =>
+          identity.mode === 3 && !identity.revokeIdentityAssociation,
       );
 
       if (!identity) {
@@ -1051,7 +1281,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.request_id === enableNodeRequestId
@@ -1073,7 +1303,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === enableNodeRequestId
@@ -1087,13 +1317,13 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === enableNodeRequestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      proxy1EventEmitter.on('callback', function(callbackData) {
+      proxy1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'data_request' &&
           callbackData.request_id === enableNodeRequestId
@@ -1108,7 +1338,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       });
     });
 
-    it('NDID should disable proxy node (proxy1) successfully', async function() {
+    it('NDID should disable proxy node (proxy1) successfully', async function () {
       this.timeout(10000);
 
       const response = await ndidApi.disableNode('ndid1', {
@@ -1129,7 +1359,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     //   expect(foundAS).to.be.an('undefined');
     // });
 
-    it('After NDID disable proxy node (proxy1) RP should create a request with data request to AS node behind disabled proxy node (proxy1_as4) unsuccessfully', async function() {
+    it('After NDID disable proxy node (proxy1) RP should create a request with data request to AS node behind disabled proxy node (proxy1_as4) unsuccessfully', async function () {
       this.timeout(15000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
@@ -1137,7 +1367,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(responseBody.error.code).to.equal(20024);
     });
 
-    it('NDID should enable proxy node (proxy1) successfully', async function() {
+    it('NDID should enable proxy node (proxy1) successfully', async function () {
       this.timeout(10000);
       const response = await ndidApi.enableNode('ndid1', {
         node_id: 'proxy1',
@@ -1146,25 +1376,28 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       await wait(5000);
     });
 
-    it('After NDID enable proxy node (proxy1) RP should query list of AS behind disabled proxy node by service id found', async function() {
+    it('After NDID enable proxy node (proxy1) RP should query list of AS behind disabled proxy node by service id found', async function () {
       this.timeout(15000);
       const response = await commonApi.getASByServiceId(
         'rp1',
         'bank_statement',
       );
       const responseBody = await response.json();
-      const foundAS = responseBody.find(as => as.node_id === 'proxy1_as4');
+      const foundAS = responseBody.find((as) => as.node_id === 'proxy1_as4');
       expect(foundAS).to.be.an('object');
     });
 
-    it('After NDID enable proxy node (proxy1) RP should create a request with data request to proxy1_as4 successfully', async function() {
+    it('After NDID enable proxy node (proxy1) RP should create a request with data request to proxy1_as4 successfully', async function () {
       this.timeout(15000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
       expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
       expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+      
       enableNodeRequestId = responseBody.request_id;
+      initialSalt = responseBody.initial_salt;
+      
       const createRequestResult = await enableNodeCreateRequestResultPromise.promise;
       expect(createRequestResult).to.deep.include({
         type: 'create_request_result',
@@ -1172,42 +1405,82 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         reference_id: createRequestParams.reference_id,
         request_id: enableNodeRequestId,
       });
+
+      expect(createRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+        ':',
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
     });
 
-    it('RP should receive pending request status', async function() {
-      const requestStatus = await requestStatusPendingPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: enableNodeRequestId,
-        status: 'pending',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 0,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 0,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [],
+    it('RP should receive pending request status', async function () {
+      this.timeout(20000);
+
+      [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+        createIdpIdList({
+          createRequestParams,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createDataRequestList({
+          createRequestParams,
+          requestId: enableNodeRequestId,
+          initialSalt,
+          callRpApiAtNodeId: rp_node_id,
+        }),
+        createRequestMessageHash({
+          createRequestParams,
+          initialSalt,
+        }),
+      ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+      await receivePendingRequestStatusTest({
+        nodeId: rp_node_id,
+        createRequestParams,
+        requestId: enableNodeRequestId,
+        idpIdList,
+        dataRequestList,
+        requestMessageHash,
+        lastStatusUpdateBlockHeight,
+        requestStatusPendingPromise,
+        requesterNodeId: rp_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      
+      // const requestStatus = await requestStatusPendingPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: enableNodeRequestId,
+      //   status: 'pending',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 0,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 0,
+      //       received_data_count: 0,
+      //     },
+      //   ],
+      //   response_valid_list: [],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
       const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+        (dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
@@ -1233,15 +1506,12 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
-
-      requestMessageSalt = incomingRequest.request_message_salt;
-      requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
-        identity =>
+        (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier,
       );
@@ -1261,7 +1531,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('IdP should create response (accept) successfully', async function() {
+    it('IdP should create response (accept) successfully', async function () {
       this.timeout(10000);
 
       let accessorPrivateKey =
@@ -1272,7 +1542,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         requestMessagePaddedHash,
       );
 
-      const response = await idpApi.createResponse('idp1', {
+      let idpResponse = {
         reference_id: idpReferenceId,
         callback_url: config.IDP1_CALLBACK_URL,
         request_id: enableNodeRequestId,
@@ -1281,7 +1551,16 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         status: 'accept',
         accessor_id: responseAccessorId,
         signature,
+      };
+
+      idpResponseParams.push({
+        ...idpResponse,
+        idp_id: 'idp1',
+        valid_signature: true,
+        valid_ial: true,
       });
+
+      const response = await idpApi.createResponse('idp1', idpResponse);
       expect(response.status).to.equal(202);
     });
 
@@ -1304,7 +1583,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function() {
+    it('IdP shoud receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -1315,7 +1594,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       });
     });
 
-    it('AS should receive data request', async function() {
+    it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
@@ -1334,7 +1613,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         .not.empty;
     });
 
-    it('AS should send data successfully', async function() {
+    it('AS should send data successfully', async function () {
       this.timeout(15000);
       const response = await asApi.sendData('proxy1', {
         node_id: 'proxy1_as4',
@@ -1351,79 +1630,122 @@ describe('NDID disable proxy node and enable proxy node test', function() {
         reference_id: asReferenceId,
         success: true,
       });
+
+      dataRequestList = setDataSigned(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
+
+      dataRequestList = setDataReceived(
+        dataRequestList,
+        createRequestParams.data_request_list[0].service_id,
+        as_node_id,
+      );
     });
 
-    it('RP should receive completed request status with received data count = 1', async function() {
+    it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
-      const requestStatus = await requestStatusCompletedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: enableNodeRequestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: false,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveCompletedRequestStatusTest({
+        nodeId: rp_node_id,
+        requestStatusCompletedPromise,
+        requestId: enableNodeRequestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestStatusCompletedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: enableNodeRequestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: false,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive request closed status', async function() {
+    it('RP should receive request closed status', async function () {
       this.timeout(10000);
-      const requestStatus = await requestClosedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: enableNodeRequestId,
-        status: 'completed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: true,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 1,
-            received_data_count: 1,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: true,
-            valid_ial: true,
-          },
-        ],
+
+      const testResult = await receiveRequestClosedStatusTest({
+        nodeId: rp_node_id,
+        requestClosedPromise,
+        requestId: enableNodeRequestId,
+        createRequestParams,
+        dataRequestList,
+        idpResponse: idpResponseParams,
+        requestMessageHash,
+        idpIdList,
+        lastStatusUpdateBlockHeight,
+        requesterNodeId: requester_node_id,
       });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+      // const requestStatus = await requestClosedPromise.promise;
+      // expect(requestStatus).to.deep.include({
+      //   request_id: enableNodeRequestId,
+      //   status: 'completed',
+      //   mode: createRequestParams.mode,
+      //   min_idp: createRequestParams.min_idp,
+      //   answered_idp_count: 1,
+      //   closed: true,
+      //   timed_out: false,
+      //   service_list: [
+      //     {
+      //       service_id: createRequestParams.data_request_list[0].service_id,
+      //       min_as: createRequestParams.data_request_list[0].min_as,
+      //       signed_data_count: 1,
+      //       received_data_count: 1,
+      //     },
+      //   ],
+      //   response_valid_list: [
+      //     {
+      //       idp_id: 'idp1',
+      //       valid_signature: true,
+      //       valid_ial: true,
+      //     },
+      //   ],
+      // });
+      // expect(requestStatus).to.have.property('block_height');
+      // expect(requestStatus.block_height).is.a('string');
+      // const splittedBlockHeight = requestStatus.block_height.split(':');
+      // expect(splittedBlockHeight).to.have.lengthOf(2);
+      // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+      // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should get the correct data received from AS', async function() {
+    it('RP should get the correct data received from AS', async function () {
       const response = await rpApi.getDataFromAS('rp1', {
         requestId: enableNodeRequestId,
       });
@@ -1441,7 +1763,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
 
-    after(async function() {
+    after(async function () {
       this.timeout(10000);
       await ndidApi.enableNode('ndid1', {
         node_id: 'proxy1_as4',
@@ -1456,7 +1778,7 @@ describe('NDID disable proxy node and enable proxy node test', function() {
   });
 });
 
-describe('NDID disable node RP behind proxy and enable node RP behind proxy test', function() {
+describe('NDID disable node RP behind proxy and enable node RP behind proxy test', function () {
   let namespace;
   let identifier;
 
@@ -1478,12 +1800,22 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   let createRequestParams;
   let disableNodeRequestId;
   let enableNodeRequestId;
-  let requestMessageSalt;
-  let requestMessageHash;
+  let initialSalt;
 
   let identityForResponse;
   let responseAccessorId;
   let requestMessagePaddedHash;
+
+  let lastStatusUpdateBlockHeight;
+
+  let rp_node_id = 'proxy1_rp4';
+  let requester_node_id = 'proxy1_rp4';
+  let idp_node_id = 'proxy1_idp4';
+  let as_node_id = 'as1';
+  let idpIdList;
+  let dataRequestList;
+  let idpResponseParams = [];
+  let requestMessageHash;
 
   const data = JSON.stringify({
     test: 'test',
@@ -1491,14 +1823,14 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     arr: [1, 2, 3],
   });
 
-  before(async function() {
+  before(async function () {
     if (!ndidAvailable || !proxy1Available) {
       this.test.parent.pending = true;
       this.skip();
     }
 
     const identity = db.proxy1Idp4Identities.find(
-      identity => identity.mode === 3,
+      (identity) => identity.mode === 3,
     );
 
     if (!identity) {
@@ -1535,7 +1867,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       bypass_identity_check: false,
     };
 
-    proxy1EventEmitter.on('callback', function(callbackData) {
+    proxy1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.request_id === disableNodeRequestId
@@ -1562,7 +1894,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       }
     });
 
-    proxy1EventEmitter.on('callback', function(callbackData) {
+    proxy1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === enableNodeRequestId
@@ -1576,13 +1908,13 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       }
     });
 
-    proxy1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    proxy1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === enableNodeRequestId) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
 
-    as1EventEmitter.on('callback', function(callbackData) {
+    as1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === enableNodeRequestId
@@ -1597,7 +1929,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     });
   });
 
-  it('NDID should disable node RP behind proxy (proxy1_rp4) successfully', async function() {
+  it('NDID should disable node RP behind proxy (proxy1_rp4) successfully', async function () {
     this.timeout(10000);
 
     const response = await ndidApi.disableNode('ndid1', {
@@ -1607,7 +1939,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     await wait(5000);
   });
 
-  it('After NDID disable node RP behind proxy (proxy1_rp4) should create a request unsuccessfully', async function() {
+  it('After NDID disable node RP behind proxy (proxy1_rp4) should create a request unsuccessfully', async function () {
     this.timeout(15000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
@@ -1625,7 +1957,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     expect(createRequestResult.error.code).to.equal(15022);
   });
 
-  it('NDID should enable node RP behind proxy (proxy1_rp4) successfully', async function() {
+  it('NDID should enable node RP behind proxy (proxy1_rp4) successfully', async function () {
     this.timeout(10000);
 
     const response = await ndidApi.enableNode('ndid1', {
@@ -1635,14 +1967,17 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     await wait(5000);
   });
 
-  it('After NDID enable node RP behind proxy (proxy1_rp4) should create a request successfully', async function() {
+  it('After NDID enable node RP behind proxy (proxy1_rp4) should create a request successfully', async function () {
     this.timeout(15000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+    
     enableNodeRequestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
+    
     const createRequestResult = await enableNodeCreateRequestResultPromise.promise;
     expect(createRequestResult).to.deep.include({
       type: 'create_request_result',
@@ -1650,42 +1985,81 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       reference_id: createRequestParams.reference_id,
       request_id: enableNodeRequestId,
     });
+    expect(createRequestResult.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+      ':',
+    );
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
   });
 
-  it('RP should receive pending request status', async function() {
-    const requestStatus = await requestStatusPendingPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: enableNodeRequestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [],
+  it('RP should receive pending request status', async function () {
+    this.timeout(20000);
+
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId: 'proxy1',
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId: enableNodeRequestId,
+        initialSalt,
+        callRpApiAtNodeId: 'proxy1',
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+    await receivePendingRequestStatusTest({
+      nodeId: rp_node_id,
+      createRequestParams,
+      requestId: enableNodeRequestId,
+      idpIdList,
+      dataRequestList,
+      requestMessageHash,
+      lastStatusUpdateBlockHeight,
+      requestStatusPendingPromise,
+      requesterNodeId: rp_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    // const requestStatus = await requestStatusPendingPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: enableNodeRequestId,
+    //   status: 'pending',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 0,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 0,
+    //       received_data_count: 0,
+    //     },
+    //   ],
+    //   response_valid_list: [],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -1711,15 +2085,12 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
-
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.proxy1Idp4Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -1737,7 +2108,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let accessorPrivateKey =
@@ -1748,7 +2119,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       requestMessagePaddedHash,
     );
 
-    const response = await idpApi.createResponse('proxy1', {
+    let idpResponse = {
       node_id: 'proxy1_idp4',
       reference_id: idpReferenceId,
       callback_url: config.PROXY1_CALLBACK_URL,
@@ -1758,7 +2129,16 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       status: 'accept',
       accessor_id: responseAccessorId,
       signature,
+    };
+
+    idpResponseParams.push({
+      ...idpResponse,
+      idp_id: 'proxy1_idp4',
+      valid_signature: true,
+      valid_ial: true,
     });
+
+    const response = await idpApi.createResponse('proxy1', idpResponse);
     expect(response.status).to.equal(202);
   });
 
@@ -1780,7 +2160,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function() {
+  it('IdP shoud receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'proxy1_idp4',
@@ -1791,7 +2171,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     });
   });
 
-  it('AS should receive data request', async function() {
+  it('AS should receive data request', async function () {
     this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -1810,7 +2190,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       .empty;
   });
 
-  it('AS should send data successfully', async function() {
+  it('AS should send data successfully', async function () {
     this.timeout(15000);
     const response = await asApi.sendData('as1', {
       requestId: enableNodeRequestId,
@@ -1826,79 +2206,122 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       reference_id: asReferenceId,
       success: true,
     });
+
+    dataRequestList = setDataSigned(
+      dataRequestList,
+      createRequestParams.data_request_list[0].service_id,
+      as_node_id,
+    );
+
+    dataRequestList = setDataReceived(
+      dataRequestList,
+      createRequestParams.data_request_list[0].service_id,
+      as_node_id,
+    );
   });
 
-  it('RP should receive completed request status with received data count = 1', async function() {
+  it('RP should receive completed request status with received data count = 1', async function () {
     this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: enableNodeRequestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'proxy1_idp4',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+
+    const testResult = await receiveCompletedRequestStatusTest({
+      nodeId: rp_node_id,
+      requestStatusCompletedPromise,
+      requestId: enableNodeRequestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    // const requestStatus = await requestStatusCompletedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: enableNodeRequestId,
+    //   status: 'completed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 1,
+    //       received_data_count: 1,
+    //     },
+    //   ],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'proxy1_idp4',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should receive request closed status', async function() {
+  it('RP should receive request closed status', async function () {
     this.timeout(10000);
-    const requestStatus = await requestClosedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: enableNodeRequestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: true,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'proxy1_idp4',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+
+    const testResult = await receiveRequestClosedStatusTest({
+      nodeId: rp_node_id,
+      requestClosedPromise,
+      requestId: enableNodeRequestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    // const requestStatus = await requestClosedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: enableNodeRequestId,
+    //   status: 'completed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: true,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 1,
+    //       received_data_count: 1,
+    //     },
+    //   ],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'proxy1_idp4',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should get the correct data received from AS', async function() {
+  it('RP should get the correct data received from AS', async function () {
     const response = await rpApi.getDataFromAS('proxy1', {
       node_id: createRequestParams.node_id,
       requestId: enableNodeRequestId,
@@ -1917,7 +2340,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(10000);
     await ndidApi.enableNode('ndid1', {
       node_id: 'proxy1_rp4',
@@ -1930,7 +2353,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   });
 });
 
-describe('NDID disable node IdP behind proxy and enable node IdP behind proxy test', function() {
+describe('NDID disable node IdP behind proxy and enable node IdP behind proxy test', function () {
   let namespace;
   let identifier;
 
@@ -1950,12 +2373,22 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
 
   let createRequestParams;
   let enableNodeRequestId;
-  let requestMessageSalt;
-  let requestMessageHash;
+  let initialSalt;
 
   let responseAccessorId;
   let identityForResponse;
   let requestMessagePaddedHash;
+
+  let lastStatusUpdateBlockHeight;
+
+  let rp_node_id = 'proxy1_rp4';
+  let requester_node_id = 'proxy1_rp4';
+  let idp_node_id = 'proxy1_idp4';
+  let as_node_id = 'as1';
+  let idpIdList;
+  let dataRequestList;
+  let idpResponseParams = [];
+  let requestMessageHash;
 
   const data = JSON.stringify({
     test: 'test',
@@ -1963,13 +2396,13 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     arr: [1, 2, 3],
   });
 
-  before(async function() {
+  before(async function () {
     if (!ndidAvailable || !proxy1Available) {
       this.skip();
     }
 
     const identity = db.proxy1Idp4Identities.find(
-      identity => identity.mode === 3,
+      (identity) => identity.mode === 3,
     );
 
     if (!identity) {
@@ -2006,7 +2439,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       bypass_identity_check: false,
     };
 
-    proxy1EventEmitter.on('callback', function(callbackData) {
+    proxy1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.request_id === enableNodeRequestId
@@ -2028,7 +2461,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       }
     });
 
-    proxy1EventEmitter.on('callback', function(callbackData) {
+    proxy1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === enableNodeRequestId
@@ -2042,13 +2475,13 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       }
     });
 
-    proxy1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    proxy1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === enableNodeRequestId) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
 
-    as1EventEmitter.on('callback', function(callbackData) {
+    as1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === enableNodeRequestId
@@ -2063,7 +2496,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     });
   });
 
-  it('NDID should disable node IdP behind proxy (proxy1_idp4) successfully', async function() {
+  it('NDID should disable node IdP behind proxy (proxy1_idp4) successfully', async function () {
     this.timeout(10000);
 
     const response = await ndidApi.disableNode('ndid1', {
@@ -2073,15 +2506,15 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     await wait(5000);
   });
 
-  it('After NDID disable node IdP (proxy1_idp4) RP should query proxy1_idp4 not found', async function() {
+  it('After NDID disable node IdP (proxy1_idp4) RP should query proxy1_idp4 not found', async function () {
     this.timeout(15000);
     const response = await commonApi.getIdP('rp1');
     const responseBody = await response.json();
-    const foundIdp = responseBody.find(idp => idp.node_id === 'proxy1_idp4');
+    const foundIdp = responseBody.find((idp) => idp.node_id === 'proxy1_idp4');
     expect(foundIdp).to.be.an('undefined');
   });
 
-  it('After NDID disable node IdP behind proxy (proxy1_idp4) should create a request to disabled IdP (proxy1_idp4) unsuccessfully', async function() {
+  it('After NDID disable node IdP behind proxy (proxy1_idp4) should create a request to disabled IdP (proxy1_idp4) unsuccessfully', async function () {
     this.timeout(15000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
@@ -2089,7 +2522,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     expect(responseBody.error.code).to.equal(20005);
   });
 
-  it('NDID should enable node IdP behind proxy (proxy1_idp4) successfully', async function() {
+  it('NDID should enable node IdP behind proxy (proxy1_idp4) successfully', async function () {
     this.timeout(10000);
     const response = await ndidApi.enableNode('ndid1', {
       node_id: 'proxy1_idp4',
@@ -2098,22 +2531,25 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     await wait(5000);
   });
 
-  it('After NDID enable node IdP (proxy1_idp4) RP should query proxy1_idp4 found', async function() {
+  it('After NDID enable node IdP (proxy1_idp4) RP should query proxy1_idp4 found', async function () {
     this.timeout(15000);
     const response = await commonApi.getIdP('rp1');
     const responseBody = await response.json();
-    const foundIdp = responseBody.find(idp => idp.node_id === 'proxy1_idp4');
+    const foundIdp = responseBody.find((idp) => idp.node_id === 'proxy1_idp4');
     expect(foundIdp).to.be.an('object');
   });
 
-  it('After NDID enable node IdP behind proxy (proxy1_idp4) RP should create a request to proxy1_idp4 successfully', async function() {
+  it('After NDID enable node IdP behind proxy (proxy1_idp4) RP should create a request to proxy1_idp4 successfully', async function () {
     this.timeout(15000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+    
     enableNodeRequestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
+
     const createRequestResult = await enableNodeCreateRequestResultPromise.promise;
     expect(createRequestResult).to.deep.include({
       type: 'create_request_result',
@@ -2121,42 +2557,80 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       reference_id: createRequestParams.reference_id,
       request_id: enableNodeRequestId,
     });
+    expect(createRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+        ':',
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
   });
 
-  it('RP should receive pending request status', async function() {
-    const requestStatus = await requestStatusPendingPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: enableNodeRequestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [],
+  it('RP should receive pending request status', async function () {
+    this.timeout(20000);
+
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId: 'proxy1',
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId: enableNodeRequestId,
+        initialSalt,
+        callRpApiAtNodeId: 'proxy1',
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+    await receivePendingRequestStatusTest({
+      nodeId: rp_node_id,
+      createRequestParams,
+      requestId: enableNodeRequestId,
+      idpIdList,
+      dataRequestList,
+      requestMessageHash,
+      lastStatusUpdateBlockHeight,
+      requestStatusPendingPromise,
+      requesterNodeId: rp_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    // const requestStatus = await requestStatusPendingPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: enableNodeRequestId,
+    //   status: 'pending',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 0,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 0,
+    //       received_data_count: 0,
+    //     },
+    //   ],
+    //   response_valid_list: [],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -2182,15 +2656,12 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
-
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.proxy1Idp4Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -2208,7 +2679,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let accessorPrivateKey =
@@ -2219,7 +2690,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       requestMessagePaddedHash,
     );
 
-    const response = await idpApi.createResponse('proxy1', {
+    let idpResponse = {
       node_id: 'proxy1_idp4',
       reference_id: idpReferenceId,
       callback_url: config.PROXY1_CALLBACK_URL,
@@ -2229,7 +2700,16 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       status: 'accept',
       accessor_id: responseAccessorId,
       signature,
+    };
+
+    idpResponseParams.push({
+      ...idpResponse,
+      idp_id: 'proxy1_idp4',
+      valid_signature: true,
+      valid_ial: true,
     });
+
+    const response = await idpApi.createResponse('proxy1', idpResponse);
     expect(response.status).to.equal(202);
   });
 
@@ -2251,7 +2731,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function() {
+  it('IdP shoud receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'proxy1_idp4',
@@ -2262,7 +2742,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     });
   });
 
-  it('AS should receive data request', async function() {
+  it('AS should receive data request', async function () {
     this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -2281,7 +2761,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       .empty;
   });
 
-  it('AS should send data successfully', async function() {
+  it('AS should send data successfully', async function () {
     this.timeout(15000);
     const response = await asApi.sendData('as1', {
       requestId: enableNodeRequestId,
@@ -2297,79 +2777,122 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       reference_id: asReferenceId,
       success: true,
     });
+
+    dataRequestList = setDataSigned(
+      dataRequestList,
+      createRequestParams.data_request_list[0].service_id,
+      as_node_id,
+    );
+
+    dataRequestList = setDataReceived(
+      dataRequestList,
+      createRequestParams.data_request_list[0].service_id,
+      as_node_id,
+    );
   });
 
-  it('RP should receive completed request status with received data count = 1', async function() {
+  it('RP should receive completed request status with received data count = 1', async function () {
     this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: enableNodeRequestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'proxy1_idp4',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+
+    const testResult = await receiveCompletedRequestStatusTest({
+      nodeId: rp_node_id,
+      requestStatusCompletedPromise,
+      requestId: enableNodeRequestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    // const requestStatus = await requestStatusCompletedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: enableNodeRequestId,
+    //   status: 'completed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 1,
+    //       received_data_count: 1,
+    //     },
+    //   ],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'proxy1_idp4',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should receive request closed status', async function() {
+  it('RP should receive request closed status', async function () {
     this.timeout(10000);
-    const requestStatus = await requestClosedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: enableNodeRequestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: true,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'proxy1_idp4',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+
+    const testResult = await receiveRequestClosedStatusTest({
+      nodeId: rp_node_id,
+      requestClosedPromise,
+      requestId: enableNodeRequestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    // const requestStatus = await requestClosedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: enableNodeRequestId,
+    //   status: 'completed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: true,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 1,
+    //       received_data_count: 1,
+    //     },
+    //   ],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'proxy1_idp4',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should get the correct data received from AS', async function() {
+  it('RP should get the correct data received from AS', async function () {
     const response = await rpApi.getDataFromAS('proxy1', {
       node_id: createRequestParams.node_id,
       requestId: enableNodeRequestId,
@@ -2388,7 +2911,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(10000);
     await ndidApi.enableNode('ndid1', {
       node_id: 'proxy1_idp4',
@@ -2401,7 +2924,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   });
 });
 
-describe('NDID disable node AS behind proxy and enable node AS behind proxy test', function() {
+describe('NDID disable node AS behind proxy and enable node AS behind proxy test', function () {
   let namespace;
   let identifier;
 
@@ -2421,12 +2944,22 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
 
   let createRequestParams;
   let enableNodeRequestId;
-  let requestMessageSalt;
-  let requestMessageHash;
+  let initialSalt;
 
   let responseAccessorId;
   let identityForResponse;
   let requestMessagePaddedHash;
+
+  let lastStatusUpdateBlockHeight;
+
+  let rp_node_id = 'proxy1_rp4';
+  let requester_node_id = 'proxy1_rp4';
+  let idp_node_id = 'idp1';
+  let as_node_id = 'proxy1_as4';
+  let idpIdList;
+  let dataRequestList;
+  let idpResponseParams = [];
+  let requestMessageHash;
 
   const data = JSON.stringify({
     test: 'test',
@@ -2434,13 +2967,13 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     arr: [1, 2, 3],
   });
 
-  before(async function() {
+  before(async function () {
     if (!ndidAvailable || !proxy1Available) {
       this.skip();
     }
 
     const identity = db.idp1Identities.find(
-      identity => identity.mode === 3 && !identity.revokeIdentityAssociation,
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation,
     );
 
     if (!identity) {
@@ -2477,7 +3010,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       bypass_identity_check: false,
     };
 
-    proxy1EventEmitter.on('callback', function(callbackData) {
+    proxy1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.request_id === enableNodeRequestId
@@ -2499,7 +3032,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === enableNodeRequestId
@@ -2513,13 +3046,13 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       }
     });
 
-    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === enableNodeRequestId) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
 
-    proxy1EventEmitter.on('callback', function(callbackData) {
+    proxy1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === enableNodeRequestId
@@ -2534,7 +3067,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     });
   });
 
-  it('NDID should disable node AS behind proxy (proxy1_as4) successfully', async function() {
+  it('NDID should disable node AS behind proxy (proxy1_as4) successfully', async function () {
     this.timeout(10000);
 
     const response = await ndidApi.disableNode('ndid1', {
@@ -2544,15 +3077,15 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     await wait(5000);
   });
 
-  it('After NDID disable node AS (proxy1_as4) RP should query list of AS by service id not found', async function() {
+  it('After NDID disable node AS (proxy1_as4) RP should query list of AS by service id not found', async function () {
     this.timeout(15000);
     const response = await commonApi.getASByServiceId('rp1', 'bank_statement');
     const responseBody = await response.json();
-    const foundAS = responseBody.find(as => as.node_id === 'proxy1_as4');
+    const foundAS = responseBody.find((as) => as.node_id === 'proxy1_as4');
     expect(foundAS).to.be.an('undefined');
   });
 
-  it('After NDID disable node AS behind proxy (proxy1_as4) RP should create a request with data request to disabled AS (proxy1_as4) unsuccessfully', async function() {
+  it('After NDID disable node AS behind proxy (proxy1_as4) RP should create a request with data request to disabled AS (proxy1_as4) unsuccessfully', async function () {
     this.timeout(15000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
@@ -2560,7 +3093,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     expect(responseBody.error.code).to.equal(20024);
   });
 
-  it('NDID should enable node behind proxy (proxy1_as4) successfully', async function() {
+  it('NDID should enable node behind proxy (proxy1_as4) successfully', async function () {
     this.timeout(30000);
     const response = await ndidApi.enableNode('ndid1', {
       node_id: 'proxy1_as4',
@@ -2569,22 +3102,25 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     await wait(5000);
   });
 
-  it('After NDID enable node AS (proxy1_as4) RP should query list of AS by service id found', async function() {
+  it('After NDID enable node AS (proxy1_as4) RP should query list of AS by service id found', async function () {
     this.timeout(15000);
     const response = await commonApi.getASByServiceId('rp1', 'bank_statement');
     const responseBody = await response.json();
-    const foundAS = responseBody.find(as => as.node_id === 'proxy1_as4');
+    const foundAS = responseBody.find((as) => as.node_id === 'proxy1_as4');
     expect(foundAS).to.be.an('object');
   });
 
-  it('After NDID enable node AS behind proxy (proxy1_as4) RP should create a request with data request to proxy1_as4 successfully', async function() {
+  it('After NDID enable node AS behind proxy (proxy1_as4) RP should create a request with data request to proxy1_as4 successfully', async function () {
     this.timeout(15000);
     const response = await rpApi.createRequest('proxy1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
     expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+    
     enableNodeRequestId = responseBody.request_id;
+    initialSalt = responseBody.initial_salt;
+
     const createRequestResult = await enableNodeCreateRequestResultPromise.promise;
     expect(createRequestResult).to.deep.include({
       type: 'create_request_result',
@@ -2592,42 +3128,80 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       reference_id: createRequestParams.reference_id,
       request_id: enableNodeRequestId,
     });
+    expect(createRequestResult.creation_block_height).to.be.a('string');
+      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+        ':',
+      );
+      expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+      expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+      expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
   });
 
-  it('RP should receive pending request status', async function() {
-    const requestStatus = await requestStatusPendingPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: enableNodeRequestId,
-      status: 'pending',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 0,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 0,
-          received_data_count: 0,
-        },
-      ],
-      response_valid_list: [],
-    });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+  it('RP should receive pending request status', async function () {
+   this.timeout(20000);
+
+   [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+    createIdpIdList({
+      createRequestParams,
+      callRpApiAtNodeId: rp_node_id,
+    }),
+    createDataRequestList({
+      createRequestParams,
+      requestId: enableNodeRequestId,
+      initialSalt,
+      callRpApiAtNodeId: rp_node_id,
+    }),
+    createRequestMessageHash({
+      createRequestParams,
+      initialSalt,
+    }),
+  ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+  await receivePendingRequestStatusTest({
+    nodeId: rp_node_id,
+    createRequestParams,
+    requestId: enableNodeRequestId,
+    idpIdList,
+    dataRequestList,
+    requestMessageHash,
+    lastStatusUpdateBlockHeight,
+    requestStatusPendingPromise,
+    requesterNodeId: rp_node_id,
+  });
+    // const requestStatus = await requestStatusPendingPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: enableNodeRequestId,
+    //   status: 'pending',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 0,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 0,
+    //       received_data_count: 0,
+    //     },
+    //   ],
+    //   response_valid_list: [],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
     const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      dataRequest => {
+      (dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
@@ -2653,15 +3227,12 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     expect(incomingRequest.request_message_salt).to.be.a('string').that.is.not
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
-
-    requestMessageSalt = incomingRequest.request_message_salt;
-    requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -2679,7 +3250,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let accessorPrivateKey =
@@ -2690,7 +3261,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       requestMessagePaddedHash,
     );
 
-    const response = await idpApi.createResponse('idp1', {
+    let idpResponse = {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: enableNodeRequestId,
@@ -2699,7 +3270,16 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       status: 'accept',
       accessor_id: responseAccessorId,
       signature,
+    };
+
+    idpResponseParams.push({
+      ...idpResponse,
+      idp_id: 'idp1',
+      valid_signature: true,
+      valid_ial: true,
     });
+
+    const response = await idpApi.createResponse('idp1', idpResponse);
     expect(response.status).to.equal(202);
   });
 
@@ -2721,7 +3301,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function() {
+  it('IdP shoud receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
@@ -2732,7 +3312,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     });
   });
 
-  it('AS should receive data request', async function() {
+  it('AS should receive data request', async function () {
     this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -2751,7 +3331,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       .empty;
   });
 
-  it('AS should send data successfully', async function() {
+  it('AS should send data successfully', async function () {
     this.timeout(15000);
     const response = await asApi.sendData('proxy1', {
       node_id: 'proxy1_as4',
@@ -2768,79 +3348,122 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       reference_id: asReferenceId,
       success: true,
     });
+
+    dataRequestList = setDataSigned(
+      dataRequestList,
+      createRequestParams.data_request_list[0].service_id,
+      as_node_id,
+    );
+
+    dataRequestList = setDataReceived(
+      dataRequestList,
+      createRequestParams.data_request_list[0].service_id,
+      as_node_id,
+    );
   });
 
-  it('RP should receive completed request status with received data count = 1', async function() {
+  it('RP should receive completed request status with received data count = 1', async function () {
     this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: enableNodeRequestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+
+    const testResult = await receiveCompletedRequestStatusTest({
+      nodeId: rp_node_id,
+      requestStatusCompletedPromise,
+      requestId: enableNodeRequestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    // const requestStatus = await requestStatusCompletedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: enableNodeRequestId,
+    //   status: 'completed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 1,
+    //       received_data_count: 1,
+    //     },
+    //   ],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'idp1',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should receive request closed status', async function() {
+  it('RP should receive request closed status', async function () {
     this.timeout(10000);
-    const requestStatus = await requestClosedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: enableNodeRequestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: true,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+
+    const testResult = await receiveRequestClosedStatusTest({
+      nodeId: rp_node_id,
+      requestClosedPromise,
+      requestId: enableNodeRequestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    // const requestStatus = await requestClosedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: enableNodeRequestId,
+    //   status: 'completed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: true,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 1,
+    //       received_data_count: 1,
+    //     },
+    //   ],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'idp1',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('RP should get the correct data received from AS', async function() {
+  it('RP should get the correct data received from AS', async function () {
     const response = await rpApi.getDataFromAS('proxy1', {
       node_id: createRequestParams.node_id,
       requestId: enableNodeRequestId,
@@ -2859,7 +3482,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
     expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(10000);
     await ndidApi.enableNode('ndid1', {
       node_id: 'proxy1_as4',
