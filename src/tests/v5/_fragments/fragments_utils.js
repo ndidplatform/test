@@ -1,9 +1,11 @@
 import * as commonApi from '../../../api/v5/common';
 import * as utils from '../../../utils';
+import { idpReceiveCreateResponseResultCallbackTest } from './request_flow_fragments/idp';
 
 export async function createIdpIdList({
   createRequestParams,
   callRpApiAtNodeId,
+  mimeType,
 }) {
   let idp_id_list;
   if (
@@ -21,8 +23,26 @@ export async function createIdpIdList({
         min_ial: createRequestParams.min_ial,
       },
     );
-    const responseBody = await responseGetRelevantIdpNodesBySid.json();
-    idp_id_list = responseBody.map((idp) => idp.node_id);
+    let responseBody = await responseGetRelevantIdpNodesBySid.json();
+    let idpIdListResult = [];
+    if (mimeType) {
+      let resultIdp = [];
+      console.log(mimeType);
+      mimeType.forEach((mimeType) => {
+        let resultFilterMimeType = responseBody.filter((idp) =>
+          idp.supported_request_message_data_url_type_list.includes(mimeType),
+        );
+        console.log('resultFilterMimeType', resultFilterMimeType);
+        let result = resultFilterMimeType.map((result) => result.node_id);
+        console.log('result', result);
+        resultIdp = resultIdp.concat(result);
+      });
+      idpIdListResult = [...new Set(resultIdp)];
+      idp_id_list = idpIdListResult;
+    } else {
+      idpIdListResult = responseBody;
+      idp_id_list = idpIdListResult.map((idp) => idp.node_id);
+    }
   }
   return idp_id_list;
 }

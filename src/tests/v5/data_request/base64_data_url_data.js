@@ -101,7 +101,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
 
   let rp_node_id = 'rp1';
   let requester_node_id = 'rp1';
-  let idp_node_id = 'idp2';
+  let idp_node_id = 'idp1';
   let as_node_id = 'as1';
   let idpIdList;
   let dataRequestList;
@@ -361,6 +361,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       createIdpIdList({
         createRequestParams,
         callRpApiAtNodeId: rp_node_id,
+        mimeType: ['application/pdf']
       }),
       createDataRequestList({
         createRequestParams,
@@ -372,8 +373,8 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
         createRequestParams,
         initialSalt,
       }),
-    ]); // create idp_id_list, as_id_list, request_message_hash for test
-
+    ]); 
+    
     await receivePendingRequestStatusTest({
       nodeId: rp_node_id,
       createRequestParams,
@@ -385,7 +386,6 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       requestStatusPendingPromise,
       requesterNodeId: rp_node_id,
     });
-
 
     // const requestStatus = await requestStatusPendingPromise.promise;
     // expect(requestStatus).to.deep.include({
@@ -513,7 +513,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       aal: 3,
       status: 'accept',
       accessor_id: responseAccessorId,
-      signature
+      signature,
     };
 
     idpResponseParams.push({
@@ -776,7 +776,6 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       createRequestParams.data_request_list[0].service_id,
       as_node_id,
     );
-
   });
 
   it('AS should receive message queue send success (To rp1) callback', async function () {
@@ -1085,7 +1084,6 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       isNotRp: true,
     });
 
-
     // const requestStatus = await as_requestStatusCompletedPromise.promise;
     // expect(requestStatus).to.deep.include({
     //   request_id: requestId,
@@ -1245,7 +1243,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       testForEqualLastStatusUpdateBlockHeight: true,
       requesterNodeId: requester_node_id,
     });
-    
+
     // const requestStatus = await as_requestClosedPromise.promise;
     // expect(requestStatus).to.deep.include({
     //   request_id: requestId,
