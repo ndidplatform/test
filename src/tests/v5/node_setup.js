@@ -24,7 +24,7 @@ describe('Node (external crypto) callback setup', function () {
         node_id: 'idp1',
       });
       const responseBody = await response.json();
-      if (responseBody.mq.length === 0) {
+      if (responseBody.mq == null) {
         exec('npm run reset-dev-key', (error) => {
           if (error) {
             console.error(`exec error: ${error}`);
