@@ -703,7 +703,7 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
     expect(responseBody.max_ial).is.a('number');
     expect(responseBody.max_aal).is.a('number');
     expect(responseBody.proxy).to.be.undefined;
-    expect(responseBody.mq).to.be.an('array').to.be.empty;
+    expect(responseBody.mq).to.be.null;
   });
 
   it('Should set MQ addresses (use debug) for IdP node (idp1) successfully', async function () {

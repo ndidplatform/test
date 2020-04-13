@@ -753,7 +753,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
     expect(responseBody.role).to.equal('AS');
     expect(responseBody.public_key).to.be.a('string').that.is.not.empty;
     expect(responseBody.proxy).to.be.undefined;
-    expect(responseBody.mq).to.be.an('array').to.be.empty;
+    expect(responseBody.mq).to.be.null;
   });
 
   it('Should set MQ addresses (use debug) for AS node (as1) successfully', async function () {
