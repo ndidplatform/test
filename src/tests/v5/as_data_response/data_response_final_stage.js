@@ -16,10 +16,20 @@ import {
   createResponseSignature,
   wait,
 } from '../../../utils';
+import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+  setDataReceived,
+  setDataSigned,
+} from '../_fragments/fragments_utils';
+import {
+  receiveCompletedRequestStatusTest,
+} from '../_fragments/common';
 import * as config from '../../../config';
 import { as2Available } from '../..';
 
-describe('AS response data request already closed test', function() {
+describe('AS response data request already closed test', function () {
   let namespace;
   let identifier;
 
@@ -43,11 +53,11 @@ describe('AS response data request already closed test', function() {
 
   let requestId;
 
-  before(async function() {
+  before(async function () {
     this.timeout(50000);
 
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation,
@@ -86,7 +96,7 @@ describe('AS response data request already closed test', function() {
       bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -100,7 +110,7 @@ describe('AS response data request already closed test', function() {
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -114,7 +124,7 @@ describe('AS response data request already closed test', function() {
       }
     });
 
-    as1EventEmitter.on('callback', function(callbackData) {
+    as1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === requestId
@@ -158,7 +168,7 @@ describe('AS response data request already closed test', function() {
     await responseResultPromise.promise;
   });
 
-  it('AS should receive data request', async function() {
+  it('AS should receive data request', async function () {
     this.timeout(15000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -177,7 +187,7 @@ describe('AS response data request already closed test', function() {
       .empty;
   });
 
-  it('RP should be able to close request successfully', async function() {
+  it('RP should be able to close request successfully', async function () {
     this.timeout(15000);
     const response = await rpApi.closeRequest('rp1', {
       reference_id: rpCloseRequestReferenceId,
@@ -192,7 +202,7 @@ describe('AS response data request already closed test', function() {
     await wait(3000);
   });
 
-  it('AS should get an error response when send data with request that already closed', async function() {
+  it('AS should get an error response when send data with request that already closed', async function () {
     this.timeout(15000);
     const response = await asApi.sendData('as1', {
       requestId,
@@ -215,7 +225,7 @@ describe('AS response data request already closed test', function() {
   });
 });
 
-describe('AS response data request already timed out test', function() {
+describe('AS response data request already timed out test', function () {
   let namespace;
   let identifier;
 
@@ -238,11 +248,11 @@ describe('AS response data request already timed out test', function() {
 
   let requestId;
 
-  before(async function() {
+  before(async function () {
     this.timeout(50000);
 
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation,
@@ -281,7 +291,7 @@ describe('AS response data request already timed out test', function() {
       bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -295,7 +305,7 @@ describe('AS response data request already timed out test', function() {
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -309,7 +319,7 @@ describe('AS response data request already timed out test', function() {
       }
     });
 
-    as1EventEmitter.on('callback', function(callbackData) {
+    as1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === requestId
@@ -360,7 +370,7 @@ describe('AS response data request already timed out test', function() {
     await wait(3000);
   });
 
-  it('AS should receive data request', async function() {
+  it('AS should receive data request', async function () {
     this.timeout(20000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -379,7 +389,7 @@ describe('AS response data request already timed out test', function() {
       .empty;
   });
 
-  it('AS should get an error callback response when send data with request that already timed out', async function() {
+  it('AS should get an error callback response when send data with request that already timed out', async function () {
     this.timeout(15000);
     const response = await asApi.sendData('as1', {
       requestId,
@@ -402,7 +412,7 @@ describe('AS response data request already timed out test', function() {
   });
 });
 
-describe('AS response data request already completed test', function() {
+describe('AS response data request already completed test', function () {
   let namespace;
   let identifier;
 
@@ -428,9 +438,20 @@ describe('AS response data request already completed test', function() {
   });
 
   let requestId;
+  let initialSalt;
 
-  before(async function() {
-    this.timeout(20000);
+  let lastStatusUpdateBlockHeight;
+  let rp_node_id = 'rp1';
+  let requester_node_id = 'rp1';
+  let idp_node_id = 'idp1';
+  let as_node_id = 'as1';
+  let idpIdList;
+  let dataRequestList;
+  let idpResponseParams = [];
+  let requestMessageHash;
+
+  before(async function () {
+    this.timeout(50000);
 
     if (!as2Available) {
       this.test.parent.pending = true;
@@ -438,7 +459,7 @@ describe('AS response data request already completed test', function() {
     }
 
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation,
@@ -477,7 +498,7 @@ describe('AS response data request already completed test', function() {
       bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -493,7 +514,7 @@ describe('AS response data request already completed test', function() {
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -507,7 +528,7 @@ describe('AS response data request already completed test', function() {
       }
     });
 
-    as1EventEmitter.on('callback', function(callbackData) {
+    as1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === requestId
@@ -522,7 +543,7 @@ describe('AS response data request already completed test', function() {
       }
     });
 
-    as2EventEmitter.on('callback', function(callbackData) {
+    as2EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === requestId
@@ -534,7 +555,31 @@ describe('AS response data request already completed test', function() {
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     requestId = responseBody.request_id;
-    await createRequestResultPromise.promise;
+    initialSalt = responseBody.initial_salt;
+
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId,
+        initialSalt,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]); // create idp_id_list, as_id_list, request_message_hash for test
+
+    let createRequestResult = await createRequestResultPromise.promise;
+    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
+      ':',
+    );
+    lastStatusUpdateBlockHeight = parseInt(splittedCreationBlockHeight[1]);
+
     await incomingRequestPromise.promise;
 
     const responseGetRequestMessagePaddedHash = await idpApi.getRequestMessagePaddedHash(
@@ -553,8 +598,7 @@ describe('AS response data request already completed test', function() {
       responseBodyGetRequestMessagePaddedHash.request_message_padded_hash,
     );
 
-    //const identity = db.idp1Identities[0];
-    await idpApi.createResponse('idp1', {
+    let idpResponse = {
       reference_id: idpReferenceId,
       callback_url: config.IDP1_CALLBACK_URL,
       request_id: requestId,
@@ -563,11 +607,21 @@ describe('AS response data request already completed test', function() {
       status: 'accept',
       accessor_id: identity[0].accessors[0].accessorId,
       signature,
+    };
+
+    idpResponseParams.push({
+      ...idpResponse,
+      idp_id: 'idp1',
+      valid_signature: true,
+      valid_ial: true,
     });
+
+    //const identity = db.idp1Identities[0];
+    await idpApi.createResponse('idp1', idpResponse);
     await responseResultPromise.promise;
   });
 
-  it('AS (as1) should receive data request', async function() {
+  it('AS (as1) should receive data request', async function () {
     this.timeout(15000);
     const dataRequest = await as1DataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -586,7 +640,7 @@ describe('AS response data request already completed test', function() {
       .empty;
   });
 
-  it('AS (as2) should receive data request', async function() {
+  it('AS (as2) should receive data request', async function () {
     this.timeout(15000);
     const dataRequest = await as2DataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -605,7 +659,7 @@ describe('AS response data request already completed test', function() {
       .empty;
   });
 
-  it('AS (as1) should send data successfully', async function() {
+  it('AS (as1) should send data successfully', async function () {
     this.timeout(15000);
     const response = await asApi.sendData('as1', {
       requestId,
@@ -623,45 +677,73 @@ describe('AS response data request already completed test', function() {
       request_id: requestId,
       success: true,
     });
+
+    dataRequestList = setDataSigned(
+      dataRequestList,
+      createRequestParams.data_request_list[0].service_id,
+      as_node_id,
+    );
+
+    dataRequestList = setDataReceived(
+      dataRequestList,
+      createRequestParams.data_request_list[0].service_id,
+      as_node_id,
+    );
   });
 
-  it('RP should receive completed request status with received data count = 1', async function() {
+  it('RP should receive completed request status with received data count = 1', async function () {
     this.timeout(15000);
-    const requestStatus = await requestStatusCompletedPromise.promise;
-    expect(requestStatus).to.deep.include({
-      request_id: requestId,
-      status: 'completed',
-      mode: createRequestParams.mode,
-      min_idp: createRequestParams.min_idp,
-      answered_idp_count: 1,
-      closed: false,
-      timed_out: false,
-      service_list: [
-        {
-          service_id: createRequestParams.data_request_list[0].service_id,
-          min_as: createRequestParams.data_request_list[0].min_as,
-          signed_data_count: 1,
-          received_data_count: 1,
-        },
-      ],
-      response_valid_list: [
-        {
-          idp_id: 'idp1',
-          valid_signature: true,
-          valid_ial: true,
-        },
-      ],
+
+    const testResult = await receiveCompletedRequestStatusTest({
+      nodeId: rp_node_id,
+      requestStatusCompletedPromise,
+      requestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
     });
-    expect(requestStatus).to.have.property('block_height');
-    expect(requestStatus.block_height).is.a('string');
-    const splittedBlockHeight = requestStatus.block_height.split(':');
-    expect(splittedBlockHeight).to.have.lengthOf(2);
-    expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
+
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    // const requestStatus = await requestStatusCompletedPromise.promise;
+    // expect(requestStatus).to.deep.include({
+    //   request_id: requestId,
+    //   status: 'completed',
+    //   mode: createRequestParams.mode,
+    //   min_idp: createRequestParams.min_idp,
+    //   answered_idp_count: 1,
+    //   closed: false,
+    //   timed_out: false,
+    //   service_list: [
+    //     {
+    //       service_id: createRequestParams.data_request_list[0].service_id,
+    //       min_as: createRequestParams.data_request_list[0].min_as,
+    //       signed_data_count: 1,
+    //       received_data_count: 1,
+    //     },
+    //   ],
+    //   response_valid_list: [
+    //     {
+    //       idp_id: 'idp1',
+    //       valid_signature: true,
+    //       valid_ial: true,
+    //     },
+    //   ],
+    // });
+    // expect(requestStatus).to.have.property('block_height');
+    // expect(requestStatus.block_height).is.a('string');
+    // const splittedBlockHeight = requestStatus.block_height.split(':');
+    // expect(splittedBlockHeight).to.have.lengthOf(2);
+    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
+    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     await wait(3000);
   });
 
-  it('AS (as2) should get an error response when send data with request that already completed', async function() {
+  it('AS (as2) should get an error response when send data with request that already completed', async function () {
     this.timeout(15000);
     const response = await asApi.sendData('as2', {
       requestId,
