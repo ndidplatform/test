@@ -14,13 +14,18 @@ import {
 } from '../_fragments/request_flow_fragments/rp';
 import { idpReceiveMode2And3IncomingRequestCallbackTest } from '../_fragments/request_flow_fragments/idp';
 import {
+  createIdpIdList,
+  createDataRequestList,
+  createRequestMessageHash,
+} from '../_fragments/fragments_utils';
+import {
   receivePendingRequestStatusTest,
   receiveMessagequeueSendSuccessCallback,
 } from '../_fragments/common';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import * as config from '../../../config';
 
-describe('IdP making response with accessor does not associate with sid and reference group code (verify signature at rp) test', function() {
+describe('IdP making response with accessor does not associate with sid and reference group code (verify signature at rp) test', function () {
   //Verify signature at RP
 
   let namespace;
@@ -60,11 +65,16 @@ describe('IdP making response with accessor does not associate with sid and refe
   let requestStatusUpdates = [];
   let idp_requestStatusUpdates = [];
 
-  before(async function() {
+  let rp_node_id = 'rp1';
+  let idpIdList;
+  let dataRequestList;
+  let requestMessageHash;
+
+  before(async function () {
     this.timeout(30000);
 
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation,
@@ -102,7 +112,7 @@ describe('IdP making response with accessor does not associate with sid and refe
       bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -131,7 +141,7 @@ describe('IdP making response with accessor does not associate with sid and refe
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -165,7 +175,7 @@ describe('IdP making response with accessor does not associate with sid and refe
       }
     });
 
-    nodeCallbackEventEmitter.on('callback', function(callbackData) {
+    nodeCallbackEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'message_queue_send_success' &&
         callbackData.request_id === requestId
@@ -189,7 +199,7 @@ describe('IdP making response with accessor does not associate with sid and refe
     });
   });
 
-  it('RP should create request successfully', async function() {
+  it('RP should create request successfully', async function () {
     this.timeout(15000);
     let testResult = await rpCreateRequestTest({
       callApiAtNodeId: 'rp1',
@@ -202,18 +212,40 @@ describe('IdP making response with accessor does not associate with sid and refe
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('RP should receive pending status successfully', async function() {
+  it('RP should receive pending status successfully', async function () {
     this.timeout(20000);
+
+    [idpIdList, dataRequestList, requestMessageHash] = await Promise.all([
+      createIdpIdList({
+        createRequestParams,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createDataRequestList({
+        createRequestParams,
+        requestId,
+        initialSalt,
+        callRpApiAtNodeId: rp_node_id,
+      }),
+      createRequestMessageHash({
+        createRequestParams,
+        initialSalt,
+      }),
+    ]); // create idp_id_list, as_id_list, request_message_hash for test
+
     await receivePendingRequestStatusTest({
-      nodeId: 'rp1',
+      nodeId: rp_node_id,
       createRequestParams,
       requestId,
+      idpIdList,
+      dataRequestList,
+      requestMessageHash,
       lastStatusUpdateBlockHeight,
       requestStatusPendingPromise,
+      requesterNodeId: rp_node_id,
     });
   });
 
-  it('Should verify request params hash successfully', async function() {
+  it('Should verify request params hash successfully', async function () {
     this.timeout(15000);
     await verifyRequestParamsHash({
       callApiAtNodeId: 'rp1',
@@ -223,7 +255,7 @@ describe('IdP making response with accessor does not associate with sid and refe
     });
   });
 
-  it('RP should receive message queue send success (To idp1) callback', async function() {
+  it('RP should receive message queue send success (To idp1) callback', async function () {
     this.timeout(15000);
     await receiveMessagequeueSendSuccessCallback({
       nodeId: 'rp1',
@@ -233,7 +265,7 @@ describe('IdP making response with accessor does not associate with sid and refe
     });
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function () {
     this.timeout(15000);
     await idpReceiveMode2And3IncomingRequestCallbackTest({
       createRequestParams,
@@ -244,11 +276,11 @@ describe('IdP making response with accessor does not associate with sid and refe
     });
   });
 
-  it('IdP should get request message padded hash with accessor does not associate with sid and reference group code successfully', async function() {
+  it('IdP should get request message padded hash with accessor does not associate with sid and reference group code successfully', async function () {
     this.timeout(15000);
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.identifier != identifier &&
         !identity.revokeIdentityAssociation &&
@@ -266,7 +298,7 @@ describe('IdP making response with accessor does not associate with sid and refe
     requestMessagePaddedHash = responseBody.request_message_padded_hash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function () {
     this.timeout(10000);
     let privateKeyToSign = identityForResponse.accessors[0].accessorPrivateKey;
 
