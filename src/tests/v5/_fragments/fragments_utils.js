@@ -6,8 +6,10 @@ export async function createIdpIdList({
   createRequestParams,
   callRpApiAtNodeId,
   mimeType,
+  filterForNodeId,
 }) {
   let idp_id_list;
+  let filter_for_node_id = filterForNodeId ? filterForNodeId : '';
   if (
     createRequestParams.idp_id_list &&
     createRequestParams.idp_id_list.length > 0
@@ -21,6 +23,7 @@ export async function createIdpIdList({
         identifier: createRequestParams.identifier,
         mode: createRequestParams.mode,
         min_ial: createRequestParams.min_ial,
+        filter_for_node_id,
       },
     );
     let responseBody = await responseGetRelevantIdpNodesBySid.json();
