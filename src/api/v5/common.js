@@ -6,8 +6,12 @@ export function getRelevantIdpNodesBySid(nodeId, data) {
   const { namespace, identifier, ...queryParams } = data;
   // const { min_ial, min_aal, mode } = data;
 
-  let arrayQueryString = Object.keys(queryParams).map(key => {
-    return `${key}=${data[key]}`;
+  let arrayQueryString = [];
+
+  Object.keys(queryParams).forEach((key) => {
+    if (data[key] !== '') {
+      arrayQueryString.push(`${key}=${data[key]}`);
+    }
   });
 
   let queryString = arrayQueryString.join('&');
@@ -22,10 +26,12 @@ export function getRelevantIdpNodesBySid(nodeId, data) {
 export function getIdP(nodeId, data = {}) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
 
-  let arrayQueryString = Object.keys(data).map(key => `${key}=${data[key]}`);
+  let arrayQueryString = Object.keys(data).map((key) => `${key}=${data[key]}`);
   let queryString = arrayQueryString.join('&');
 
-  return httpGet(`${apiBaseUrl}/utility/idp${queryString ? `?${queryString}` : ''}`);
+  return httpGet(
+    `${apiBaseUrl}/utility/idp${queryString ? `?${queryString}` : ''}`,
+  );
 }
 
 export function getRequest(nodeId, data) {
@@ -93,4 +99,14 @@ export function removePrivateMessages(nodeId, data) {
     `${apiBaseUrl}/utility/private_message_removal/${request_id}`,
     node_id ? { node_id } : {},
   );
+}
+
+export function getIdPErrorCodes(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  return httpGet(`${apiBaseUrl}/utility/idp_error_codes`);
+}
+
+export function getASErrorCodes(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  return httpGet(`${apiBaseUrl}/utility/as_error_codes`);
 }
