@@ -28,7 +28,7 @@ import {
   receiveCompletedRequestStatusTest,
 } from './common';
 
-import { createEventPromise } from '../../../utils';
+import { createEventPromise, wait } from '../../../utils';
 import {
   createDataRequestList,
   createIdpIdList,
@@ -40,6 +40,7 @@ import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_serv
 
 export function mode2And3DataRequestFlowTest({
   callRpApiAtNodeId,
+  filterForNodeId,
   rpEventEmitter,
   getIdentityForRequest,
   createRequestParams,
@@ -468,6 +469,7 @@ export function mode2And3DataRequestFlowTest({
       createIdpIdList({
         createRequestParams,
         callRpApiAtNodeId,
+        filterForNodeId,
       }),
       createDataRequestList({
         createRequestParams,
@@ -886,6 +888,8 @@ export function mode2And3DataRequestFlowTest({
         lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
 
         dataRequestList = setDataReceived(dataRequestList, serviceId, asNodeId);
+
+        await wait(1500);
         // const testResult = await receiveConfirmedRequestStatusTest({
         //   nodeId: rpNodeId,
         //   requestStatusConfirmedPromise: requestStatusSignedDataPromise,

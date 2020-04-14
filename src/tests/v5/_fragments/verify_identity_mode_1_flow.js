@@ -29,6 +29,7 @@ import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_serv
 
 export function mode1FlowTest({
   callRpApiAtNodeId,
+  filterForNodeId,
   rpEventEmitter,
   createRequestParams,
   idpParams,
@@ -284,6 +285,7 @@ export function mode1FlowTest({
       createIdpIdList({
         createRequestParams,
         callRpApiAtNodeId,
+        filterForNodeId,
       }),
       createDataRequestList({
         createRequestParams,
