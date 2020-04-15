@@ -6,12 +6,35 @@ export async function receivePendingRequestStatusTest({
   createRequestParams,
   requestId,
   idpIdList,
+  idpResponse,
   dataRequestList,
   requestMessageHash,
   lastStatusUpdateBlockHeight,
   requestStatusPendingPromise,
   requesterNodeId,
+  testForAboveLastStatusUpdateBlockHeight,
+  isNotRp,
 }) {
+  let response_list = [];
+  if (idpResponse) {
+    response_list = idpResponse.map((idpResponse) => {
+      const {
+        reference_id,
+        callback_url,
+        request_id,
+        accessor_id,
+        node_id,
+        ...rest
+      } = idpResponse;
+
+      if (isNotRp || createRequestParams.mode === 1) {
+        rest.valid_signature = null;
+        rest.valid_ial = null;
+      }
+      return rest;
+    });
+  }
+
   const requestStatus = await requestStatusPendingPromise.promise;
   expect(requestStatus).to.deep.include({
     node_id: nodeId,
@@ -24,7 +47,7 @@ export async function receivePendingRequestStatusTest({
     idp_id_list: idpIdList,
     data_request_list: dataRequestList,
     request_message_hash: requestMessageHash,
-    response_list: [],
+    response_list,
     closed: false,
     timed_out: false,
     mode: createRequestParams.mode,
@@ -37,9 +60,15 @@ export async function receivePendingRequestStatusTest({
   expect(splittedBlockHeight).to.have.lengthOf(2);
   expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-  expect(parseInt(splittedBlockHeight[1])).to.equal(
-    lastStatusUpdateBlockHeight,
-  );
+  if (testForAboveLastStatusUpdateBlockHeight) {
+    expect(parseInt(splittedBlockHeight[1])).to.be.above(
+      lastStatusUpdateBlockHeight,
+    );
+  } else {
+    expect(parseInt(splittedBlockHeight[1])).to.equal(
+      lastStatusUpdateBlockHeight,
+    );
+  }
 }
 
 export async function receiveConfirmedRequestStatusTest({
@@ -428,6 +457,7 @@ export async function receiveRequestClosedStatusTest({
   idpResponse,
   requestMessageHash,
   idpIdList,
+  status,
   lastStatusUpdateBlockHeight,
   testForEqualLastStatusUpdateBlockHeight,
   requesterNodeId,
@@ -465,7 +495,7 @@ export async function receiveRequestClosedStatusTest({
     closed: true,
     timed_out: false,
     mode: createRequestParams.mode,
-    status: 'completed',
+    status: status ? status : 'completed',
     requester_node_id: requesterNodeId,
   });
   expect(requestStatus).to.have.property('block_height');
