@@ -79,4 +79,14 @@ describe('RP create request mode 1 to IdP agent test', function () {
       ],
     });
   });
+
+  after(async function () {
+    this.timeout(15000);
+    const response = await ndidApi.updateNode('ndid1', {
+      node_id: 'idp3',
+      agent: false,
+    });
+    expect(response.status).to.equal(204);
+    await wait(3000);
+  });
 });
