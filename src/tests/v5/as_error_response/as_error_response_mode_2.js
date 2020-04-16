@@ -541,6 +541,16 @@ describe('RP create request (mode 2) min_as = 1 and AS response with an error co
     });
   });
 
+  it('RP should get empty data received from AS', async function () {
+    this.timeout(100000);
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    expect(response.status).to.equal(200);
+    const dataArr = await response.json();
+    expect(dataArr).to.be.an('array').to.be.empty;
+  });
+
   after(function () {
     setAsSendErrorThroughCallback(false);
     rpEventEmitter.removeAllListeners('callback');
@@ -1045,6 +1055,16 @@ describe('RP create request (mode 2) min_as = 1 and AS response with an error co
       requester_node_id: requester_node_id,
       status: 'errored',
     });
+  });
+
+  it('RP should get empty data received from AS', async function () {
+    this.timeout(100000);
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    expect(response.status).to.equal(200);
+    const dataArr = await response.json();
+    expect(dataArr).to.be.an('array').to.be.empty;
   });
 
   after(function () {
@@ -1939,6 +1959,25 @@ describe('RP create request (mode 2) min_as = 1 to 2 AS and 1st AS response with
     });
   });
 
+  it('RP should get empty data received from AS', async function () {
+    this.timeout(100000);
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    const dataArr = await response.json();
+    expect(response.status).to.equal(200);
+
+    expect(dataArr).to.have.lengthOf(1);
+    expect(dataArr[0]).to.deep.include({
+      source_node_id: 'as2',
+      service_id: createRequestParams.data_request_list[0].service_id,
+      signature_sign_method: 'RSA-SHA256',
+      data,
+    });
+    expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
+  });
+
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
@@ -2690,6 +2729,25 @@ describe('RP create request (mode 2) min_as = 1 to 2 AS and 1st AS response data
       requester_node_id: requester_node_id,
       status: 'completed',
     });
+  });
+
+  it('RP should get empty data received from AS', async function () {
+    this.timeout(100000);
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    const dataArr = await response.json();
+    expect(response.status).to.equal(200);
+
+    expect(dataArr).to.have.lengthOf(1);
+    expect(dataArr[0]).to.deep.include({
+      source_node_id: 'as1',
+      service_id: createRequestParams.data_request_list[0].service_id,
+      signature_sign_method: 'RSA-SHA256',
+      data,
+    });
+    expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
   });
 
   after(function () {
@@ -3596,6 +3654,25 @@ describe('RP create request (mode 2) min_as = 2 to 2 AS and 1st AS response data
     });
   });
 
+  it('RP should get empty data received from AS', async function () {
+    this.timeout(100000);
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    const dataArr = await response.json();
+    expect(response.status).to.equal(200);
+
+    expect(dataArr).to.have.lengthOf(1);
+    expect(dataArr[0]).to.deep.include({
+      source_node_id: 'as1',
+      service_id: createRequestParams.data_request_list[0].service_id,
+      signature_sign_method: 'RSA-SHA256',
+      data,
+    });
+    expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
+    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
+  });
+
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
@@ -4270,6 +4347,16 @@ describe('RP create request (mode 2) min_as = 2 to 2 AS and 1st AS response erro
       requester_node_id: requester_node_id,
       status: 'errored',
     });
+  });
+
+  it('RP should get empty data received from AS', async function () {
+    this.timeout(100000);
+    const response = await rpApi.getDataFromAS('rp1', {
+      requestId,
+    });
+    const dataArr = await response.json();
+    expect(response.status).to.equal(200);
+    expect(dataArr).to.be.an('array').to.be.empty;
   });
 
   after(function () {
