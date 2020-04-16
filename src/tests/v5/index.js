@@ -23,3 +23,6 @@ require('./token');
 require('./ndid_disable_enable');
 require('./idp_agent');
 require('./whitelist');
+require('./ndid_add_error_response_code');
+require('./idp_error_response');
+require('./as_error_response');
