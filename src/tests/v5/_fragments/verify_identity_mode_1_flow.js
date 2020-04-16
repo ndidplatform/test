@@ -335,9 +335,7 @@ export function mode1FlowTest({
     const responseResultPromise = responseResultPromises[i];
     const requestStatusConfirmedPromise = requestStatusConfirmedPromises[i];
     const requestStatusRejectPromise = requestStatusRejectedPromises[i];
-    let { createResponseSignature, ...idpResponseParams } = idpParams[
-      i
-    ].idpResponseParams;
+    let { createResponseSignature, ...idpResponseParams } = idpParams[i].idpResponseParams;
     const idpNodeId = idpNodeIds[i];
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function () {

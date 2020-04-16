@@ -21,7 +21,7 @@ import * as config from '../../../config';
 import { idp2Available } from '../..';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe('IdP response request already confirmed test', function() {
+describe('IdP response request already confirmed test', function () {
   let namespace;
   let identifier;
 
@@ -44,7 +44,7 @@ describe('IdP response request already confirmed test', function() {
   let responseAccessorId;
   let requestMessagePaddedHash;
 
-  before(async function() {
+  before(async function () {
     this.timeout(30000);
 
     if (!idp2Available) {
@@ -53,7 +53,7 @@ describe('IdP response request already confirmed test', function() {
     }
 
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation &&
@@ -61,7 +61,7 @@ describe('IdP response request already confirmed test', function() {
     );
 
     let identityOnIdp2 = db.idp2Identities.filter(
-      identityIdP2 =>
+      (identityIdP2) =>
         identityIdP2.namespace === identity[0].namespace &&
         identityIdP2.identifier === identity[0].identifier &&
         identityIdP2.mode === identity[0].mode,
@@ -102,7 +102,7 @@ describe('IdP response request already confirmed test', function() {
       bypass_identity_check: false,
     };
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -116,7 +116,7 @@ describe('IdP response request already confirmed test', function() {
       }
     });
 
-    idp2EventEmitter.on('callback', function(callbackData) {
+    idp2EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -138,10 +138,10 @@ describe('IdP response request already confirmed test', function() {
     await idp2IncomingRequestPromise.promise;
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(30000);
     identityForResponse = db.idp2Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -159,7 +159,7 @@ describe('IdP response request already confirmed test', function() {
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -178,7 +178,7 @@ describe('IdP response request already confirmed test', function() {
       idp1TestResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP (idp2) should create response (accept) successfully', async function() {
+  it('IdP (idp2) should create response (accept) successfully', async function () {
     this.timeout(20000);
 
     let accessorPrivateKey =
@@ -210,10 +210,10 @@ describe('IdP response request already confirmed test', function() {
     });
   });
 
-  it('IdP (idp1) should get an error callback response when making a response with request that already confirmed by idp2', async function() {
+  it('IdP (idp1) should get an error callback response when making a response with request that already confirmed by idp2', async function () {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -235,21 +235,26 @@ describe('IdP response request already confirmed test', function() {
       signature,
     });
 
-    expect(response.status).to.equal(202);
+    if (response.status === 400) {
+      const responseBody = await response.json();
+      expect(responseBody.error.code).to.equal(20081);
+    } else {
+      expect(response.status).to.equal(202);
 
-    const responseResult = await idp1ResponseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: false,
-      error: {
-        code: 25004,
-        message: 'Request is already completed',
-      },
-    });
+      const responseResult = await idp1ResponseResultPromise.promise;
+      expect(responseResult).to.deep.include({
+        reference_id: idpReferenceId,
+        request_id: requestId,
+        success: false,
+        error: {
+          code: 25004,
+          message: 'Request is already completed',
+        },
+      });
+    }
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(10000);
     await rpApi.closeRequest('rp1', {
       reference_id: uuidv4(),
@@ -262,7 +267,7 @@ describe('IdP response request already confirmed test', function() {
   });
 });
 
-describe('IdP response request already closed test', function() {
+describe('IdP response request already closed test', function () {
   let namespace;
   let identifier;
 
@@ -287,7 +292,7 @@ describe('IdP response request already closed test', function() {
   let responseAccessorId;
   let requestMessagePaddedHash;
 
-  before(async function() {
+  before(async function () {
     this.timeout(30000);
 
     if (!idp2Available) {
@@ -296,7 +301,7 @@ describe('IdP response request already closed test', function() {
     }
 
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation &&
@@ -304,7 +309,7 @@ describe('IdP response request already closed test', function() {
     );
 
     let identityOnIdp2 = db.idp2Identities.filter(
-      identityIdP2 =>
+      (identityIdP2) =>
         identityIdP2.namespace === identity[0].namespace &&
         identityIdP2.identifier === identity[0].identifier &&
         identityIdP2.mode === identity[0].mode,
@@ -345,7 +350,7 @@ describe('IdP response request already closed test', function() {
       bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
@@ -358,7 +363,7 @@ describe('IdP response request already closed test', function() {
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -372,7 +377,7 @@ describe('IdP response request already closed test', function() {
       }
     });
 
-    idp2EventEmitter.on('callback', function(callbackData) {
+    idp2EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -386,7 +391,7 @@ describe('IdP response request already closed test', function() {
       }
     });
 
-    as1EventEmitter.on('callback', function(callbackData) {
+    as1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.request_id === requestId
@@ -408,10 +413,10 @@ describe('IdP response request already closed test', function() {
     await idp2IncomingRequestPromise.promise;
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.idp2Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -429,7 +434,7 @@ describe('IdP response request already closed test', function() {
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
 
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -448,7 +453,7 @@ describe('IdP response request already closed test', function() {
       idp1TestResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP (idp2) should create response (accept) successfully', async function() {
+  it('IdP (idp2) should create response (accept) successfully', async function () {
     this.timeout(20000);
 
     let accessorPrivateKey =
@@ -480,7 +485,7 @@ describe('IdP response request already closed test', function() {
     });
   });
 
-  it('AS should receive data request', async function() {
+  it('AS should receive data request', async function () {
     this.timeout(20000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -499,7 +504,7 @@ describe('IdP response request already closed test', function() {
       .empty;
   });
 
-  it('AS should send data successfully', async function() {
+  it('AS should send data successfully', async function () {
     this.timeout(20000);
     const response = await asApi.sendData('as1', {
       requestId,
@@ -517,10 +522,10 @@ describe('IdP response request already closed test', function() {
     });
   });
 
-  it('IdP (idp1) should get an error callback response when making a response with request that already closed', async function() {
+  it('IdP (idp1) should get an error callback response when making a response with request that already closed', async function () {
     this.timeout(20000);
     const identity = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -542,21 +547,27 @@ describe('IdP response request already closed test', function() {
       signature,
     });
 
-    expect(response.status).to.equal(202);
+    if (response.status === 400) {
+      const responseBody = await response.json();
+      expect(responseBody.error.code).to.equal(20081);
+    }
+    else{
+      expect(response.status).to.equal(202);
 
-    const responseResult = await idp1ResponseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: false,
-      error: {
-        code: 25004,
-        message: 'Request is already completed',
-      },
-    });
+      const responseResult = await idp1ResponseResultPromise.promise;
+      expect(responseResult).to.deep.include({
+        reference_id: idpReferenceId,
+        request_id: requestId,
+        success: false,
+        error: {
+          code: 25004,
+          message: 'Request is already completed',
+        },
+      });
+    }
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(10000);
     await rpApi.closeRequest('rp1', {
       reference_id: uuidv4(),
@@ -571,7 +582,7 @@ describe('IdP response request already closed test', function() {
   });
 });
 
-describe('IdP response request already timed out test', function() {
+describe('IdP response request already timed out test', function () {
   let namespace;
   let identifier;
 
@@ -590,11 +601,11 @@ describe('IdP response request already timed out test', function() {
   let responseAccessorId;
   let requestMessagePaddedHash;
 
-  before(async function() {
+  before(async function () {
     this.timeout(30000);
 
     let identity = db.idp1Identities.filter(
-      identity =>
+      (identity) =>
         identity.namespace === 'citizen_id' &&
         identity.mode === 3 &&
         !identity.revokeIdentityAssociation,
@@ -633,7 +644,7 @@ describe('IdP response request already timed out test', function() {
       bypass_identity_check: false,
     };
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
@@ -646,7 +657,7 @@ describe('IdP response request already timed out test', function() {
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -667,10 +678,10 @@ describe('IdP response request already timed out test', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
-      identity =>
+      (identity) =>
         identity.namespace === namespace && identity.identifier === identifier,
     );
 
@@ -689,7 +700,7 @@ describe('IdP response request already timed out test', function() {
     await requestTimeoutPromise.promise;
   });
 
-  it('IdP (idp1) should get an error callback response when making a response with request that already timed out', async function() {
+  it('IdP (idp1) should get an error callback response when making a response with request that already timed out', async function () {
     this.timeout(20000);
 
     let accessorPrivateKey =
@@ -716,7 +727,7 @@ describe('IdP response request already timed out test', function() {
     expect(responseBody.error.code).to.equal(20026);
   });
 
-  after(async function() {
+  after(async function () {
     idp1EventEmitter.removeAllListeners('callback');
     rpEventEmitter.removeAllListeners('callback');
   });
