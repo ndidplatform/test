@@ -63,6 +63,7 @@ describe('Create identity by idp agent tests', function () {
     const referenceId = generateReferenceId();
 
     const createIdentityResultPromise = createEventPromise();
+    const errorResultPromise = createEventPromise();
 
     let accessorId;
 
@@ -73,6 +74,8 @@ describe('Create identity by idp agent tests', function () {
           callbackData.reference_id === referenceId
         ) {
           createIdentityResultPromise.resolve(callbackData);
+        } else if (callbackData.type === 'error') {
+          errorResultPromise.resolve(callbackData);
         }
       });
     });
@@ -104,19 +107,8 @@ describe('Create identity by idp agent tests', function () {
 
     it('Identity should be created unsuccessfully', async function () {
       this.timeout(15000);
-      const createIdentityResult = await createIdentityResultPromise.promise;
-      expect(createIdentityResult).to.deep.include({
-        reference_id: referenceId,
-        success: false,
-      });
-
-      const response = await commonApi.getRelevantIdpNodesBySid('idp3', {
-        namespace,
-        identifier,
-      });
-
-      const idpNodes = await response.json();
-      expect(idpNodes).to.be.an('array').to.be.empty;
+      const errorResult = await errorResultPromise.promise;
+      expect(errorResult.error.code).to.equal(25035);
     });
     after(async function () {
       idp3EventEmitter.removeAllListeners('callback');
@@ -141,22 +133,24 @@ describe('Create identity by idp agent tests', function () {
     const referenceId = generateReferenceId();
 
     const createIdentityResultPromise = createEventPromise();
+    const errorResultPromise = createEventPromise();
 
     let accessorId;
 
     before(function () {
-      this.skip();
       idp3EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_identity_result' &&
           callbackData.reference_id === referenceId
         ) {
           createIdentityResultPromise.resolve(callbackData);
+        } else if (callbackData.type === 'error') {
+          errorResultPromise.resolve(callbackData);
         }
       });
     });
 
-    it('Should create identity request (mode 3) successfully', async function () {
+    it('Should create identity request (mode 3) unsuccessfully', async function () {
       this.timeout(10000);
       const response = await identityApi.createIdentity('idp3', {
         reference_id: referenceId,
@@ -182,22 +176,10 @@ describe('Create identity by idp agent tests', function () {
       accessorId = responseBody.accessor_id;
     });
 
-    it('Identity should be created successfully', async function () {
+    it('Identity should be created unsuccessfully', async function () {
       this.timeout(15000);
-      const createIdentityResult = await createIdentityResultPromise.promise;
-      console.log(createIdentityResult);
-      expect(createIdentityResult).to.deep.include({
-        reference_id: referenceId,
-        success: false,
-      });
-
-      const response = await commonApi.getRelevantIdpNodesBySid('idp3', {
-        namespace,
-        identifier,
-      });
-
-      const idpNodes = await response.json();
-      expect(idpNodes).to.be.an('array').to.be.empty;
+      const errorResult = await errorResultPromise.promise;
+      expect(errorResult.error.code).to.equal(25035);
     });
     after(async function () {
       idp3EventEmitter.removeAllListeners('callback');
