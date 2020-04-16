@@ -9,5 +9,4 @@ describe('(RP) Create request tests', function() {
   require('./create_request');
   require('./error_response');
   require('./unqualified_to_response');
-  require('./whitelist');
 });
