@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import { expect } from 'chai';
+import uuidv4 from 'uuid/v4';
 
-import { idp2Available } from '../..';
+import { idp2Available, idp3Available } from '../..';
 import * as rpApi from '../../../api/v5/rp';
 import * as idpApi from '../../../api/v5/idp';
 import * as asApi from '../../../api/v5/as';
@@ -355,8 +356,7 @@ describe('RP create request (mode 1) min_idp = 1 and IdP response with an error 
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
   });
 });
 
@@ -739,65 +739,6 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     await wait(3000); //wait for data propagate
   });
 
-  // it('Should get request status with errored status and not closed successfully', async function () {
-  //   this.timeout(10000);
-
-  //   let response_list = idpResponseParams.map((idpResponse) => {
-  //     const {
-  //       reference_id,
-  //       callback_url,
-  //       request_id,
-  //       accessor_id,
-  //       node_id,
-  //       ...rest
-  //     } = idpResponse;
-
-  //     if (createRequestParams.mode === 1) {
-  //       rest.valid_signature = null;
-  //       rest.valid_ial = null;
-  //     }
-  //     return rest;
-  //   });
-
-  //   const response = await commonApi.getRequest('rp1', {
-  //     requestId,
-  //   });
-  //   expect(response.status).to.equal(200);
-  //   const responseBody = await response.json();
-  //   expect(responseBody).to.deep.include({
-  //     request_id: requestId,
-  //     min_idp: createRequestParams.min_idp,
-  //     min_aal: createRequestParams.min_aal,
-  //     min_ial: createRequestParams.min_ial,
-  //     request_timeout: createRequestParams.request_timeout,
-  //     idp_id_list: createRequestParams.idp_id_list,
-  //     data_request_list: dataRequestList,
-  //     response_list,
-  //     closed: false,
-  //     timed_out: false,
-  //     mode: 1,
-  //     requester_node_id: requester_node_id,
-  //     status: 'errored',
-  //   });
-  // });
-
-  // it('RP should be able to close request', async function () {
-  //   this.timeout(10000);
-  //   const response = await rpApi.closeRequest('rp1', {
-  //     reference_id: rpCloseRequestReferenceId,
-  //     callback_url: config.RP_CALLBACK_URL,
-  //     request_id: requestId,
-  //   });
-  //   expect(response.status).to.equal(202);
-
-  //   const closeRequestResult = await closeRequestResultPromise.promise;
-  //   expect(closeRequestResult).to.deep.include({
-  //     reference_id: rpCloseRequestReferenceId,
-  //     request_id: requestId,
-  //     success: true,
-  //   });
-  // });
-
   it('RP should receive request closed status', async function () {
     this.timeout(10000);
 
@@ -883,8 +824,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
   });
 });
 
@@ -1332,8 +1272,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
   });
 });
 
@@ -1848,8 +1787,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
   });
 });
 
@@ -2223,23 +2161,6 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     await wait(3000); //wait for data propagate
   });
 
-  // it('RP should be able to close request', async function () {
-  //   this.timeout(10000);
-  //   const response = await rpApi.closeRequest('rp1', {
-  //     reference_id: rpCloseRequestReferenceId,
-  //     callback_url: config.RP_CALLBACK_URL,
-  //     request_id: requestId,
-  //   });
-  //   expect(response.status).to.equal(202);
-
-  //   const closeRequestResult = await closeRequestResultPromise.promise;
-  //   expect(closeRequestResult).to.deep.include({
-  //     reference_id: rpCloseRequestReferenceId,
-  //     request_id: requestId,
-  //     success: true,
-  //   });
-  // });
-
   it('RP should receive request closed status', async function () {
     this.timeout(10000);
 
@@ -2324,8 +2245,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
   });
 });
 
@@ -2762,65 +2682,6 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     await wait(3000); //wait for data propagate
   });
 
-  // it('Should get request status with errored status and not closed successfully', async function () {
-  //   this.timeout(10000);
-
-  //   let response_list = idpResponseParams.map((idpResponse) => {
-  //     const {
-  //       reference_id,
-  //       callback_url,
-  //       request_id,
-  //       accessor_id,
-  //       node_id,
-  //       ...rest
-  //     } = idpResponse;
-
-  //     if (createRequestParams.mode === 1) {
-  //       rest.valid_signature = null;
-  //       rest.valid_ial = null;
-  //     }
-  //     return rest;
-  //   });
-
-  //   const response = await commonApi.getRequest('rp1', {
-  //     requestId,
-  //   });
-  //   expect(response.status).to.equal(200);
-  //   const responseBody = await response.json();
-  //   expect(responseBody).to.deep.include({
-  //     request_id: requestId,
-  //     min_idp: createRequestParams.min_idp,
-  //     min_aal: createRequestParams.min_aal,
-  //     min_ial: createRequestParams.min_ial,
-  //     request_timeout: createRequestParams.request_timeout,
-  //     idp_id_list: createRequestParams.idp_id_list,
-  //     data_request_list: dataRequestList,
-  //     response_list,
-  //     closed: false,
-  //     timed_out: false,
-  //     mode: 1,
-  //     requester_node_id: requester_node_id,
-  //     status: 'errored',
-  //   });
-  // });
-
-  // it('RP should be able to close request', async function () {
-  //   this.timeout(10000);
-  //   const response = await rpApi.closeRequest('rp1', {
-  //     reference_id: rpCloseRequestReferenceId,
-  //     callback_url: config.RP_CALLBACK_URL,
-  //     request_id: requestId,
-  //   });
-  //   expect(response.status).to.equal(202);
-
-  //   const closeRequestResult = await closeRequestResultPromise.promise;
-  //   expect(closeRequestResult).to.deep.include({
-  //     reference_id: rpCloseRequestReferenceId,
-  //     request_id: requestId,
-  //     success: true,
-  //   });
-  // });
-
   it('RP should receive request closed status', async function () {
     this.timeout(10000);
 
@@ -2906,8 +2767,8 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
+    
   });
 });
 
@@ -3429,8 +3290,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
   });
 });
 
@@ -3742,7 +3602,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP (idp2) should receive incoming request callback', async function () {
+  it('IdP (idp3) should receive incoming request callback', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise3.promise;
 
@@ -3937,24 +3797,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
 
     await wait(3000); //wait for data propagate
   });
-
-  // it('RP should be able to close request', async function () {
-  //   this.timeout(10000);
-  //   const response = await rpApi.closeRequest('rp1', {
-  //     reference_id: rpCloseRequestReferenceId,
-  //     callback_url: config.RP_CALLBACK_URL,
-  //     request_id: requestId,
-  //   });
-  //   expect(response.status).to.equal(202);
-
-  //   const closeRequestResult = await closeRequestResultPromise.promise;
-  //   expect(closeRequestResult).to.deep.include({
-  //     reference_id: rpCloseRequestReferenceId,
-  //     request_id: requestId,
-  //     success: true,
-  //   });
-  // });
-
+  
   it('RP should receive request closed status', async function () {
     this.timeout(10000);
 
@@ -4058,8 +3901,8 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
+    idp3EventEmitter.removeAllListeners('callback');
   });
 });
 
@@ -4742,8 +4585,8 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
+    idp3EventEmitter.removeAllListeners('callback');
   });
 });
 
@@ -5590,8 +5433,9 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
+    idp3EventEmitter.removeAllListeners('callback');
+    
   });
 });
 
@@ -6433,7 +6277,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
   after(function () {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
-    idp2EventEmitter.removeAllListeners('accessor_encrypt_callback');
-    idp3EventEmitter.removeAllListeners('accessor_encrypt_callback');
+    idp2EventEmitter.removeAllListeners('callback');
+    idp3EventEmitter.removeAllListeners('callback');
   });
 });

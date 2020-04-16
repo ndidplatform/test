@@ -8,6 +8,9 @@ describe('IdP create response with error code tests', function () {
     }
   });
 
+  //Must run this file to prepare identity for test
+  require('./create_identity_before_test');
+
   require('./idp_error_response_mode_1');
   require('./idp_error_response_mode_2');
   require('./idp_error_response_mode_3');
