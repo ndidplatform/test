@@ -30,14 +30,11 @@ export async function createIdpIdList({
     let idpIdListResult = [];
     if (mimeType) {
       let resultIdp = [];
-      console.log(mimeType);
       mimeType.forEach((mimeType) => {
         let resultFilterMimeType = responseBody.filter((idp) =>
           idp.supported_request_message_data_url_type_list.includes(mimeType),
         );
-        console.log('resultFilterMimeType', resultFilterMimeType);
         let result = resultFilterMimeType.map((result) => result.node_id);
-        console.log('result', result);
         resultIdp = resultIdp.concat(result);
       });
       idpIdListResult = [...new Set(resultIdp)];
