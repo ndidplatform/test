@@ -19,6 +19,7 @@ export const proxy1EventEmitter = new EventEmitter();
 export const proxy2EventEmitter = new EventEmitter();
 
 let asSendDataThroughCallback = false;
+let asSendErrorThroughCallback = false;
 let useSpecificPrivateKeyForSign = false;
 let responseAccessorEncryptWithRandomByte = false;
 let privateKeyForSign;
@@ -26,6 +27,10 @@ let responseRandomByte;
 
 export function setAsSendDataThroughCallback(sendThroughCallback) {
   asSendDataThroughCallback = sendThroughCallback;
+}
+
+export function setAsSendErrorThroughCallback(sendThroughCallback) {
+  asSendErrorThroughCallback = sendThroughCallback;
 }
 
 export function setIdPUseSpecificPrivateKeyForSign(
@@ -268,7 +273,6 @@ idp3App.post('/idp/identity/notification', async function (req, res) {
   res.status(204).end();
 });
 
-
 /*
   AS-1
 */
@@ -281,6 +285,13 @@ as1App.post('/as/callback', async function (req, res) {
   if (callbackData.type === 'data_request' && asSendDataThroughCallback) {
     as1EventEmitter.emit('callback', callbackData, function (data) {
       res.status(200).json(data);
+    });
+  } else if (
+    callbackData.type === 'data_request' &&
+    asSendErrorThroughCallback
+  ) {
+    as1EventEmitter.emit('callback', callbackData, function (error_code) {
+      res.status(200).json(error_code);
     });
   } else {
     as1EventEmitter.emit('callback', callbackData);
