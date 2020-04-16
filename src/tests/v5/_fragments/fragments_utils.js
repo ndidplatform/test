@@ -130,3 +130,21 @@ export function setDataReceived(dataRequestList, serviceId, asId) {
   });
   return newDataRequestList;
 }
+
+export function setASResponseError(
+  dataRequestList,
+  serviceId,
+  asId,
+  errorCode,
+) {
+  let newDataRequestList = dataRequestList.map((service) => {
+    if (service.service_id === serviceId) {
+      service.response_list.push({
+        as_id: asId,
+        error_code: errorCode,
+      });
+    }
+    return service;
+  });
+  return newDataRequestList;
+}
