@@ -5,7 +5,7 @@ import * as ndidApi from '../../../api/v5/ndid';
 import { wait } from '../../../utils';
 import { ndidAvailable } from '../..';
 
-describe('IdP error response tests', function () {
+describe('NDID add response error code tests', function () {
   before(function () {
     if (!ndidAvailable) {
       this.skip();
