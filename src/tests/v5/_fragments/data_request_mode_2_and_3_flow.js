@@ -209,6 +209,7 @@ export function mode2And3DataRequestFlowTest({
         identifier: identity.identifier,
         mode: createRequestParams.mode,
         min_ial: createRequestParams.min_ial,
+        filter_for_node_id: callRpApiAtNodeId,
       },
     );
     const resposenBodyGetRelevantIdpNodesBySid = await responseGetRelevantIdpNodesBySid.json();
@@ -469,7 +470,7 @@ export function mode2And3DataRequestFlowTest({
       createIdpIdList({
         createRequestParams,
         callRpApiAtNodeId,
-        filterForNodeId,
+        filterForNodeId: callRpApiAtNodeId,
       }),
       createDataRequestList({
         createRequestParams,

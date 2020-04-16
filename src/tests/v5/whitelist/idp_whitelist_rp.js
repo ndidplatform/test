@@ -17,15 +17,10 @@ import { createEventPromise, generateReferenceId } from '../../../utils';
 import * as config from '../../../config';
 
 import * as ndidApi from '../../../api/v5/ndid';
-import {
-  wait,
-  createSignature,
-  createResponseSignature,
-} from '../../../utils';
+import { wait, createSignature, createResponseSignature } from '../../../utils';
 import { ndidAvailable, idp3Available, rp2Available } from '../..';
 import { mode1DataRequestFlowTest } from '../_fragments/data_request_mode_1_flow';
 import { mode2And3DataRequestFlowTest } from '../_fragments/data_request_mode_2_and_3_flow';
-
 
 describe('IdP whitelist RP tests', function () {
   before(function () {
@@ -566,7 +561,6 @@ describe('IdP whitelist RP tests', function () {
       expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
       expect(responseBody.exist).to.equal(true);
       accessorId = responseBody.accessor_id;
-      console.log(namespace, identifier);
     });
 
     it('Identity should be created successfully', async function () {
@@ -760,7 +754,6 @@ describe('IdP whitelist RP tests', function () {
       });
       expect(response.status).equal(200);
       const idpNodes = await response.json();
-      console.log(idpNodes);
       expect(idpNodes).to.be.an('array').is.not.empty;
     });
 
@@ -791,7 +784,6 @@ describe('IdP whitelist RP tests', function () {
         request_message: createIdentityRequestMessage,
       });
       const responseBody = await response.json();
-      console.log(responseBody);
       expect(response.status).to.equal(202);
       expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
       expect(responseBody.accessor_id).to.be.a('string').that.is.not.empty;
@@ -821,7 +813,9 @@ describe('IdP whitelist RP tests', function () {
   describe('IdP whitelist RP test', function () {
     it('rp2 should got only nodes that whitelist when get all idp', async function () {
       this.timeout(10000);
-      let response = await commonApi.getIdP('rp2');
+      let response = await commonApi.getIdP('rp2', {
+        filter_for_node_id: 'rp2',
+      });
       expect(response.status).to.equal(200);
 
       let responseBody = await response.json();
@@ -832,7 +826,10 @@ describe('IdP whitelist RP tests', function () {
 
     it('Other RP is not being in whitelist idp3 should not got idp3 when get all idp', async function () {
       this.timeout(10000);
-      let response = await commonApi.getIdP('rp1');
+      let response = await commonApi.getIdP('rp1', {
+        filter_for_node_id: 'rp1',
+      });
+
       expect(response.status).to.equal(200);
 
       let responseBody = await response.json();
@@ -852,10 +849,10 @@ describe('IdP whitelist RP tests', function () {
       let response = await commonApi.getRelevantIdpNodesBySid('rp1', {
         namespace,
         identifier,
+        filter_for_node_id: 'rp1',
       });
 
       const idpNodes = await response.json();
-      console.log(idpNodes);
       expect(idpNodes).to.be.an('array').to.be.empty;
     });
 
@@ -870,6 +867,7 @@ describe('IdP whitelist RP tests', function () {
       let response = await commonApi.getRelevantIdpNodesBySid('rp1', {
         namespace,
         identifier,
+        filter_for_node_id: 'rp1',
       });
 
       const idpNodes = await response.json();
@@ -923,7 +921,6 @@ describe('IdP whitelist RP tests', function () {
         const response = await rpApi.createRequest('rp1', createRequestParams);
         expect(response.status).to.equal(400);
         const responseBody = await response.json();
-        console.log(responseBody);
         expect(responseBody.error.code).to.equal(20079);
       });
     });
@@ -969,7 +966,6 @@ describe('IdP whitelist RP tests', function () {
         const response = await rpApi.createRequest('rp1', createRequestParams);
         expect(response.status).to.equal(400);
         const responseBody = await response.json();
-        console.log(responseBody);
         expect(responseBody.error.code).to.equal(20079);
       });
     });
@@ -978,6 +974,7 @@ describe('IdP whitelist RP tests', function () {
       let createRequestParams;
 
       const rpReferenceId = generateReferenceId();
+      const createRequestResultPromise = createEventPromise();
 
       before(function () {
         const identity = db.idp3Identities.find(
@@ -1011,15 +1008,37 @@ describe('IdP whitelist RP tests', function () {
           request_timeout: 86400,
           bypass_identity_check: false,
         };
+
+        rpEventEmitter.on('callback', function (callbackData) {
+          if (
+            callbackData.type === 'create_request_result' &&
+            callbackData.reference_id === rpReferenceId
+          ) {
+            createRequestResultPromise.resolve(callbackData);
+          }
+        });
       });
 
       it('RP should create a request successfully', async function () {
         this.timeout(10000);
         const response = await rpApi.createRequest('rp1', createRequestParams);
-        expect(response.status).to.equal(400);
-        const responseBody = await response.json();
-        console.log(responseBody);
-        expect(responseBody.error.code).to.equal(20005);
+        if (response.status === 400) {
+          expect(response.status).to.equal(400);
+          const responseBody = await response.json();
+          expect(responseBody.error.code).to.equal(20005);
+        } else {
+          const createRequestResult = await createRequestResultPromise.promise;
+          expect(createRequestResult).to.deep.include({
+            node_id: 'rp1',
+            type: 'create_request_result',
+            success: false,
+            reference_id: rpReferenceId,
+            error: {
+              code: 25074,
+              message: 'Node is not in whitelist',
+            },
+          });
+        }
       });
     });
 
@@ -1067,7 +1086,6 @@ describe('IdP whitelist RP tests', function () {
         const response = await rpApi.createRequest('rp1', createRequestParams);
         expect(response.status).to.equal(400);
         const responseBody = await response.json();
-        console.log(responseBody);
         expect(responseBody.error.code).to.equal(20079);
       });
     });
@@ -1116,7 +1134,6 @@ describe('IdP whitelist RP tests', function () {
         const response = await rpApi.createRequest('rp1', createRequestParams);
         expect(response.status).to.equal(400);
         const responseBody = await response.json();
-        console.log(responseBody);
         expect(responseBody.error.code).to.equal(20079);
       });
     });
@@ -1125,15 +1142,14 @@ describe('IdP whitelist RP tests', function () {
       let createRequestParams;
 
       const rpReferenceId = generateReferenceId();
+      const createRequestResultPromise = createEventPromise();
 
-      //TODO Should pass
       before(function () {
         const identity = db.idp3Identities.find(
           (identity) => identity.mode === 2 && identity.remark === '2nd_idp',
         );
         let namespace = identity.namespace;
         let identifier = identity.identifier;
-
         createRequestParams = {
           reference_id: rpReferenceId,
           callback_url: config.RP_CALLBACK_URL,
@@ -1158,14 +1174,37 @@ describe('IdP whitelist RP tests', function () {
           request_timeout: 86400,
           bypass_identity_check: false,
         };
+
+        rpEventEmitter.on('callback', function (callbackData) {
+          if (
+            callbackData.type === 'create_request_result' &&
+            callbackData.reference_id === rpReferenceId
+          ) {
+            createRequestResultPromise.resolve(callbackData);
+          }
+        });
       });
 
       it('RP should create a request successfully', async function () {
         this.timeout(10000);
         const response = await rpApi.createRequest('rp1', createRequestParams);
-        expect(response.status).to.equal(400);
-        const responseBody = await response.json();
-        expect(responseBody.error.code).to.equal(20006);
+        if (response.status === 400) {
+          expect(response.status).to.equal(400);
+          const responseBody = await response.json();
+          expect(responseBody.error.code).to.equal(20006);
+        } else {
+          const createRequestResult = await createRequestResultPromise.promise;
+          expect(createRequestResult).to.deep.include({
+            node_id: 'rp1',
+            type: 'create_request_result',
+            success: false,
+            reference_id: rpReferenceId,
+            error: {
+              code: 25074,
+              message: 'Node is not in whitelist',
+            },
+          });
+        }
       });
     });
 
@@ -1212,7 +1251,6 @@ describe('IdP whitelist RP tests', function () {
         const response = await rpApi.createRequest('rp1', createRequestParams);
         expect(response.status).to.equal(400);
         const responseBody = await response.json();
-        console.log(responseBody);
         expect(responseBody.error.code).to.equal(20079);
       });
     });
@@ -1549,9 +1587,10 @@ describe('IdP whitelist RP tests', function () {
       let namespace = identity.namespace;
       let identifier = identity.identifier;
 
-      let response = await commonApi.getRelevantIdpNodesBySid('rp2', {
+      let response = await commonApi.getRelevantIdpNodesBySid('rp1', {
         namespace,
         identifier,
+        filter_for_node_id: 'rp1',
       });
       const idpNodes = await response.json();
       expect(idpNodes).to.be.an('array').to.have.length.above(1);

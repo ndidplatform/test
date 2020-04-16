@@ -53,7 +53,9 @@ describe('RP whitelist IdP tests', function () {
 
     it('rp2 should got only nodes that whitelist when get all idp', async function () {
       this.timeout(10000);
-      let response = await commonApi.getIdP('rp2');
+      let response = await commonApi.getIdP('rp2', {
+        filter_for_node_id: 'rp2',
+      });
       expect(response.status).to.equal(200);
 
       let responseBody = await response.json();
@@ -74,6 +76,7 @@ describe('RP whitelist IdP tests', function () {
       let response = await commonApi.getRelevantIdpNodesBySid('rp2', {
         namespace,
         identifier,
+        filter_for_node_id: 'rp2',
       });
 
       const idpNodes = await response.json();
@@ -91,6 +94,7 @@ describe('RP whitelist IdP tests', function () {
       let response = await commonApi.getRelevantIdpNodesBySid('rp2', {
         namespace,
         identifier,
+        filter_for_node_id: 'rp2',
       });
       const idpNodes = await response.json();
       expect(idpNodes).to.be.an('array').to.have.length(1);
@@ -109,6 +113,7 @@ describe('RP whitelist IdP tests', function () {
       let response = await commonApi.getRelevantIdpNodesBySid('rp2', {
         namespace,
         identifier,
+        filter_for_node_id: 'rp2',
       });
       const idpNodes = await response.json();
       expect(idpNodes).to.be.an('array').to.have.length(1);
@@ -816,7 +821,9 @@ describe('RP whitelist IdP tests', function () {
 
     it('rp2 should not got only nodes that whitelist when get all idp', async function () {
       this.timeout(10000);
-      let response = await commonApi.getIdP('rp2');
+      let response = await commonApi.getIdP('rp2', {
+        filter_for_node_id: 'rp2',
+      });
       expect(response.status).to.equal(200);
 
       let responseBody = await response.json();
@@ -836,6 +843,7 @@ describe('RP whitelist IdP tests', function () {
       let response = await commonApi.getRelevantIdpNodesBySid('rp2', {
         namespace,
         identifier,
+        filter_for_node_id: 'rp2',
       });
 
       const idpNodes = await response.json();
@@ -854,6 +862,7 @@ describe('RP whitelist IdP tests', function () {
       let response = await commonApi.getRelevantIdpNodesBySid('rp2', {
         namespace,
         identifier,
+        filter_for_node_id: 'rp2',
       });
       const idpNodes = await response.json();
       expect(idpNodes).to.be.an('array').to.have.length(1);
