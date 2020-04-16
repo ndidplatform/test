@@ -6,7 +6,6 @@ import * as identityApi from '../../../api/v5/identity';
 import * as commonApi from '../../../api/v5/common';
 import * as ndidApi from '../../../api/v5/ndid';
 import { idp3EventEmitter } from '../../../callback_server';
-import * as db from '../../../db';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
 import { ndidAvailable, idp3Available } from '../..';
@@ -68,7 +67,6 @@ describe('Create identity by idp agent tests', function () {
     let accessorId;
 
     before(function () {
-      this.skip();
       idp3EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_identity_result' &&
