@@ -950,8 +950,12 @@ describe('RP whitelist IdP tests', function () {
         callRpApiAtNodeId: 'rp2',
         rpEventEmitter: rp2EventEmitter,
         getIdentityForRequest: () => {
-          return db.idp1Identities.find((identity) => identity.mode === 2);
+          return db.idp1Identities.find(
+            (identity) =>
+              identity.mode === 2 && !identity.revokeIdentityAssociation,
+          );
         },
+
         createRequestParams: {
           reference_id: generateReferenceId(),
           callback_url: config.RP2_CALLBACK_URL,
@@ -1036,7 +1040,10 @@ describe('RP whitelist IdP tests', function () {
         callRpApiAtNodeId: 'rp2',
         rpEventEmitter: rp2EventEmitter,
         getIdentityForRequest: () => {
-          return db.idp1Identities.find((identity) => identity.mode === 3);
+          return db.idp1Identities.find(
+            (identity) =>
+              identity.mode === 3 && !identity.revokeIdentityAssociation,
+          );
         },
         createRequestParams: {
           reference_id: generateReferenceId(),
