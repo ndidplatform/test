@@ -179,7 +179,7 @@ describe('NDID disable RP node and enable RP node test', function () {
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.request_id === enableNodeRequestId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -741,7 +741,7 @@ describe('NDID disable IdP node and enable IdP node test', function () {
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.request_id === enableNodeRequestId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -1310,7 +1310,7 @@ describe('NDID disable AS node and enable AS node test', function () {
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.request_id === enableNodeRequestId
       ) {
         sendDataResultPromise.resolve(callbackData);

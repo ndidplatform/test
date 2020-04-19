@@ -143,7 +143,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
         ) {
           dataRequestReceivedPromise.resolve(callbackData);
         } else if (
-          callbackData.type === 'send_data_result' &&
+          callbackData.type === 'response_result' &&
           callbackData.reference_id === asReferenceId
         ) {
           sendDataResultPromise.resolve(callbackData);
@@ -633,7 +633,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
         ) {
           dataRequestReceivedPromise.resolve(callbackData);
         } else if (
-          callbackData.type === 'send_data_result' &&
+          callbackData.type === 'response_result' &&
           callbackData.reference_id === asReferenceId
         ) {
           sendDataResultPromise.resolve(callbackData);

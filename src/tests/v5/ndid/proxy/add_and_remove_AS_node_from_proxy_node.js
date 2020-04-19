@@ -207,7 +207,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       ) {
         dataRequestReceivedPromise1.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.request_id === requestId1
       ) {
         sendDataResultPromise1.resolve(callbackData);
@@ -257,7 +257,7 @@ describe('NDID add AS node to proxy node and remove AS node from proxy node test
       ) {
         dataRequestReceivedPromise2.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.request_id === requestId2
       ) {
         sendDataResultPromise2.resolve(callbackData);

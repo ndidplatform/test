@@ -603,7 +603,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         ) {
           dataRequestReceivedPromise.resolve(callbackData);
         } else if (
-          callbackData.type === 'send_data_result' &&
+          callbackData.type === 'response_result' &&
           callbackData.reference_id === asReferenceId
         ) {
           sendDataResultPromise.resolve(callbackData);
@@ -1014,7 +1014,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       const sendDataResult = await sendDataResultPromise.promise;
       expect(sendDataResult).to.deep.include({
         node_id: 'as1',
-        type: 'send_data_result',
+        type: 'response_result',
         reference_id: asReferenceId,
         success: true,
       });
@@ -2444,7 +2444,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         ) {
           dataRequestReceivedPromise.resolve(callbackData);
         } else if (
-          callbackData.type === 'send_data_result' &&
+          callbackData.type === 'response_result' &&
           callbackData.reference_id === asReferenceId
         ) {
           sendDataResultPromise.resolve(callbackData);
@@ -2911,7 +2911,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       const sendDataResult = await sendDataResultPromise.promise;
       expect(sendDataResult).to.deep.include({
         node_id: 'as1',
-        type: 'send_data_result',
+        type: 'response_result',
         reference_id: asReferenceId,
         success: true,
       });

@@ -124,7 +124,7 @@ describe('Spend and refill node token test', function() {
         } else if (callbackData.request_id === requestIdAfterAddNodeToken) {
           dataRequestAfterAddNodeTokenReceivedPromise.resolve(callbackData);
         }
-      } else if (callbackData.type === 'send_data_result') {
+      } else if (callbackData.type === 'response_result') {
         if (callbackData.reference_id === asSendDataReferenceId) {
           sendDataResultPromise.resolve(callbackData);
         } else if (

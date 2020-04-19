@@ -264,7 +264,7 @@ describe('NDID disable service destination after RP create request test', functi
         callbackData.request_id === requestId
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
-      } else if (callbackData.type === 'send_data_result') {
+      } else if (callbackData.type === 'response_result') {
         if (callbackData.reference_id === asServiceReferenceId) {
           sendDataResultPromise.resolve(callbackData);
         }

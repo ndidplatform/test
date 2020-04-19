@@ -165,7 +165,7 @@ describe('RP create request (mode 1) min_as = 1 and AS response with an error co
           error_code: asResponseErrorCode,
         });
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -386,7 +386,7 @@ describe('RP create request (mode 1) min_as = 1 and AS response with an error co
     // const sendDataResult = await sendDataResultPromise.promise;
     // expect(sendDataResult).to.deep.include({
     //   node_id: 'as1',
-    //   type: 'send_data_result',
+    //   type: 'response_result',
     //   reference_id: asReferenceId,
     //   success: true,
     // });
@@ -634,7 +634,7 @@ describe('RP create request (mode 1) min_as = 1 and AS response with an error co
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -855,7 +855,7 @@ describe('RP create request (mode 1) min_as = 1 and AS response with an error co
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       node_id: 'as1',
-      type: 'send_data_result',
+      type: 'response_result',
       reference_id: asReferenceId,
       success: true,
     });
@@ -1154,7 +1154,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response with
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -1192,7 +1192,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response with
       ) {
         dataRequestReceivedPromise2.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === as2ReferenceId
       ) {
         sendDataResultPromise2.resolve(callbackData);
@@ -1432,7 +1432,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response with
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       node_id: 'as1',
-      type: 'send_data_result',
+      type: 'response_result',
       reference_id: asReferenceId,
       success: true,
     });
@@ -1537,7 +1537,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response with
     const sendDataResult = await sendDataResultPromise2.promise;
     expect(sendDataResult).to.deep.include({
       node_id: 'as2',
-      type: 'send_data_result',
+      type: 'response_result',
       reference_id: as2ReferenceId,
       success: true,
     });
@@ -2003,7 +2003,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response data
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -2036,7 +2036,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response data
       ) {
         dataRequestReceivedPromise2.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === as2ReferenceId
       ) {
         sendDataResultPromise2.resolve(callbackData);
@@ -2271,7 +2271,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response data
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       node_id: 'as1',
-      type: 'send_data_result',
+      type: 'response_result',
       reference_id: asReferenceId,
       success: true,
     });
@@ -2297,7 +2297,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response data
       const sendDataResult = await sendDataResultPromise2.promise;
       expect(sendDataResult).to.deep.include({
         node_id: 'as2',
-        type: 'send_data_result',
+        type: 'response_result',
         reference_id: as2ReferenceId,
         success: false,
       });
@@ -2744,7 +2744,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response data
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -2783,7 +2783,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response data
       ) {
         dataRequestReceivedPromise2.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === as2ReferenceId
       ) {
         sendDataResultPromise2.resolve(callbackData);
@@ -3024,7 +3024,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response data
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       node_id: 'as1',
-      type: 'send_data_result',
+      type: 'response_result',
       reference_id: asReferenceId,
       success: true,
     });
@@ -3211,7 +3211,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response data
     const sendDataResult = await sendDataResultPromise2.promise;
     expect(sendDataResult).to.deep.include({
       node_id: 'as2',
-      type: 'send_data_result',
+      type: 'response_result',
       reference_id: as2ReferenceId,
       success: true,
     });
@@ -3581,7 +3581,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response erro
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -3606,7 +3606,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response erro
       ) {
         dataRequestReceivedPromise2.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === as2ReferenceId
       ) {
         sendDataResultPromise2.resolve(callbackData);
@@ -3833,7 +3833,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response erro
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       node_id: 'as1',
-      type: 'send_data_result',
+      type: 'response_result',
       reference_id: asReferenceId,
       success: true,
     });
@@ -3860,7 +3860,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response erro
       const sendDataResult = await sendDataResultPromise2.promise;
       expect(sendDataResult).to.deep.include({
         node_id: 'as2',
-        type: 'send_data_result',
+        type: 'response_result',
         reference_id: as2ReferenceId,
         success: false,
       });

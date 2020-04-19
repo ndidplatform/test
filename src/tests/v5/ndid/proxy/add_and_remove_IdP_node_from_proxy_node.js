@@ -150,8 +150,9 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       ) {
         dataRequestReceivedPromise1.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
-        callbackData.request_id === requestId1
+        callbackData.type === 'response_result' &&
+        callbackData.request_id === requestId1 &&
+        callbackData.node_id.includes('as')
       ) {
         sendDataResultPromise1.resolve(callbackData);
       } else if (
@@ -160,8 +161,9 @@ describe('NDID add IdP node to proxy node and remove IdP node from proxy node te
       ) {
         dataRequestReceivedPromise2.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
-        callbackData.request_id === requestId2
+        callbackData.type === 'response_result' &&
+        callbackData.request_id === requestId2 &&
+        callbackData.node_id.includes('as')
       ) {
         sendDataResultPromise2.resolve(callbackData);
       }

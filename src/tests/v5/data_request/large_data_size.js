@@ -179,7 +179,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function () {
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);

@@ -178,7 +178,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
           data,
         });
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);

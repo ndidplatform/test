@@ -97,7 +97,7 @@ describe('NDID enable service test', function() {
         callbackData.request_id === requestId
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
-      } else if (callbackData.type === 'send_data_result') {
+      } else if (callbackData.type === 'response_result') {
         if (callbackData.reference_id === asServiceReferenceId) {
           sendDataResultPromise.resolve(callbackData);
         }

@@ -236,7 +236,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -766,7 +766,7 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     const sendDataResult = await sendDataResultPromise.promise;
     expect(sendDataResult).to.deep.include({
       node_id: 'as1',
-      type: 'send_data_result',
+      type: 'response_result',
       reference_id: asReferenceId,
       success: true,
     });

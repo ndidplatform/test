@@ -181,7 +181,7 @@ describe('NDID disable proxy node and enable proxy node test', function () {
         ) {
           dataRequestReceivedPromise.resolve(callbackData);
         } else if (
-          callbackData.type === 'send_data_result' &&
+          callbackData.type === 'response_result' &&
           callbackData.request_id === enableNodeRequestId
         ) {
           sendDataResultPromise.resolve(callbackData);
@@ -756,7 +756,7 @@ describe('NDID disable proxy node and enable proxy node test', function () {
         ) {
           dataRequestReceivedPromise.resolve(callbackData);
         } else if (
-          callbackData.type === 'send_data_result' &&
+          callbackData.type === 'response_result' &&
           callbackData.request_id === enableNodeRequestId
         ) {
           sendDataResultPromise.resolve(callbackData);
@@ -1330,7 +1330,7 @@ describe('NDID disable proxy node and enable proxy node test', function () {
         ) {
           dataRequestReceivedPromise.resolve(callbackData);
         } else if (
-          callbackData.type === 'send_data_result' &&
+          callbackData.type === 'response_result' &&
           callbackData.request_id === enableNodeRequestId
         ) {
           sendDataResultPromise.resolve(callbackData);
@@ -1921,7 +1921,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.request_id === enableNodeRequestId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -2488,7 +2488,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.request_id === enableNodeRequestId
       ) {
         sendDataResultPromise.resolve(callbackData);
@@ -3059,7 +3059,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       ) {
         dataRequestReceivedPromise.resolve(callbackData);
       } else if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.request_id === enableNodeRequestId
       ) {
         sendDataResultPromise.resolve(callbackData);

@@ -339,7 +339,7 @@ export function mode2And3DataRequestFlowTest({
               callbackData,
             );
           } else if (
-            callbackData.type === 'send_data_result' &&
+            callbackData.type === 'response_result' &&
             callbackData.request_id === requestId &&
             callbackData.reference_id ===
               asParams[i].asResponseParams[j].reference_id
@@ -357,7 +357,7 @@ export function mode2And3DataRequestFlowTest({
       //   ) {
       //     dataRequestReceivedPromise.resolve(callbackData);
       //   } else if (
-      //     callbackData.type === 'send_data_result' &&
+      //     callbackData.type === 'response_result' &&
       //     callbackData.reference_id === asReferenceId
       //   ) {
       //     sendDataResultPromise.resolve(callbackData);

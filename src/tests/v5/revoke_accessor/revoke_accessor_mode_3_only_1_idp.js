@@ -1073,7 +1073,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
         ) {
           dataRequestReceivedPromise.resolve(callbackData);
         } else if (
-          callbackData.type === 'send_data_result' &&
+          callbackData.type === 'response_result' &&
           callbackData.reference_id === asReferenceId
         ) {
           sendDataResultPromise.resolve(callbackData);

@@ -143,7 +143,7 @@ describe('NDID disable namespace test', function() {
     });
 
     as1EventEmitter.on('callback', function(callbackData) {
-      if (callbackData.type === 'send_data_result') {
+      if (callbackData.type === 'response_result') {
         if (callbackData.reference_id === asReferenceId) {
           sendDataResultPromise.resolve(callbackData);
         }

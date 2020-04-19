@@ -536,7 +536,7 @@ describe('AS response data request already completed test', function () {
         as1DataRequestReceivedPromise.resolve(callbackData);
       }
       if (
-        callbackData.type === 'send_data_result' &&
+        callbackData.type === 'response_result' &&
         callbackData.reference_id === asReferenceId
       ) {
         as1SendDataResultPromise.resolve(callbackData);
