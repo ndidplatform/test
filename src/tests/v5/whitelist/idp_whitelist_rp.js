@@ -930,7 +930,6 @@ describe('IdP whitelist RP tests', function () {
 
       const rpReferenceId = generateReferenceId();
 
-      //TODO Should pass
       before(function () {
         namespace = 'citizen_id';
         identifier = '1234567890123';
@@ -1095,7 +1094,6 @@ describe('IdP whitelist RP tests', function () {
 
       const rpReferenceId = generateReferenceId();
 
-      //TODO hould Pass
       before(function () {
         const identity = db.idp3Identities.find(
           (identity) => identity.mode === 2 && identity.remark === '2nd_idp',
