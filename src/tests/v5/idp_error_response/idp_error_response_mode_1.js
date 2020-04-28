@@ -1088,7 +1088,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP (idp1) should create response (error) successfully', async function () {
+  it('IdP (idp1) should create response (accept) successfully', async function () {
     this.timeout(15000);
 
     let idpResponse = {
@@ -1110,6 +1110,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
 
     let response = await idpApi.createResponse('idp1', idpResponse);
     expect(response.status).to.equal(202);
+    await wait(1000);
   });
 
   it('IdP (idp2) should create response (error) unsuccessfully', async function () {
