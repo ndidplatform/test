@@ -6,10 +6,18 @@ import {
   as2EventEmitter,
 } from '../../../callback_server';
 import { generateReferenceId, createResponseSignature } from '../../../utils';
+import { as2Available } from '../../';
 import * as db from '../../../db';
 import * as config from '../../../config';
 
 describe('1 IdP, 2 AS, 1 Service, mode 3', function() {
+  before(function() {
+    if (!as2Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+  });
+
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',

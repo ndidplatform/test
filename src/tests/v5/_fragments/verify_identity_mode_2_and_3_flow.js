@@ -306,9 +306,10 @@ export function mode2And3FlowTest({
     const testResult = await rpCreateRequestTest({
       callApiAtNodeId: callRpApiAtNodeId,
       createRequestParams,
+      setRequestId: (reqId) => requestId = reqId,
       createRequestResultPromise,
     });
-    requestId = testResult.requestId;
+    // requestId = testResult.requestId;
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
     initialSalt = testResult.initial_salt;
   });

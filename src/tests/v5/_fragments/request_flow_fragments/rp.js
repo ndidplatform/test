@@ -7,6 +7,7 @@ import * as util from '../../../../utils';
 export async function rpCreateRequestTest({
   callApiAtNodeId,
   createRequestParams,
+  setRequestId,
   createRequestResultPromise,
 }) {
   const response = await rpApi.createRequest(
@@ -20,6 +21,8 @@ export async function rpCreateRequestTest({
 
   const requestId = responseBody.request_id;
   const initial_salt = responseBody.initial_salt;
+
+  setRequestId(requestId);
 
   const createRequestResult = await createRequestResultPromise.promise;
   expect(createRequestResult.success).to.equal(true);

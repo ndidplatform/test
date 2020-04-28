@@ -204,10 +204,11 @@ describe('IdP making response with accessor does not associate with sid and refe
     let testResult = await rpCreateRequestTest({
       callApiAtNodeId: 'rp1',
       createRequestParams,
+      setRequestId: (reqId) => requestId = reqId,
       createRequestResultPromise,
     });
 
-    requestId = testResult.requestId;
+    // requestId = testResult.requestId;
     initialSalt = testResult.initial_salt;
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });

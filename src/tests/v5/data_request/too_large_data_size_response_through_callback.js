@@ -367,8 +367,8 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
     responseAccessorId = identityForResponse.accessors[0].accessorId;
 
     const testResult = await getAndVerifyRequestMessagePaddedHashTest({
-      callApiAtNodeId: 'idp2',
-      idpNodeId: 'idp2',
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
       requestId,
       incomingRequestPromise,
       accessorPublicKey,

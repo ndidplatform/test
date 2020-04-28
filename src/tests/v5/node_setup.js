@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { exec } from 'child_process';
 
 import {
+  rp2Available,
   idp2Available,
   as1Available,
   as2Available,
@@ -59,6 +60,12 @@ describe('Node (external crypto) callback setup', function () {
   });
 
   describe('RP (rp2) node callback setup', function () {
+    before(async function () {
+      if (!rp2Available) {
+        this.skip();
+      }
+    });
+
     it('should set callbacks successfully', async function () {
       const response = await nodeApi.setCallbacks('rp2', {
         sign_url: config.DPKI_SIGN_CALLBACK_URL,

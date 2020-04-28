@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 
-import { idp2Available } from '../';
+import { idp2Available, idp3Available } from '../';
 import * as idpApi from '../../api/v5/idp';
 import * as config from '../../config';
 
-describe('IdP (idp1) setup', function() {
-  it('should set callbacks successfully', async function() {
+describe('IdP (idp1) setup', function () {
+  it('should set callbacks successfully', async function () {
     const response = await idpApi.setCallbacks('idp1', {
       incoming_request_url: config.IDP1_CALLBACK_URL,
       incoming_request_status_update_url: config.IDP1_CALLBACK_URL,
@@ -17,7 +17,7 @@ describe('IdP (idp1) setup', function() {
     });
     expect(response.status).to.equal(204);
   });
-  it('should have set callbacks', async function() {
+  it('should have set callbacks', async function () {
     const response = await idpApi.getCallbacks('idp1');
     const responseBody = await response.json();
     expect(response.status).to.equal(200);
@@ -33,14 +33,14 @@ describe('IdP (idp1) setup', function() {
   });
 });
 
-describe('IdP (idp2) setup', function() {
-  before(async function() {
+describe('IdP (idp2) setup', function () {
+  before(async function () {
     if (!idp2Available) {
       this.skip();
     }
   });
 
-  it('should set callbacks successfully', async function() {
+  it('should set callbacks successfully', async function () {
     const response = await idpApi.setCallbacks('idp2', {
       incoming_request_url: config.IDP2_CALLBACK_URL,
       incoming_request_status_update_url: config.IDP2_CALLBACK_URL,
@@ -53,7 +53,7 @@ describe('IdP (idp2) setup', function() {
     expect(response.status).to.equal(204);
   });
 
-  it('should have set callbacks', async function() {
+  it('should have set callbacks', async function () {
     const response = await idpApi.getCallbacks('idp2');
     const responseBody = await response.json();
     expect(response.status).to.equal(200);
@@ -69,8 +69,14 @@ describe('IdP (idp2) setup', function() {
   });
 });
 
-describe('IdP (idp3) setup', function() {
-  it('should set callbacks successfully', async function() {
+describe('IdP (idp3) setup', function () {
+  before(async function () {
+    if (!idp3Available) {
+      this.skip();
+    }
+  });
+
+  it('should set callbacks successfully', async function () {
     const response = await idpApi.setCallbacks('idp3', {
       incoming_request_url: config.IDP3_CALLBACK_URL,
       incoming_request_status_update_url: config.IDP3_CALLBACK_URL,
@@ -82,7 +88,7 @@ describe('IdP (idp3) setup', function() {
     });
     expect(response.status).to.equal(204);
   });
-  it('should have set callbacks', async function() {
+  it('should have set callbacks', async function () {
     const response = await idpApi.getCallbacks('idp3');
     const responseBody = await response.json();
     expect(response.status).to.equal(200);
