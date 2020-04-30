@@ -1137,7 +1137,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     } else {
       expect(response.status).to.equal(400);
       const responseBody = await response.json();
-      expect(responseBody.error.code).to.equal(20081);
+      expect(responseBody.error.code).to.be.oneOf([20025, 20081]);
     }
   });
 
