@@ -1164,6 +1164,18 @@ describe('RP create request (mode 3) min_idp = 1 to 2 idps and 1st IdP response 
     expect(response.status).to.equal(202);
   });
 
+  it('IdP should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) unsuccessfully', async function () {
     this.timeout(10000);
 
@@ -1190,18 +1202,6 @@ describe('RP create request (mode 3) min_idp = 1 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive completed request status', async function () {
@@ -1664,6 +1664,18 @@ describe('RP create request (mode 3) min_idp = 1 to 2 idps and 1st IdP response 
     expect(response.status).to.equal(202);
   });
 
+  it('IdP should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) unsuccessfully', async function () {
     this.timeout(10000);
 
@@ -1690,18 +1702,6 @@ describe('RP create request (mode 3) min_idp = 1 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive rejected request status', async function () {
@@ -2144,6 +2144,18 @@ describe('RP create request (mode 3) min_idp = 2 to 2 idps and 1st IdP response 
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) successfully', async function () {
     this.timeout(10000);
 
@@ -2170,18 +2182,6 @@ describe('RP create request (mode 3) min_idp = 2 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive errored request status', async function () {
@@ -2673,6 +2673,18 @@ describe('RP create request (mode 3) min_idp = 2 to 2 idps and 1st IdP response 
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) successfully', async function () {
     this.timeout(10000);
 
@@ -2699,18 +2711,6 @@ describe('RP create request (mode 3) min_idp = 2 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('IdP (idp2) should receive callback create response result with success = true', async function () {
@@ -3243,6 +3243,18 @@ describe('RP create request (mode 3) min_idp = 2 to 2 idps and 1st IdP response 
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) successfully', async function () {
     this.timeout(10000);
 
@@ -3269,18 +3281,6 @@ describe('RP create request (mode 3) min_idp = 2 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('IdP (idp2) should receive callback create response result with success = true', async function () {
@@ -3842,6 +3842,18 @@ describe('RP create request (mode 3) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) successfully', async function () {
     this.timeout(10000);
 
@@ -3862,6 +3874,18 @@ describe('RP create request (mode 3) min_idp = 2 to 3 idps and 1st and 2nd IdP r
 
     let response = await idpApi.createErrorResponse('idp2', idpResponse);
     expect(response.status).to.equal(202);
+  });
+
+  it('IdP (idp2) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise2.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp2',
+      type: 'response_result',
+      reference_id: idp2ReferenceId,
+      request_id: requestId,
+      success: true,
+    });
   });
 
   it('IdP (idp3) should create response (error) unsuccessfully', async function () {
@@ -3890,30 +3914,6 @@ describe('RP create request (mode 3) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
-  });
-
-  it('IdP (idp2) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise2.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp2',
-      type: 'response_result',
-      reference_id: idp2ReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive errored request status', async function () {
@@ -4532,8 +4532,20 @@ describe('RP create request (mode 3) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   let idpResponseForTest;
-  it('IdP (idp2) should create response (error) successfully', async function () {
+  it('IdP (idp2) should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let latestAccessor = identityForResponse.accessors.length - 1;
@@ -4563,6 +4575,18 @@ describe('RP create request (mode 3) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp2) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise2.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp2',
+      type: 'response_result',
+      reference_id: idp2ReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp3) should create response (error) unsuccessfully', async function () {
     this.timeout(10000);
 
@@ -4589,30 +4613,6 @@ describe('RP create request (mode 3) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
-  });
-
-  it('IdP (idp2) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise2.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp2',
-      type: 'response_result',
-      reference_id: idp2ReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive confirmed request status', async function () {
@@ -5534,7 +5534,7 @@ describe('RP create request (mode 3) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP (idp3) should create response (accept) unsuccessfully', async function () {
+  it('IdP (idp3) should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let latestAccessor = identityForResponse.accessors.length - 1;
@@ -6440,7 +6440,7 @@ describe('RP create request (mode 3) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('IdP (idp3) should create response (error) unsuccessfully', async function () {
+  it('IdP (idp3) should create response (error) successfully', async function () {
     this.timeout(15000);
 
     let idpResponse = {

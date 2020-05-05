@@ -152,7 +152,7 @@ describe('RP create request (mode 1) min_idp = 1 and IdP response with an error 
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -205,7 +205,7 @@ describe('RP create request (mode 1) min_idp = 1 and IdP response with an error 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -215,7 +215,7 @@ describe('RP create request (mode 1) min_idp = 1 and IdP response with an error 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -228,7 +228,7 @@ describe('RP create request (mode 1) min_idp = 1 and IdP response with an error 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -507,7 +507,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -560,7 +560,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -570,7 +570,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -583,7 +583,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -600,7 +600,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -610,7 +610,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -623,7 +623,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -965,7 +965,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1018,7 +1018,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -1028,7 +1028,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1041,7 +1041,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1058,7 +1058,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -1068,7 +1068,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1081,7 +1081,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1113,6 +1113,18 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     await wait(1000);
   });
 
+  it('IdP should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) unsuccessfully', async function () {
     this.timeout(10000);
 
@@ -1139,18 +1151,6 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.be.oneOf([20025, 20081]);
     }
-  });
-
-  it('IdP should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive completed request status', async function () {
@@ -1419,7 +1419,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1472,7 +1472,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -1482,7 +1482,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1495,7 +1495,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1512,7 +1512,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -1522,7 +1522,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1535,7 +1535,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1566,6 +1566,18 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
     expect(response.status).to.equal(202);
   });
 
+  it('IdP should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) unsuccessfully', async function () {
     this.timeout(10000);
 
@@ -1592,18 +1604,6 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive rejected request status', async function () {
@@ -1937,7 +1937,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -1990,7 +1990,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -2000,7 +2000,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -2013,7 +2013,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2030,7 +2030,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -2040,7 +2040,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -2053,7 +2053,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2082,6 +2082,18 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) successfully', async function () {
     this.timeout(10000);
 
@@ -2108,18 +2120,6 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive errored request status', async function () {
@@ -2399,7 +2399,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2452,7 +2452,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -2462,7 +2462,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -2475,7 +2475,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2492,7 +2492,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -2502,7 +2502,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -2515,7 +2515,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2546,6 +2546,18 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) successfully', async function () {
     this.timeout(10000);
 
@@ -2572,18 +2584,6 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('IdP (idp2) should receive callback create response result with success = true', async function () {
@@ -2769,7 +2769,6 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
     idp2EventEmitter.removeAllListeners('callback');
-    
   });
 });
 
@@ -2922,7 +2921,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -2975,7 +2974,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -2985,7 +2984,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -2998,7 +2997,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -3015,7 +3014,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -3025,7 +3024,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -3038,7 +3037,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -3069,6 +3068,18 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) successfully', async function () {
     this.timeout(10000);
 
@@ -3095,18 +3106,6 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('IdP (idp2) should receive callback create response result with success = true', async function () {
@@ -3480,7 +3479,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -3533,7 +3532,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -3543,7 +3542,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -3556,7 +3555,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -3573,7 +3572,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -3583,7 +3582,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -3596,7 +3595,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -3613,7 +3612,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp3',
@@ -3623,7 +3622,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -3636,7 +3635,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -3665,6 +3664,18 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) successfully', async function () {
     this.timeout(10000);
 
@@ -3685,6 +3696,18 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
 
     let response = await idpApi.createErrorResponse('idp2', idpResponse);
     expect(response.status).to.equal(202);
+  });
+
+  it('IdP (idp2) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise2.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp2',
+      type: 'response_result',
+      reference_id: idp2ReferenceId,
+      request_id: requestId,
+      success: true,
+    });
   });
 
   it('IdP (idp3) should create response (error) unsuccessfully', async function () {
@@ -3713,30 +3736,6 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
-  });
-
-  it('IdP (idp2) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise2.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp2',
-      type: 'response_result',
-      reference_id: idp2ReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive errored request status', async function () {
@@ -3798,7 +3797,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
 
     await wait(3000); //wait for data propagate
   });
-  
+
   it('RP should receive request closed status', async function () {
     this.timeout(10000);
 
@@ -4089,7 +4088,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -4142,7 +4141,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -4152,7 +4151,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -4165,7 +4164,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -4182,7 +4181,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -4192,7 +4191,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -4205,7 +4204,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -4222,7 +4221,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp3',
@@ -4232,7 +4231,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -4245,7 +4244,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -4276,6 +4275,18 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
     expect(response.status).to.equal(202);
   });
 
+  it('IdP (idp1) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp1',
+      type: 'response_result',
+      reference_id: idpReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('IdP (idp2) should create response (error) successfully', async function () {
     this.timeout(10000);
 
@@ -4298,6 +4309,18 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
 
     let response = await idpApi.createResponse('idp2', idpResponse);
     expect(response.status).to.equal(202);
+  });
+
+  it('IdP (idp2) should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
+    const responseResult = await responseResultPromise2.promise;
+    expect(responseResult).to.deep.include({
+      node_id: 'idp2',
+      type: 'response_result',
+      reference_id: idp2ReferenceId,
+      request_id: requestId,
+      success: true,
+    });
   });
 
   it('IdP (idp3) should create response (error) unsuccessfully', async function () {
@@ -4326,30 +4349,6 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
       const responseBody = await response.json();
       expect(responseBody.error.code).to.equal(20081);
     }
-  });
-
-  it('IdP (idp1) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp1',
-      type: 'response_result',
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: true,
-    });
-  });
-
-  it('IdP (idp2) should receive callback create response result with success = true', async function () {
-    this.timeout(15000);
-    const responseResult = await responseResultPromise2.promise;
-    expect(responseResult).to.deep.include({
-      node_id: 'idp2',
-      type: 'response_result',
-      reference_id: idp2ReferenceId,
-      request_id: requestId,
-      success: true,
-    });
   });
 
   it('RP should receive confirmed request status', async function () {
@@ -4810,7 +4809,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -4863,7 +4862,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -4873,7 +4872,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -4886,7 +4885,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -4903,7 +4902,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -4913,7 +4912,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -4926,7 +4925,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -4943,7 +4942,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp3',
@@ -4953,7 +4952,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -4966,7 +4965,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -5200,7 +5199,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('IdP (idp3) should create response (accept) unsuccessfully', async function () {
+  it('IdP (idp3) should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let idpResponse = {
@@ -5436,7 +5435,6 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     idp1EventEmitter.removeAllListeners('callback');
     idp2EventEmitter.removeAllListeners('callback');
     idp3EventEmitter.removeAllListeners('callback');
-    
   });
 });
 
@@ -5658,7 +5656,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -5711,7 +5709,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp1',
@@ -5721,7 +5719,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -5734,7 +5732,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -5751,7 +5749,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp2',
@@ -5761,7 +5759,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -5774,7 +5772,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -5791,7 +5789,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
         return {
           ...dataRequestWithoutParams,
         };
-      },
+      }
     );
     expect(incomingRequest).to.deep.include({
       node_id: 'idp3',
@@ -5801,7 +5799,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -5814,7 +5812,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
     const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
+      ':'
     );
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
@@ -6046,7 +6044,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('IdP (idp3) should create response (error) unsuccessfully', async function () {
+  it('IdP (idp3) should create response (error) successfully', async function () {
     this.timeout(15000);
 
     let idpResponse = {
