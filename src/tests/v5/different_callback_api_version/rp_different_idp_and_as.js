@@ -951,41 +951,6 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
       expect(parseInt(splittedBlockHeight[1])).to.above(blockHeight);
     });
 
-    it('RP should receive closed request status ', async function () {
-      this.timeout(25000);
-      const requestStatus = await requestClosedPromise.promise;
-      expect(requestStatus).to.deep.include({
-        request_id: requestId,
-        status: 'confirmed',
-        mode: createRequestParams.mode,
-        min_idp: createRequestParams.min_idp,
-        answered_idp_count: 1,
-        closed: true,
-        timed_out: false,
-        service_list: [
-          {
-            service_id: createRequestParams.data_request_list[0].service_id,
-            min_as: createRequestParams.data_request_list[0].min_as,
-            signed_data_count: 0,
-            received_data_count: 0,
-          },
-        ],
-        response_valid_list: [
-          {
-            idp_id: 'idp1',
-            valid_signature: null,
-            valid_ial: null,
-          },
-        ],
-      });
-      expect(requestStatus).to.have.property('block_height');
-      expect(requestStatus.block_height).is.a('string');
-      const splittedBlockHeight = requestStatus.block_height.split(':');
-      expect(splittedBlockHeight).to.have.lengthOf(2);
-      expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-      expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
-    });
-
     it('RP should get the correct data received from AS', async function () {
       this.timeout(100000);
       const response = await rpApi.getDataFromAS('rp1', {

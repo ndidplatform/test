@@ -41,7 +41,7 @@ export function revokeAccessor(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier, ...rest } = data;
   return httpPost(
-    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors_revoke`,
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessor_revoke`,
     rest,
   );
 }
@@ -92,7 +92,7 @@ export function revokeAndAddAccessor(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier, ...rest } = data;
   return httpPost(
-    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessors_revoke_and_add`,
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/accessor_revoke_and_add`,
     rest,
   );
 }
