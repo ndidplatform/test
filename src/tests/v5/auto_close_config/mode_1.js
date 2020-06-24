@@ -1308,7 +1308,7 @@ describe('mode 1, auto close on complicated set to true', function () {
   });
 });
 
-describe('mode 1, auto close on errored set to on', function () {
+describe('mode 1, auto close on errored set to off', function () {
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const rpCloseRequestReferenceId = generateReferenceId();
@@ -1424,15 +1424,15 @@ describe('mode 1, auto close on errored set to on', function () {
     this.timeout(15000);
 
     const response = await miscApi.setConfig('rp1', {
-      AUTO_CLOSE_REQUEST_ON_ERRORED: true,
+      AUTO_CLOSE_REQUEST_ON_ERRORED: false,
     });
 
     const responseBody = await response.json();
-    expect(responseBody.autoCloseRequestOnErrored).to.equal(true);
+    expect(responseBody.autoCloseRequestOnErrored).to.equal(false);
 
     const responseGetConfig = await miscApi.getConfig('rp1');
     const responseBodyGetConfig = await responseGetConfig.json();
-    expect(responseBodyGetConfig.autoCloseRequestOnErrored).to.equal(true);
+    expect(responseBodyGetConfig.autoCloseRequestOnErrored).to.equal(false);
   });
 
   it('RP should create a request successfully', async function () {
@@ -1603,6 +1603,54 @@ describe('mode 1, auto close on errored set to on', function () {
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
+  it('Should get request status (not closed) successfully', async function () {
+    this.timeout(10000);
+    const response = await commonApi.getRequest('rp1', {
+      requestId,
+    });
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    expect(responseBody).to.deep.include({
+      request_id: requestId,
+      min_idp: createRequestParams.min_idp,
+      min_aal: createRequestParams.min_aal,
+      min_ial: createRequestParams.min_ial,
+      request_timeout: createRequestParams.request_timeout,
+      idp_id_list: createRequestParams.idp_id_list,
+      data_request_list: dataRequestList,
+      response_list: [
+        {
+          idp_id: idp_node_id,
+          valid_ial: null,
+          valid_signature: null,
+          error_code: idpResponseErrorCode,
+        },
+      ],
+      closed: false,
+      timed_out: false,
+      mode: 1,
+      requester_node_id: requester_node_id,
+      status: 'errored',
+    });
+  });
+
+  it('RP should be able to close request', async function () {
+    this.timeout(10000);
+    const response = await rpApi.closeRequest('rp1', {
+      reference_id: rpCloseRequestReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      request_id: requestId,
+    });
+    expect(response.status).to.equal(202);
+
+    const closeRequestResult = await closeRequestResultPromise.promise;
+    expect(closeRequestResult).to.deep.include({
+      reference_id: rpCloseRequestReferenceId,
+      request_id: requestId,
+      success: true,
+    });
+  });
+
   it('RP should receive request closed status', async function () {
     this.timeout(10000);
 
@@ -1676,7 +1724,7 @@ describe('mode 1, auto close on errored set to on', function () {
 
   after(async function () {
     await miscApi.setConfig('rp1', {
-      AUTO_CLOSE_REQUEST_ON_ERRORED: false,
+      AUTO_CLOSE_REQUEST_ON_ERRORED: true,
     });
 
     rpEventEmitter.removeAllListeners('callback');

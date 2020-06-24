@@ -466,22 +466,22 @@ describe('RP create request (mode 1) min_as = 1 and AS response with an error co
     await wait(3000); //wait for data propagate
   });
 
-  it('RP should be able to close request', async function () {
-    this.timeout(10000);
-    const response = await rpApi.closeRequest('rp1', {
-      reference_id: rpCloseRequestReferenceId,
-      callback_url: config.RP_CALLBACK_URL,
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(202);
+  // it('RP should be able to close request', async function () {
+  //   this.timeout(10000);
+  //   const response = await rpApi.closeRequest('rp1', {
+  //     reference_id: rpCloseRequestReferenceId,
+  //     callback_url: config.RP_CALLBACK_URL,
+  //     request_id: requestId,
+  //   });
+  //   expect(response.status).to.equal(202);
 
-    const closeRequestResult = await closeRequestResultPromise.promise;
-    expect(closeRequestResult).to.deep.include({
-      reference_id: rpCloseRequestReferenceId,
-      request_id: requestId,
-      success: true,
-    });
-  });
+  //   const closeRequestResult = await closeRequestResultPromise.promise;
+  //   expect(closeRequestResult).to.deep.include({
+  //     reference_id: rpCloseRequestReferenceId,
+  //     request_id: requestId,
+  //     success: true,
+  //   });
+  // });
 
   it('Should get request status successfully', async function () {
     this.timeout(10000);
@@ -960,22 +960,22 @@ describe('RP create request (mode 1) min_as = 1 and AS response with an error co
     await wait(3000); //wait for data propagate
   });
 
-  it('RP should be able to close request', async function () {
-    this.timeout(10000);
-    const response = await rpApi.closeRequest('rp1', {
-      reference_id: rpCloseRequestReferenceId,
-      callback_url: config.RP_CALLBACK_URL,
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(202);
+  // it('RP should be able to close request', async function () {
+  //   this.timeout(10000);
+  //   const response = await rpApi.closeRequest('rp1', {
+  //     reference_id: rpCloseRequestReferenceId,
+  //     callback_url: config.RP_CALLBACK_URL,
+  //     request_id: requestId,
+  //   });
+  //   expect(response.status).to.equal(202);
 
-    const closeRequestResult = await closeRequestResultPromise.promise;
-    expect(closeRequestResult).to.deep.include({
-      reference_id: rpCloseRequestReferenceId,
-      request_id: requestId,
-      success: true,
-    });
-  });
+  //   const closeRequestResult = await closeRequestResultPromise.promise;
+  //   expect(closeRequestResult).to.deep.include({
+  //     reference_id: rpCloseRequestReferenceId,
+  //     request_id: requestId,
+  //     success: true,
+  //   });
+  // });
 
   it('Should get request status successfully', async function () {
     this.timeout(10000);
@@ -3360,22 +3360,22 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response data
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('RP should be able to close request', async function () {
-    this.timeout(10000);
-    const response = await rpApi.closeRequest('rp1', {
-      reference_id: rpCloseRequestReferenceId,
-      callback_url: config.RP_CALLBACK_URL,
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(202);
+  // it('RP should be able to close request', async function () {
+  //   this.timeout(10000);
+  //   const response = await rpApi.closeRequest('rp1', {
+  //     reference_id: rpCloseRequestReferenceId,
+  //     callback_url: config.RP_CALLBACK_URL,
+  //     request_id: requestId,
+  //   });
+  //   expect(response.status).to.equal(202);
 
-    const closeRequestResult = await closeRequestResultPromise.promise;
-    expect(closeRequestResult).to.deep.include({
-      reference_id: rpCloseRequestReferenceId,
-      request_id: requestId,
-      success: true,
-    });
-  });
+  //   const closeRequestResult = await closeRequestResultPromise.promise;
+  //   expect(closeRequestResult).to.deep.include({
+  //     reference_id: rpCloseRequestReferenceId,
+  //     request_id: requestId,
+  //     success: true,
+  //   });
+  // });
 
   it('RP should receive request closed status', async function () {
     this.timeout(10000);
@@ -4031,22 +4031,22 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response erro
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('RP should be able to close request', async function () {
-    this.timeout(10000);
-    const response = await rpApi.closeRequest('rp1', {
-      reference_id: rpCloseRequestReferenceId,
-      callback_url: config.RP_CALLBACK_URL,
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(202);
+  // it('RP should be able to close request', async function () {
+  //   this.timeout(10000);
+  //   const response = await rpApi.closeRequest('rp1', {
+  //     reference_id: rpCloseRequestReferenceId,
+  //     callback_url: config.RP_CALLBACK_URL,
+  //     request_id: requestId,
+  //   });
+  //   expect(response.status).to.equal(202);
 
-    const closeRequestResult = await closeRequestResultPromise.promise;
-    expect(closeRequestResult).to.deep.include({
-      reference_id: rpCloseRequestReferenceId,
-      request_id: requestId,
-      success: true,
-    });
-  });
+  //   const closeRequestResult = await closeRequestResultPromise.promise;
+  //   expect(closeRequestResult).to.deep.include({
+  //     reference_id: rpCloseRequestReferenceId,
+  //     request_id: requestId,
+  //     success: true,
+  //   });
+  // });
 
   it('RP should receive request closed status', async function () {
     this.timeout(10000);
