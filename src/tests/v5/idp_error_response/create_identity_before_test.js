@@ -367,7 +367,7 @@ describe('Create identity (mode 2) relevant with all IdP for test', function () 
 
   after(function () {
     idp1EventEmitter.removeAllListeners('create_identity_result');
-    idp3EventEmitter.removeAllListeners('create_identity_result');
+    idp2EventEmitter.removeAllListeners('create_identity_result');
     idp3EventEmitter.removeAllListeners('create_identity_result');
   });
 });
