@@ -80,7 +80,7 @@ describe('mode 3, auto close on completed set to off', function () {
   before(async function () {
     const identity = db.idp1Identities.find(
       (identity) =>
-        identity.mode === 3 && !identity.revokeIdentityAssociation,
+        identity.mode === 3 && identity.relevantAllIdP,
     );
     namespace = identity.namespace;
     identifier = identity.identifier;
@@ -533,7 +533,7 @@ describe('mode 3, auto close on rejected set to on', function () {
   before(async function () {
     const identity = db.idp1Identities.find(
       (identity) =>
-        identity.mode === 3 && !identity.revokeIdentityAssociation,
+        identity.mode === 3 && identity.relevantAllIdP,
     );
     namespace = identity.namespace;
     identifier = identity.identifier;
@@ -973,22 +973,18 @@ describe('mode 3, auto close on complicated set to true', function () {
   let requestMessageHash;
 
   before(async function () {
-    const identityIdp1 = db.idp1Identities.find(
+    const identity = db.idp1Identities.find(
       (identity) =>
-        identity.mode === 3 && !identity.revokeIdentityAssociation,
-    );
-    namespace = identityIdp1.namespace;
-    identifier = identityIdp1.identifier;
-
-    const identityIdp2 = db.idp2Identities.find(
-      (identity) =>
-        identity.mode === 3 && identity.namespace === namespace && identity.identifier === identifier,
+        identity.mode === 3 && identity.relevantAllIdP,
     );
 
-    if (!identityIdp2) {
+    if (!identity) {
       this.test.parent.pending = true;
       this.skip();
     }
+
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -1555,7 +1551,7 @@ describe('mode 3, auto close on errored set to off', function () {
   before(async function () {
     const identity = db.idp1Identities.find(
       (identity) =>
-        identity.mode === 3 && !identity.revokeIdentityAssociation,
+        identity.mode === 3 && identity.relevantAllIdP,
     );
     namespace = identity.namespace;
     identifier = identity.identifier;
