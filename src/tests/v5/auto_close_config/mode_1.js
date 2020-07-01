@@ -35,7 +35,7 @@ import {
 } from '../_fragments/common';
 import * as config from '../../../config';
 
-describe('mode 1, auto close on completed set to off', function () {
+describe('mode 1, auto close on completed set to false', function () {
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const rpCloseRequestReferenceId = generateReferenceId();
@@ -439,7 +439,7 @@ describe('mode 1, auto close on completed set to off', function () {
   });
 });
 
-describe('mode 1, auto close on rejected set to on', function () {
+describe('mode 1, auto close on rejected set to true', function () {
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const rpCloseRequestReferenceId = generateReferenceId();
@@ -1308,7 +1308,7 @@ describe('mode 1, auto close on complicated set to true', function () {
   });
 });
 
-describe('mode 1, auto close on errored set to off', function () {
+describe('mode 1, auto close on errored set to false', function () {
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const rpCloseRequestReferenceId = generateReferenceId();
