@@ -1546,7 +1546,7 @@ describe('mode 3, auto close on errored set to off', function () {
   let idpResponseParams = [];
   let requestMessageHash;
 
-  let idpResponseErrorCode = 1000;
+  let idpResponseErrorCode = 10101;
 
   before(async function () {
     const identity = db.idp1Identities.find(
