@@ -9,9 +9,9 @@ describe('NDID update nodes', function () {
   const max_ial = 1.1;
   const max_aal = 1;
 
-  const rp_node_name = 'test update node_name rp1';
-  const idp_node_name = 'test update node_name idp1';
-  const as_node_name = 'test update node_name as1';
+  const rp_node_name = '{"marketing_name_th":"rp1_TH","marketing_name_en":"rp1_EN","industry_code":"001"}';
+  const idp_node_name = '{"marketing_name_th":"idp1_TH","marketing_name_en":"idp1_EN","industry_code":"001"}';
+  const as_node_name = '{"marketing_name_th":"as1_TH","marketing_name_en":"as1_EN","industry_code":"001"}';
 
   before(function () {
     if (!ndidAvailable) {
