@@ -640,7 +640,7 @@ describe('Add identity (mode 2,3) tests', function () {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',
@@ -1153,7 +1153,7 @@ describe('Add identity (mode 2,3) tests', function () {
       //   ).that.is.not.empty;
       // });
 
-      it('IdP shoud receive callback create response result with success = true', async function () {
+      it('IdP should receive callback create response result with success = true', async function () {
         this.timeout(15000);
         const responseResult = await responseResultPromise.promise;
         expect(responseResult).to.deep.include({
@@ -2325,7 +2325,7 @@ describe('Add identity (mode 2,3) tests', function () {
       //   ).that.is.not.empty;
       // });
 
-      it('IdP shoud receive callback create response result with success = true', async function () {
+      it('IdP should receive callback create response result with success = true', async function () {
         this.timeout(15000);
         const responseResult = await responseResultPromise.promise;
         expect(responseResult).to.deep.include({

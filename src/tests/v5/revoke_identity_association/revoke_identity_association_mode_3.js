@@ -272,7 +272,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function () {
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     this.timeout(15000);
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
@@ -1204,7 +1204,7 @@ describe('IdP (idp1) revoke identity association (mode 3) test', function () {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP (idp2) shoud receive callback create response result with success = true', async function () {
+    it('IdP (idp2) should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',

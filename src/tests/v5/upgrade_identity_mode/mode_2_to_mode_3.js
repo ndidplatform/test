@@ -382,7 +382,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
   //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
@@ -869,7 +869,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -2190,7 +2190,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
   //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp2',
@@ -2765,7 +2765,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',

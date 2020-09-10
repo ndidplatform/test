@@ -430,7 +430,7 @@ describe('Too large AS data size, response through callback, 1 IdP, 1 AS, mode 3
   //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',

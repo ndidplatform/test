@@ -732,7 +732,7 @@ describe('On the fly onboard and uplift tests', function () {
     //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       this.timeout(15000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
@@ -2015,7 +2015,7 @@ describe('On the fly onboard and uplift tests', function () {
     //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       this.timeout(20000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
@@ -3503,7 +3503,7 @@ describe('On the fly onboard and uplift tests', function () {
     //     testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       this.timeout(15000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
@@ -3661,7 +3661,7 @@ describe('On the fly onboard and uplift tests', function () {
     //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       this.timeout(15000);
       const responseResult = await idp2ResponseResultPromise.promise;
       expect(responseResult).to.deep.include({
@@ -4973,7 +4973,7 @@ describe('On the fly onboard and uplift tests', function () {
       expect(response.status).to.equal(202);
     });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       this.timeout(15000);
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
@@ -5135,7 +5135,7 @@ describe('On the fly onboard and uplift tests', function () {
       expect(response.status).to.equal(202);
     });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       this.timeout(15000);
       const responseResult = await idp2ResponseResultPromise.promise;
       if (!idp2Available) {
@@ -6673,7 +6673,7 @@ describe('On the fly onboard and uplift tests', function () {
     //     testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('idp2 shoud receive callback create response result with success = true', async function () {
+    it('idp2 should receive callback create response result with success = true', async function () {
       this.timeout(15000);
       const responseResult = await idp2ResponseResultUpgradeIdentityModePromise.promise;
       expect(responseResult).to.deep.include({
@@ -6782,7 +6782,7 @@ describe('On the fly onboard and uplift tests', function () {
     //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('idp1 shoud receive callback create response result with success = true', async function () {
+    it('idp1 should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
