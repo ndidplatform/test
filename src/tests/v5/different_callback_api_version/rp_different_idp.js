@@ -155,13 +155,13 @@ describe('RP callback api version v4 create request to IdP with callback api ver
       });
 
       const responseBody = await response.json();
-      expect(responseBody.callbackApiVersion).to.equal(4);
+      expect(responseBody.callbackApiVersion).to.equal('4.0');
 
       await wait(3000);
 
       const responseGetConfig = await commonApi.getConfig('rp1');
       const responseBodyGetConfig = await responseGetConfig.json();
-      expect(responseBodyGetConfig.callbackApiVersion).to.equal(4);
+      expect(responseBodyGetConfig.callbackApiVersion).to.equal('4.0');
     });
 
     it('RP should create a request successfully', async function () {
@@ -498,13 +498,13 @@ describe('RP callback api version v4 create request to IdP with callback api ver
       });
 
       const responseBody = await response.json();
-      expect(responseBody.callbackApiVersion).to.equal(4);
+      expect(responseBody.callbackApiVersion).to.equal('4.0');
 
       await wait(3000);
 
       const responseGetConfig = await commonApi.getConfig('rp1');
       const responseBodyGetConfig = await responseGetConfig.json();
-      expect(responseBodyGetConfig.callbackApiVersion).to.equal(4);
+      expect(responseBodyGetConfig.callbackApiVersion).to.equal('4.0');
     });
 
     it('RP should create a request successfully', async function () {
@@ -792,13 +792,13 @@ describe('RP callback api version v4 create request to IdP with callback api ver
       });
 
       const responseBody = await response.json();
-      expect(responseBody.callbackApiVersion).to.equal(4);
+      expect(responseBody.callbackApiVersion).to.equal('4.0');
 
       await wait(3000);
 
       const responseGetConfig = await commonApi.getConfig('rp1');
       const responseBodyGetConfig = await responseGetConfig.json();
-      expect(responseBodyGetConfig.callbackApiVersion).to.equal(4);
+      expect(responseBodyGetConfig.callbackApiVersion).to.equal('4.0');
     });
 
     it('RP should create a request successfully', async function () {
@@ -1108,13 +1108,13 @@ describe('RP callback api version v4 create request to IdP with callback api ver
       });
 
       const responseBody = await response.json();
-      expect(responseBody.callbackApiVersion).to.equal(4);
+      expect(responseBody.callbackApiVersion).to.equal('4.0');
 
       await wait(3000);
 
       const responseGetConfig = await commonApi.getConfig('rp1');
       const responseBodyGetConfig = await responseGetConfig.json();
-      expect(responseBodyGetConfig.callbackApiVersion).to.equal(4);
+      expect(responseBodyGetConfig.callbackApiVersion).to.equal('4.0');
     });
 
     it('RP should create a request successfully', async function () {
@@ -1553,13 +1553,13 @@ describe('RP callback api version v4 create request to IdP with callback api ver
       });
 
       const responseBody = await response.json();
-      expect(responseBody.callbackApiVersion).to.equal(4);
+      expect(responseBody.callbackApiVersion).to.equal('4.0');
 
       await wait(3000);
 
       const responseGetConfig = await commonApi.getConfig('rp1');
       const responseBodyGetConfig = await responseGetConfig.json();
-      expect(responseBodyGetConfig.callbackApiVersion).to.equal(4);
+      expect(responseBodyGetConfig.callbackApiVersion).to.equal('4.0');
     });
 
     it('RP should create a request successfully', async function () {
