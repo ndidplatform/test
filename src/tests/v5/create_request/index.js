@@ -1,4 +1,6 @@
-describe('(RP) Create request tests', function() {
+import { proxy1Available } from '../..';
+
+describe('RP Create request tests', function () {
   require('./timeout');
   require('./short_timeout');
   require('./long_timeout');
@@ -9,4 +11,15 @@ describe('(RP) Create request tests', function() {
   require('./create_request');
   require('./error_response');
   require('./unqualified_to_response');
+});
+
+describe('Proxy Create request tests', function () {
+  before(function () {
+    if (!proxy1Available) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+  });
+
+  require('./proxy/create_request');
 });

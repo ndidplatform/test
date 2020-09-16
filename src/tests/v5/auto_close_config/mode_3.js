@@ -6,8 +6,10 @@ import * as commonApi from '../../../api/v5/common';
 import * as miscApi from '../../../api/common';
 import {
   idp1EventEmitter,
-  idp2EventEmitter,
   rpEventEmitter,
+  as1EventEmitter,
+  idp2EventEmitter,
+  idp3EventEmitter,
 } from '../../../callback_server';
 import * as db from '../../../db';
 import {
@@ -29,13 +31,14 @@ import {
   receiveConfirmedRequestStatusTest,
   receiveErroredRequestStatusTest,
   receiveRejectedRequestStatusTest,
+  receiveComplicatedRequestStatusTest,
   receiveCompletedRequestStatusTest,
   receiveRequestClosedStatusTest,
-  receiveComplicatedRequestStatusTest,
 } from '../_fragments/common';
 import * as config from '../../../config';
+import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe('mode 1, auto close on completed set to false', function () {
+describe('mode 3, auto close on completed set to false', function () {
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const rpCloseRequestReferenceId = generateReferenceId();
@@ -44,13 +47,15 @@ describe('mode 1, auto close on completed set to false', function () {
   const requestStatusPendingPromise = createEventPromise();
   const requestStatusCompletedPromise = createEventPromise();
   const requestClosedPromise = createEventPromise();
+
   const closeRequestResultPromise = createEventPromise();
 
-  const incomingRequestPromise = createEventPromise(); // idp1
+  const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise();
 
-  const idp_requestClosedPromise = createEventPromise();
   const idp_requestStatusCompletedPromise = createEventPromise();
+  const idp_requestClosedPromise = createEventPromise();
+
 
   let createRequestParams;
   let lastStatusUpdateBlockHeight;
@@ -60,6 +65,9 @@ describe('mode 1, auto close on completed set to false', function () {
 
   let namespace;
   let identifier;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   let rp_node_id = 'rp1';
   let requester_node_id = 'rp1';
@@ -70,18 +78,22 @@ describe('mode 1, auto close on completed set to false', function () {
   let requestMessageHash;
 
   before(async function () {
-    namespace = 'citizen_id';
-    identifier = '01234567890123';
+    const identity = db.idp1Identities.find(
+      (identity) =>
+        identity.mode === 3 && identity.relevantAllIdP,
+    );
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
-      mode: 1,
+      mode: 3,
       namespace,
       identifier,
-      idp_id_list: ['idp1', 'idp2'],
+      idp_id_list: ['idp1'],
       data_request_list: [],
-      request_message: 'Test request message (error data response)',
+      request_message: 'Test request message ()',
       min_ial: 2.3,
       min_aal: 3,
       min_idp: 1,
@@ -104,7 +116,8 @@ describe('mode 1, auto close on completed set to false', function () {
         } else if (callbackData.status === 'completed') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
-          } else {
+          }
+          else {
             requestStatusCompletedPromise.resolve(callbackData);
           }
         }
@@ -235,7 +248,7 @@ describe('mode 1, auto close on completed set to false', function () {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -255,8 +268,49 @@ describe('mode 1, auto close on completed set to false', function () {
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should create response (accept) successfully', async function () {
+  it('IdP (idp1) should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    let latestAccessor;
+    if (identityForResponse) {
+      latestAccessor = identityForResponse.accessors.length - 1;
+    } else {
+      throw new Error('Identity not found');
+    }
+
+    responseAccessorId =
+      identityForResponse.accessors[latestAccessor].accessorId;
+
+    let accessorPublicKey =
+      identityForResponse.accessors[latestAccessor].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP (idp1) should create response (accept) successfully', async function () {
+    this.timeout(15000);
+
+    let latestAccessor = identityForResponse.accessors.length - 1;
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[latestAccessor].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash
+    );
 
     let idpResponse = {
       reference_id: idpReferenceId,
@@ -265,22 +319,23 @@ describe('mode 1, auto close on completed set to false', function () {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: 'some-signature',
+      accessor_id: responseAccessorId,
+      signature,
     };
 
     idpResponseParams.push({
       ...idpResponse,
       idp_id: 'idp1',
-      valid_signature: null,
-      valid_ial: null,
+      valid_signature: true,
+      valid_ial: true,
     });
 
     let response = await idpApi.createResponse('idp1', idpResponse);
     expect(response.status).to.equal(202);
-    await wait(1000);
   });
 
   it('IdP should receive callback create response result with success = true', async function () {
+    this.timeout(15000);
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
@@ -329,7 +384,7 @@ describe('mode 1, auto close on completed set to false', function () {
   });
 
   it('Should get request status (not closed) successfully', async function () {
-    this.timeout(10000);
+    this.timeout(15000);
 
     let response_list = idpResponseParams.map((idpResponse) => {
       const {
@@ -340,11 +395,8 @@ describe('mode 1, auto close on completed set to false', function () {
         node_id,
         ...rest
       } = idpResponse;
-
-      if (createRequestParams.mode === 1) {
-        rest.valid_signature = null;
-        rest.valid_ial = null;
-      }
+      rest.valid_signature = null;
+      rest.valid_ial = null;
       return rest;
     });
 
@@ -364,7 +416,7 @@ describe('mode 1, auto close on completed set to false', function () {
       response_list,
       closed: false,
       timed_out: false,
-      mode: 1,
+      mode: 3,
       requester_node_id: requester_node_id,
       status: 'completed',
     });
@@ -423,7 +475,7 @@ describe('mode 1, auto close on completed set to false', function () {
       response_list,
       closed: true,
       timed_out: false,
-      mode: 1,
+      mode: 3,
       requester_node_id: requester_node_id,
       status: 'completed',
     });
@@ -439,7 +491,7 @@ describe('mode 1, auto close on completed set to false', function () {
   });
 });
 
-describe('mode 1, auto close on rejected set to true', function () {
+describe('mode 3, auto close on rejected set to true', function () {
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const rpCloseRequestReferenceId = generateReferenceId();
@@ -448,13 +500,15 @@ describe('mode 1, auto close on rejected set to true', function () {
   const requestStatusPendingPromise = createEventPromise();
   const requestStatusRejectPromise = createEventPromise();
   const requestClosedPromise = createEventPromise();
+
   const closeRequestResultPromise = createEventPromise();
 
-  const incomingRequestPromise = createEventPromise(); // idp1
+  const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise();
 
   const idp_requestStatusRejectPromise = createEventPromise();
   const idp_requestClosedPromise = createEventPromise();
+
 
   let createRequestParams;
   let lastStatusUpdateBlockHeight;
@@ -464,6 +518,9 @@ describe('mode 1, auto close on rejected set to true', function () {
 
   let namespace;
   let identifier;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   let rp_node_id = 'rp1';
   let requester_node_id = 'rp1';
@@ -473,21 +530,23 @@ describe('mode 1, auto close on rejected set to true', function () {
   let idpResponseParams = [];
   let requestMessageHash;
 
-  let idpResponseErrorCode = 1000;
-
   before(async function () {
-    namespace = 'citizen_id';
-    identifier = '01234567890123';
+    const identity = db.idp1Identities.find(
+      (identity) =>
+        identity.mode === 3 && identity.relevantAllIdP,
+    );
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
-      mode: 1,
+      mode: 3,
       namespace,
       identifier,
-      idp_id_list: ['idp1', 'idp2'],
+      idp_id_list: ['idp1'],
       data_request_list: [],
-      request_message: 'Test request message (error data response)',
+      request_message: 'Test request message ()',
       min_ial: 2.3,
       min_aal: 3,
       min_idp: 1,
@@ -510,7 +569,8 @@ describe('mode 1, auto close on rejected set to true', function () {
         } else if (callbackData.status === 'rejected') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
-          } else {
+          }
+          else {
             requestStatusRejectPromise.resolve(callbackData);
           }
         }
@@ -641,7 +701,7 @@ describe('mode 1, auto close on rejected set to true', function () {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -661,8 +721,49 @@ describe('mode 1, auto close on rejected set to true', function () {
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP (idp1) should create response (error) successfully', async function () {
+  it('IdP (idp1) should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    let latestAccessor;
+    if (identityForResponse) {
+      latestAccessor = identityForResponse.accessors.length - 1;
+    } else {
+      throw new Error('Identity not found');
+    }
+
+    responseAccessorId =
+      identityForResponse.accessors[latestAccessor].accessorId;
+
+    let accessorPublicKey =
+      identityForResponse.accessors[latestAccessor].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
+  it('IdP (idp1) should create response (reject) successfully', async function () {
+    this.timeout(15000);
+
+    let latestAccessor = identityForResponse.accessors.length - 1;
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[latestAccessor].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash
+    );
 
     let idpResponse = {
       reference_id: idpReferenceId,
@@ -671,14 +772,15 @@ describe('mode 1, auto close on rejected set to true', function () {
       ial: 2.3,
       aal: 3,
       status: 'reject',
-      signature: 'some-signature',
+      accessor_id: responseAccessorId,
+      signature,
     };
 
     idpResponseParams.push({
       ...idpResponse,
       idp_id: 'idp1',
-      valid_signature: null,
-      valid_ial: null,
+      valid_signature: true,
+      valid_ial: true,
     });
 
     let response = await idpApi.createResponse('idp1', idpResponse);
@@ -811,7 +913,7 @@ describe('mode 1, auto close on rejected set to true', function () {
       response_list,
       closed: true,
       timed_out: false,
-      mode: 1,
+      mode: 3,
       requester_node_id: requester_node_id,
       status: 'rejected',
     });
@@ -827,7 +929,7 @@ describe('mode 1, auto close on rejected set to true', function () {
   });
 });
 
-describe('mode 1, auto close on complicated set to true', function () {
+describe('mode 3, auto close on complicated set to true', function () {
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const idp2ReferenceId = generateReferenceId();
@@ -837,9 +939,10 @@ describe('mode 1, auto close on complicated set to true', function () {
   const requestStatusPendingPromise = createEventPromise();
   const requestStatusComplicatedPromise = createEventPromise();
   const requestClosedPromise = createEventPromise();
+
   const closeRequestResultPromise = createEventPromise();
 
-  const incomingRequestPromise = createEventPromise(); // idp1
+  const incomingRequestPromise = createEventPromise(); // IDP
   const responseResultPromise = createEventPromise();
 
   const incomingRequestPromise2 = createEventPromise(); // idp2
@@ -847,6 +950,7 @@ describe('mode 1, auto close on complicated set to true', function () {
 
   const idp_requestStatusComplicatedPromise = createEventPromise();
   const idp_requestClosedPromise = createEventPromise();
+
 
   let createRequestParams;
   let lastStatusUpdateBlockHeight;
@@ -856,6 +960,9 @@ describe('mode 1, auto close on complicated set to true', function () {
 
   let namespace;
   let identifier;
+  let identityForResponse;
+  let responseAccessorId;
+  let requestMessagePaddedHash;
 
   let rp_node_id = 'rp1';
   let requester_node_id = 'rp1';
@@ -866,18 +973,28 @@ describe('mode 1, auto close on complicated set to true', function () {
   let requestMessageHash;
 
   before(async function () {
-    namespace = 'citizen_id';
-    identifier = '01234567890123';
+    const identity = db.idp1Identities.find(
+      (identity) =>
+        identity.mode === 3 && identity.relevantAllIdP,
+    );
+
+    if (!identity) {
+      this.test.parent.pending = true;
+      this.skip();
+    }
+
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
-      mode: 1,
+      mode: 3,
       namespace,
       identifier,
       idp_id_list: ['idp1', 'idp2'],
       data_request_list: [],
-      request_message: 'Test request message (error data response)',
+      request_message: 'Test request message ()',
       min_ial: 2.3,
       min_aal: 3,
       min_idp: 2,
@@ -900,7 +1017,8 @@ describe('mode 1, auto close on complicated set to true', function () {
         } else if (callbackData.status === 'complicated') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
-          } else {
+          }
+          else {
             requestStatusComplicatedPromise.resolve(callbackData);
           }
         }
@@ -1025,7 +1143,7 @@ describe('mode 1, auto close on complicated set to true', function () {
     await wait(3000); // wait for receive message queue send success callback
   });
 
-  it('IdP should receive incoming request callback', async function () {
+  it('IdP (idp1) should receive incoming request callback', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
@@ -1045,7 +1163,7 @@ describe('mode 1, auto close on complicated set to true', function () {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1065,7 +1183,7 @@ describe('mode 1, auto close on complicated set to true', function () {
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should receive incoming request callback', async function () {
+  it('IdP (idp2) should receive incoming request callback', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise2.promise;
 
@@ -1085,7 +1203,7 @@ describe('mode 1, auto close on complicated set to true', function () {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1105,8 +1223,49 @@ describe('mode 1, auto close on complicated set to true', function () {
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('IdP (idp1) should get request_message_padded_hash successfully', async function () {
+    this.timeout(15000);
+    identityForResponse = db.idp1Identities.find(
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    let latestAccessor;
+    if (identityForResponse) {
+      latestAccessor = identityForResponse.accessors.length - 1;
+    } else {
+      throw new Error('Identity not found');
+    }
+
+    responseAccessorId =
+      identityForResponse.accessors[latestAccessor].accessorId;
+
+    let accessorPublicKey =
+      identityForResponse.accessors[latestAccessor].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp1',
+      idpNodeId: 'idp1',
+      requestId,
+      incomingRequestPromise,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
   it('IdP (idp1) should create response (accept) successfully', async function () {
     this.timeout(15000);
+
+    let latestAccessor = identityForResponse.accessors.length - 1;
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[latestAccessor].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash
+    );
 
     let idpResponse = {
       reference_id: idpReferenceId,
@@ -1115,14 +1274,15 @@ describe('mode 1, auto close on complicated set to true', function () {
       ial: 2.3,
       aal: 3,
       status: 'accept',
-      signature: 'some-signature',
+      accessor_id: responseAccessorId,
+      signature,
     };
 
     idpResponseParams.push({
       ...idpResponse,
       idp_id: 'idp1',
-      valid_signature: null,
-      valid_ial: null,
+      valid_signature: true,
+      valid_ial: true,
     });
 
     let response = await idpApi.createResponse('idp1', idpResponse);
@@ -1141,8 +1301,49 @@ describe('mode 1, auto close on complicated set to true', function () {
     });
   });
 
+  it('IdP (idp2) should get request_message_padded_hash successfully', async function () {
+    this.timeout(15000);
+    identityForResponse = db.idp2Identities.find(
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
+    );
+
+    let latestAccessor;
+    if (identityForResponse) {
+      latestAccessor = identityForResponse.accessors.length - 1;
+    } else {
+      throw new Error('Identity not found');
+    }
+
+    responseAccessorId =
+      identityForResponse.accessors[latestAccessor].accessorId;
+
+    let accessorPublicKey =
+      identityForResponse.accessors[latestAccessor].accessorPublicKey;
+
+    const testResult = await getAndVerifyRequestMessagePaddedHashTest({
+      callApiAtNodeId: 'idp2',
+      idpNodeId: 'idp2',
+      requestId,
+      incomingRequestPromise: incomingRequestPromise2,
+      accessorPublicKey,
+      accessorId: responseAccessorId,
+    });
+    requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
+  });
+
   it('IdP (idp2) should create response (reject) successfully', async function () {
-    this.timeout(10000);
+    this.timeout(15000);
+
+    let latestAccessor = identityForResponse.accessors.length - 1;
+
+    let accessorPrivateKey =
+      identityForResponse.accessors[latestAccessor].accessorPrivateKey;
+
+    const signature = createResponseSignature(
+      accessorPrivateKey,
+      requestMessagePaddedHash
+    );
 
     let idpResponse = {
       reference_id: idp2ReferenceId,
@@ -1151,21 +1352,22 @@ describe('mode 1, auto close on complicated set to true', function () {
       ial: 2.3,
       aal: 3,
       status: 'reject',
-      signature: 'some-signature',
+      accessor_id: responseAccessorId,
+      signature,
     };
 
     idpResponseParams.push({
       ...idpResponse,
       idp_id: 'idp2',
-      valid_signature: null,
-      valid_ial: null,
+      valid_signature: true,
+      valid_ial: true,
     });
 
     let response = await idpApi.createResponse('idp2', idpResponse);
     expect(response.status).to.equal(202);
   });
 
-  it('IdP (idp2) should receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     this.timeout(15000);
     const responseResult = await responseResultPromise2.promise;
     expect(responseResult).to.deep.include({
@@ -1291,7 +1493,7 @@ describe('mode 1, auto close on complicated set to true', function () {
       response_list,
       closed: true,
       timed_out: false,
-      mode: 1,
+      mode: 3,
       requester_node_id: requester_node_id,
       status: 'complicated',
     });
@@ -1308,7 +1510,7 @@ describe('mode 1, auto close on complicated set to true', function () {
   });
 });
 
-describe('mode 1, auto close on errored set to false', function () {
+describe('mode 3, auto close on errored set to false', function () {
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const rpCloseRequestReferenceId = generateReferenceId();
@@ -1326,6 +1528,7 @@ describe('mode 1, auto close on errored set to false', function () {
   const idp_requestStatusErroredPromise = createEventPromise();
   const idp_requestClosedPromise = createEventPromise();
 
+
   let createRequestParams;
   let lastStatusUpdateBlockHeight;
 
@@ -1335,7 +1538,6 @@ describe('mode 1, auto close on errored set to false', function () {
   let namespace;
   let identifier;
 
-  let requestStatusUpdates = [];
   let rp_node_id = 'rp1';
   let requester_node_id = 'rp1';
   let idp_node_id = 'idp1';
@@ -1347,13 +1549,17 @@ describe('mode 1, auto close on errored set to false', function () {
   let idpResponseErrorCode = 10101;
 
   before(async function () {
-    namespace = 'citizen_id';
-    identifier = '01234567890123';
+    const identity = db.idp1Identities.find(
+      (identity) =>
+        identity.mode === 3 && identity.relevantAllIdP,
+    );
+    namespace = identity.namespace;
+    identifier = identity.identifier;
 
     createRequestParams = {
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
-      mode: 1,
+      mode: 3,
       namespace,
       identifier,
       idp_id_list: ['idp1'],
@@ -1376,13 +1582,13 @@ describe('mode 1, auto close on errored set to false', function () {
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
-        requestStatusUpdates.push(callbackData);
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'errored') {
           if (callbackData.closed) {
             requestClosedPromise.resolve(callbackData);
-          } else {
+          }
+          else {
             requestStatusErroredPromise.resolve(callbackData);
           }
         }
@@ -1513,7 +1719,7 @@ describe('mode 1, auto close on errored set to false', function () {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt
+        incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1601,6 +1807,8 @@ describe('mode 1, auto close on errored set to false', function () {
       isNotRp: true,
     });
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+
+    await wait(3000); //wait for data propagate
   });
 
   it('Should get request status (not closed) successfully', async function () {
@@ -1628,7 +1836,7 @@ describe('mode 1, auto close on errored set to false', function () {
       ],
       closed: false,
       timed_out: false,
-      mode: 1,
+      mode: 3,
       requester_node_id: requester_node_id,
       status: 'errored',
     });
@@ -1716,7 +1924,7 @@ describe('mode 1, auto close on errored set to false', function () {
       ],
       closed: true,
       timed_out: false,
-      mode: 1,
+      mode: 3,
       requester_node_id: requester_node_id,
       status: 'errored',
     });

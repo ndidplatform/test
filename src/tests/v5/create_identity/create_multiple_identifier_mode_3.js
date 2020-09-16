@@ -641,7 +641,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
       // });
 
-      it('IdP shoud receive callback create response result with success = true', async function() {
+      it('IdP should receive callback create response result with success = true', async function() {
         const responseResult = await responseResultPromise.promise;
         expect(responseResult).to.deep.include({
           node_id: 'idp1',
@@ -1025,7 +1025,7 @@ describe('Create identity with same namespace and multiple identifier (mode 3) t
       //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
       // });
 
-      it('IdP shoud receive callback create response result with success = true', async function() {
+      it('IdP should receive callback create response result with success = true', async function() {
         const responseResult = await responseResultPromise.promise;
         expect(responseResult).to.deep.include({
           node_id: 'idp1',

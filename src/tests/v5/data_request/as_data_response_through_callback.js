@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { expect } from 'chai';
 
 import * as rpApi from '../../../api/v5/rp';
@@ -37,7 +36,7 @@ import {
   receiveRequestClosedStatusTest,
 } from '../_fragments/common';
 
-describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', function () {
+describe('AS data response through callback, 1 IdP, 1 AS, mode 3', function () {
   let namespace;
   let identifier;
 
@@ -64,7 +63,11 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
   const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
 
   let createRequestParams;
-  const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
+  const data = JSON.stringify({
+    test: 'test',
+    withEscapedChar: 'test|fff||ss\\|NN\\\\|',
+    arr: [1, 2, 3],
+  });
 
   let requestId;
   let initialSalt;

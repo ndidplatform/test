@@ -650,7 +650,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',
@@ -1759,7 +1759,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       expect(response.status).to.equal(202);
     });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',
@@ -2888,7 +2888,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',

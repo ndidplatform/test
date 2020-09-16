@@ -425,7 +425,7 @@ describe('NDID disable proxy node and enable proxy node test', function () {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -1004,7 +1004,7 @@ describe('NDID disable proxy node and enable proxy node test', function () {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'proxy1_idp4',
@@ -1583,7 +1583,7 @@ describe('NDID disable proxy node and enable proxy node test', function () {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -2160,7 +2160,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'proxy1_idp4',
@@ -2731,7 +2731,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'proxy1_idp4',
@@ -3301,7 +3301,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
   //     .that.is.not.empty;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',

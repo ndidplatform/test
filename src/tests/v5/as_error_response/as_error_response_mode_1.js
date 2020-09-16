@@ -381,7 +381,7 @@ describe('RP create request (mode 1) min_as = 1 and AS response with an error co
   });
 
   it('AS (as1) response with error code successfully', async function () {
-    this.timeout(200000);
+    this.timeout(20000);
     // const response = await asApi.sendDataError('as1', {
     //   requestId,
     //   serviceId: createRequestParams.data_request_list[0].service_id,

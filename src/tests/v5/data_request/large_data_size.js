@@ -426,7 +426,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function () {
   //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',

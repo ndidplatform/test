@@ -650,7 +650,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -2003,7 +2003,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
     //   ).that.is.not.empty;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',

@@ -351,7 +351,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
   //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
@@ -968,7 +968,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('IdP shoud receive callback create response result with success = true', async function () {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',
@@ -2135,7 +2135,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
   //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   // });
 
-  it('IdP shoud receive callback create response result with success = true', async function () {
+  it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
       node_id: 'idp1',
