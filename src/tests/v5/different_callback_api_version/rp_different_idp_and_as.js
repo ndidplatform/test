@@ -180,7 +180,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
       this.timeout(15000);
 
       const response = await commonApi.setConfig('rp1', {
-        CALLBACK_API_VERSION: 4,
+        CALLBACK_API_VERSION: '4.0',
       });
 
       const responseBody = await response.json();
@@ -670,7 +670,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
       this.timeout(15000);
 
       const response = await commonApi.setConfig('rp1', {
-        CALLBACK_API_VERSION: 4,
+        CALLBACK_API_VERSION: '4.0',
       });
 
       const responseBody = await response.json();
@@ -971,7 +971,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
 
   after(async function () {
     await commonApi.setConfig('rp1', {
-      CALLBACK_API_VERSION: 5,
+      CALLBACK_API_VERSION: '5.0',
     });
   });
 });
