@@ -24,7 +24,7 @@ export async function createIdpIdList({
         mode: createRequestParams.mode,
         min_ial: createRequestParams.min_ial,
         filter_for_node_id,
-      },
+      }
     );
     let responseBody = await responseGetRelevantIdpNodesBySid.json();
     let idpIdListResult = [];
@@ -32,7 +32,7 @@ export async function createIdpIdList({
       let resultIdp = [];
       mimeType.forEach((mimeType) => {
         let resultFilterMimeType = responseBody.filter((idp) =>
-          idp.supported_request_message_data_url_type_list.includes(mimeType),
+          idp.supported_request_message_data_url_type_list.includes(mimeType)
         );
         let result = resultFilterMimeType.map((result) => result.node_id);
         resultIdp = resultIdp.concat(result);
@@ -65,14 +65,14 @@ export async function createDataRequestList({
 
         let request_params_hash = utils.hash(
           (service.request_params != null ? service.request_params : '') +
-            request_params_salt,
+            request_params_salt
         );
 
         let as_id_list = service.as_id_list;
         if (as_id_list == null || as_id_list.length === 0) {
           const responseGetASByServiceId = await commonApi.getASByServiceId(
             callRpApiAtNodeId,
-            service.service_id,
+            service.service_id
           );
           const responseBody = await responseGetASByServiceId.json();
           as_id_list = responseBody.map((as) => as.node_id);
@@ -85,16 +85,20 @@ export async function createDataRequestList({
           request_params_hash: request_params_hash,
           response_list: [],
         };
-      }),
+      })
     );
   }
   return data_request_list;
 }
 
 export function createRequestMessageHash({ createRequestParams, initialSalt }) {
-  let request_message_salt = utils.generateRequestMessageSalt(initialSalt);
+  let request_message_salt = utils.generateRequestMessageSalt({
+    initialSalt,
+    namespace: createRequestParams.namespace,
+    identifier: createRequestParams.identifier,
+  });
   let request_message_hash = utils.hash(
-    createRequestParams.request_message + request_message_salt,
+    createRequestParams.request_message + request_message_salt
   );
   return request_message_hash;
 }
@@ -117,7 +121,7 @@ export function setDataReceived(dataRequestList, serviceId, asId) {
   let newDataRequestList = dataRequestList.map((service) => {
     if (service.service_id === serviceId) {
       let response = service.response_list.find(
-        (response) => response.as_id === asId,
+        (response) => response.as_id === asId
       );
       if (response) {
         response.received_data = true;
@@ -132,7 +136,7 @@ export function setASResponseError(
   dataRequestList,
   serviceId,
   asId,
-  errorCode,
+  errorCode
 ) {
   let newDataRequestList = dataRequestList.map((service) => {
     if (service.service_id === serviceId) {
