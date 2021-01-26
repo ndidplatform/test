@@ -17,6 +17,12 @@ export function addOrUpdateService(nodeId, data) {
   return httpPost(`${apiBaseUrl}/as/service/${serviceId}`, rest);
 }
 
+export function logPaymentReceived(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { requestId, serviceId, ...rest } = data;
+  return httpPost(`${apiBaseUrl}/as/payment_received_log/${requestId}/${serviceId}`, rest);
+}
+
 export function sendData(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { requestId, serviceId, ...rest } = data;

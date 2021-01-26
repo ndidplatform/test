@@ -28,7 +28,7 @@ export async function asReceiveDataRequestTest({
     expect(dataRequest.request_params).to.equal(requestParams);
   }
   expect(dataRequest.response_signature_list).to.have.lengthOf(
-    responseSignatureListLength,
+    responseSignatureListLength
   );
   dataRequest.response_signature_list.map((responseSignatureList) => {
     expect(responseSignatureList).to.be.a('string').that.is.not.empty;
@@ -37,11 +37,25 @@ export async function asReceiveDataRequestTest({
   expect(dataRequest.creation_time).to.be.a('number');
   expect(dataRequest.creation_block_height).to.be.a('string');
   const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-    ':',
+    ':'
   );
   expect(splittedCreationBlockHeight).to.have.lengthOf(2);
   expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
   expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+}
+
+export async function asLogPaymentReceivedTest({
+  callApiAtNodeId,
+  nodeId,
+  requestId,
+  serviceId,
+}) {
+  const response = await asApi.logPaymentReceived(callApiAtNodeId, {
+    requestId,
+    node_id: nodeId,
+    serviceId,
+  });
+  expect(response.status).to.equal(204);
 }
 
 export async function asSendDataTest({

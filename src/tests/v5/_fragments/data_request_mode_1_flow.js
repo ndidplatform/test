@@ -10,6 +10,7 @@ import {
 } from './request_flow_fragments/idp';
 import {
   asReceiveDataRequestTest,
+   asLogPaymentReceivedTest,
   asSendDataTest,
 } from './request_flow_fragments/as';
 import {
@@ -736,6 +737,15 @@ export function mode1DataRequestFlowTest({
           serviceId,
           requestParams,
           requesterNodeId: rpNodeId,
+        });
+      });
+
+      it(`${asNodeId} should log payment received for ${serviceId} successfully`, async function () {
+        await asLogPaymentReceivedTest({
+          callApiAtNodeId,
+          nodeId: asNodeId,
+          requestId,
+          serviceId,
         });
       });
 
