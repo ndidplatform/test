@@ -1,5 +1,9 @@
 import fetch from 'node-fetch';
-import { nodeIdMappingAddress } from '../config';
+import {
+  nodeIdMappingAddress,
+  httpHeaderNdidMemberAppType,
+  httpHeaderNdidMemberAppVersion,
+} from '../config';
 
 export function getApiAddressUrl(nodeId) {
   if (nodeIdMappingAddress && nodeIdMappingAddress[nodeId]) {
@@ -30,11 +34,18 @@ export function getApiAddressUrl(nodeId) {
   }
 }
 
+const HTTP_HEADER_FIELDS = {
+  ndidMemberAppType: 'ndid-member-app-type',
+  ndidMemberAppVersion: 'ndid-member-app-version',
+};
+
 export async function httpGet(url) {
   return fetch(url, {
     method: 'GET',
     headers: {
       Accept: 'application/json',
+      [HTTP_HEADER_FIELDS.ndidMemberAppType]: httpHeaderNdidMemberAppType,
+      [HTTP_HEADER_FIELDS.ndidMemberAppVersion]: httpHeaderNdidMemberAppVersion,
     },
   });
 }
@@ -45,16 +56,20 @@ export async function httpPost(url, body) {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      [HTTP_HEADER_FIELDS.ndidMemberAppType]: httpHeaderNdidMemberAppType,
+      [HTTP_HEADER_FIELDS.ndidMemberAppVersion]: httpHeaderNdidMemberAppVersion,
     },
     body: JSON.stringify(body),
   });
 }
 
-export async function httpDelte(url) {
+export async function httpDelete(url) {
   return fetch(url, {
     method: 'DELETE',
     headers: {
       Accept: 'application/json',
+      [HTTP_HEADER_FIELDS.ndidMemberAppType]: httpHeaderNdidMemberAppType,
+      [HTTP_HEADER_FIELDS.ndidMemberAppVersion]: httpHeaderNdidMemberAppVersion,
     },
   });
 }
