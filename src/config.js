@@ -62,3 +62,8 @@ export const DPKI_MASTER_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLB
 export const DPKI_DECRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/decrypt`;
 
 export const MQ_SEND_SUCCESS_CALLBACK_URL = `http://${CALLBACK_IP}:${NODE_CALLBACK_PORT}/node/mq_send_success`;
+
+export const httpHeaderNdidMemberAppType =
+  process.env.HTTP_HEADER_NDID_MEMBER_APP_TYPE;
+export const httpHeaderNdidMemberAppVersion =
+  process.env.HTTP_HEADER_NDID_MEMBER_APP_VERSION;
