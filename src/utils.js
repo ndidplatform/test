@@ -11,7 +11,7 @@ const saltLength = 16;
 export function wait(ms, stoppable) {
   let setTimeoutFn;
   const promise = new Promise(
-    (resolve) => (setTimeoutFn = setTimeout(resolve, ms)),
+    (resolve) => (setTimeoutFn = setTimeout(resolve, ms))
   );
   if (stoppable) {
     return {
@@ -64,7 +64,7 @@ export function createResponseSignature(privateKey, message_hash) {
         key: privateKey,
         padding: crypto.constants.RSA_NO_PADDING,
       },
-      Buffer.from(message_hash, 'base64'),
+      Buffer.from(message_hash, 'base64')
     )
     .toString('base64');
 }
@@ -157,11 +157,11 @@ function getDataHashWithCustomPadding(
   initialSalt,
   keyModulus,
   dataHash,
-  blockLengthBits = 2048,
+  blockLengthBits = 2048
 ) {
   const hashLength = 256;
   const padLengthInbyte = parseInt(
-    Math.floor((blockLengthBits - hashLength) / 8),
+    Math.floor((blockLengthBits - hashLength) / 8)
   );
   let paddingBuffer = Buffer.alloc(0);
 
@@ -180,7 +180,7 @@ function getDataHashWithCustomPadding(
   const hashWithPaddingModKeyModulusBN = hashWithPaddingBN % keyModulusBN;
   const hashWithPadding = toBufferBE(
     hashWithPaddingModKeyModulusBN,
-    blockLengthBits / 8,
+    blockLengthBits / 8
   ); // Zeros padded in-front
 
   // const hashWithPaddingBN = new BN(hashWithPaddingBeforeMod);
@@ -199,7 +199,7 @@ export function hashRequestMessageForConsent(
   request_message,
   initial_salt,
   request_id,
-  accessorPublicKey,
+  accessorPublicKey
 ) {
   const parsedKey = parseKey(accessorPublicKey);
   const keyModulus = parsedKey.data.modulus.toBuffer();
@@ -214,7 +214,7 @@ export function hashRequestMessageForConsent(
   const hashWithPadding = getDataHashWithCustomPadding(
     initial_salt,
     keyModulus,
-    normalHashBuffer,
+    normalHashBuffer
   );
 
   return hashWithPadding.toString('base64');
@@ -224,10 +224,14 @@ export function getPrivatekey(nodeId) {
   try {
     let publicKey = fs.readFileSync(
       path.join(__dirname, '..', 'dev_key', `${nodeId}`),
-      'utf8',
+      'utf8'
     );
     return publicKey;
   } catch (error) {
     throw error;
   }
+}
+
+export function randomNumber(minimum, maximum) {
+  return Math.floor(Math.random() * (maximum - minimum + 1)) + minimum;
 }

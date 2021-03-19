@@ -19,7 +19,7 @@ export function getRelevantIdpNodesBySid(nodeId, data) {
   return httpGet(
     `${apiBaseUrl}/utility/idp/${namespace}/${identifier}${
       queryString ? `?${queryString}` : ''
-    }`,
+    }`
   );
 }
 
@@ -30,7 +30,7 @@ export function getIdP(nodeId, data = {}) {
   let queryString = arrayQueryString.join('&');
 
   return httpGet(
-    `${apiBaseUrl}/utility/idp${queryString ? `?${queryString}` : ''}`,
+    `${apiBaseUrl}/utility/idp${queryString ? `?${queryString}` : ''}`
   );
 }
 
@@ -43,7 +43,7 @@ export function getRequest(nodeId, data) {
 export function getNodeInfo(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpGet(
-    `${apiBaseUrl}/utility/nodes/${data ? `${data.node_id}` : `${nodeId}`}`,
+    `${apiBaseUrl}/utility/nodes/${data ? `${data.node_id}` : `${nodeId}`}`
   );
 }
 
@@ -79,7 +79,7 @@ export function getPrivateMessages(nodeId, data) {
   return httpGet(
     `${apiBaseUrl}/utility/private_messages/${request_id}${
       node_id ? `?node_id=${node_id}` : ''
-    }`,
+    }`
   );
 }
 
@@ -88,7 +88,7 @@ export function removeAllPrivateMessages(nodeId, data) {
   const { node_id } = data;
   return httpPost(
     `${apiBaseUrl}/utility/private_message_removal`,
-    node_id ? { node_id } : {},
+    node_id ? { node_id } : {}
   );
 }
 
@@ -97,7 +97,7 @@ export function removePrivateMessages(nodeId, data) {
   const { request_id, node_id } = data;
   return httpPost(
     `${apiBaseUrl}/utility/private_message_removal/${request_id}`,
-    node_id ? { node_id } : {},
+    node_id ? { node_id } : {}
   );
 }
 
@@ -109,4 +109,41 @@ export function getIdPErrorCodes(nodeId) {
 export function getASErrorCodes(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpGet(`${apiBaseUrl}/utility/as_error_codes`);
+}
+
+export function getServicePriceList(nodeId, params) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { service_id, ...queryParams } = params;
+
+  let arrayQueryString = Object.keys(queryParams).map(
+    (key) => `${key}=${queryParams[key]}`
+  );
+  let queryString = arrayQueryString.join('&');
+
+  return httpGet(
+    `${apiBaseUrl}/utility/as/service_price/${service_id}${
+      queryString ? `?${queryString}` : ''
+    }`
+  );
+}
+
+export function getServicePriceCeiling(nodeId, params) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { ...queryParams } = params;
+
+  let arrayQueryString = Object.keys(queryParams).map(
+    (key) => `${key}=${queryParams[key]}`
+  );
+  let queryString = arrayQueryString.join('&');
+
+  return httpGet(
+    `${apiBaseUrl}/utility/service_price_ceiling${
+      queryString ? `?${queryString}` : ''
+    }`
+  );
+}
+
+export function getServicePriceMinEffectiveDatetimeDelay(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  return httpGet(`${apiBaseUrl}/utility/service_price_min_effective_datetime_delay`);
 }

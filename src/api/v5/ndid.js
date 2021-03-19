@@ -25,6 +25,16 @@ export function disableServiceDestination(nodeId, data) {
   return httpPost(`${apiBaseUrl}/ndid/disable_service_destination`, data);
 }
 
+export function setServicePriceCeiling(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/set_service_price_ceiling`, data);
+}
+
+export function setServicePriceMinEffectiveDatetimeDelay(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/set_service_price_min_effective_datetime_delay`, data);
+}
+
 export function enableServiceDestination(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/enable_service_destination`, data);

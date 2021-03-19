@@ -23,6 +23,12 @@ export function logPaymentReceived(nodeId, data) {
   return httpPost(`${apiBaseUrl}/as/payment_received_log/${requestId}/${serviceId}`, rest);
 }
 
+export function setServicePrice(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { serviceId, ...rest } = data;
+  return httpPost(`${apiBaseUrl}/as/service_price/${serviceId}`, rest);
+}
+
 export function sendData(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { requestId, serviceId, ...rest } = data;
