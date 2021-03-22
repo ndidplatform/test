@@ -9,6 +9,8 @@ import { as1Available } from '../../..';
 import * as config from '../../../../config';
 
 describe('AS set Service price more than price ceiling tests', function () {
+  let servicePriceCeilingBeforeTest;
+
   const priceCeiling = 50.0;
 
   const referenceId = generateReferenceId();
@@ -22,7 +24,17 @@ describe('AS set Service price more than price ceiling tests', function () {
       this.skip();
     }
 
-    const response = await ndidApi.setServicePriceCeiling('ndid1', {
+    let response;
+
+    response = await commonApi.getServicePriceCeiling('ndid1', {
+      service_id: 'bank_statement',
+    });
+    if (response.status !== 200) {
+      throw new Error('Error getting service price ceiling');
+    }
+    servicePriceCeilingBeforeTest = await response.json();
+
+    response = await ndidApi.setServicePriceCeiling('ndid1', {
       service_id: 'bank_statement',
       price_ceiling_by_currency_list: [
         {
@@ -114,5 +126,10 @@ describe('AS set Service price more than price ceiling tests', function () {
     expect(setServicePriceResult.node_id).to.equal('as1');
   });
 
-  after(function () {});
+  after(async function () {
+    const response = await ndidApi.setServicePriceCeiling('ndid1', servicePriceCeilingBeforeTest);
+    if (response.status !== 204) {
+      throw new Error('NDID set price ceiling error');
+    }
+  });
 });

@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 
-import * as ndidApi from '../../../api/v5/ndid';
-import * as commonApi from '../../../api/v5/common';
-import { wait, randomNumber } from '../../../utils';
-import { ndidAvailable, as1Available } from '../..';
+import * as ndidApi from '../../../../api/v5/ndid';
+import * as commonApi from '../../../../api/v5/common';
+import { wait, randomNumber } from '../../../../utils';
+import { ndidAvailable, as1Available } from '../../..';
 
 describe('Set Service price minimum effective datetime delay tests', function () {
   const newDurationToSet = randomNumber(86400, 129600);
