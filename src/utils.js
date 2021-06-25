@@ -6,7 +6,7 @@ import { toBigIntBE, toBufferBE } from 'bigint-buffer';
 import fs from 'fs';
 import path from 'path';
 
-const saltLength = 16;
+const saltLength = 32;
 
 export function wait(ms, stoppable) {
   let setTimeoutFn;
@@ -116,8 +116,12 @@ export function generateRequestParamSalt({
   return bufferHash.slice(0, saltLength).toString('base64');
 }
 
-export function generateRequestMessageSalt(initial_salt) {
-  const bufferHash = sha256(initial_salt);
+export function generateRequestMessageSalt({
+  initialSalt,
+  namespace,
+  identifier,
+}) {
+  const bufferHash = sha256(namespace + identifier + initialSalt);
   return bufferHash.slice(0, saltLength).toString('base64');
 }
 
