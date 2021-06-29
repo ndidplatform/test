@@ -83,6 +83,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: true,
+      laal: true,
       mode: 2,
     });
     const responseBody = await response.json();
@@ -166,6 +168,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       .that.to.have.lengthOf(1);
     const idp = responseBody.find((node) => node.node_id === 'idp1');
     expect(idp.ial).to.equal(2.3);
+    expect(idp.lial).to.equal(true);
+    expect(idp.laal).to.equal(true);
   });
 
   after(function() {
