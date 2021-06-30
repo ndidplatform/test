@@ -90,6 +90,8 @@ describe('NDID set allowed min ial for register identity at first idp test', fun
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 2,
     });
     const responseBody = await response.json();
@@ -128,6 +130,8 @@ describe('NDID set allowed min ial for register identity at first idp test', fun
       accessor_type: 'RSA',
       accessor_public_key: accessorPublicKey,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();

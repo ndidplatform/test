@@ -192,6 +192,8 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -241,6 +243,8 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
       request_message: createIdentityRequestMessage,
     });
@@ -282,6 +286,8 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
       request_message: createIdentityRequestMessage,
     });
@@ -305,6 +311,8 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
       request_message: createIdentityRequestMessage,
     });
@@ -358,6 +366,8 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
       request_message: createIdentityRequestMessage,
     });

@@ -94,6 +94,8 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -161,6 +163,26 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     expect(response.status).to.equal(200);
     const responseBody = await response.json();
     expect(responseBody.ial).to.equal(2.3);
+  });
+
+  it('After create identity should get identity LIAL successfully', async function() {
+    const response = await identityApi.getIdentityLial('idp2', {
+      namespace,
+      identifier,
+    });
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    expect(responseBody.lial).to.equal(false);
+  });
+
+  it('After create identity should get identity LAAL successfully', async function() {
+    const response = await identityApi.getIdentityLaal('idp2', {
+      namespace,
+      identifier,
+    });
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    expect(responseBody.laal).to.equal(false);
   });
 
   after(function() {
@@ -252,6 +274,8 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 2,
       });
       const responseBody = await response.json();
@@ -332,6 +356,26 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       expect(response.status).to.equal(200);
       const responseBody = await response.json();
       expect(responseBody.ial).to.equal(2.3);
+    });
+
+    it('After create identity should get identity LIAL successfully', async function() {
+      const response = await identityApi.getIdentityLial('idp1', {
+        namespace,
+        identifier,
+      });
+      expect(response.status).to.equal(200);
+      const responseBody = await response.json();
+      expect(responseBody.lial).to.equal(false);
+    });
+  
+    it('After create identity should get identity LAAL successfully', async function() {
+      const response = await identityApi.getIdentityLaal('idp1', {
+        namespace,
+        identifier,
+      });
+      expect(response.status).to.equal(200);
+      const responseBody = await response.json();
+      expect(responseBody.laal).to.equal(false);
     });
 
     after(function() {

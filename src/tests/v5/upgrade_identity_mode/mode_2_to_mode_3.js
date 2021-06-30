@@ -172,6 +172,8 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 2,
     });
     const responseBody = await response.json();
@@ -1822,6 +1824,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -1934,6 +1938,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 2,
     });
     const responseBody = await response.json();

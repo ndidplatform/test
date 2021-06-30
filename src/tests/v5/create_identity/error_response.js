@@ -79,6 +79,8 @@ describe('Create identity errors', function() {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -101,6 +103,8 @@ describe('Create identity errors', function() {
       accessor_public_key: accessorPublicKey,
       accessor_id: accessorId,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -133,6 +137,8 @@ describe('Create identity errors', function() {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
 
@@ -156,6 +162,8 @@ describe('Create identity errors', function() {
       accessor_public_key: 'aa',
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -178,6 +186,8 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -207,6 +217,8 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
       accessor_public_key: accessorPublicKeyLengthShorterThan2048Bit,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -293,6 +305,8 @@ describe('Create identity errors', function() {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 2,
     });
     const responseBody = await response.json();
@@ -390,6 +404,8 @@ describe('Create identity errors', function() {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 2,
     });
     const responseBody = await response.json();
@@ -465,6 +481,8 @@ describe('Create identity errors', function() {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     expect(response.status).to.equal(400);
@@ -492,6 +510,8 @@ describe('Create identity errors', function() {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 2,
     });
     expect(response.status).to.equal(400);
@@ -525,6 +545,8 @@ describe('Create identity errors', function() {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 2,
     });
     expect(response.status).to.equal(400);

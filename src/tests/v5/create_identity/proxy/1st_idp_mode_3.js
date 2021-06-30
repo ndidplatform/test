@@ -86,6 +86,8 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -236,6 +238,8 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
 //       accessor_public_key: accessorPublicKey,
 //       //accessor_id,
 //       ial: 2.3,
+//       lial: false,
+//       laal: false,
 //       mode: 3,
 //     });
 //     const responseBody = await response.json();

@@ -100,6 +100,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 2,
     });
     const responseBody = await response.json();

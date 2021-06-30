@@ -142,6 +142,8 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();

@@ -112,6 +112,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -600,6 +602,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         accessor_public_key: accessorPublicKey,
         accessor_id: accessorId,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 3,
       });
       const responseBody = await response.json();
@@ -2246,6 +2250,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 3,
       });
       const responseBody = await response.json();

@@ -282,6 +282,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 2,
       });
       const responseBody = await response.json();
@@ -364,6 +366,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 2,
       });
       const responseBody = await response.json();
@@ -1410,6 +1414,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 3,
       });
       const responseBody = await response.json();
@@ -1492,6 +1498,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 3,
       });
       const responseBody = await response.json();
@@ -2520,6 +2528,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 2,
       });
       const responseBody = await response.json();
@@ -2602,6 +2612,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 3,
       });
       const responseBody = await response.json();
