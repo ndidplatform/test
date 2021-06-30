@@ -1,5 +1,10 @@
 import { getApiAddressUrl, httpPost } from '../helpers';
 
+export function registerNode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/register_node`, data);
+}
+
 export function registerNamespace(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/create_namespace`, data);
