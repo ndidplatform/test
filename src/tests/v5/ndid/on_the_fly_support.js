@@ -63,4 +63,21 @@ describe('NDID on_the_fly_support property tests', function () {
       active: true,
     });
   });
+
+  it('Should get all idp information that ndid just registering node successfully', async function () {
+    const response = await commonApi.getIdP('ndid1');
+    expect(response.status).to.equal(200);
+    const responseBody = await response.json();
+    const idpInformation = responseBody.find((idp) => idp.node_id === nodeId);
+    expect(idpInformation).to.not.be.an('undefined');
+    expect(idpInformation).to.deep.equal({
+      node_id: nodeId,
+      node_name: nodeName,
+      max_aal: 3,
+      max_ial: 3,
+      on_the_fly_support: true,
+      supported_request_message_data_url_type_list: [],
+      agent: false,
+    });
+  });
 });
