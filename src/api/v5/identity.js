@@ -28,6 +28,26 @@ export function getIdentityIal(nodeId, data) {
   );
 }
 
+export function getIdentityLial(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { namespace, identifier, node_id } = data;
+  return httpGet(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/lial${
+      node_id ? `?node_id=${node_id}` : ''
+    }`,
+  );
+}
+
+export function getIdentityLaal(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { namespace, identifier, node_id } = data;
+  return httpGet(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/laal${
+      node_id ? `?node_id=${node_id}` : ''
+    }`,
+  );
+}
+
 export function addAccessor(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { namespace, identifier, ...rest } = data;
@@ -75,6 +95,24 @@ export function updateIdentityIal(nodeId, data) {
   const { namespace, identifier, ...rest } = data;
   return httpPost(
     `${apiBaseUrl}/identity/${namespace}/${identifier}/ial`,
+    rest,
+  );
+}
+
+export function updateIdentityLial(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/lial`,
+    rest,
+  );
+}
+
+export function updateIdentityLaal(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { namespace, identifier, ...rest } = data;
+  return httpPost(
+    `${apiBaseUrl}/identity/${namespace}/${identifier}/laal`,
     rest,
   );
 }

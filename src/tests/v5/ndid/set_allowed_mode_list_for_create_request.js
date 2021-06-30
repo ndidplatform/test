@@ -180,6 +180,8 @@ describe('NDID set allowed mode list for create request test', function() {
         accessor_type: 'RSA',
         accessor_public_key: accessorPublicKey,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 2,
       });
       const responseBody = await response.json();

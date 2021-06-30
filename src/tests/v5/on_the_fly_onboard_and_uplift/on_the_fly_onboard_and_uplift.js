@@ -605,6 +605,8 @@ describe('On the fly onboard and uplift tests', function () {
         accessor_type: 'RSA',
         accessor_public_key: accessorPublicKey,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 2,
       });
 
@@ -3373,6 +3375,8 @@ describe('On the fly onboard and uplift tests', function () {
         accessor_type: 'RSA',
         accessor_public_key: accessorPublicKey,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 3,
         request_message: '',
       });

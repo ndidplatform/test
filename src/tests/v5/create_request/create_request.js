@@ -93,6 +93,8 @@ describe('Create request tests', function () {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -141,6 +143,8 @@ describe('Create request tests', function () {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 2,
     });
     const responseBody = await response.json();
@@ -737,6 +741,8 @@ describe('Create request with invalid mode tests', function () {
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 2,
       });
       const responseBody = await response.json();
@@ -904,6 +910,8 @@ describe('Create request with invalid mode tests', function () {
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 3,
       });
       const responseBody = await response.json();
@@ -952,6 +960,8 @@ describe('Create request with invalid mode tests', function () {
         accessor_public_key: accessorPublicKey,
         //accessor_id,
         ial: 2.3,
+        lial: false,
+        laal: false,
         mode: 2,
       });
       const responseBody = await response.json();

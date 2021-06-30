@@ -168,6 +168,8 @@ describe('2nd IdP close identity request (mode 3) test', function() {
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
     });
     const responseBody = await response.json();
@@ -234,6 +236,8 @@ describe('2nd IdP close identity request (mode 3) test', function() {
       accessor_public_key: accessorPublicKey2,
       //accessor_id: accessorId,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
       request_message: createIdentityRequestMessage,
     });
@@ -581,6 +585,8 @@ describe('IdP (idp2) create identity as 2nd IdP after close identity request tes
       accessor_public_key: accessorPublicKey,
       // accessor_id: accessorId,
       ial: 2.3,
+      lial: false,
+      laal: false,
       mode: 3,
       request_message: createIdentityRequestMessage,
     });
