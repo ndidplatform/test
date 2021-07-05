@@ -374,7 +374,7 @@ describe('NDID on_the_fly_support property tests', function () {
     after(async function () {
       await ndidApi.updateNode('ndid1', {
         node_id: 'idp1',
-        on_the_fly_support: true,
+        on_the_fly_support: false,
       });
       idp1EventEmitter.removeAllListeners('callback');
     });
