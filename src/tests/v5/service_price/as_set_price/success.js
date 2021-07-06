@@ -188,6 +188,8 @@ describe('Set Service price (success) (equal min,max price) test', function () {
     const setServicePriceResult = await setServicePriceResultPromise.promise;
     expect(setServicePriceResult.success).to.equal(true);
     expect(setServicePriceResult.node_id).to.equal('as1');
+
+    await wait(2000);
   });
 
   it('Service price should be able to queried successfully', async function () {

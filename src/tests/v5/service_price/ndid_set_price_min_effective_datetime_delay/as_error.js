@@ -4,7 +4,11 @@ import * as ndidApi from '../../../../api/v5/ndid';
 import * as asApi from '../../../../api/v5/as';
 import * as commonApi from '../../../../api/v5/common';
 import { as1EventEmitter } from '../../../../callback_server';
-import { createEventPromise, generateReferenceId } from '../../../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  wait,
+} from '../../../../utils';
 import { as1Available } from '../../..';
 import * as config from '../../../../config';
 
@@ -18,14 +22,16 @@ describe('AS set Service price with not enough effective datetime delay tests', 
   const setServicePriceResultPromise = createEventPromise();
 
   before(async function () {
+    this.timeout(10000);
+
     if (!as1Available) {
       this.skip();
     }
 
-    const servicePriceMinEffectiveDatetimeDelayRes = await commonApi.getServicePriceMinEffectiveDatetimeDelay(
-      'ndid1'
-    );
-    servicePriceMinEffectiveDatetimeDelayBeforeTest = await servicePriceMinEffectiveDatetimeDelayRes.json();
+    const servicePriceMinEffectiveDatetimeDelayRes =
+      await commonApi.getServicePriceMinEffectiveDatetimeDelay('ndid1');
+    servicePriceMinEffectiveDatetimeDelayBeforeTest =
+      await servicePriceMinEffectiveDatetimeDelayRes.json();
 
     const response = await ndidApi.setServicePriceMinEffectiveDatetimeDelay(
       'ndid1',
@@ -36,6 +42,7 @@ describe('AS set Service price with not enough effective datetime delay tests', 
     if (response.status !== 204) {
       throw new Error('NDID set price min effective datetime delay error');
     }
+    await wait(2000);
 
     as1EventEmitter.on('callback', function (callbackData) {
       if (
@@ -80,6 +87,8 @@ describe('AS set Service price with not enough effective datetime delay tests', 
   });
 
   after(async function () {
+    this.timeout(5000);
+
     const response = await ndidApi.setServicePriceMinEffectiveDatetimeDelay(
       'ndid1',
       servicePriceMinEffectiveDatetimeDelayBeforeTest
@@ -87,5 +96,7 @@ describe('AS set Service price with not enough effective datetime delay tests', 
     if (response.status !== 204) {
       throw new Error('NDID set price min effective datetime delay error');
     }
+
+    await wait(2000);
   });
 });
