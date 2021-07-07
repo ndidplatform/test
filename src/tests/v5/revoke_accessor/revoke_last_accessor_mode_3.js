@@ -383,13 +383,13 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
     it('Accessor id should be revoked unsuccessfully', async function() {
       this.timeout(10000);
       const revokeAccessorResult = await revokeAccessorResultPromise.promise;
+      expect(revokeAccessorResult.error.code).to.equal(25070);
       expect(revokeAccessorResult).to.deep.include({
         reference_id: referenceId,
         request_id: requestId,
         accessor_id: accessorIdForRevoke,
         success: false,
       });
-
       //TODO: Expect error code
     });
 
@@ -869,6 +869,7 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
     it('Accessor id should be revoked unsuccessfully', async function() {
       this.timeout(10000);
       const revokeAccessorResult = await revokeAccessorResultPromise.promise;
+      expect(revokeAccessorResult.error.code).to.equal(25070)
       expect(revokeAccessorResult).to.deep.include({
         reference_id: referenceId,
         request_id: requestId,
