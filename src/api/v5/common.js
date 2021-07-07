@@ -147,3 +147,9 @@ export function getServicePriceMinEffectiveDatetimeDelay(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpGet(`${apiBaseUrl}/utility/service_price_min_effective_datetime_delay`);
 }
+
+export function getMessage(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { messageId } = data;
+  return httpGet(`${apiBaseUrl}/utility/messages/${messageId}`);
+}

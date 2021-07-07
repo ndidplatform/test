@@ -53,3 +53,9 @@ export function removeDataRequestedFromAS(nodeId, data) {
     node_id ? { node_id } : {}
   );
 }
+
+export function createMessage(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { ...rest } = data;
+  return httpPost(`${apiBaseUrl}/rp/messages`, rest);
+}
