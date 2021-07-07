@@ -6,7 +6,6 @@ import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
 
 describe('Create message with duplicate reference id test', function () {
-
   const rpReferenceId = generateReferenceId();
 
   const createMessageResultPromise = createEventPromise(); //RP
@@ -54,9 +53,7 @@ describe('Create message with duplicate reference id test', function () {
     expect(responseBody.error.code).to.equal(20045);
   });
 
-  after(async function () {
-    this.timeout(15000);
-    await wait(3000);
+  after(function () {
     rpEventEmitter.removeAllListeners('callback');
   });
 });
