@@ -390,7 +390,6 @@ describe('IdP (idp1) revoke last accessor (identity associated with one idp mode
         accessor_id: accessorIdForRevoke,
         success: false,
       });
-      //TODO: Expect error code
     });
 
     it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
@@ -876,7 +875,6 @@ describe('IdP (idp1) revoke last accessor (identity associated with many idp mod
         accessor_id: accessorIdForRevoke,
         success: false,
       });
-      //TODO: Expect error code
     });
 
     it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
