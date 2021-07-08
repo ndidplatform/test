@@ -65,7 +65,6 @@ app.post('/dpki/decrypt', (req, res) => {
 app.post('/dpki/sign', (req, res) => {
   try {
     const {
-      node_id,
       request_message,
       request_message_hash,
       hash_method,
@@ -73,8 +72,13 @@ app.post('/dpki/sign', (req, res) => {
       sign_method,
     } = req.body;
 
+    let { node_id } = req.body;
+
     dpkiEventEmitter.emit('signCallback', req.body);
 
+    if (node_id === 'NonExistentRPNode') { //for test /create_message/proxy/create_message.js
+      node_id = 'rp1';
+    }
     const keyPath = path.join(__dirname, '..', '..', 'dev_key', node_id);
 
     const key = fs.readFileSync(keyPath, 'utf8').toString();
@@ -82,7 +86,7 @@ app.post('/dpki/sign', (req, res) => {
     // Optional: Check hash equality
 
     // Hash then encrypt OR encrypt received hash
-    
+
     const requestMessageBuffer = Buffer.from(request_message, 'base64');
     const signature = createSignature(key, hash_method, requestMessageBuffer);
     const json = {

@@ -3,9 +3,7 @@ import { expect } from 'chai';
 import * as rpApi from '../../../../api/v5/rp';
 import { ndidAvailable, proxy1Available } from '../../..';
 import { createEventPromise, generateReferenceId } from '../../../../utils';
-import {
-  proxy1EventEmitter,
-} from '../../../../callback_server';
+import { proxy1EventEmitter } from '../../../../callback_server';
 import * as config from '../../../../config';
 
 describe('Proxy node create message with non-existent RP node ID test', function () {
@@ -43,13 +41,23 @@ describe('Proxy node create message with non-existent RP node ID test', function
 
   it('Proxy node should create a message with non-existent RP node ID unsuccessfully', async function () {
     this.timeout(15000);
-    const response = await rpApi.createMessage('proxy1', createMessageParams);
-    // const responseBody = await response.json();
-    expect(response.status).to.equal(202);
+    if (!config.USE_EXTERNAL_CRYPTO_SERVICE) {
+      const response = await rpApi.createMessage('proxy1', createMessageParams);
+      // const responseBody = await response.json();
+      expect(response.status).to.equal(202);
 
-    const createMessageResult = await createMessageResultPromise.promise;
-    expect(createMessageResult.success).to.equal(false);
-    expect(createMessageResult.error.code).to.equal(10034);
+      const createMessageResult = await createMessageResultPromise.promise;
+      expect(createMessageResult.success).to.equal(false);
+      expect(createMessageResult.error.code).to.equal(10034);
+    } else {
+      const response = await rpApi.createMessage('proxy1', createMessageParams);
+      // const responseBody = await response.json();
+      expect(response.status).to.equal(202);
+
+      const createMessageResult = await createMessageResultPromise.promise;
+      expect(createMessageResult.success).to.equal(false);
+      expect(createMessageResult.error.code).to.equal(25042);
+    }
   });
 
   after(function () {
