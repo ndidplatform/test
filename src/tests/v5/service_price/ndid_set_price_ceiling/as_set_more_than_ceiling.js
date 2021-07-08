@@ -4,7 +4,11 @@ import * as ndidApi from '../../../../api/v5/ndid';
 import * as asApi from '../../../../api/v5/as';
 import * as commonApi from '../../../../api/v5/common';
 import { as1EventEmitter } from '../../../../callback_server';
-import { createEventPromise, generateReferenceId } from '../../../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  wait,
+} from '../../../../utils';
 import { as1Available } from '../../..';
 import * as config from '../../../../config';
 
@@ -20,6 +24,8 @@ describe('AS set Service price more than price ceiling tests', function () {
   let servicePriceMinEffectiveDatetimeDelay;
 
   before(async function () {
+    this.timeout(10000);
+
     if (!as1Available) {
       this.skip();
     }
@@ -46,11 +52,12 @@ describe('AS set Service price more than price ceiling tests', function () {
     if (response.status !== 204) {
       throw new Error('NDID set price ceiling error');
     }
+    await wait(2000);
 
-    const servicePriceMinEffectiveDatetimeDelayRes = await commonApi.getServicePriceMinEffectiveDatetimeDelay(
-      'as1'
-    );
-    servicePriceMinEffectiveDatetimeDelay = await servicePriceMinEffectiveDatetimeDelayRes.json();
+    const servicePriceMinEffectiveDatetimeDelayRes =
+      await commonApi.getServicePriceMinEffectiveDatetimeDelay('as1');
+    servicePriceMinEffectiveDatetimeDelay =
+      await servicePriceMinEffectiveDatetimeDelayRes.json();
 
     as1EventEmitter.on('callback', function (callbackData) {
       if (
@@ -127,9 +134,15 @@ describe('AS set Service price more than price ceiling tests', function () {
   });
 
   after(async function () {
-    const response = await ndidApi.setServicePriceCeiling('ndid1', servicePriceCeilingBeforeTest);
+    this.timeout(5000);
+
+    const response = await ndidApi.setServicePriceCeiling(
+      'ndid1',
+      servicePriceCeilingBeforeTest
+    );
     if (response.status !== 204) {
       throw new Error('NDID set price ceiling error');
     }
+    await wait(2000);
   });
 });

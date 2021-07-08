@@ -6,12 +6,19 @@ import { wait, randomNumber } from '../../../../utils';
 import { ndidAvailable, as1Available } from '../../..';
 
 describe('Set Service price minimum effective datetime delay tests', function () {
+  let servicePriceMinEffectiveDatetimeDelayBeforeTest;
+
   const newDurationToSet = randomNumber(86400, 129600);
 
   before(async function () {
     if (!ndidAvailable || !as1Available) {
       this.skip();
     }
+
+    const servicePriceMinEffectiveDatetimeDelayRes =
+      await commonApi.getServicePriceMinEffectiveDatetimeDelay('ndid1');
+    servicePriceMinEffectiveDatetimeDelayBeforeTest =
+      await servicePriceMinEffectiveDatetimeDelayRes.json();
   });
 
   it('should be able to query (default value or previous set value) successfully', async function () {
@@ -55,5 +62,17 @@ describe('Set Service price minimum effective datetime delay tests', function ()
     });
   });
 
-  after(function () {});
+  after(async function () {
+    this.timeout(5000);
+
+    const response = await ndidApi.setServicePriceMinEffectiveDatetimeDelay(
+      'ndid1',
+      servicePriceMinEffectiveDatetimeDelayBeforeTest
+    );
+    if (response.status !== 204) {
+      throw new Error('NDID set price min effective datetime delay error');
+    }
+
+    await wait(2000);
+  });
 });

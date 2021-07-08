@@ -22,6 +22,8 @@ describe('Set Service price (success) test', function () {
   let servicePriceToSet;
 
   before(async function () {
+    this.timeout(10000);
+
     if (!as1Available) {
       this.skip();
     }
@@ -38,11 +40,12 @@ describe('Set Service price (success) test', function () {
     if (response.status !== 204) {
       throw new Error('NDID set price ceiling error');
     }
+    await wait(2000);
 
-    const servicePriceMinEffectiveDatetimeDelayRes = await commonApi.getServicePriceMinEffectiveDatetimeDelay(
-      'as1'
-    );
-    const servicePriceMinEffectiveDatetimeDelay = await servicePriceMinEffectiveDatetimeDelayRes.json();
+    const servicePriceMinEffectiveDatetimeDelayRes =
+      await commonApi.getServicePriceMinEffectiveDatetimeDelay('as1');
+    const servicePriceMinEffectiveDatetimeDelay =
+      await servicePriceMinEffectiveDatetimeDelayRes.json();
 
     const effectiveDatetime = new Date(
       Date.now() +
@@ -118,9 +121,8 @@ describe('Set Service price (success) test', function () {
     expect(latestServicePrice.detail).to.equal(servicePriceToSet.detail);
 
     expect(latestServicePrice.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = latestServicePrice.creation_block_height.split(
-      ':'
-    );
+    const splittedCreationBlockHeight =
+      latestServicePrice.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -141,10 +143,10 @@ describe('Set Service price (success) (equal min,max price) test', function () {
       this.skip();
     }
 
-    const servicePriceMinEffectiveDatetimeDelayRes = await commonApi.getServicePriceMinEffectiveDatetimeDelay(
-      'as1'
-    );
-    const servicePriceMinEffectiveDatetimeDelay = await servicePriceMinEffectiveDatetimeDelayRes.json();
+    const servicePriceMinEffectiveDatetimeDelayRes =
+      await commonApi.getServicePriceMinEffectiveDatetimeDelay('as1');
+    const servicePriceMinEffectiveDatetimeDelay =
+      await servicePriceMinEffectiveDatetimeDelayRes.json();
 
     const effectiveDatetime = new Date(
       Date.now() +
@@ -221,9 +223,8 @@ describe('Set Service price (success) (equal min,max price) test', function () {
     expect(latestServicePrice.detail).to.equal(servicePriceToSet.detail);
 
     expect(latestServicePrice.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = latestServicePrice.creation_block_height.split(
-      ':'
-    );
+    const splittedCreationBlockHeight =
+      latestServicePrice.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
