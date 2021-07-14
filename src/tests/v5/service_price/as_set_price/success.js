@@ -102,9 +102,12 @@ describe('Set Service price (success) test', function () {
     const responseBody = await response.json();
 
     expect(response.status).to.equal(200);
-    expect(responseBody.node_id).to.equal('as1');
 
-    const latestServicePrice = responseBody.price_list[0];
+    const nodeServicePrice = responseBody.find(
+      ({ node_id }) => node_id === 'as1'
+    );
+    expect(nodeServicePrice.node_id).to.equal('as1');
+    const latestServicePrice = nodeServicePrice.price_list[0];
     expect(latestServicePrice.price_by_currency_list).to.deep.equal([
       {
         currency: 'THB',
@@ -204,9 +207,12 @@ describe('Set Service price (success) (equal min,max price) test', function () {
     const responseBody = await response.json();
 
     expect(response.status).to.equal(200);
-    expect(responseBody.node_id).to.equal('as1');
 
-    const latestServicePrice = responseBody.price_list[0];
+    const nodeServicePrice = responseBody.find(
+      ({ node_id }) => node_id === 'as1'
+    );
+    expect(nodeServicePrice.node_id).to.equal('as1');
+    const latestServicePrice = nodeServicePrice.price_list[0];
     expect(latestServicePrice.price_by_currency_list).to.deep.equal([
       {
         currency: 'THB',
