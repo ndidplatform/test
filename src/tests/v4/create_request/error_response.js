@@ -1093,6 +1093,7 @@ describe('RP create request (mode 2) with service in data request list does not 
   });
 
   it('AS (as2) should add offered service (update supported_namespace_list bank_statement) successfully', async function() {
+    this.timeout(20000);
     const responseUpdateService = await asApi.addOrUpdateService('as2', {
       serviceId: 'bank_statement',
       reference_id: as2BankStatementReferenceId,
@@ -1128,6 +1129,7 @@ describe('RP create request (mode 2) with service in data request list does not 
   });
 
   it('AS (proxy1_as4) should add offered service (update supported_namespace_list bank_statement) successfully', async function() {
+    this.timeout(20000);
     if (!proxy1Available) this.skip();
     const proxy1ResponseUpdateService = await asApi.addOrUpdateService(
       'proxy1',
@@ -1188,6 +1190,7 @@ describe('RP create request (mode 2) with service in data request list does not 
   });
 
   it('RP should create request (mode 2 provide as_id_list) with service in data request does not accepted namespace unsuccessfully', async function() {
+    this.timeout(20000);
     let identity = db.idp1Identities.find(identity => identity.mode === 2);
     namespace = identity.namespace;
     identifier = identity.identifier;

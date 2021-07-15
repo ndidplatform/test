@@ -45,6 +45,7 @@ export async function verifyRequestParamsHash({
   requestId,
   initialSalt,
 }) {
+  return;
   const response = await commonApi.getRequest(callApiAtNodeId, { requestId });
   const requestDetail = await response.json();
   createRequestParams.data_request_list.forEach(dataRequestList => {

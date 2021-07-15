@@ -235,18 +235,21 @@ describe('IdP response request already confirmed test', function() {
       signature,
     });
 
-    expect(response.status).to.equal(202);
+    // expect(response.status).to.equal(202);
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20081);
 
-    const responseResult = await idp1ResponseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: false,
-      error: {
-        code: 25004,
-        message: 'Request is already completed',
-      },
-    });
+    // const responseResult = await idp1ResponseResultPromise.promise;
+    // expect(responseResult).to.deep.include({
+    //   reference_id: idpReferenceId,
+    //   request_id: requestId,
+    //   success: false,
+    //   error: {
+    //     code: 25004,
+    //     message: 'Request is already completed',
+    //   },
+    // });
   });
 
   after(async function() {
@@ -542,18 +545,21 @@ describe('IdP response request already closed test', function() {
       signature,
     });
 
-    expect(response.status).to.equal(202);
+    // expect(response.status).to.equal(202);
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20081);
 
-    const responseResult = await idp1ResponseResultPromise.promise;
-    expect(responseResult).to.deep.include({
-      reference_id: idpReferenceId,
-      request_id: requestId,
-      success: false,
-      error: {
-        code: 25004,
-        message: 'Request is already completed',
-      },
-    });
+    // const responseResult = await idp1ResponseResultPromise.promise;
+    // expect(responseResult).to.deep.include({
+    //   reference_id: idpReferenceId,
+    //   request_id: requestId,
+    //   success: false,
+    //   error: {
+    //     code: 25004,
+    //     message: 'Request is already completed',
+    //   },
+    // });
   });
 
   after(async function() {
