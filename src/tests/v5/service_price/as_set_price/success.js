@@ -236,5 +236,43 @@ describe('Set Service price (success) (equal min,max price) test', function () {
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
+  it('Service price should be able to queried (without specifying node ID) successfully', async function () {
+    this.timeout(10000);
+
+    const response = await commonApi.getServicePriceList('rp1', {
+      service_id: 'bank_statement',
+    });
+    const responseBody = await response.json();
+
+    expect(response.status).to.equal(200);
+
+    const nodeServicePrice = responseBody.find(
+      ({ node_id }) => node_id === 'as1'
+    );
+    expect(nodeServicePrice.node_id).to.equal('as1');
+    const latestServicePrice = nodeServicePrice.price_list[0];
+    expect(latestServicePrice.price_by_currency_list).to.deep.equal([
+      {
+        currency: 'THB',
+        min_price: 99.99,
+        max_price: 99.99,
+      },
+    ]);
+    expect(new Date(latestServicePrice.effective_datetime).getTime()).to.equal(
+      servicePriceToSet.effective_datetime.getTime()
+    );
+    expect(latestServicePrice.more_info_url).to.equal(
+      servicePriceToSet.more_info_url
+    );
+    expect(latestServicePrice.detail).to.equal(servicePriceToSet.detail);
+
+    expect(latestServicePrice.creation_block_height).to.be.a('string');
+    const splittedCreationBlockHeight =
+      latestServicePrice.creation_block_height.split(':');
+    expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+    expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+    expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+  });
+
   after(function () {});
 });
