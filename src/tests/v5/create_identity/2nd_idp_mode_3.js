@@ -217,8 +217,8 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
-      lial: true,
-      laal: true,
+      // lial: true,
+      // laal: true,
       mode: 3,
       request_message: createIdentityRequestMessage,
     });
@@ -499,7 +499,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     });
     expect(response.status).to.equal(200);
     const responseBody = await response.json();
-    expect(responseBody.lial).to.equal(true);
+    expect(responseBody.lial).to.equal(null);
   });
 
   it('After create identity should get identity LAAL successfully', async function() {
@@ -509,7 +509,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     });
     expect(response.status).to.equal(200);
     const responseBody = await response.json();
-    expect(responseBody.laal).to.equal(true);
+    expect(responseBody.laal).to.equal(null);
   });
 
   it('Should get relevant IdP nodes by sid successfully', async function () {
@@ -527,8 +527,8 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     expect(idp.laal).to.equal(false);
     idp = responseBody.find((node) => node.node_id === 'idp2');
     expect(idp.ial).to.equal(2.3);
-    expect(idp.lial).to.equal(true);
-    expect(idp.laal).to.equal(true);
+    expect(idp.lial).to.equal(null);
+    expect(idp.laal).to.equal(null);
   });
 
   after(function () {
@@ -2026,8 +2026,8 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
       accessor_public_key: accessorPublicKey,
       //accessor_id,
       ial: 2.3,
-      lial: false,
-      laal: false,
+      // lial: false,
+      // laal: false,
       mode: 3,
       request_message: createIdentityRequestMessage,
     });
@@ -2309,7 +2309,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     });
     expect(response.status).to.equal(200);
     const responseBody = await response.json();
-    expect(responseBody.lial).to.equal(false);
+    expect(responseBody.lial).to.equal(null);
   });
 
   it('After create identity should get identity LAAL successfully', async function() {
@@ -2319,7 +2319,7 @@ describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as
     });
     expect(response.status).to.equal(200);
     const responseBody = await response.json();
-    expect(responseBody.laal).to.equal(false);
+    expect(responseBody.laal).to.equal(null);
   });
 
   after(function () {
