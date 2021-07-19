@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import { expect } from 'chai';
 
@@ -63,7 +65,11 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function () {
   const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
 
   let createRequestParams;
-  const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
+  // const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
+  const data = fs.readFileSync(
+    path.join(__dirname, '..', '..', '..', 'test_data', 'large_data_1.txt'),
+    'utf8'
+  );
 
   let requestId;
   let initialSalt;

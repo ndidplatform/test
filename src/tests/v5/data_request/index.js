@@ -14,7 +14,6 @@ describe('Data request flow', function() {
   require('./as_data_response_through_callback');
   require('./large_data_size');
   require('./large_data_size_response_through_callback');
-  require('./too_large_data_size_response_through_callback');
   require('./base64_data_url_data');
 });
 

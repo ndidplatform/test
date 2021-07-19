@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import { expect } from 'chai';
 
@@ -64,7 +66,11 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
   const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
 
   let createRequestParams;
-  const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
+  // const data = crypto.randomBytes(1499995).toString('hex'); // 2999990 bytes in hex string
+  const data = fs.readFileSync(
+    path.join(__dirname, '..', '..', '..', 'test_data', 'large_data_1.txt'),
+    'utf8'
+  );
 
   let requestId;
   let initialSalt;
@@ -584,7 +590,7 @@ describe('Large AS data size, response through callback, 1 IdP, 1 AS, mode 3', f
   // });
 
   it('AS should receive message queue send success (To rp1) callback', async function () {
-    this.timeout(15000);
+    this.timeout(25000);
     await receiveMessagequeueSendSuccessCallback({
       nodeId: 'as1',
       requestId,
