@@ -22,5 +22,6 @@ describe('(AS) Data size response tests', function() {
   });
 
   require('./too_large_uncompressed_data_size');
+  require('./too_large_compressed_data_size');
   require('./too_large_data_size_response_through_callback');
 });
