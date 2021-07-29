@@ -79,6 +79,8 @@ describe('NDID on_the_fly_support property tests', function () {
         max_aal: 3,
         max_ial: 3,
         on_the_fly_support: true,
+        lial: null,
+        laal: null,
         supported_request_message_data_url_type_list: [],
         agent: false,
       });
