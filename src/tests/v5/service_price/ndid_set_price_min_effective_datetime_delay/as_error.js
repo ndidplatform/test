@@ -3,9 +3,9 @@ import { expect } from 'chai';
 import * as ndidApi from '../../../../api/v5/ndid';
 import * as asApi from '../../../../api/v5/as';
 import * as commonApi from '../../../../api/v5/common';
-import { as1EventEmitter } from '../../../../callback_server';
+// import { as1EventEmitter } from '../../../../callback_server';
 import {
-  createEventPromise,
+  // createEventPromise,
   generateReferenceId,
   wait,
 } from '../../../../utils';
@@ -19,7 +19,7 @@ describe('AS set Service price with not enough effective datetime delay tests', 
 
   const referenceId = generateReferenceId();
 
-  const setServicePriceResultPromise = createEventPromise();
+  // const setServicePriceResultPromise = createEventPromise();
 
   before(async function () {
     this.timeout(10000);
@@ -44,14 +44,14 @@ describe('AS set Service price with not enough effective datetime delay tests', 
     }
     await wait(2000);
 
-    as1EventEmitter.on('callback', function (callbackData) {
-      if (
-        callbackData.type === 'set_service_price_result' &&
-        callbackData.reference_id === referenceId
-      ) {
-        setServicePriceResultPromise.resolve(callbackData);
-      }
-    });
+    // as1EventEmitter.on('callback', function (callbackData) {
+    //   if (
+    //     callbackData.type === 'set_service_price_result' &&
+    //     callbackData.reference_id === referenceId
+    //   ) {
+    //     setServicePriceResultPromise.resolve(callbackData);
+    //   }
+    // });
   });
 
   it('AS should NOT be able to set service price', async function () {
@@ -79,11 +79,15 @@ describe('AS set Service price with not enough effective datetime delay tests', 
       detail: 'free text',
     });
 
-    expect(response.status).to.equal(202);
+    expect(response.status).to.equal(400);
+    const responseBody = await response.json();
+    expect(responseBody.error.code).to.equal(20090);
 
-    const setServicePriceResult = await setServicePriceResultPromise.promise;
-    expect(setServicePriceResult.success).to.equal(false);
-    expect(setServicePriceResult.node_id).to.equal('as1');
+    // expect(response.status).to.equal(202);
+
+    // const setServicePriceResult = await setServicePriceResultPromise.promise;
+    // expect(setServicePriceResult.success).to.equal(false);
+    // expect(setServicePriceResult.node_id).to.equal('as1');
   });
 
   after(async function () {
