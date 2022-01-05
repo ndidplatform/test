@@ -15,4 +15,6 @@ describe('IdP create response with error code tests', function () {
   require('./idp_error_response_mode_2');
   require('./idp_error_response_mode_3');
   require('./idp_error_response_identity_mode3_request');
+
+  require('./idp_error_response_error');
 });
