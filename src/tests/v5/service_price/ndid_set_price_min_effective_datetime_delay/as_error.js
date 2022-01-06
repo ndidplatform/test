@@ -13,6 +13,7 @@ import { as1Available } from '../../..';
 import * as config from '../../../../config';
 
 describe('AS set Service price with not enough effective datetime delay tests', function () {
+  const serviceId = 'bank_statement';
   let servicePriceMinEffectiveDatetimeDelayBeforeTest;
 
   const servicePriceMinEffectiveDatetimeDelaySeconds = 36 * 60 * 60;
@@ -29,13 +30,16 @@ describe('AS set Service price with not enough effective datetime delay tests', 
     }
 
     const servicePriceMinEffectiveDatetimeDelayRes =
-      await commonApi.getServicePriceMinEffectiveDatetimeDelay('ndid1');
+      await commonApi.getServicePriceMinEffectiveDatetimeDelay('ndid1', {
+        service_id: serviceId,
+      });
     servicePriceMinEffectiveDatetimeDelayBeforeTest =
       await servicePriceMinEffectiveDatetimeDelayRes.json();
 
     const response = await ndidApi.setServicePriceMinEffectiveDatetimeDelay(
       'ndid1',
       {
+        service_id: serviceId,
         duration_second: servicePriceMinEffectiveDatetimeDelaySeconds,
       }
     );
@@ -64,7 +68,7 @@ describe('AS set Service price with not enough effective datetime delay tests', 
     ).toJSON();
 
     const response = await asApi.setServicePrice('as1', {
-      serviceId: 'bank_statement',
+      serviceId,
       reference_id: referenceId,
       callback_url: config.AS1_CALLBACK_URL,
       price_by_currency_list: [
@@ -95,7 +99,11 @@ describe('AS set Service price with not enough effective datetime delay tests', 
 
     const response = await ndidApi.setServicePriceMinEffectiveDatetimeDelay(
       'ndid1',
-      servicePriceMinEffectiveDatetimeDelayBeforeTest
+      {
+        service_id: serviceId,
+        duration_second:
+          servicePriceMinEffectiveDatetimeDelayBeforeTest.duration_second,
+      }
     );
     if (response.status !== 204) {
       throw new Error('NDID set price min effective datetime delay error');
