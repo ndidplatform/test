@@ -37,7 +37,7 @@ function createSignature(privateKey, hashMethod, message) {
 
 let dpkiServer;
 const app = express();
-app.use(bodyParser.json({ limit: '4mb' }));
+app.use(bodyParser.json({ limit: '10mb' }));
 
 app.post('/dpki/decrypt', (req, res) => {
   try {
@@ -76,7 +76,8 @@ app.post('/dpki/sign', (req, res) => {
 
     dpkiEventEmitter.emit('signCallback', req.body);
 
-    if (node_id === 'NonExistentRPNode') { //for test /create_message/proxy/create_message.js
+    if (node_id === 'NonExistentRPNode') {
+      //for test /create_message/proxy/create_message.js
       node_id = 'rp1';
     }
     const keyPath = path.join(__dirname, '..', '..', 'dev_key', node_id);
