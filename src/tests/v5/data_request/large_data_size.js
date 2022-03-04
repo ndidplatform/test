@@ -66,7 +66,7 @@ describe('Large AS data size, 1 IdP, 1 AS, mode 3', function () {
   let createRequestParams;
   // const data = crypto.randomBytes(2097152).toString('hex'); // 4194304 bytes in hex string (4mb)
   const data = fs.readFileSync(
-    path.join(__dirname, '..', '..', '..', 'test_data', 'large_data_2.txt'),
+    path.join(__dirname, '..', '..', '..', 'test_data', 'large_data_1.txt'),
     'utf8'
   );
 
