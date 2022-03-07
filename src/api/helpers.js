@@ -73,3 +73,16 @@ export async function httpDelete(url) {
     },
   });
 }
+
+export async function getResponseAndBody(apiFunctionCall) {
+  const response = await apiFunctionCall;
+  const responseBody = await response.json();
+  if (!response.ok) {
+    throw new Error(`response: ${JSON.stringify(responseBody)}`);
+  }
+
+  return {
+    response,
+    responseBody,
+  };
+}
