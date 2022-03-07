@@ -13,6 +13,7 @@ import { as1Available } from '../../..';
 import * as config from '../../../../config';
 
 describe('AS set Service price with effective datetime far in the future (~200 years) test', function () {
+  const serviceId = 'bank_statement';
   const priceCeiling = 10000;
 
   const referenceId = generateReferenceId();
@@ -43,7 +44,9 @@ describe('AS set Service price with effective datetime far in the future (~200 y
     await wait(2000);
 
     const servicePriceMinEffectiveDatetimeDelayRes =
-      await commonApi.getServicePriceMinEffectiveDatetimeDelay('as1');
+      await commonApi.getServicePriceMinEffectiveDatetimeDelay('as1', {
+        service_id: serviceId,
+      });
     const servicePriceMinEffectiveDatetimeDelay =
       await servicePriceMinEffectiveDatetimeDelayRes.json();
 
@@ -54,7 +57,7 @@ describe('AS set Service price with effective datetime far in the future (~200 y
     );
 
     servicePriceToSet = {
-      serviceId: 'bank_statement',
+      serviceId,
       reference_id: referenceId,
       callback_url: config.AS1_CALLBACK_URL,
       price_by_currency_list: [

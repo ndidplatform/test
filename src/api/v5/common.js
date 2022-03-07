@@ -143,9 +143,20 @@ export function getServicePriceCeiling(nodeId, params) {
   );
 }
 
-export function getServicePriceMinEffectiveDatetimeDelay(nodeId) {
+export function getServicePriceMinEffectiveDatetimeDelay(nodeId, params) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  return httpGet(`${apiBaseUrl}/utility/service_price_min_effective_datetime_delay`);
+  const { ...queryParams } = params;
+
+  let arrayQueryString = Object.keys(queryParams).map(
+    (key) => `${key}=${queryParams[key]}`
+  );
+  let queryString = arrayQueryString.join('&');
+
+  return httpGet(
+    `${apiBaseUrl}/utility/service_price_min_effective_datetime_delay${
+      queryString ? `?${queryString}` : ''
+    }`
+  );
 }
 
 export function getMessage(nodeId, data) {
