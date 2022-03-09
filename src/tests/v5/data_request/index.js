@@ -11,6 +11,10 @@ describe('Data request flow', function() {
   require('./1_idp_1_as_2_services_mode_3');
   require('./1_idp_2_as_1_service_mode_3');
   require('./1_idp_2_as_2_service_mode_3');
+
+  require('./no_min_as_2_as_mode_2');
+  require('./no_min_as_2_as_with_error_res_mode_2');
+
   require('./as_data_response_through_callback');
   require('./large_data_size');
   require('./large_data_size_response_through_callback');

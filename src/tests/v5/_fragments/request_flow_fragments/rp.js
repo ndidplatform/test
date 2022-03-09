@@ -27,9 +27,8 @@ export async function rpCreateRequestTest({
   const createRequestResult = await createRequestResultPromise.promise;
   expect(createRequestResult.success).to.equal(true);
   expect(createRequestResult.creation_block_height).to.be.a('string');
-  const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-    ':'
-  );
+  const splittedCreationBlockHeight =
+    createRequestResult.creation_block_height.split(':');
   expect(splittedCreationBlockHeight).to.have.lengthOf(2);
   expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
   expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -50,7 +49,7 @@ export async function verifyRequestParamsHash({
 }) {
   const response = await commonApi.getRequest(callApiAtNodeId, { requestId });
   const requestDetail = await response.json();
-  createRequestParams.data_request_list.forEach(dataRequestList => {
+  createRequestParams.data_request_list.forEach((dataRequestList) => {
     const serviceId = dataRequestList.service_id;
     const requestParamsSalt = util.generateRequestParamSalt({
       requestId,
@@ -62,9 +61,10 @@ export async function verifyRequestParamsHash({
       : '';
 
     const requestParamsHash = util.hash(requestParams + requestParamsSalt);
-    const requestParamsHashFromRequestDetail = requestDetail.data_request_list.find(
-      request => request.service_id === serviceId
-    );
+    const requestParamsHashFromRequestDetail =
+      requestDetail.data_request_list.find(
+        (request) => request.service_id === serviceId
+      );
 
     expect(requestParamsHashFromRequestDetail.request_params_hash).to.equal(
       requestParamsHash
@@ -84,18 +84,34 @@ export async function rpGotDataFromAsTest({
   const dataArray = await response.json();
   expect(response.status).to.equal(200);
 
-  let dataArrLength = createRequestParams.data_request_list.reduce(
-    (sum, dataRequestList) => {
-      return sum + dataRequestList.min_as;
-    },
-    0
+  let dataArrLength = 0;
+  await Promise.all(
+    createRequestParams.data_request_list.map(async (dataRequestList) => {
+      if (
+        dataRequestList.min_as === 0 &&
+        dataRequestList.as_id_list.length === 0
+      ) {
+        const response = await commonApi.getASByServiceId(
+          callApiAtNodeId,
+          dataRequestList.service_id
+        );
+        const asListByServiceId = await response.json();
+
+        dataArrLength += asListByServiceId.length;
+      } else {
+        dataArrLength +=
+          dataRequestList.min_as > 0
+            ? dataRequestList.min_as
+            : dataRequestList.as_id_list.length;
+      }
+    })
   );
 
   expect(dataArray).to.have.lengthOf(dataArrLength);
 
-  dataArray.forEach(dataArr => {
+  dataArray.forEach((dataArr) => {
     let asResponseData = asResponseDataArr.find(
-      asResponseData =>
+      (asResponseData) =>
         asResponseData.sourceNodeId === dataArr.source_node_id &&
         asResponseData.serviceId === dataArr.service_id
     );
