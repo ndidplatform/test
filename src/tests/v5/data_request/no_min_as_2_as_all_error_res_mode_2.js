@@ -22,52 +22,47 @@ import {
   createIdpIdList,
   createDataRequestList,
   createRequestMessageHash,
-  setDataReceived,
-  setDataSigned,
   setASResponseError,
 } from '../_fragments/fragments_utils';
 import {
   receivePendingRequestStatusTest,
+  receiveErroredRequestStatusTest,
   receiveComplicatedRequestStatusTest,
+  receiveRequestClosedStatusTest,
 } from '../_fragments/common';
 import * as config from '../../../config';
 
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () {
+describe('No min AS, 2 AS, all error responses, 1 Service, mode 2', function () {
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
   const asReferenceId = generateReferenceId();
   const as2ReferenceId = generateReferenceId();
-  const rpCloseRequestReferenceId = generateReferenceId();
 
   const createRequestResultPromise = createEventPromise();
   const requestStatusPendingPromise = createEventPromise();
   const requestStatusASErrorPromise = createEventPromise();
-  const requestStatusSignedDataPromise = createEventPromise();
-  const requestStatusReceivedDataPromise = createEventPromise();
+  const requestStatusErroredPromise = createEventPromise();
   const closeRequestResultPromise = createEventPromise();
   const requestClosedPromise = createEventPromise();
 
   const incomingRequestPromise = createEventPromise(); // idp1
   const responseResultPromise = createEventPromise();
   const idp_requestStatusASErrorPromise = createEventPromise();
-  const idp_requestStatusSignedDataPromise = createEventPromise();
-  const idp_requestStatusReceivedDataPromise = createEventPromise();
+  const idp_requestStatusErroredPromise = createEventPromise();
   const idp_requestClosedPromise = createEventPromise();
 
   const dataRequestReceivedPromise = createEventPromise();
   const sendDataResultPromise = createEventPromise();
   const as_requestStatusASErrorPromise = createEventPromise();
-  const as_requestStatusSignedDataPromise = createEventPromise();
-  const as_requestStatusReceivedDataPromise = createEventPromise();
+  const as_requestStatusErroredPromise = createEventPromise();
   const as_requestClosedPromise = createEventPromise();
 
   const dataRequestReceivedPromise2 = createEventPromise();
   const sendDataResultPromise2 = createEventPromise();
   const as_requestStatusASErrorPromise2 = createEventPromise();
-  const as_requestStatusSignedDataPromise2 = createEventPromise();
-  const as_requestStatusReceivedDataPromise2 = createEventPromise();
+  const as_requestStatusErroredPromise2 = createEventPromise();
   const as_requestClosedPromise2 = createEventPromise();
 
   let createRequestParams;
@@ -143,25 +138,14 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
         } else if (callbackData.status === 'complicated') {
           if (callbackData.data_request_list[0].response_list.length === 1) {
             requestStatusASErrorPromise.resolve(callbackData);
-          } else if (
-            callbackData.data_request_list[0].response_list.length === 2
-          ) {
-            let asAnswer = callbackData.data_request_list[0].response_list.find(
-              (as) => as.as_id === 'as2'
-            );
-            if (asAnswer.received_data) {
-              requestStatusReceivedDataPromise.resolve(callbackData);
-            }
-            if (asAnswer.signed) {
-              requestStatusSignedDataPromise.resolve(callbackData);
-            }
+          }
+        } else if (callbackData.status === 'errored') {
+          if (callbackData.closed) {
+            requestClosedPromise.resolve(callbackData);
+          } else {
+            requestStatusErroredPromise.resolve(callbackData);
           }
         }
-      }  else if (
-        callbackData.type === 'close_request_result' &&
-        callbackData.reference_id === rpCloseRequestReferenceId
-      ) {
-        closeRequestResultPromise.resolve(callbackData);
       }
     });
 
@@ -183,18 +167,12 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
         if (callbackData.status === 'complicated') {
           if (callbackData.data_request_list[0].response_list.length === 1) {
             idp_requestStatusASErrorPromise.resolve(callbackData);
-          } else if (
-            callbackData.data_request_list[0].response_list.length === 2
-          ) {
-            let asAnswer = callbackData.data_request_list[0].response_list.find(
-              (as) => as.as_id === 'as2'
-            );
-            if (asAnswer.received_data) {
-              idp_requestStatusReceivedDataPromise.resolve(callbackData);
-            }
-            if (asAnswer.signed) {
-              idp_requestStatusSignedDataPromise.resolve(callbackData);
-            }
+          }
+        } else if (callbackData.status === 'errored') {
+          if (callbackData.closed) {
+            idp_requestClosedPromise.resolve(callbackData);
+          } else {
+            idp_requestStatusErroredPromise.resolve(callbackData);
           }
         }
       }
@@ -218,18 +196,12 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
         if (callbackData.status === 'complicated') {
           if (callbackData.data_request_list[0].response_list.length === 1) {
             as_requestStatusASErrorPromise.resolve(callbackData);
-          } else if (
-            callbackData.data_request_list[0].response_list.length === 2
-          ) {
-            let asAnswer = callbackData.data_request_list[0].response_list.find(
-              (as) => as.as_id === 'as2'
-            );
-            if (asAnswer.received_data) {
-              as_requestStatusReceivedDataPromise.resolve(callbackData);
-            }
-            if (asAnswer.signed) {
-              as_requestStatusSignedDataPromise.resolve(callbackData);
-            }
+          }
+        } else if (callbackData.status === 'errored') {
+          if (callbackData.closed) {
+            as_requestClosedPromise.resolve(callbackData);
+          } else {
+            as_requestStatusErroredPromise.resolve(callbackData);
           }
         }
       }
@@ -253,18 +225,12 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
         if (callbackData.status === 'complicated') {
           if (callbackData.data_request_list[0].response_list.length === 1) {
             as_requestStatusASErrorPromise2.resolve(callbackData);
-          } else if (
-            callbackData.data_request_list[0].response_list.length === 2
-          ) {
-            let asAnswer = callbackData.data_request_list[0].response_list.find(
-              (as) => as.as_id === 'as2'
-            );
-            if (asAnswer.received_data) {
-              as_requestStatusReceivedDataPromise2.resolve(callbackData);
-            }
-            if (asAnswer.signed) {
-              as_requestStatusSignedDataPromise2.resolve(callbackData);
-            }
+          }
+        } else if (callbackData.status === 'errored') {
+          if (callbackData.closed) {
+            as_requestClosedPromise2.resolve(callbackData);
+          } else {
+            as_requestStatusErroredPromise2.resolve(callbackData);
           }
         }
       }
@@ -607,14 +573,14 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('AS (as2) response data successfully', async function () {
+  it('AS (as2) response with error code successfully', async function () {
     this.timeout(15000);
-    const response = await asApi.sendData('as2', {
+    const response = await asApi.sendDataError('as2', {
       requestId,
       serviceId: createRequestParams.data_request_list[0].service_id,
       reference_id: as2ReferenceId,
       callback_url: config.AS2_CALLBACK_URL,
-      data,
+      error_code: asResponseErrorCode,
     });
     expect(response.status).to.equal(202);
 
@@ -626,19 +592,20 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
       success: true,
     });
 
-    dataRequestList = setDataSigned(
+    dataRequestList = setASResponseError(
       dataRequestList,
       createRequestParams.data_request_list[0].service_id,
-      'as2'
+      'as2',
+      asResponseErrorCode
     );
   });
 
-  it('RP should receive complicated request status', async function () {
+  it('RP should receive errored request status', async function () {
     this.timeout(15000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    const testResult = await receiveErroredRequestStatusTest({
       nodeId: rp_node_id,
-      requestStatusComplicatedPromise: requestStatusSignedDataPromise,
+      requestStatusErroredPromise: requestStatusErroredPromise,
       requestId,
       createRequestParams,
       dataRequestList,
@@ -651,12 +618,12 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('IdP should receive complicated request status', async function () {
+  it('IdP should receive errored request status', async function () {
     this.timeout(20000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    const testResult = await receiveErroredRequestStatusTest({
       nodeId: 'idp1',
-      requestStatusComplicatedPromise: idp_requestStatusSignedDataPromise,
+      requestStatusErroredPromise: idp_requestStatusErroredPromise,
       requestId,
       createRequestParams,
       dataRequestList,
@@ -671,12 +638,12 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('AS (as1) should receive complicated request status', async function () {
+  it('AS (as1) should receive errored request status', async function () {
     this.timeout(20000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    const testResult = await receiveErroredRequestStatusTest({
       nodeId: 'as1',
-      requestStatusComplicatedPromise: as_requestStatusSignedDataPromise,
+      requestStatusErroredPromise: as_requestStatusErroredPromise,
       requestId,
       createRequestParams,
       dataRequestList,
@@ -691,12 +658,12 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('AS (as2) should receive complicated request status', async function () {
+  it('AS (as2) should receive errored request status', async function () {
     this.timeout(20000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    const testResult = await receiveErroredRequestStatusTest({
       nodeId: 'as2',
-      requestStatusComplicatedPromise: as_requestStatusSignedDataPromise2,
+      requestStatusErroredPromise: as_requestStatusErroredPromise2,
       requestId,
       createRequestParams,
       dataRequestList,
@@ -709,184 +676,83 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
       isNotRp: true,
     });
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
-
-    dataRequestList = setDataReceived(
-      dataRequestList,
-      createRequestParams.data_request_list[0].service_id,
-      'as2'
-    );
   });
 
-  it('RP should receive complicated with received data request status', async function () {
+  it('RP should receive request closed status', async function () {
+    this.timeout(15000);
+    const testResult = await receiveRequestClosedStatusTest({
+      nodeId: rp_node_id,
+      requestClosedPromise: requestClosedPromise,
+      requestId,
+      createRequestParams,
+      dataRequestList,
+      idpResponse: idpResponseParams,
+      requestMessageHash,
+      idpIdList,
+      status: 'errored',
+      lastStatusUpdateBlockHeight,
+      requesterNodeId: requester_node_id,
+    });
+
+    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
+  });
+
+  it('IdP should receive request closed status', async function () {
     this.timeout(15000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
-      nodeId: rp_node_id,
-      requestStatusComplicatedPromise: requestStatusReceivedDataPromise,
+    await receiveRequestClosedStatusTest({
+      nodeId: idp_node_id,
+      requestClosedPromise: idp_requestClosedPromise,
       requestId,
       createRequestParams,
       dataRequestList,
       idpResponse: idpResponseParams,
       requestMessageHash,
       idpIdList,
+      status: 'errored',
       lastStatusUpdateBlockHeight,
-      requesterNodeId: requester_node_id,
-    });
-    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
-  });
-
-  it('IdP should receive complicated with received data request status', async function () {
-    this.timeout(20000);
-
-    const testResult = await receiveComplicatedRequestStatusTest({
-      nodeId: 'idp1',
-      requestStatusComplicatedPromise: idp_requestStatusReceivedDataPromise,
-      requestId,
-      createRequestParams,
-      dataRequestList,
-      idpResponse: idpResponseParams,
-      requestMessageHash,
-      idpIdList,
-      lastStatusUpdateBlockHeight,
-      requesterNodeId: requester_node_id,
       testForEqualLastStatusUpdateBlockHeight: true,
-      isNotRp: true,
+      requesterNodeId: requester_node_id,
     });
-    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('AS (as1) should receive complicated with received data request status', async function () {
-    this.timeout(20000);
+  it('AS (as1) should receive request closed status', async function () {
+    this.timeout(15000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    await receiveRequestClosedStatusTest({
       nodeId: 'as1',
-      requestStatusComplicatedPromise: as_requestStatusReceivedDataPromise,
+      requestClosedPromise: as_requestClosedPromise,
       requestId,
       createRequestParams,
       dataRequestList,
       idpResponse: idpResponseParams,
       requestMessageHash,
       idpIdList,
+      status: 'errored',
       lastStatusUpdateBlockHeight,
-      requesterNodeId: requester_node_id,
       testForEqualLastStatusUpdateBlockHeight: true,
-      isNotRp: true,
+      requesterNodeId: requester_node_id,
     });
-    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('AS (as2) should receive complicated with received data request status', async function () {
-    this.timeout(20000);
+  it('AS (as2) should receive request closed status', async function () {
+    this.timeout(15000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    await receiveRequestClosedStatusTest({
       nodeId: 'as2',
-      requestStatusComplicatedPromise: as_requestStatusReceivedDataPromise2,
+      requestClosedPromise: as_requestClosedPromise2,
       requestId,
       createRequestParams,
       dataRequestList,
       idpResponse: idpResponseParams,
       requestMessageHash,
       idpIdList,
+      status: 'errored',
       lastStatusUpdateBlockHeight,
-      requesterNodeId: requester_node_id,
       testForEqualLastStatusUpdateBlockHeight: true,
-      isNotRp: true,
-    });
-    lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
-  });
-
-  it('RP should be able to close request', async function () {
-    this.timeout(10000);
-    const response = await rpApi.closeRequest('rp1', {
-      reference_id: rpCloseRequestReferenceId,
-      callback_url: config.RP_CALLBACK_URL,
-      request_id: requestId,
-    });
-    expect(response.status).to.equal(202);
-
-    const closeRequestResult = await closeRequestResultPromise.promise;
-    expect(closeRequestResult).to.deep.include({
-      reference_id: rpCloseRequestReferenceId,
-      request_id: requestId,
-      success: true,
+      requesterNodeId: requester_node_id,
     });
   });
-
-  // it('RP should receive request closed status', async function () {
-  //   this.timeout(15000);
-  //   const testResult = await receiveRequestClosedStatusTest({
-  //     nodeId: rp_node_id,
-  //     requestClosedPromise: requestClosedPromise,
-  //     requestId,
-  //     createRequestParams,
-  //     dataRequestList,
-  //     idpResponse: idpResponseParams,
-  //     requestMessageHash,
-  //     idpIdList,
-  //     // status: 'errored',
-  //     lastStatusUpdateBlockHeight,
-  //     requesterNodeId: requester_node_id,
-  //   });
-
-  //   lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
-  // });
-
-  // it('IdP should receive request closed status', async function () {
-  //   this.timeout(15000);
-
-  //   await receiveRequestClosedStatusTest({
-  //     nodeId: idp_node_id,
-  //     requestClosedPromise: idp_requestClosedPromise,
-  //     requestId,
-  //     createRequestParams,
-  //     dataRequestList,
-  //     idpResponse: idpResponseParams,
-  //     requestMessageHash,
-  //     idpIdList,
-  //     // status: 'errored',
-  //     lastStatusUpdateBlockHeight,
-  //     testForEqualLastStatusUpdateBlockHeight: true,
-  //     requesterNodeId: requester_node_id,
-  //   });
-  // });
-
-  // it('AS (as1) should receive request closed status', async function () {
-  //   this.timeout(15000);
-
-  //   await receiveRequestClosedStatusTest({
-  //     nodeId: 'as1',
-  //     requestClosedPromise: as_requestClosedPromise,
-  //     requestId,
-  //     createRequestParams,
-  //     dataRequestList,
-  //     idpResponse: idpResponseParams,
-  //     requestMessageHash,
-  //     idpIdList,
-  //     // status: 'errored',
-  //     lastStatusUpdateBlockHeight,
-  //     testForEqualLastStatusUpdateBlockHeight: true,
-  //     requesterNodeId: requester_node_id,
-  //   });
-  // });
-
-  // it('AS (as2) should receive request closed status', async function () {
-  //   this.timeout(15000);
-
-  //   await receiveRequestClosedStatusTest({
-  //     nodeId: 'as2',
-  //     requestClosedPromise: as_requestClosedPromise2,
-  //     requestId,
-  //     createRequestParams,
-  //     dataRequestList,
-  //     idpResponse: idpResponseParams,
-  //     requestMessageHash,
-  //     idpIdList,
-  //     // status: 'errored',
-  //     lastStatusUpdateBlockHeight,
-  //     testForEqualLastStatusUpdateBlockHeight: true,
-  //     requesterNodeId: requester_node_id,
-  //   });
-  // });
 
   it('Should get request status with complicated status successfully', async function () {
     this.timeout(10000);
@@ -926,27 +792,18 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
       timed_out: false,
       mode: 2,
       requester_node_id: requester_node_id,
-      status: 'complicated',
+      status: 'errored',
     });
   });
 
-  it('RP should get data received from AS', async function () {
+  it('RP should get empty data received from AS', async function () {
     this.timeout(100000);
     const response = await rpApi.getDataFromAS('rp1', {
       requestId,
     });
-    const dataArr = await response.json();
     expect(response.status).to.equal(200);
-
-    expect(dataArr).to.have.lengthOf(1);
-    expect(dataArr[0]).to.deep.include({
-      source_node_id: 'as2',
-      service_id: createRequestParams.data_request_list[0].service_id,
-      signature_sign_method: 'RSA-SHA256',
-      data,
-    });
-    expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
-    expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
+    const dataArr = await response.json();
+    expect(dataArr).to.be.an('array').to.be.empty;
   });
 
   after(function () {

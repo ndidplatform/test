@@ -14,6 +14,7 @@ describe('Data request flow', function() {
 
   require('./no_min_as_2_as_mode_2');
   require('./no_min_as_2_as_with_error_res_mode_2');
+  require('./no_min_as_2_as_all_error_res_mode_2');
 
   require('./as_data_response_through_callback');
   require('./large_data_size');
