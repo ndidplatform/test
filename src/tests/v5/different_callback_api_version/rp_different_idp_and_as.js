@@ -971,7 +971,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
 
   after(async function () {
     await commonApi.setConfig('rp1', {
-      CALLBACK_API_VERSION: '5.1',
+      CALLBACK_API_VERSION: '5.2',
     });
   });
 });

@@ -164,3 +164,17 @@ export function getMessage(nodeId, data) {
   const { messageId } = data;
   return httpGet(`${apiBaseUrl}/utility/messages/${messageId}`);
 }
+
+export function getRequestTypeList(nodeId, params) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { ...queryParams } = params;
+
+  let arrayQueryString = Object.keys(queryParams).map(
+    (key) => `${key}=${queryParams[key]}`
+  );
+  let queryString = arrayQueryString.join('&');
+
+  return httpGet(
+    `${apiBaseUrl}/utility/request_types${queryString ? `?${queryString}` : ''}`
+  );
+}

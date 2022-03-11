@@ -51,6 +51,9 @@ export async function receivePendingRequestStatusTest({
     closed: false,
     timed_out: false,
     mode: createRequestParams.mode,
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     status: 'pending',
     requester_node_id: requesterNodeId,
   });
@@ -62,11 +65,11 @@ export async function receivePendingRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForAboveLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   }
 }
@@ -123,6 +126,9 @@ export async function receiveConfirmedRequestStatusTest({
     closed: false,
     timed_out: false,
     mode: createRequestParams.mode,
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     status: 'confirmed',
     requester_node_id: requesterNodeId,
   });
@@ -135,11 +141,11 @@ export async function receiveConfirmedRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   }
   return {
@@ -199,6 +205,9 @@ export async function receiveRejectedRequestStatusTest({
     closed: false,
     timed_out: false,
     mode: createRequestParams.mode,
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     status: 'rejected',
     requester_node_id: requesterNodeId,
   });
@@ -210,11 +219,11 @@ export async function receiveRejectedRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   }
   return {
@@ -274,6 +283,9 @@ export async function receiveErroredRequestStatusTest({
     closed: false,
     timed_out: false,
     mode: createRequestParams.mode,
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     status: 'errored',
     requester_node_id: requesterNodeId,
   });
@@ -286,11 +298,11 @@ export async function receiveErroredRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   }
   return {
@@ -350,6 +362,9 @@ export async function receiveCompletedRequestStatusTest({
     closed: false,
     timed_out: false,
     mode: createRequestParams.mode,
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     status: 'completed',
     requester_node_id: requesterNodeId,
   });
@@ -361,11 +376,11 @@ export async function receiveCompletedRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   }
   return {
@@ -425,6 +440,9 @@ export async function receiveComplicatedRequestStatusTest({
     closed: false,
     timed_out: false,
     mode: createRequestParams.mode,
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     status: 'complicated',
     requester_node_id: requesterNodeId,
   });
@@ -436,11 +454,11 @@ export async function receiveComplicatedRequestStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   }
   return {
@@ -495,6 +513,9 @@ export async function receiveRequestClosedStatusTest({
     closed: true,
     timed_out: false,
     mode: createRequestParams.mode,
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     status: status ? status : 'completed',
     requester_node_id: requesterNodeId,
   });
@@ -506,11 +527,11 @@ export async function receiveRequestClosedStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   }
   return {
@@ -565,6 +586,9 @@ export async function receiveRequestTimedoutStatusTest({
     closed: false,
     timed_out: true,
     mode: createRequestParams.mode,
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     status,
     requester_node_id: requesterNodeId,
   });
@@ -576,11 +600,11 @@ export async function receiveRequestTimedoutStatusTest({
   expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   if (testForEqualLastStatusUpdateBlockHeight) {
     expect(parseInt(splittedBlockHeight[1])).to.equal(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   } else {
     expect(parseInt(splittedBlockHeight[1])).to.be.above(
-      lastStatusUpdateBlockHeight,
+      lastStatusUpdateBlockHeight
     );
   }
   return {

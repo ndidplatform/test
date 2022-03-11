@@ -71,6 +71,9 @@ export async function idpReceiveMode1IncomingRequestCallbackTest({
     //       };
     //     })
     //   : [],
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     request_timeout: createRequestParams.request_timeout,
   });
   expect(incomingRequest.initial_salt).to.equal(initialSalt);
@@ -78,9 +81,8 @@ export async function idpReceiveMode1IncomingRequestCallbackTest({
     .empty;
   expect(incomingRequest.creation_time).to.be.a('number');
   expect(incomingRequest.creation_block_height).to.be.a('string');
-  const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-    ':'
-  );
+  const splittedCreationBlockHeight =
+    incomingRequest.creation_block_height.split(':');
   expect(splittedCreationBlockHeight).to.have.lengthOf(2);
   expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
   expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -153,6 +155,9 @@ export async function idpReceiveMode2And3IncomingRequestCallbackTest({
     //       };
     //     })
     //   : [],
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     request_timeout: createRequestParams.request_timeout,
   });
   expect(incomingRequest.initial_salt).to.equal(initialSalt);
@@ -162,9 +167,8 @@ export async function idpReceiveMode2And3IncomingRequestCallbackTest({
     .empty;
   expect(incomingRequest.creation_time).to.be.a('number');
   expect(incomingRequest.creation_block_height).to.be.a('string');
-  const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-    ':'
-  );
+  const splittedCreationBlockHeight =
+    incomingRequest.creation_block_height.split(':');
   expect(splittedCreationBlockHeight).to.have.lengthOf(2);
   expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
   expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -263,7 +267,7 @@ export async function verifyResponseSignature({
 
   let responseBodyRequestDetail = await responseRequestDetail.json();
   const signatureFromBlockchain = responseBodyRequestDetail.response_list.find(
-    responseList => responseList.idp_id === idpNodeId
+    (responseList) => responseList.idp_id === idpNodeId
   ).signature;
 
   let signature = createResponseSignature(
