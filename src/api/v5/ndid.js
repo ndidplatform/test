@@ -151,3 +151,19 @@ export function removeErrorCode(nodeId, data) {
     data,
   );
 }
+
+export function addRequestType(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/add_request_type`,
+    data,
+  );
+}
+
+export function removeRequestType(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/remove_request_type`,
+    data,
+  );
+}

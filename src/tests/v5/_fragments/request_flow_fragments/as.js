@@ -21,6 +21,9 @@ export async function asReceiveDataRequestTest({
     //request_params: requestParams, //createRequestParams.data_request_list[0].request_params,
     max_ial: 2.3,
     max_aal: 3,
+    request_type: createRequestParams.request_type
+      ? createRequestParams.request_type
+      : null,
     requester_node_id: requesterNodeId,
     request_timeout: createRequestParams.request_timeout,
   });
@@ -36,9 +39,8 @@ export async function asReceiveDataRequestTest({
 
   expect(dataRequest.creation_time).to.be.a('number');
   expect(dataRequest.creation_block_height).to.be.a('string');
-  const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-    ':'
-  );
+  const splittedCreationBlockHeight =
+    dataRequest.creation_block_height.split(':');
   expect(splittedCreationBlockHeight).to.have.lengthOf(2);
   expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
   expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);

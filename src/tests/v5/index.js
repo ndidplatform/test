@@ -30,3 +30,4 @@ require('./different_callback_api_version');
 require('./auto_close_config');
 require('./service_price');
 require('./create_message');
+require('./request_type');
