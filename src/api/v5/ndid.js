@@ -167,3 +167,19 @@ export function removeRequestType(nodeId, data) {
     data,
   );
 }
+
+export function addSuppressedIdentityModificationNotificationNode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/add_suppressed_identity_modification_notification_node`,
+    data,
+  );
+}
+
+export function removeSuppressedIdentityModificationNotificationNode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/remove_suppressed_identity_modification_notification_node`,
+    data,
+  );
+}
