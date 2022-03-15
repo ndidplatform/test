@@ -164,3 +164,34 @@ export function getMessage(nodeId, data) {
   const { messageId } = data;
   return httpGet(`${apiBaseUrl}/utility/messages/${messageId}`);
 }
+
+export function getSuppressedIdentityModificationNotificationNodeList(
+  nodeId,
+  params
+) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { ...queryParams } = params;
+
+  let arrayQueryString = Object.keys(queryParams).map(
+    (key) => `${key}=${queryParams[key]}`
+  );
+  let queryString = arrayQueryString.join('&');
+
+  return httpGet(
+    `${apiBaseUrl}/utility/suppressed_identity_modification_notification_node_ids${
+      queryString ? `?${queryString}` : ''
+    }`
+  );
+}
+
+export function isSuppressedIdentityModificationNotificationNode(
+  nodeId,
+  params
+) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { node_id } = params;
+
+  return httpGet(
+    `${apiBaseUrl}/utility/suppressed_identity_modification_notification_node_ids/${node_id}`
+  );
+}
