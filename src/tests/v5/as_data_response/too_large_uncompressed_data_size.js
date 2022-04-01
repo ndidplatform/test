@@ -87,7 +87,9 @@ describe('Too large (uncompressed) AS data size, 1 IdP, 1 AS, mode 3', function 
     // TODO: need to silence logger in api process to not go over test timeout limit
     //this.skip();
 
-    const identity = db.idp1Identities.find((identity) => identity.mode === 3);
+    const identity = db.idp1Identities.find(
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation
+    );
 
     if (!identity) {
       throw new Error('No created identity to use');
@@ -262,46 +264,10 @@ describe('Too large (uncompressed) AS data size, 1 IdP, 1 AS, mode 3', function 
       requestStatusPendingPromise,
       requesterNodeId: rp_node_id,
     });
-
-    // const requestStatus = await requestStatusPendingPromise.promise;
-    // expect(requestStatus).to.deep.include({
-    //   request_id: requestId,
-    //   status: 'pending',
-    //   mode: createRequestParams.mode,
-    //   min_idp: createRequestParams.min_idp,
-    //   answered_idp_count: 0,
-    //   closed: false,
-    //   timed_out: false,
-    //   service_list: [
-    //     {
-    //       service_id: createRequestParams.data_request_list[0].service_id,
-    //       min_as: createRequestParams.data_request_list[0].min_as,
-    //       signed_data_count: 0,
-    //       received_data_count: 0,
-    //     },
-    //   ],
-    //   response_valid_list: [],
-    // });
-    // expect(requestStatus).to.have.property('block_height');
-    // expect(requestStatus.block_height).is.a('string');
-    // const splittedBlockHeight = requestStatus.block_height.split(':');
-    // expect(splittedBlockHeight).to.have.lengthOf(2);
-    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  //   it('RP should verify request_params_hash successfully', async function() {
-  //   this.timeout(15000);
-  //   await verifyRequestParamsHash({
-  //     callApiAtNodeId: 'rp1',
-  //     createRequestParams,
-  //     requestId,
-  //     initialSalt,
-  //   });
-  // });
-
   it('RP should receive message queue send success (To idp1) callback', async function () {
-    this.timeout(15000);
+    this.timeout(20000);
     await receiveMessagequeueSendSuccessCallback({
       nodeId: 'rp1',
       requestId,
@@ -403,26 +369,6 @@ describe('Too large (uncompressed) AS data size, 1 IdP, 1 AS, mode 3', function 
     expect(response.status).to.equal(202);
   });
 
-  // it('IdP should receive accessor encrypt callback with correct data', async function() {
-  //   this.timeout(15000);
-  //   const identity = db.idp1Identities.find(
-  //     identity =>
-  //       identity.namespace === namespace && identity.identifier === identifier,
-  //   );
-  //   let accessorPublicKey = identity.accessors[0].accessorPublicKey;
-
-  //   let testResult = await idpReceiveAccessorEncryptCallbackTest({
-  //     callIdpApiAtNodeId: 'idp1',
-  //     accessorEncryptPromise,
-  //     accessorId: responseAccessorId,
-  //     requestId,
-  //     idpReferenceId: idpReferenceId,
-  //     incomingRequestPromise,
-  //     accessorPublicKey,
-  //   });
-  //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
-  // });
-
   it('IdP should receive callback create response result with success = true', async function () {
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
@@ -459,38 +405,6 @@ describe('Too large (uncompressed) AS data size, 1 IdP, 1 AS, mode 3', function 
       lastStatusUpdateBlockHeight,
       requesterNodeId: requester_node_id,
     });
-
-    // const requestStatus = await requestStatusConfirmedPromise.promise;
-    // expect(requestStatus).to.deep.include({
-    //   request_id: requestId,
-    //   status: 'confirmed',
-    //   mode: createRequestParams.mode,
-    //   min_idp: createRequestParams.min_idp,
-    //   answered_idp_count: 1,
-    //   closed: false,
-    //   timed_out: false,
-    //   service_list: [
-    //     {
-    //       service_id: createRequestParams.data_request_list[0].service_id,
-    //       min_as: createRequestParams.data_request_list[0].min_as,
-    //       signed_data_count: 0,
-    //       received_data_count: 0,
-    //     },
-    //   ],
-    //   response_valid_list: [
-    //     {
-    //       idp_id: 'idp1',
-    //       valid_signature: true,
-    //       valid_ial: true,
-    //     },
-    //   ],
-    // });
-    // expect(requestStatus).to.have.property('block_height');
-    // expect(requestStatus.block_height).is.a('string');
-    // const splittedBlockHeight = requestStatus.block_height.split(':');
-    // expect(splittedBlockHeight).to.have.lengthOf(2);
-    // expect(splittedBlockHeight[0]).to.have.lengthOf.at.least(1);
-    // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
   it('Should verify IdP response signature successfully', async function () {

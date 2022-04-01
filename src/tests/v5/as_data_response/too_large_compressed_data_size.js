@@ -83,7 +83,9 @@ describe('Too large (compressed) AS data size, 1 IdP, 1 AS, mode 3', function ()
     // TODO: need to silence logger in api process to not go over test timeout limit
     //this.skip();
 
-    const identity = db.idp1Identities.find((identity) => identity.mode === 3);
+    const identity = db.idp1Identities.find(
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation
+    );
 
     if (!identity) {
       throw new Error('No created identity to use');
