@@ -24,7 +24,7 @@ describe('Proxy node create message with non-existent RP node ID test', function
       reference_id: rpReferenceId,
       callback_url: config.PROXY1_CALLBACK_URL,
       message:
-        'Test message (Proxy node should create a message with non-existent RP node ID)',
+        'Test message (Proxy node should not create a message with non-existent RP node ID)',
       purpose: 'E2E test',
       hash_message: false,
     };
