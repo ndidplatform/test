@@ -26,8 +26,8 @@ import {
 } from '../_fragments/fragments_utils';
 import {
   receivePendingRequestStatusTest,
+  receiveConfirmedRequestStatusTest,
   receiveErroredRequestStatusTest,
-  receiveComplicatedRequestStatusTest,
   receiveRequestClosedStatusTest,
 } from '../_fragments/common';
 import * as config from '../../../config';
@@ -135,7 +135,7 @@ describe('No min AS, 2 AS, all error responses, 1 Service, mode 2', function () 
       ) {
         if (callbackData.status === 'pending') {
           requestStatusPendingPromise.resolve(callbackData);
-        } else if (callbackData.status === 'complicated') {
+        } else if (callbackData.status === 'confirmed') {
           if (callbackData.data_request_list[0].response_list.length === 1) {
             requestStatusASErrorPromise.resolve(callbackData);
           }
@@ -164,7 +164,7 @@ describe('No min AS, 2 AS, all error responses, 1 Service, mode 2', function () 
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
-        if (callbackData.status === 'complicated') {
+        if (callbackData.status === 'confirmed') {
           if (callbackData.data_request_list[0].response_list.length === 1) {
             idp_requestStatusASErrorPromise.resolve(callbackData);
           }
@@ -193,7 +193,7 @@ describe('No min AS, 2 AS, all error responses, 1 Service, mode 2', function () 
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
-        if (callbackData.status === 'complicated') {
+        if (callbackData.status === 'confirmed') {
           if (callbackData.data_request_list[0].response_list.length === 1) {
             as_requestStatusASErrorPromise.resolve(callbackData);
           }
@@ -222,7 +222,7 @@ describe('No min AS, 2 AS, all error responses, 1 Service, mode 2', function () 
         callbackData.type === 'request_status' &&
         callbackData.request_id === requestId
       ) {
-        if (callbackData.status === 'complicated') {
+        if (callbackData.status === 'confirmed') {
           if (callbackData.data_request_list[0].response_list.length === 1) {
             as_requestStatusASErrorPromise2.resolve(callbackData);
           }
@@ -495,12 +495,12 @@ describe('No min AS, 2 AS, all error responses, 1 Service, mode 2', function () 
     );
   });
 
-  it('RP should receive complicated request status', async function () {
+  it('RP should receive confirmed request status', async function () {
     this.timeout(15000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    const testResult = await receiveConfirmedRequestStatusTest({
       nodeId: rp_node_id,
-      requestStatusComplicatedPromise: requestStatusASErrorPromise,
+      requestStatusConfirmedPromise: requestStatusASErrorPromise,
       requestId,
       createRequestParams,
       dataRequestList,
@@ -513,12 +513,12 @@ describe('No min AS, 2 AS, all error responses, 1 Service, mode 2', function () 
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('IdP should receive complicated request status', async function () {
+  it('IdP should receive confirmed request status', async function () {
     this.timeout(20000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    const testResult = await receiveConfirmedRequestStatusTest({
       nodeId: 'idp1',
-      requestStatusComplicatedPromise: idp_requestStatusASErrorPromise,
+      requestStatusConfirmedPromise: idp_requestStatusASErrorPromise,
       requestId,
       createRequestParams,
       dataRequestList,
@@ -533,12 +533,12 @@ describe('No min AS, 2 AS, all error responses, 1 Service, mode 2', function () 
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('AS (as1) should receive complicated request status', async function () {
+  it('AS (as1) should receive confirmed request status', async function () {
     this.timeout(20000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    const testResult = await receiveConfirmedRequestStatusTest({
       nodeId: 'as1',
-      requestStatusComplicatedPromise: as_requestStatusASErrorPromise,
+      requestStatusConfirmedPromise: as_requestStatusASErrorPromise,
       requestId,
       createRequestParams,
       dataRequestList,
@@ -553,12 +553,12 @@ describe('No min AS, 2 AS, all error responses, 1 Service, mode 2', function () 
     lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
   });
 
-  it('AS (as2) should receive complicated request status', async function () {
+  it('AS (as2) should receive confirmed request status', async function () {
     this.timeout(20000);
 
-    const testResult = await receiveComplicatedRequestStatusTest({
+    const testResult = await receiveConfirmedRequestStatusTest({
       nodeId: 'as2',
-      requestStatusComplicatedPromise: as_requestStatusASErrorPromise2,
+      requestStatusConfirmedPromise: as_requestStatusASErrorPromise2,
       requestId,
       createRequestParams,
       dataRequestList,
