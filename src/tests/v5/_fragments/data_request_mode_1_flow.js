@@ -10,13 +10,14 @@ import {
 } from './request_flow_fragments/idp';
 import {
   asReceiveDataRequestTest,
-   asLogPaymentReceivedTest,
+  asLogPaymentReceivedTest,
   asSendDataTest,
 } from './request_flow_fragments/as';
 import {
   receivePendingRequestStatusTest,
   receiveConfirmedRequestStatusTest,
   receiveRejectedRequestStatusTest,
+  receivePartialCompletedRequestStatusTest,
   receiveCompletedRequestStatusTest,
   receiveRequestClosedStatusTest,
   hasPrivateMessagesTest,
@@ -48,14 +49,12 @@ export function mode1DataRequestFlowTest({
     : callRpApiAtNodeId;
   const idpNodeIds = idpParams.map(
     ({ callIdpApiAtNodeId, idpResponseParams }) =>
-      idpResponseParams.node_id
-        ? idpResponseParams.node_id
-        : callIdpApiAtNodeId,
+      idpResponseParams.node_id ? idpResponseParams.node_id : callIdpApiAtNodeId
   );
   const asNodeIds = asParams.map(({ callAsApiAtNodeId, asResponseParams }) =>
     asResponseParams[0].node_id
       ? asResponseParams[0].node_id
-      : callAsApiAtNodeId,
+      : callAsApiAtNodeId
   );
 
   const createRequestResultPromise = createEventPromise(); // RP
@@ -69,17 +68,17 @@ export function mode1DataRequestFlowTest({
     };
   }); //IdPs
   const responseAcceptCount = idpParams.filter(
-    (idpParam) => idpParam.idpResponseParams.status === 'accept',
+    (idpParam) => idpParam.idpResponseParams.status === 'accept'
   ).length;
   const responseRejectCount = idpParams.filter(
-    (idpParam) => idpParam.idpResponseParams.status === 'reject',
+    (idpParam) => idpParam.idpResponseParams.status === 'reject'
   ).length;
 
   const requestStatusConfirmedPromises = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   ); // RP
   const requestStatusRejectedPromises = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   ); // RP
   const requestStatusCompletedPromise = createEventPromise(); // RP
   const requestStatusRejectedPromise = createEventPromise(); // RP
@@ -103,7 +102,7 @@ export function mode1DataRequestFlowTest({
         [nodeId]: asParam.asResponseParams.map(() => createEventPromise()), // depend on services
       };
     },
-    {},
+    {}
   );
 
   const sendDataResultPromises = asParams.reduce((accumulator, asParam) => {
@@ -126,7 +125,7 @@ export function mode1DataRequestFlowTest({
         [nodeId]: asParam.asResponseParams.map(() => createEventPromise()),
       };
     },
-    {},
+    {}
   );
 
   let requestStatusSignedDataPromises = {};
@@ -151,15 +150,15 @@ export function mode1DataRequestFlowTest({
   }, {});
 
   const idp_requestStatusCompletedPromises = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   );
 
   const idp_requestStatusComplicatedPromises = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   );
 
   const idp_requestStatusRejectedPromise = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   );
 
   const idp_requestClosedPromises = idpParams.map(() => createEventPromise());
@@ -172,7 +171,7 @@ export function mode1DataRequestFlowTest({
           node_id,
           MqSendSuccessRpToIdpCallbackPromise: createEventPromise(),
         };
-      },
+      }
     );
   }
 
@@ -217,7 +216,7 @@ export function mode1DataRequestFlowTest({
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
           let serviceSignedData = callbackData.data_request_list.filter(
-            (service) => service.response_list.length > 0,
+            (service) => service.response_list.length > 0
           );
           if (serviceSignedData.length > 0) {
             serviceSignedData.map((service) => {
@@ -229,15 +228,28 @@ export function mode1DataRequestFlowTest({
             });
           } else {
             requestStatusConfirmedPromises[answeredIdPCount - 1].resolve(
-              callbackData,
+              callbackData
             );
+          }
+        } else if (callbackData.status === 'partial_completed') {
+          let serviceSignedData = callbackData.data_request_list.filter(
+            (service) => service.response_list.length > 0
+          );
+          if (serviceSignedData.length > 0) {
+            serviceSignedData.map((service) => {
+              service.response_list.map((asAnswer, index) => {
+                requestStatusSignedDataPromises[service.service_id][
+                  index
+                ].resolve(callbackData);
+              });
+            });
           }
         } else if (callbackData.status === 'rejected') {
           if (answeredIdPCount === idpParams.length) {
             requestStatusRejectedPromise.resolve(callbackData);
           } else {
             requestStatusRejectedPromises[answeredIdPCount - 1].resolve(
-              callbackData,
+              callbackData
             );
           }
         } else if (callbackData.status === 'complicated') {
@@ -306,7 +318,7 @@ export function mode1DataRequestFlowTest({
               asParams[i].asResponseParams[j].service_id
           ) {
             dataRequestReceivedPromises[callbackData.node_id][j].resolve(
-              callbackData,
+              callbackData
             );
           } else if (
             callbackData.type === 'response_result' &&
@@ -315,7 +327,7 @@ export function mode1DataRequestFlowTest({
               asParams[i].asResponseParams[j].reference_id
           ) {
             sendDataResultPromises[callbackData.node_id][j].resolve(
-              callbackData,
+              callbackData
             );
           }
         });
@@ -362,27 +374,27 @@ export function mode1DataRequestFlowTest({
           if (callbackData.destination_node_id.includes('idp')) {
             // arrayMqSendSuccessRpToIdpCallback.push(callbackData);
             let idpReceiveRequestPromise = idpsReceiveRequestPromises.find(
-              ({ node_id }) => node_id === callbackData.destination_node_id,
+              ({ node_id }) => node_id === callbackData.destination_node_id
             );
             if (idpReceiveRequestPromise) {
               idpReceiveRequestPromise.MqSendSuccessRpToIdpCallbackPromise.resolve(
-                callbackData,
+                callbackData
               );
             }
           } else if (callbackData.destination_node_id.includes('as')) {
             let mqSendSuccessRpToAs = mqSendSuccessRpToAsCallbackPromises.find(
-              ({ node_id }) => node_id === callbackData.destination_node_id,
+              ({ node_id }) => node_id === callbackData.destination_node_id
             );
             if (mqSendSuccessRpToAs) {
               mqSendSuccessRpToAs.mqSendSuccessRpToAsCallbackPromise.resolve(
-                callbackData,
+                callbackData
               );
             }
           }
         } else if (callbackData.node_id.includes('idp')) {
           if (callbackData.destination_node_id.includes('rp')) {
             let idp = mqSendSuccessIdpToRpCallbackPromises.find(
-              ({ node_id }) => node_id === callbackData.node_id,
+              ({ node_id }) => node_id === callbackData.node_id
             );
             if (idp) {
               idp.mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
@@ -417,7 +429,7 @@ export function mode1DataRequestFlowTest({
     const testResult = await rpCreateRequestTest({
       callApiAtNodeId: callRpApiAtNodeId,
       createRequestParams,
-      setRequestId: (reqId) => requestId = reqId,
+      setRequestId: (reqId) => (requestId = reqId),
       createRequestResultPromise,
     });
     // requestId = testResult.requestId;
@@ -493,9 +505,8 @@ export function mode1DataRequestFlowTest({
     const responseResultPromise = responseResultPromises[i];
     const requestStatusConfirmedPromise = requestStatusConfirmedPromises[i];
     const requestStatusRejectPromise = requestStatusRejectedPromises[i];
-    let { createResponseSignature, ...idpResponseParams } = idpParams[
-      i
-    ].idpResponseParams;
+    let { createResponseSignature, ...idpResponseParams } =
+      idpParams[i].idpResponseParams;
     const idpNodeId = idpNodeIds[i];
 
     it(`IdP (${idpNodeId}) should receive incoming request callback`, async function () {
@@ -538,12 +549,13 @@ export function mode1DataRequestFlowTest({
 
     it(`IdP (${idpNodeId}) should receive message queue send success (to RP) callback`, async function () {
       this.timeout(25000);
-      let mqSendSuccessCallbackPromise = mqSendSuccessIdpToRpCallbackPromises.find(
-        ({ node_id }) => node_id === idpNodeId,
-      ).mqSendSuccessIdpToRpCallbackPromise;
+      let mqSendSuccessCallbackPromise =
+        mqSendSuccessIdpToRpCallbackPromises.find(
+          ({ node_id }) => node_id === idpNodeId
+        ).mqSendSuccessIdpToRpCallbackPromise;
       if (!mqSendSuccessCallbackPromise) {
         throw new Error(
-          `${idpNodeId} not receive MQ send success idp to rp callback`,
+          `${idpNodeId} not receive MQ send success idp to rp callback`
         );
       }
       await receiveMessagequeueSendSuccessCallback({
@@ -714,6 +726,9 @@ export function mode1DataRequestFlowTest({
     });
   }
 
+  const hasZeroMinAsInDataRequest = createRequestParams.data_request_list.find(
+    (service) => service.min_as === 0
+  ) != null;
   for (let i = 0; i < asParams.length; i++) {
     let asNodeId = asNodeIds[i];
     let callApiAtNodeId = asParams[i].callAsApiAtNodeId;
@@ -723,7 +738,7 @@ export function mode1DataRequestFlowTest({
       let data = asParams[i].asResponseParams[j].data;
       let serviceId = asParams[i].asResponseParams[j].service_id;
       let requestParams = createRequestParams.data_request_list.find(
-        (service) => service.service_id === serviceId,
+        (service) => service.service_id === serviceId
       ).request_params;
 
       it(`${asNodeId} should receive data request ${serviceId}`, async function () {
@@ -785,18 +800,35 @@ export function mode1DataRequestFlowTest({
         let requestStatusSignedDataPromise =
           requestStatusSignedDataPromises[serviceId][i];
 
-        const testResult = await receiveConfirmedRequestStatusTest({
-          nodeId: rpNodeId,
-          requestStatusConfirmedPromise: requestStatusSignedDataPromise,
-          requestId,
-          createRequestParams,
-          dataRequestList,
-          idpResponse: idpResponseList,
-          requestMessageHash,
-          idpIdList,
-          lastStatusUpdateBlockHeight,
-          requesterNodeId: rpNodeId,
-        });
+        let testResult;
+        if (hasZeroMinAsInDataRequest && i > 0) {
+          testResult = await receivePartialCompletedRequestStatusTest({
+            nodeId: rpNodeId,
+            requestStatusPartialCompletedPromise:
+              requestStatusSignedDataPromise,
+            requestId,
+            createRequestParams,
+            dataRequestList,
+            idpResponse: idpResponseList,
+            requestMessageHash,
+            idpIdList,
+            lastStatusUpdateBlockHeight,
+            requesterNodeId: rpNodeId,
+          });
+        } else {
+          testResult = await receiveConfirmedRequestStatusTest({
+            nodeId: rpNodeId,
+            requestStatusConfirmedPromise: requestStatusSignedDataPromise,
+            requestId,
+            createRequestParams,
+            dataRequestList,
+            idpResponse: idpResponseList,
+            requestMessageHash,
+            idpIdList,
+            lastStatusUpdateBlockHeight,
+            requesterNodeId: rpNodeId,
+          });
+        }
         lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
 
         dataRequestList = setDataReceived(dataRequestList, serviceId, asNodeId);
