@@ -647,35 +647,34 @@ describe('RP create request errors', function() {
     expect(responseBody.error.code).to.equal(20003);
   });
 
-  // No longer applicable
-  // it('should get an error when creating a request without min_as key', async function() {
-  //   const createRequestParams = {
-  //     reference_id: rpReferenceId,
-  //     callback_url: config.RP_CALLBACK_URL,
-  //     mode: 3,
-  //     namespace: identityMode3.namespace,
-  //     identifier: identityMode3.identifier,
-  //     idp_id_list: [],
-  //     data_request_list: [
-  //       {
-  //         service_id: 'bank_statement',
-  //         as_id_list: ['as1'],
-  //         request_params: 'string',
-  //       },
-  //     ],
-  //     request_message: 'Test request message (error create request) (mode 3)',
-  //     min_ial: 1.1,
-  //     min_aal: 1,
-  //     min_idp: 1,
-  //     request_timeout: 86400,
-  //     bypass_identity_check: false,
-  //   };
+  it('should get an error when creating a request without min_as key', async function() {
+    const createRequestParams = {
+      reference_id: rpReferenceId,
+      callback_url: config.RP_CALLBACK_URL,
+      mode: 3,
+      namespace: identityMode3.namespace,
+      identifier: identityMode3.identifier,
+      idp_id_list: [],
+      data_request_list: [
+        {
+          service_id: 'bank_statement',
+          as_id_list: ['as1'],
+          request_params: 'string',
+        },
+      ],
+      request_message: 'Test request message (error create request) (mode 3)',
+      min_ial: 1.1,
+      min_aal: 1,
+      min_idp: 1,
+      request_timeout: 86400,
+      bypass_identity_check: false,
+    };
 
-  //   const response = await rpApi.createRequest('rp1', createRequestParams);
-  //   const responseBody = await response.json();
-  //   expect(response.status).to.equal(400);
-  //   expect(responseBody.error.code).to.equal(20003);
-  // });
+    const response = await rpApi.createRequest('rp1', createRequestParams);
+    const responseBody = await response.json();
+    expect(response.status).to.equal(400);
+    expect(responseBody.error.code).to.equal(20003);
+  });
 
   it('should get an error when creating a request with idp_id_list is array with empty string (mode 1)', async function() {
     const createRequestParams = {
