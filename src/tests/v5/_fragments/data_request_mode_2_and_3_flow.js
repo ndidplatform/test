@@ -21,12 +21,13 @@ import {
   receivePendingRequestStatusTest,
   receiveConfirmedRequestStatusTest,
   receiveRejectedRequestStatusTest,
+  receivePartialCompletedRequestStatusTest,
+  receiveCompletedRequestStatusTest,
   receiveRequestClosedStatusTest,
   receiveMessagequeueSendSuccessCallback,
   hasPrivateMessagesTest,
   removePrivateMessagesTest,
   hasNoPrivateMessagesTest,
-  receiveCompletedRequestStatusTest,
 } from './common';
 
 import { createEventPromise, wait } from '../../../utils';
@@ -53,14 +54,12 @@ export function mode2And3DataRequestFlowTest({
     : callRpApiAtNodeId;
   const idpNodeIds = idpParams.map(
     ({ callIdpApiAtNodeId, idpResponseParams }) =>
-      idpResponseParams.node_id
-        ? idpResponseParams.node_id
-        : callIdpApiAtNodeId,
+      idpResponseParams.node_id ? idpResponseParams.node_id : callIdpApiAtNodeId
   );
   const asNodeIds = asParams.map(({ callAsApiAtNodeId, asResponseParams }) =>
     asResponseParams[0].node_id
       ? asResponseParams[0].node_id
-      : callAsApiAtNodeId,
+      : callAsApiAtNodeId
   );
   const createRequestResultPromise = createEventPromise(); // RP
   const requestStatusPendingPromise = createEventPromise(); // RP
@@ -74,17 +73,17 @@ export function mode2And3DataRequestFlowTest({
   }); //IdPs
   const accessorEncryptPromises = idpParams.map(() => createEventPromise()); // IdPs
   const responseAcceptCount = idpParams.filter(
-    (idpParam) => idpParam.idpResponseParams.status === 'accept',
+    (idpParam) => idpParam.idpResponseParams.status === 'accept'
   ).length;
   const responseRejectCount = idpParams.filter(
-    (idpParam) => idpParam.idpResponseParams.status === 'reject',
+    (idpParam) => idpParam.idpResponseParams.status === 'reject'
   ).length;
 
   const requestStatusConfirmedPromises = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   ); // RP
   const requestStatusRejectedPromises = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   ); // RP
 
   const requestStatusCompletedPromise = createEventPromise(); // RP
@@ -109,7 +108,7 @@ export function mode2And3DataRequestFlowTest({
         [nodeId]: asParam.asResponseParams.map(() => createEventPromise()), // depend on services
       };
     },
-    {},
+    {}
   );
 
   const sendDataResultPromises = asParams.reduce((accumulator, asParam) => {
@@ -132,7 +131,7 @@ export function mode2And3DataRequestFlowTest({
         [nodeId]: asParam.asResponseParams.map(() => createEventPromise()),
       };
     },
-    {},
+    {}
   );
 
   let requestStatusSignedDataPromises = {};
@@ -157,15 +156,15 @@ export function mode2And3DataRequestFlowTest({
   }, {});
 
   const idp_requestStatusCompletedPromises = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   );
 
   const idp_requestStatusComplicatedPromises = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   );
 
   const idp_requestStatusRejectedPromise = idpParams.map(() =>
-    createEventPromise(),
+    createEventPromise()
   );
 
   const idp_requestClosedPromises = idpParams.map(() => createEventPromise());
@@ -203,24 +202,23 @@ export function mode2And3DataRequestFlowTest({
     if (!identity) {
       throw new Error('No created identity to use');
     }
-    const responseGetRelevantIdpNodesBySid = await commonApi.getRelevantIdpNodesBySid(
-      callRpApiAtNodeId,
-      {
+    const responseGetRelevantIdpNodesBySid =
+      await commonApi.getRelevantIdpNodesBySid(callRpApiAtNodeId, {
         namespace: identity.namespace,
         identifier: identity.identifier,
         mode: createRequestParams.mode,
         min_ial: createRequestParams.min_ial,
         filter_for_node_id: callRpApiAtNodeId,
-      },
-    );
-    const resposenBodyGetRelevantIdpNodesBySid = await responseGetRelevantIdpNodesBySid.json();
+      });
+    const resposenBodyGetRelevantIdpNodesBySid =
+      await responseGetRelevantIdpNodesBySid.json();
     idpsReceiveRequestPromises = resposenBodyGetRelevantIdpNodesBySid.map(
       ({ node_id }) => {
         return {
           node_id,
           MqSendSuccessRpToIdpCallbackPromise: createEventPromise(),
         };
-      },
+      }
     );
 
     createRequestParams.namespace = identity.namespace;
@@ -242,7 +240,7 @@ export function mode2And3DataRequestFlowTest({
           requestStatusPendingPromise.resolve(callbackData);
         } else if (callbackData.status === 'confirmed') {
           let serviceSignedData = callbackData.data_request_list.filter(
-            (service) => service.response_list.length > 0,
+            (service) => service.response_list.length > 0
           );
           if (serviceSignedData.length > 0) {
             serviceSignedData.map((service) => {
@@ -254,15 +252,28 @@ export function mode2And3DataRequestFlowTest({
             });
           } else {
             requestStatusConfirmedPromises[answeredIdPCount - 1].resolve(
-              callbackData,
+              callbackData
             );
+          }
+        } else if (callbackData.status === 'partial_completed') {
+          let serviceSignedData = callbackData.data_request_list.filter(
+            (service) => service.response_list.length > 0
+          );
+          if (serviceSignedData.length > 0) {
+            serviceSignedData.map((service) => {
+              service.response_list.map((asAnswer, index) => {
+                requestStatusSignedDataPromises[service.service_id][
+                  index
+                ].resolve(callbackData);
+              });
+            });
           }
         } else if (callbackData.status === 'rejected') {
           if (callbackData.answered_idp_count === idpParams.length) {
             requestStatusRejectedPromise.resolve(callbackData);
           } else {
             requestStatusRejectedPromises[answeredIdPCount - 1].resolve(
-              callbackData,
+              callbackData
             );
           }
         } else if (callbackData.status === 'complicated') {
@@ -337,7 +348,7 @@ export function mode2And3DataRequestFlowTest({
               asParams[i].asResponseParams[j].service_id
           ) {
             dataRequestReceivedPromises[callbackData.node_id][j].resolve(
-              callbackData,
+              callbackData
             );
           } else if (
             callbackData.type === 'response_result' &&
@@ -346,7 +357,7 @@ export function mode2And3DataRequestFlowTest({
               asParams[i].asResponseParams[j].reference_id
           ) {
             sendDataResultPromises[callbackData.node_id][j].resolve(
-              callbackData,
+              callbackData
             );
           }
         });
@@ -393,27 +404,27 @@ export function mode2And3DataRequestFlowTest({
           if (callbackData.destination_node_id.includes('idp')) {
             // arrayMqSendSuccessRpToIdpCallback.push(callbackData);
             let idpReceiveRequestPromise = idpsReceiveRequestPromises.find(
-              ({ node_id }) => node_id === callbackData.destination_node_id,
+              ({ node_id }) => node_id === callbackData.destination_node_id
             );
             if (idpReceiveRequestPromise) {
               idpReceiveRequestPromise.MqSendSuccessRpToIdpCallbackPromise.resolve(
-                callbackData,
+                callbackData
               );
             }
           } else if (callbackData.destination_node_id.includes('as')) {
             let mqSendSuccessRpToAs = mqSendSuccessRpToAsCallbackPromises.find(
-              ({ node_id }) => node_id === callbackData.destination_node_id,
+              ({ node_id }) => node_id === callbackData.destination_node_id
             );
             if (mqSendSuccessRpToAs) {
               mqSendSuccessRpToAs.mqSendSuccessRpToAsCallbackPromise.resolve(
-                callbackData,
+                callbackData
               );
             }
           }
         } else if (callbackData.node_id.includes('idp')) {
           if (callbackData.destination_node_id.includes('rp')) {
             let idp = mqSendSuccessIdpToRpCallbackPromises.find(
-              ({ node_id }) => node_id === callbackData.node_id,
+              ({ node_id }) => node_id === callbackData.node_id
             );
             if (idp) {
               idp.mqSendSuccessIdpToRpCallbackPromise.resolve(callbackData);
@@ -448,7 +459,7 @@ export function mode2And3DataRequestFlowTest({
     const testResult = await rpCreateRequestTest({
       callApiAtNodeId: callRpApiAtNodeId,
       createRequestParams,
-      setRequestId: (reqId) => requestId = reqId,
+      setRequestId: (reqId) => (requestId = reqId),
       createRequestResultPromise,
     });
     // requestId = testResult.requestId;
@@ -529,9 +540,8 @@ export function mode2And3DataRequestFlowTest({
     const responseResultPromise = responseResultPromises[i];
     const requestStatusConfirmedPromise = requestStatusConfirmedPromises[i];
     const requestStatusRejectPromise = requestStatusRejectedPromises[i];
-    let { createResponseSignature, ...idpResponseParams } = idpParams[
-      i
-    ].idpResponseParams;
+    let { createResponseSignature, ...idpResponseParams } =
+      idpParams[i].idpResponseParams;
     const getAccessorForResponse = idpParams[i].getAccessorForResponse;
     const idpNodeId = idpNodeIds[i];
 
@@ -577,7 +587,7 @@ export function mode2And3DataRequestFlowTest({
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       idpResponseParams = {
@@ -628,12 +638,13 @@ export function mode2And3DataRequestFlowTest({
 
     it(`IdP (${idpNodeId}) should receive message queue send success (to RP) callback`, async function () {
       this.timeout(25000);
-      let mqSendSuccessCallbackPromise = mqSendSuccessIdpToRpCallbackPromises.find(
-        ({ node_id }) => node_id === idpNodeId,
-      ).mqSendSuccessIdpToRpCallbackPromise;
+      let mqSendSuccessCallbackPromise =
+        mqSendSuccessIdpToRpCallbackPromises.find(
+          ({ node_id }) => node_id === idpNodeId
+        ).mqSendSuccessIdpToRpCallbackPromise;
       if (!mqSendSuccessCallbackPromise) {
         throw new Error(
-          `${idpNodeId} not receive MQ send success idp to rp callback`,
+          `${idpNodeId} not receive MQ send success idp to rp callback`
         );
       }
       await receiveMessagequeueSendSuccessCallback({
@@ -814,6 +825,9 @@ export function mode2And3DataRequestFlowTest({
     });
   }
 
+  const hasZeroMinAsInDataRequest = createRequestParams.data_request_list.find(
+    (service) => service.min_as === 0
+  ) != null;
   for (let i = 0; i < asParams.length; i++) {
     let asNodeId = asNodeIds[i];
     let callApiAtNodeId = asParams[i].callAsApiAtNodeId;
@@ -823,7 +837,7 @@ export function mode2And3DataRequestFlowTest({
       let data = asParams[i].asResponseParams[j].data;
       let serviceId = asParams[i].asResponseParams[j].service_id;
       let requestParams = createRequestParams.data_request_list.find(
-        (service) => service.service_id === serviceId,
+        (service) => service.service_id === serviceId
       ).request_params;
 
       it(`${asNodeId} should receive data request ${serviceId}`, async function () {
@@ -885,18 +899,34 @@ export function mode2And3DataRequestFlowTest({
         let requestStatusSignedDataPromise =
           requestStatusSignedDataPromises[serviceId][i];
 
-        const testResult = await receiveConfirmedRequestStatusTest({
-          nodeId: rpNodeId,
-          requestStatusConfirmedPromise: requestStatusSignedDataPromise,
-          requestId,
-          createRequestParams,
-          dataRequestList,
-          idpResponse: idpResponseList,
-          requestMessageHash,
-          idpIdList,
-          lastStatusUpdateBlockHeight,
-          requesterNodeId: rpNodeId,
-        });
+        let testResult;
+        if (hasZeroMinAsInDataRequest && i > 0) {
+          testResult = await receivePartialCompletedRequestStatusTest({
+            nodeId: rpNodeId,
+            requestStatusPartialCompletedPromise: requestStatusSignedDataPromise,
+            requestId,
+            createRequestParams,
+            dataRequestList,
+            idpResponse: idpResponseList,
+            requestMessageHash,
+            idpIdList,
+            lastStatusUpdateBlockHeight,
+            requesterNodeId: rpNodeId,
+          });
+        } else {
+          testResult = await receiveConfirmedRequestStatusTest({
+            nodeId: rpNodeId,
+            requestStatusConfirmedPromise: requestStatusSignedDataPromise,
+            requestId,
+            createRequestParams,
+            dataRequestList,
+            idpResponse: idpResponseList,
+            requestMessageHash,
+            idpIdList,
+            lastStatusUpdateBlockHeight,
+            requesterNodeId: rpNodeId,
+          });
+        }
         lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
 
         dataRequestList = setDataReceived(dataRequestList, serviceId, asNodeId);
