@@ -32,3 +32,4 @@ require('./service_price');
 require('./create_message');
 require('./request_type');
 require('./suppressed_identity_modification_notification');
+require('./dcontract');

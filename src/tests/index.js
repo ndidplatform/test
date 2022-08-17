@@ -7,6 +7,10 @@ import {
   startCallbackServer as startNodeCallbackServer,
   stopCallbackServer as stopNodeCallbackServer,
 } from '../callback_server/node';
+import {
+  startServer as startDcontractServer,
+  stopServer as stopDcontractServer,
+} from '../dcontract_server';
 import { isNodeAvailable } from '../helpers';
 import * as config from '../config';
 
@@ -58,14 +62,15 @@ async function checkForAvailableNodes() {
   proxy2Available = _proxy2Available;
 }
 
-describe('End-to-End NDID API test (API v5)', function() {
-  before(async function() {
+describe('End-to-End NDID API test (API v5)', function () {
+  before(async function () {
     this.timeout(5000);
     startCallbackServers();
     startNodeCallbackServer();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
       startDpkiCallbackServer();
     }
+    startDcontractServer();
     await checkForAvailableNodes();
     if (!rpAvailable || !idp1Available) {
       throw new Error('Could not connect to RP and IdP-1 nodes');
@@ -74,11 +79,12 @@ describe('End-to-End NDID API test (API v5)', function() {
 
   require('./v5');
 
-  after(function() {
+  after(function () {
     stopCallbackServers();
     stopNodeCallbackServer();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
       stopDpkiCallbackServer();
     }
+    stopDcontractServer();
   });
 });

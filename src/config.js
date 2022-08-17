@@ -21,6 +21,8 @@ export const DPKI_CALLBACK_PORT = 12000;
 
 export const NODE_CALLBACK_PORT = 14000;
 
+export const DCONTRACT_SERVER_PORT = 19900;
+
 export const RP_CALLBACK_URL = `http://${CALLBACK_IP}:${RP_CALLBACK_PORT}/rp/callback`;
 export const RP2_CALLBACK_URL = `http://${CALLBACK_IP}:${RP2_CALLBACK_PORT}/rp/callback`;
 
@@ -62,6 +64,8 @@ export const DPKI_MASTER_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLB
 export const DPKI_DECRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/decrypt`;
 
 export const MQ_SEND_SUCCESS_CALLBACK_URL = `http://${CALLBACK_IP}:${NODE_CALLBACK_PORT}/node/mq_send_success`;
+
+export const DCONTRACT_BASE_URL = `http://${CALLBACK_IP}:${DCONTRACT_SERVER_PORT}/dcontract`;
 
 export const httpHeaderNdidMemberAppType =
   process.env.HTTP_HEADER_NDID_MEMBER_APP_TYPE;
