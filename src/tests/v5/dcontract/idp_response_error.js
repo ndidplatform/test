@@ -23,7 +23,7 @@ import {
   receiveErroredRequestStatusTest,
 } from '../_fragments/common';
 
-const REQUEST_TYPE_DCONTRACT = 'dcontract';
+const REQUEST_TYPE_DCONTRACT = 'dsign.dcontract';
 
 const IDP_ERROR_CODE_DOCUMENT_INTEGRITY_FAILED = 31000;
 

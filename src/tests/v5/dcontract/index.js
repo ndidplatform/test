@@ -3,7 +3,7 @@ import * as ndidApi from '../../../api/v5/ndid';
 import { ndidAvailable } from '../..';
 import { wait } from '../../../utils';
 
-const REQUEST_TYPE_DCONTRACT = 'dcontract';
+const REQUEST_TYPE_DCONTRACT = 'dsign.dcontract';
 
 const IDP_ERROR_CODE_DOCUMENT_INTEGRITY_FAILED = 31000;
 

@@ -20,7 +20,7 @@ import {
   receiveRequestClosedStatusTest,
 } from '../_fragments/common';
 
-const REQUEST_TYPE_DCONTRACT = 'dcontract';
+const REQUEST_TYPE_DCONTRACT = 'dsign.dcontract';
 
 describe('Create request (mode 1) with dcontract request type', function () {
   let namespace;
