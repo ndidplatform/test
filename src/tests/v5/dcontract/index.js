@@ -65,6 +65,7 @@ describe('dContract request type tests', function () {
   });
 
   require('./mode_1');
+  require('./mode_1_multiple_documents');
 
   require('./idp_response_error');
 });
