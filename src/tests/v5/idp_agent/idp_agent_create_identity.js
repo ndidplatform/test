@@ -63,7 +63,6 @@ describe('Create identity by idp agent tests', function () {
     const referenceId = generateReferenceId();
 
     const createIdentityResultPromise = createEventPromise();
-    const errorResultPromise = createEventPromise();
 
     let accessorId;
 
@@ -74,8 +73,6 @@ describe('Create identity by idp agent tests', function () {
           callbackData.reference_id === referenceId
         ) {
           createIdentityResultPromise.resolve(callbackData);
-        } else if (callbackData.type === 'error') {
-          errorResultPromise.resolve(callbackData);
         }
       });
     });
@@ -84,7 +81,7 @@ describe('Create identity by idp agent tests', function () {
       this.timeout(10000);
       const response = await identityApi.createIdentity('idp3', {
         reference_id: referenceId,
-        callback_url: config.IDP1_CALLBACK_URL,
+        callback_url: config.IDP3_CALLBACK_URL,
         identity_list: [
           {
             namespace,
@@ -109,8 +106,8 @@ describe('Create identity by idp agent tests', function () {
 
     it('Identity should be created unsuccessfully', async function () {
       this.timeout(15000);
-      const errorResult = await errorResultPromise.promise;
-      expect(errorResult.error.code).to.equal(25035);
+      const createIdentityResult = await createIdentityResultPromise.promise;
+      expect(createIdentityResult.error.code).to.equal(25035);
     });
     after(async function () {
       idp3EventEmitter.removeAllListeners('callback');
@@ -135,7 +132,6 @@ describe('Create identity by idp agent tests', function () {
     const referenceId = generateReferenceId();
 
     const createIdentityResultPromise = createEventPromise();
-    const errorResultPromise = createEventPromise();
 
     let accessorId;
 
@@ -146,8 +142,6 @@ describe('Create identity by idp agent tests', function () {
           callbackData.reference_id === referenceId
         ) {
           createIdentityResultPromise.resolve(callbackData);
-        } else if (callbackData.type === 'error') {
-          errorResultPromise.resolve(callbackData);
         }
       });
     });
@@ -182,8 +176,8 @@ describe('Create identity by idp agent tests', function () {
 
     it('Identity should be created unsuccessfully', async function () {
       this.timeout(15000);
-      const errorResult = await errorResultPromise.promise;
-      expect(errorResult.error.code).to.equal(25035);
+      const createIdentityResult = await createIdentityResultPromise.promise;
+      expect(createIdentityResult.error.code).to.equal(25035);
     });
     after(async function () {
       idp3EventEmitter.removeAllListeners('callback');

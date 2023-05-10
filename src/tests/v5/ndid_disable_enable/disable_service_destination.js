@@ -121,6 +121,8 @@ describe('NDID disable service destination test', function() {
       service_id: 'test_disable_service_destination',
     });
     expect(response.status).to.equal(204);
+
+    await wait(3000);
   });
 
   it('AS should add offered service (test_disable_service_destination) successfully', async function() {

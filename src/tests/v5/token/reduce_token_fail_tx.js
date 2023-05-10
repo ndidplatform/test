@@ -68,33 +68,35 @@ describe('Reduce node token when tx fail test', function() {
     expect(responseBodyGetToken.amount).to.equal(5);
   });
 
-  it('Should idp1 use debug api for making fail tx in DeliveryTx successfully', async function() {
-    this.timeout(30000);
-    // flood 5 fail tx in DeliverTx
-    for (let i of [1, 2, 3, 4, 5]) {
-      await debugApi.transact('idp1', {
-        nodeId: 'idp1',
-        fnName: 'AddAccessor',
-        reference_group_code: 'aaaaa-bbbbb-ccccc-ddddd',
-        identity_namespace: 'citizenId',
-        identity_identifier_hash:
-          'c765a80f1ee71299c361c1b4cb4d9c36b44061a526348a71287ea0a97cea80f6',
-        request_id: 'request_id test',
-        accessor_type: 'accessor_type test',
-        accessor_id: 'accessor_id test',
-        accessor_public_key: accessorPublicKey,
-      });
-    }
-    await wait(3000);
-  });
+  // with validations on CheckTx, it's difficult to make failed tx in DeliverTx phase
+  //
+  // it('Should idp1 use debug api for making fail tx in DeliveryTx successfully', async function() {
+  //   this.timeout(30000);
+  //   // flood 5 fail tx in DeliverTx
+  //   for (let i of [1, 2, 3, 4, 5]) {
+  //     await debugApi.transact('idp1', {
+  //       nodeId: 'idp1',
+  //       fnName: 'AddAccessor',
+  //       reference_group_code: 'aaaaa-bbbbb-ccccc-ddddd',
+  //       identity_namespace: 'citizenId',
+  //       identity_identifier_hash:
+  //         'c765a80f1ee71299c361c1b4cb4d9c36b44061a526348a71287ea0a97cea80f6',
+  //       request_id: 'request_id test',
+  //       accessor_type: 'accessor_type test',
+  //       accessor_id: 'accessor_id test',
+  //       accessor_public_key: accessorPublicKey,
+  //     });
+  //   }
+  //   await wait(3000);
+  // });
 
-  it('idp1 should be reduced token when making fail tx in DeliverTx and idp1 should be out of token', async function() {
-    this.timeout(10000);
-    const responseGetToken = await commonApi.getToken('idp1');
-    const responseBodyGetToken = await responseGetToken.json();
-    expect(responseGetToken.status).to.equal(200);
-    expect(responseBodyGetToken.amount).to.equal(0);
-  });
+  // it('idp1 should be reduced token when making fail tx in DeliverTx and idp1 should be out of token', async function() {
+  //   this.timeout(10000);
+  //   const responseGetToken = await commonApi.getToken('idp1');
+  //   const responseBodyGetToken = await responseGetToken.json();
+  //   expect(responseGetToken.status).to.equal(200);
+  //   expect(responseBodyGetToken.amount).to.equal(0);
+  // });
 
   after(async function() {
     this.timeout(10000);
