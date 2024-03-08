@@ -17,7 +17,7 @@ export const PROXY2_CALLBACK_PORT = 9401;
 
 export const NDID_CALLBACK_PORT = 9000;
 
-export const DPKI_CALLBACK_PORT = 12000;
+export const KMS_CALLBACK_PORT = 12000;
 
 export const NODE_CALLBACK_PORT = 14000;
 
@@ -59,9 +59,9 @@ export const NDID_CALLBACK_URL = `http://${CALLBACK_IP}:${NDID_CALLBACK_PORT}/nd
 export const USE_EXTERNAL_CRYPTO_SERVICE =
   process.env.USE_EXTERNAL_CRYPTO_SERVICE === 'true';
 
-export const DPKI_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/sign`;
-export const DPKI_MASTER_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/master/sign`;
-export const DPKI_DECRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${DPKI_CALLBACK_PORT}/dpki/decrypt`;
+export const KMS_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${KMS_CALLBACK_PORT}/kms/sign`;
+export const KMS_MASTER_SIGN_CALLBACK_URL = `http://${CALLBACK_IP}:${KMS_CALLBACK_PORT}/kms/master/sign`;
+export const KMS_DECRYPT_CALLBACK_URL = `http://${CALLBACK_IP}:${KMS_CALLBACK_PORT}/kms/decrypt`;
 
 export const MQ_SEND_SUCCESS_CALLBACK_URL = `http://${CALLBACK_IP}:${NODE_CALLBACK_PORT}/node/mq_send_success`;
 

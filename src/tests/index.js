@@ -1,8 +1,8 @@
 import { startCallbackServers, stopCallbackServers } from '../callback_server';
 import {
-  startCallbackServer as startDpkiCallbackServer,
-  stopCallbackServer as stopDpkiCallbackServer,
-} from '../callback_server/dpki';
+  startCallbackServer as startKmsCallbackServer,
+  stopCallbackServer as stopKmsCallbackServer,
+} from '../callback_server/kms';
 import {
   startCallbackServer as startNodeCallbackServer,
   stopCallbackServer as stopNodeCallbackServer,
@@ -62,13 +62,13 @@ async function checkForAvailableNodes() {
   proxy2Available = _proxy2Available;
 }
 
-describe('End-to-End NDID API test (API v5)', function () {
+describe('End-to-End NDID API test', function () {
   before(async function () {
     this.timeout(5000);
     startCallbackServers();
     startNodeCallbackServer();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
-      startDpkiCallbackServer();
+      startKmsCallbackServer();
     }
     startDcontractServer();
     await checkForAvailableNodes();
@@ -77,13 +77,18 @@ describe('End-to-End NDID API test (API v5)', function () {
     }
   });
 
-  require('./v5');
+  // require('./v6');
+
+  // backward compatibility tests
+  describe('Backward compatibility tests', function () {
+    require('./v5');
+  });
 
   after(function () {
     stopCallbackServers();
     stopNodeCallbackServer();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
-      stopDpkiCallbackServer();
+      stopKmsCallbackServer();
     }
     stopDcontractServer();
   });
