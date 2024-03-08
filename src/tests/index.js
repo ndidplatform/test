@@ -77,7 +77,7 @@ describe('End-to-End NDID API test', function () {
     }
   });
 
-  // require('./v6');
+  require('./v6');
 
   // backward compatibility tests
   describe('Backward compatibility tests', function () {
