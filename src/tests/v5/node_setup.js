@@ -9,8 +9,8 @@ import {
   ndidAvailable,
   proxy1Available,
 } from '..';
-import * as debugApi from '../../api/v6/debug';
-import * as nodeApi from '../../api/v6/node';
+import * as debugApi from '../../api/v5/debug';
+import * as nodeApi from '../../api/v5/node';
 import * as config from '../../config';
 import { wait } from '../../utils';
 
