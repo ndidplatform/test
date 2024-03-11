@@ -2,7 +2,7 @@ import { expect } from 'chai';
 
 import * as commonApi from '../../../api/v6/common';
 import * as ndidApi from '../../../api/v6/ndid';
-import { randomString } from '../../../utils';
+import { randomString } from '../../../utils/random';
 import { ndidAvailable } from '../..';
 
 describe('NDID add request type test', function () {

@@ -17,6 +17,7 @@ describe('Create identity', function() {
   require('./duplicate_reference_id');
   require('./close_identity_request');
   require('./error_response');
+  require('./thai_id_validation');
   // require('./lock_timeout'); // UNUSED TEST CASE
 });
 

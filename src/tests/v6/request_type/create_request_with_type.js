@@ -5,12 +5,8 @@ import * as rpApi from '../../../api/v6/rp';
 import * as ndidApi from '../../../api/v6/ndid';
 import { rpEventEmitter } from '../../../callback_server';
 
-import {
-  randomString,
-  generateReferenceId,
-  createEventPromise,
-  wait,
-} from '../../../utils';
+import { generateReferenceId, createEventPromise, wait } from '../../../utils';
+import { randomString } from '../../../utils/random';
 import { ndidAvailable } from '../..';
 
 import * as config from '../../../config';
@@ -37,7 +33,7 @@ describe('Create request with request type test', function () {
     request_timeout: 86400,
     bypass_identity_check: false,
     request_type: requestType,
-  };  
+  };
 
   before(async function () {
     this.timeout(10000);

@@ -2,7 +2,8 @@ import { expect } from 'chai';
 
 import * as rpApi from '../../../api/v6/rp';
 
-import { randomString, generateReferenceId } from '../../../utils';
+import { generateReferenceId } from '../../../utils';
+import { randomString } from '../../../utils/random';
 import { ndidAvailable } from '../..';
 
 import * as config from '../../../config';

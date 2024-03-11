@@ -8,12 +8,8 @@ import {
   as1EventEmitter,
 } from '../../../callback_server';
 
-import {
-  randomString,
-  generateReferenceId,
-  createSignature,
-  wait,
-} from '../../../utils';
+import { generateReferenceId, createSignature, wait } from '../../../utils';
+import { randomString } from '../../../utils/random';
 
 import { ndidAvailable } from '../..';
 

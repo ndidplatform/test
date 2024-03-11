@@ -3,7 +3,7 @@ import { expect } from 'chai';
 
 import * as ndidApi from '../../../api/v6/ndid';
 import * as commonApi from '../../../api/v6/common';
-import { randomString } from '../../../utils';
+import { randomString } from '../../../utils/random';
 import * as cryptoUtils from '../../../utils/crypto';
 import { ndidAvailable } from '../..';
 
