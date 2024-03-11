@@ -183,3 +183,19 @@ export function removeSuppressedIdentityModificationNotificationNode(nodeId, dat
     data,
   );
 }
+
+export function addAllowedNodeSupportedFeature(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/add_allowed_node_supported_feature`,
+    data,
+  );
+}
+
+export function removeAllowedNodeSupportedFeature(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/remove_allowed_node_supported_feature`,
+    data,
+  );
+}

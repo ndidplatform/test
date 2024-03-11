@@ -222,3 +222,9 @@ export function isSuppressedIdentityModificationNotificationNode(
     `${apiBaseUrl}/utility/suppressed_identity_modification_notification_node_ids/${node_id}`
   );
 }
+
+export function getAllowedNodeSupportedFeatureList(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+
+  return httpGet(`${apiBaseUrl}/utility/node_supported_features`);
+}

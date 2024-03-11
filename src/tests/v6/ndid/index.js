@@ -17,6 +17,7 @@ describe('NDID API tests', function () {
   require('./set_allowed_mode_list_for_create_request');
   require('./error_response');
   require('./on_the_fly_support');
+  require('./supported_feature_list');
 });
 
 describe('NDID API tests (proxy)', function () {
