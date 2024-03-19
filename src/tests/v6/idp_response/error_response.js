@@ -276,7 +276,7 @@ describe('IdP response errors tests', function() {
     // expect(responseResult.error.code).to.equal(10014);
   });
 
-  it('should get an error when making a response with invalid ial (ial is not in enum) (mode 3)', async function() {
+  it('should get an error when making a response with invalid IAL (mode 3)', async function() {
     this.timeout(15000);
     let accessorPrivateKey =
       identityForResponse.accessors[0].accessorPrivateKey;
@@ -299,10 +299,11 @@ describe('IdP response errors tests', function() {
     const responseBody = await response.json();
 
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20003);
+    // expect(responseBody.error.code).to.equal(20003);
+    expect(responseBody.error.code).to.equal(20094);
   });
 
-  it('should get an error when making a response with invalid aal (aal is not in enum) (mode 3)', async function() {
+  it('should get an error when making a response with invalid AAL (mode 3)', async function() {
     const identity = db.idp1Identities.find(
       identity =>
         identity.namespace === namespace && identity.identifier === identifier,
@@ -321,7 +322,8 @@ describe('IdP response errors tests', function() {
     const responseBody = await response.json();
 
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20003);
+    // expect(responseBody.error.code).to.equal(20003);
+    expect(responseBody.error.code).to.equal(20095);
   });
 
   it('should get an error when making a response with invalid ial (ial not match identity info) (mode 3)', async function() {
@@ -347,7 +349,7 @@ describe('IdP response errors tests', function() {
     expect(responseBody.error.code).to.equal(20060);
   });
 
-  it('should get an error when IdP update identity invalid ial (ial is not in enum)', async function() {
+  it('should get an error when IdP update identity invalid IAL', async function() {
     this.timeout(15000);
     const response = await identityApi.updateIdentityIal('idp1', {
       namespace: namespace,
@@ -358,7 +360,8 @@ describe('IdP response errors tests', function() {
     });
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20003);
+    // expect(responseBody.error.code).to.equal(20003);
+    expect(responseBody.error.code).to.equal(20094);
   });
 
   after(async function() {
