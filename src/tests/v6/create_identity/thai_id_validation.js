@@ -179,7 +179,7 @@ describe('Thai ID validation', function () {
       expect(idpNode).to.be.an.undefined;
     });
 
-    it('Should create identity request (mode2) successfully', async function () {
+    it('Should not be able to create identity request (mode2)', async function () {
       this.timeout(10000);
       const response = await identityApi.createIdentity('idp1', {
         reference_id: referenceId,
@@ -200,7 +200,7 @@ describe('Thai ID validation', function () {
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(400);
-      expect(responseBody.error.code).to.equal(20093);
+      expect(responseBody.error.code).to.equal(20096);
 
       // accessorId = responseBody.accessor_id;
     });

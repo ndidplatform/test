@@ -199,3 +199,19 @@ export function removeAllowedNodeSupportedFeature(nodeId, data) {
     data,
   );
 }
+
+export function setSupportedIALList(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/set_supported_ial_list`,
+    data,
+  );
+}
+
+export function setSupportedAALList(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/set_supported_aal_list`,
+    data,
+  );
+}

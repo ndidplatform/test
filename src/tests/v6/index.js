@@ -35,4 +35,6 @@ describe('API v6', function () {
   require('./request_type');
   require('./suppressed_identity_modification_notification');
   require('./dcontract');
+  require('./supported_ial');
+  require('./supported_aal');
 });

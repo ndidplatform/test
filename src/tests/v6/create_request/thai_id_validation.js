@@ -96,7 +96,7 @@ describe('Thai ID validation', function () {
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(400);
-      expect(responseBody.error.code).to.equal(20093);
+      expect(responseBody.error.code).to.equal(20096);
     });
 
     // after(function () {});

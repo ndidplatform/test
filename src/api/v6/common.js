@@ -228,3 +228,16 @@ export function getAllowedNodeSupportedFeatureList(nodeId) {
 
   return httpGet(`${apiBaseUrl}/utility/node_supported_features`);
 }
+
+
+export function getSupportedIALList(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+
+  return httpGet(`${apiBaseUrl}/utility/supported_ial`);
+}
+
+export function getSupportedAALList(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+
+  return httpGet(`${apiBaseUrl}/utility/supported_aal`);
+}
