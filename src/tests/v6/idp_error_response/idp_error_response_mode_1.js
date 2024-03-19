@@ -81,7 +81,7 @@ describe('RP create request (mode 1) min_idp = 1 and IdP response with an error 
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -428,7 +428,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -895,7 +895,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -1344,7 +1344,7 @@ describe('RP create request (mode 1) min_idp = 1 to 2 idps and 1st IdP response 
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -1862,7 +1862,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -2337,7 +2337,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -2876,7 +2876,7 @@ describe('RP create request (mode 1) min_idp = 2 to 2 idps and 1st IdP response 
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -3421,7 +3421,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -4050,7 +4050,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 2nd IdP r
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -4742,7 +4742,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -5589,7 +5589,7 @@ describe('RP create request (mode 1) min_idp = 2 to 3 idps and 1st and 3rd IdP r
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,

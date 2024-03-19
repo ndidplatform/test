@@ -16,7 +16,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
       callback_url: config.PROXY2_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['proxy1_idp4'],
       data_request_list: [],
       request_message:
@@ -57,7 +57,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy2_rp5) and IDP (proxy1_idp4) b
 //       callback_url: config.PROXY2_CALLBACK_URL,
 //       mode: 1,
 //       namespace: 'citizen_id',
-//       identifier: '1234567890123',
+//       identifier: '1345951597671',
 //       idp_id_list: ['proxy1_idp4'],
 //       data_request_list: [],
 //       request_message:

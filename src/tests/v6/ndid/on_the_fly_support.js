@@ -10,6 +10,7 @@ import { ndidAvailable } from '../../';
 import * as config from '../../../config';
 import * as db from '../../../db';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as cryptoUtils from '../../../utils/crypto';
 import { idp1EventEmitter } from '../../../callback_server';
 
@@ -162,7 +163,7 @@ describe('NDID on the fly support property tests', function () {
     let idpInformationBeforeUpdateNode;
 
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });

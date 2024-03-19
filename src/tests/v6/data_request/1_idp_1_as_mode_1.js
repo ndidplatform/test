@@ -7,7 +7,7 @@ import {
 import { generateReferenceId, createSignature } from '../../../utils';
 import * as config from '../../../config';
 
-describe('1 IdP, 1 AS, mode 1', function() {
+describe('1 IdP, 1 AS, mode 1', function () {
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
@@ -22,7 +22,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['idp1'],
       data_request_list: [
         {
@@ -75,7 +75,7 @@ describe('1 IdP, 1 AS, mode 1', function() {
   });
 });
 
-describe('1 IdP, 1 AS, mode 1 (request_message is empty string)', function() {
+describe('1 IdP, 1 AS, mode 1 (request_message is empty string)', function () {
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
@@ -90,7 +90,7 @@ describe('1 IdP, 1 AS, mode 1 (request_message is empty string)', function() {
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['idp1'],
       data_request_list: [
         {
@@ -142,7 +142,7 @@ describe('1 IdP, 1 AS, mode 1 (request_message is empty string)', function() {
   });
 });
 
-describe('1 IdP, 1 AS, mode 1 (with as_id_list is empty array)', function() {
+describe('1 IdP, 1 AS, mode 1 (with as_id_list is empty array)', function () {
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
@@ -157,7 +157,7 @@ describe('1 IdP, 1 AS, mode 1 (with as_id_list is empty array)', function() {
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['idp1'],
       data_request_list: [
         {
@@ -210,7 +210,7 @@ describe('1 IdP, 1 AS, mode 1 (with as_id_list is empty array)', function() {
   });
 });
 
-describe('1 IdP, 1 AS, mode 1 (without as_id_list key)', function() {
+describe('1 IdP, 1 AS, mode 1 (without as_id_list key)', function () {
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
@@ -225,7 +225,7 @@ describe('1 IdP, 1 AS, mode 1 (without as_id_list key)', function() {
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['idp1'],
       data_request_list: [
         {
@@ -277,7 +277,7 @@ describe('1 IdP, 1 AS, mode 1 (without as_id_list key)', function() {
   });
 });
 
-describe('1 IdP, 1 AS, mode 1 (without request_params key)', function() {
+describe('1 IdP, 1 AS, mode 1 (without request_params key)', function () {
   const data = JSON.stringify({
     test: 'test',
     withEscapedChar: 'test|fff||ss\\|NN\\\\|',
@@ -292,7 +292,7 @@ describe('1 IdP, 1 AS, mode 1 (without request_params key)', function() {
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['idp1'],
       data_request_list: [
         {
@@ -357,7 +357,7 @@ describe('1 IdP, 1 AS, mode 1 (without request_params key)', function() {
 //       callback_url: config.RP_CALLBACK_URL,
 //       mode: 1,
 //       namespace: 'citizen_id',
-//       identifier: '1234567890123',
+//       identifier: '1345951597671',
 //       idp_id_list: ['idp1'],
 //       data_request_list: [
 //         {
@@ -425,7 +425,7 @@ describe('1 IdP, 1 AS, mode 1 (without request_params key)', function() {
 //       callback_url: config.RP_CALLBACK_URL,
 //       mode: 1,
 //       namespace: 'citizen_id',
-//       identifier: '1234567890123',
+//       identifier: '1345951597671',
 //       idp_id_list: ['idp1'],
 //       data_request_list: [
 //         {

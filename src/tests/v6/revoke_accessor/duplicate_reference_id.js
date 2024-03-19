@@ -14,6 +14,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
@@ -22,7 +23,7 @@ describe('Revoke accessor with duplicate reference id test', function() {
     'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
 
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });

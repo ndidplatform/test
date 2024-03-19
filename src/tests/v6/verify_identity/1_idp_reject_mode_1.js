@@ -13,7 +13,7 @@ describe('1 IdP, reject consent, mode 1', function() {
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['idp1'],
       data_request_list: [],
       request_message:
@@ -48,7 +48,7 @@ describe('1 IdP, reject consent, mode 1', function() {
 //       callback_url: config.RP_CALLBACK_URL,
 //       mode: 1,
 //       namespace: 'citizen_id',
-//       identifier: '1234567890123',
+//       identifier: '1345951597671',
 //       idp_id_list: ['idp1'],
 //       data_request_list: [],
 //       request_message:

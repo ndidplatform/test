@@ -10,6 +10,7 @@ import * as apiHelpers from '../../../api/helpers';
 import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
 
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 
 import * as config from '../../../config';
 
@@ -17,7 +18,7 @@ describe('IdP (idp2) register identity (suppressed notification) test', function
   const nodeId = 'idp2';
 
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });

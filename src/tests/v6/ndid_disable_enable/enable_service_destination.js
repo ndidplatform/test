@@ -18,6 +18,7 @@ import {
   wait,
   hash,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   createIdpIdList,
   createDataRequestList,
@@ -34,7 +35,7 @@ import * as config from '../../../config';
 
 describe('NDID enable service destination test', function () {
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
 
   const rpReferenceId = generateReferenceId();
   const idpReferenceId = generateReferenceId();
@@ -183,9 +184,8 @@ describe('NDID enable service destination test', function () {
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      createRequestResult.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -213,14 +213,13 @@ describe('NDID enable service destination test', function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
-    const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+    const dataRequestListWithoutParams =
+      createRequestParams.data_request_list.map((dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
         };
-      },
-    );
+      });
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
@@ -229,7 +228,7 @@ describe('NDID enable service destination test', function () {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -240,9 +239,8 @@ describe('NDID enable service destination test', function () {
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -321,7 +319,7 @@ describe('NDID enable service destination test', function () {
     dataRequestList = setDataSigned(
       dataRequestList,
       createRequestParams.data_request_list[0].service_id,
-      as_node_id,
+      as_node_id
     );
   });
 
@@ -346,7 +344,7 @@ describe('NDID enable service destination test', function () {
     dataRequestList = setDataReceived(
       dataRequestList,
       createRequestParams.data_request_list[0].service_id,
-      as_node_id,
+      as_node_id
     );
 
     // const requestStatus = await requestStatusSignedDataPromise.promise;

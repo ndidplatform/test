@@ -10,7 +10,7 @@ import {
 } from '../../../callback_server';
 
 import { generateReferenceId, createSignature, wait } from '../../../utils';
-import { randomString } from '../../../utils/random';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import { ndidAvailable } from '../..';
 
 import * as config from '../../../config';
@@ -57,7 +57,7 @@ describe('Create request (full flow) with new IAL test', function () {
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: randomString(13, '0123456789'),
+      identifier: randomThaiIdNumber(),
       idp_id_list: ['idp1'],
       data_request_list: [
         {

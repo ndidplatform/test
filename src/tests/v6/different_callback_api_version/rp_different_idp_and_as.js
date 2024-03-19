@@ -66,7 +66,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
 
     before(function () {
       namespace = 'citizen_id';
-      identifier = '01234567890123';
+      identifier = '1345951597671';
 
       createRequestParams = {
         reference_id: rpReferenceId,
@@ -559,7 +559,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
 
     before(function () {
       namespace = 'citizen_id';
-      identifier = '01234567890123';
+      identifier = '1345951597671';
 
       createRequestParams = {
         reference_id: rpReferenceId,

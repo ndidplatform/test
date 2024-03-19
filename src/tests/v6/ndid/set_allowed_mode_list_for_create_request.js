@@ -8,18 +8,19 @@ import * as identityApi from '../../../api/v6/identity';
 import * as commonApi from '../../../api/v6/common';
 import { ndidAvailable } from '../../';
 import { generateReferenceId, wait, createEventPromise } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 
 import { idp1EventEmitter } from '../../../callback_server';
 
-describe('NDID set allowed mode list for create request test', function() {
-  before(async function() {
+describe('NDID set allowed mode list for create request test', function () {
+  before(async function () {
     if (!ndidAvailable) {
       this.skip();
     }
   });
-  describe('NDID set allowed mode list for create request (normal transaction)', function() {
-    it('NDID should set allowed mode list for create request only mode 2,3 (normal transaction) successfully', async function() {
+  describe('NDID set allowed mode list for create request (normal transaction)', function () {
+    it('NDID should set allowed mode list for create request only mode 2,3 (normal transaction) successfully', async function () {
       this.timeout(10000);
       const response = await ndidApi.setAllowedModeList('ndid1', {
         purpose: '',
@@ -29,11 +30,11 @@ describe('NDID set allowed mode list for create request test', function() {
       await wait(2000);
     });
 
-    it('RP should create request mode 1 (normal transaction) unsuccessfully', async function() {
+    it('RP should create request mode 1 (normal transaction) unsuccessfully', async function () {
       this.timeout(10000);
 
       let namespace = 'citizen_id';
-      let identifier = '1234567890123';
+      let identifier = '1345951597671';
 
       let createRequestParams = {
         reference_id: generateReferenceId(),
@@ -65,7 +66,7 @@ describe('NDID set allowed mode list for create request test', function() {
       expect(responseBody.error.code).to.equal(20066);
     });
 
-    it('NDID should set allowed mode list for create request only mode 3 (normal transaction) successfully', async function() {
+    it('NDID should set allowed mode list for create request only mode 3 (normal transaction) successfully', async function () {
       this.timeout(10000);
       const response = await ndidApi.setAllowedModeList('ndid1', {
         purpose: '',
@@ -75,11 +76,11 @@ describe('NDID set allowed mode list for create request test', function() {
       await wait(2000);
     });
 
-    it('RP should create request mode 2 (normal transaction) unsuccessfully', async function() {
+    it('RP should create request mode 2 (normal transaction) unsuccessfully', async function () {
       this.timeout(10000);
 
       let namespace = 'citizen_id';
-      let identifier = '1234567890123';
+      let identifier = '1345951597671';
 
       let createRequestParams = {
         reference_id: generateReferenceId(),
@@ -112,7 +113,7 @@ describe('NDID set allowed mode list for create request test', function() {
       expect(responseBody.error.code).to.equal(20066);
     });
 
-    after(async function() {
+    after(async function () {
       this.timeout(20000);
       const response = await ndidApi.setAllowedModeList('ndid1', {
         purpose: '',
@@ -123,9 +124,9 @@ describe('NDID set allowed mode list for create request test', function() {
     });
   });
 
-  describe('NDID set allowed mode list for create request with purpose (special transaction)', async function() {
+  describe('NDID set allowed mode list for create request with purpose (special transaction)', async function () {
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });
@@ -144,8 +145,8 @@ describe('NDID set allowed mode list for create request test', function() {
 
     let accessorId;
 
-    before(function() {
-      idp1EventEmitter.on('callback', function(callbackData) {
+    before(function () {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_identity_result' &&
           callbackData.reference_id === referenceId
@@ -155,7 +156,7 @@ describe('NDID set allowed mode list for create request test', function() {
       });
     });
 
-    it('NDID should set allowed mode list for create request purpose RegisterIdentity only mode 3 successfully', async function() {
+    it('NDID should set allowed mode list for create request purpose RegisterIdentity only mode 3 successfully', async function () {
       this.timeout(10000);
       const response = await ndidApi.setAllowedModeList('ndid1', {
         purpose: 'RegisterIdentity',
@@ -165,7 +166,7 @@ describe('NDID set allowed mode list for create request test', function() {
       await wait(2000);
     });
 
-    it('Should create identity request (mode2) unsuccessfully', async function() {
+    it('Should create identity request (mode2) unsuccessfully', async function () {
       this.timeout(10000);
 
       const response = await identityApi.createIdentity('idp1', {
@@ -192,7 +193,7 @@ describe('NDID set allowed mode list for create request test', function() {
       accessorId = responseBody.accessor_id;
     });
 
-    it('Identity should be created unsuccessfully', async function() {
+    it('Identity should be created unsuccessfully', async function () {
       this.timeout(15000);
       const createIdentityResult = await createIdentityResultPromise.promise;
       expect(createIdentityResult).to.deep.include({
@@ -211,7 +212,7 @@ describe('NDID set allowed mode list for create request test', function() {
       const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
       expect(idpNode).to.be.undefined;
     });
-    after(async function() {
+    after(async function () {
       this.timeout(10000);
       const response = await ndidApi.setAllowedModeList('ndid1', {
         purpose: 'RegisterIdentity',

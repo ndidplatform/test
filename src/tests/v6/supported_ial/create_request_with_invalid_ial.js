@@ -6,10 +6,11 @@ import * as ndidApi from '../../../api/v6/ndid';
 import * as apiHelpers from '../../../api/helpers';
 
 import { generateReferenceId, wait } from '../../../utils';
-import { randomString } from '../../../utils/random';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import { ndidAvailable } from '../..';
 
 import * as config from '../../../config';
+
 
 describe('Create request with invalid/unsupported IAL test', function () {
   const supportedIALList = [1, 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 3, 3.5, 4, 5, 5.2];
@@ -23,7 +24,7 @@ describe('Create request with invalid/unsupported IAL test', function () {
     callback_url: config.RP_CALLBACK_URL,
     mode: 1,
     namespace: 'citizen_id',
-    identifier: randomString(13, '0123456789'),
+    identifier: randomThaiIdNumber(),
     idp_id_list: ['idp1'],
     data_request_list: [],
     request_message: 'Test request message (IAL)',

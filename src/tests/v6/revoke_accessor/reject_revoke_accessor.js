@@ -20,6 +20,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   createIdpIdList,
   createDataRequestList,
@@ -36,12 +37,12 @@ import {
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-describe('Reject revoke accessor test', function() {
+describe('Reject revoke accessor test', function () {
   const addAccessorRequestMessage =
     'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
 
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -71,8 +72,8 @@ describe('Reject revoke accessor test', function() {
   let identityForResponse;
   let requestMessagePaddedHash;
 
-  before(function() {
-    idp1EventEmitter.on('callback', function(callbackData) {
+  before(function () {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === referenceId
@@ -102,14 +103,14 @@ describe('Reject revoke accessor test', function() {
       }
     });
 
-    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === requestIdAddAccessor) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
   });
 
-  it('Before create identity this sid should not exist on platform ', async function() {
+  it('Before create identity this sid should not exist on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -117,17 +118,17 @@ describe('Reject revoke accessor test', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Before create identity this sid should not associated with idp1 ', async function() {
+  it('Before create identity this sid should not associated with idp1 ', async function () {
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.be.an.undefined;
   });
 
-  it('Before create identity should not get identity ial', async function() {
+  it('Before create identity should not get identity ial', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -135,7 +136,7 @@ describe('Reject revoke accessor test', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Should create identity request (mode 3) successfully', async function() {
+  it('Should create identity request (mode 3) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -162,7 +163,7 @@ describe('Reject revoke accessor test', function() {
     accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created successfully', async function() {
+  it('Identity should be created successfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -180,11 +181,9 @@ describe('Reject revoke accessor test', function() {
       identifier,
     });
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2, 3);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2, 3);
 
     db.idp1Identities.push({
       referenceGroupCode,
@@ -202,7 +201,7 @@ describe('Reject revoke accessor test', function() {
     await wait(3000);
   });
 
-  it('After create identity this sid should be existing on platform ', async function() {
+  it('After create identity this sid should be existing on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -212,7 +211,7 @@ describe('Reject revoke accessor test', function() {
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
-  it('After create identity should get identity ial successfully', async function() {
+  it('After create identity should get identity ial successfully', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -222,7 +221,7 @@ describe('Reject revoke accessor test', function() {
     expect(responseBody.ial).to.equal(2.3);
   });
 
-  it('Should add accessor successfully', async function() {
+  it('Should add accessor successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
@@ -242,7 +241,8 @@ describe('Reject revoke accessor test', function() {
     requestIdAddAccessor = responseBody.request_id;
     accessorId2 = responseBody.accessor_id;
 
-    const addAccessorRequestResult = await addAccessorRequestResultPromise.promise;
+    const addAccessorRequestResult =
+      await addAccessorRequestResultPromise.promise;
     expect(addAccessorRequestResult).to.deep.include({
       reference_id: referenceId,
       request_id: requestIdAddAccessor,
@@ -250,15 +250,14 @@ describe('Reject revoke accessor test', function() {
       success: true,
     });
     expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      addAccessorRequestResult.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
   });
 
-  it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+  it('IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
@@ -271,7 +270,7 @@ describe('Reject revoke accessor test', function() {
     });
   });
 
-  it('idp1 should receive add accessor request', async function() {
+  it('idp1 should receive add accessor request', async function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
@@ -280,7 +279,7 @@ describe('Reject revoke accessor test', function() {
       reference_group_code: referenceGroupCode,
       request_message: addAccessorRequestMessage,
       request_message_hash: hash(
-        addAccessorRequestMessage + incomingRequest.request_message_salt,
+        addAccessorRequestMessage + incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -289,20 +288,19 @@ describe('Reject revoke accessor test', function() {
     });
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     expect(incomingRequest.request_timeout).to.be.a('number');
   });
 
-  it('IdP should get request_message_padded_hash successfully', async function() {
+  it('IdP should get request_message_padded_hash successfully', async function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -319,7 +317,7 @@ describe('Reject revoke accessor test', function() {
     requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
   });
 
-  it('IdP (idp1) should create response (accept) successfully', async function() {
+  it('IdP (idp1) should create response (accept) successfully', async function () {
     this.timeout(10000);
 
     let accessorPrivateKey =
@@ -327,7 +325,7 @@ describe('Reject revoke accessor test', function() {
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -361,7 +359,7 @@ describe('Reject revoke accessor test', function() {
   //     .that.is.not.empty;
   // });
 
-  it('IdP should receive callback create response result with success = true', async function() {
+  it('IdP should receive callback create response result with success = true', async function () {
     this.timeout(15000);
     const responseResult = await responseResultPromise.promise;
     expect(responseResult).to.deep.include({
@@ -373,7 +371,7 @@ describe('Reject revoke accessor test', function() {
     });
   });
 
-  it('Accessor id should be added successfully', async function() {
+  it('Accessor id should be added successfully', async function () {
     this.timeout(10000);
     const addAccessorResult = await addAccessorResultPromise.promise;
     expect(addAccessorResult).to.deep.include({
@@ -383,8 +381,8 @@ describe('Reject revoke accessor test', function() {
     });
 
     const identity = db.idp1Identities.find(
-      identity =>
-        identity.namespace === namespace && identity.identifier === identifier,
+      (identity) =>
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     identity.accessors.push({
@@ -394,7 +392,7 @@ describe('Reject revoke accessor test', function() {
     });
   });
 
-  it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+  it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function () {
     this.timeout(10000);
     const response = await identityApi.getRequestIdByReferenceId('idp1', {
       reference_id: referenceId,
@@ -402,13 +400,13 @@ describe('Reject revoke accessor test', function() {
     expect(response.status).to.equal(404);
   });
 
-  after(function() {
+  after(function () {
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
   });
 
   //revoke by idp1
-  describe('Reject revoke accessor by the owner', function() {
+  describe('Reject revoke accessor by the owner', function () {
     const revokeAccessorRequestMessage =
       'Revoke accessor consent request custom message ข้อความสำหรับขอเพิกถอน accessor บนระบบ';
 
@@ -426,8 +424,8 @@ describe('Reject revoke accessor test', function() {
     let requestMessageHash;
     let identityForResponse;
 
-    before(function() {
-      idp1EventEmitter.on('callback', function(callbackData) {
+    before(function () {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -451,14 +449,14 @@ describe('Reject revoke accessor test', function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
     });
 
-    it('Revoke accessor should success', async function() {
+    it('Revoke accessor should success', async function () {
       const response = await identityApi.revokeAccessor('idp1', {
         reference_id: idpReferenceIdRevoke,
         callback_url: config.IDP1_CALLBACK_URL,
@@ -472,7 +470,7 @@ describe('Reject revoke accessor test', function() {
       requestId = responseBody.request_id;
     });
 
-    it('Idp1 should get callback for revoke request', async function() {
+    it('Idp1 should get callback for revoke request', async function () {
       this.timeout(15000);
       const revokeRequest = await revokeRequestPromise.promise;
       expect(revokeRequest).to.deep.include({
@@ -484,15 +482,14 @@ describe('Reject revoke accessor test', function() {
         success: true,
       });
       expect(revokeRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = revokeRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        revokeRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('1st IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function() {
+    it('1st IdP should get request_id by reference_id while request is unfinished (not closed or timed out) successfully', async function () {
       this.timeout(15000);
       const response = await identityApi.getRequestIdByReferenceId('idp1', {
         reference_id: idpReferenceIdRevoke,
@@ -505,7 +502,7 @@ describe('Reject revoke accessor test', function() {
       });
     });
 
-    it('Idp1 should get incoming request for revoke request', async function() {
+    it('Idp1 should get incoming request for revoke request', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
       expect(incomingRequest).to.deep.include({
@@ -514,32 +511,30 @@ describe('Reject revoke accessor test', function() {
         requester_node_id: 'idp1',
         request_message: revokeAccessorRequestMessage,
         request_message_hash: hash(
-          revokeAccessorRequestMessage + incomingRequest.request_message_salt,
+          revokeAccessorRequestMessage + incomingRequest.request_message_salt
         ),
       });
       expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
       requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
 
       identityForResponse = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       let accessor = identityForResponse.accessors.find(
-        accessor => accessor.accessorId === accessorId,
+        (accessor) => accessor.accessorId === accessorId
       );
 
       responseAccessorId = accessor.accessorId;
@@ -556,18 +551,18 @@ describe('Reject revoke accessor test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('Idp1 should response (reject) successfully', async function() {
+    it('Idp1 should response (reject) successfully', async function () {
       this.timeout(15000);
 
       let accessor = identityForResponse.accessors.find(
-        accessor => accessor.accessorId === accessorId,
+        (accessor) => accessor.accessorId === accessorId
       );
 
       let accessorPrivateKey = accessor.accessorPrivateKey;
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -602,7 +597,7 @@ describe('Reject revoke accessor test', function() {
     //   ).that.is.not.empty;
     // });
 
-    it('IdP should receive callback create response result with success = true', async function() {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -613,7 +608,7 @@ describe('Reject revoke accessor test', function() {
       });
     });
 
-    it('Idp1 should receive callback revoke accessor result with success = false', async function() {
+    it('Idp1 should receive callback revoke accessor result with success = false', async function () {
       this.timeout(30000);
       const revokeResult = await revokeResultPromise.promise;
       expect(revokeResult).to.deep.include({
@@ -626,7 +621,7 @@ describe('Reject revoke accessor test', function() {
       expect(revokeResult.error.code).to.equal(10016);
     });
 
-    it('Special request status for add accessor method should be rejected and closed', async function() {
+    it('Special request status for add accessor method should be rejected and closed', async function () {
       this.timeout(25000);
       //wait for api close request
       await wait(3000);
@@ -646,29 +641,28 @@ describe('Reject revoke accessor test', function() {
         requester_node_id: 'idp1',
       });
       expect(responseBody.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        responseBody.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
       await wait(3000); //wait for api clean up refernece_id
     });
 
-    it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
+    it('1st IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function () {
       this.timeout(10000);
       const response = await identityApi.getRequestIdByReferenceId('idp1', {
         reference_id: idpReferenceIdRevoke,
       });
       expect(response.status).to.equal(404);
     });
-    after(function() {
+    after(function () {
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
     });
   });
 
-  describe('Accessor must still be usable', function() {
+  describe('Accessor must still be usable', function () {
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
     const asReferenceId = generateReferenceId();
@@ -705,7 +699,7 @@ describe('Reject revoke accessor test', function() {
     let dataRequestList;
     let idpResponseParams = [];
 
-    before(function() {
+    before(function () {
       createRequestParams = {
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -732,7 +726,7 @@ describe('Reject revoke accessor test', function() {
         bypass_identity_check: false,
       };
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.reference_id === rpReferenceId
@@ -760,7 +754,7 @@ describe('Reject revoke accessor test', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -774,13 +768,13 @@ describe('Reject revoke accessor test', function() {
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      as1EventEmitter.on('callback', function(callbackData) {
+      as1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'data_request' &&
           callbackData.request_id === requestId
@@ -795,7 +789,7 @@ describe('Reject revoke accessor test', function() {
       });
     });
 
-    it('RP should create a request successfully', async function() {
+    it('RP should create a request successfully', async function () {
       this.timeout(30000);
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
@@ -809,9 +803,8 @@ describe('Reject revoke accessor test', function() {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -833,28 +826,26 @@ describe('Reject revoke accessor test', function() {
           initialSalt,
         }),
       ]); // create idp_id_list, as_id_list, request_message_hash for test
-
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -867,9 +858,8 @@ describe('Reject revoke accessor test', function() {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -878,17 +868,16 @@ describe('Reject revoke accessor test', function() {
       requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
 
       identityForResponse = db.idp1Identities.find(
-        identity =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       let accessor = identityForResponse.accessors.find(
-        accessor => accessor.accessorId === accessorId,
+        (accessor) => accessor.accessorId === accessorId
       );
 
       responseAccessorId = accessor.accessorId;
@@ -905,18 +894,18 @@ describe('Reject revoke accessor test', function() {
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('IdP should create response (accept) with new accessor id successfully', async function() {
+    it('IdP should create response (accept) with new accessor id successfully', async function () {
       this.timeout(15000);
 
       let accessor = identityForResponse.accessors.find(
-        accessor => accessor.accessorId === accessorId,
+        (accessor) => accessor.accessorId === accessorId
       );
 
       let accessorPrivateKey = accessor.accessorPrivateKey;
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -937,12 +926,11 @@ describe('Reject revoke accessor test', function() {
         valid_ial: true,
       });
 
-
       const response = await idpApi.createResponse('idp1', idpResponse);
       expect(response.status).to.equal(202);
     });
 
-    it('IdP should receive callback create response result with success = true', async function() {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -953,7 +941,7 @@ describe('Reject revoke accessor test', function() {
       });
     });
 
-    it('RP should receive confirmed request status with valid proofs', async function() {
+    it('RP should receive confirmed request status with valid proofs', async function () {
       this.timeout(15000);
 
       const testResult = await receiveConfirmedRequestStatusTest({
@@ -1003,7 +991,7 @@ describe('Reject revoke accessor test', function() {
       // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('AS should receive data request', async function() {
+    it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
       expect(dataRequest).to.deep.include({
@@ -1022,7 +1010,7 @@ describe('Reject revoke accessor test', function() {
         .not.empty;
     });
 
-    it('AS should send data successfully', async function() {
+    it('AS should send data successfully', async function () {
       this.timeout(15000);
       const response = await asApi.sendData('as1', {
         requestId,
@@ -1042,11 +1030,11 @@ describe('Reject revoke accessor test', function() {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
-    it('RP should receive request status with signed data count = 1', async function() {
+    it('RP should receive request status with signed data count = 1', async function () {
       this.timeout(15000);
 
       const testResult = await receiveConfirmedRequestStatusTest({
@@ -1067,7 +1055,7 @@ describe('Reject revoke accessor test', function() {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await requestStatusSignedDataPromise.promise;
@@ -1103,7 +1091,7 @@ describe('Reject revoke accessor test', function() {
       // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive completed request status with received data count = 1', async function() {
+    it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
 
       const testResult = await receiveCompletedRequestStatusTest({
@@ -1154,7 +1142,7 @@ describe('Reject revoke accessor test', function() {
       // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should receive request closed status', async function() {
+    it('RP should receive request closed status', async function () {
       this.timeout(10000);
 
       const testResult = await receiveRequestClosedStatusTest({
@@ -1204,7 +1192,7 @@ describe('Reject revoke accessor test', function() {
       // expect(splittedBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('RP should get the correct data received from AS', async function() {
+    it('RP should get the correct data received from AS', async function () {
       const response = await rpApi.getDataFromAS('rp1', {
         requestId,
       });
@@ -1222,7 +1210,7 @@ describe('Reject revoke accessor test', function() {
       expect(dataArr[0].data_salt).to.be.a('string').that.is.not.empty;
     });
 
-    after(function() {
+    after(function () {
       rpEventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');

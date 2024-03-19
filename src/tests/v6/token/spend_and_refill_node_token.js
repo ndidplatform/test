@@ -12,6 +12,7 @@ import {
   createEventPromise,
   hash,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import { ndidAvailable, idp1Available } from '../..';
 import { RP_CALLBACK_URL } from '../../../config';
 import {
@@ -21,13 +22,13 @@ import {
 } from '../../../callback_server';
 import * as config from '../../../config';
 
-describe('Spend and refill node token test', function() {
+describe('Spend and refill node token test', function () {
   let rpNodeTokenBeforeTest = 0;
   let idpNodeTokenBeforeTest = 0;
   let asNodeTokenBeforeTest = 0;
 
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
 
   const RequestOutOfTokenReferenceId = generateReferenceId();
   const RequestAfterAddNodeTokenReferenceId = generateReferenceId();
@@ -51,7 +52,7 @@ describe('Spend and refill node token test', function() {
   let requestIdAfterAddNodeToken;
   let requestMessageHash;
 
-  before(async function() {
+  before(async function () {
     this.timeout(25000);
     if (!ndidAvailable || !idp1Available) {
       this.skip();
@@ -84,7 +85,7 @@ describe('Spend and refill node token test', function() {
       }),
     ]);
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (callbackData.type === 'create_request_result') {
         if (callbackData.reference_id === RequestOutOfTokenReferenceId) {
           createRequestOutOfTokenResultPromise.resolve(callbackData);
@@ -96,7 +97,7 @@ describe('Spend and refill node token test', function() {
       }
     });
 
-    idp1EventEmitter.on('callback', async function(callbackData) {
+    idp1EventEmitter.on('callback', async function (callbackData) {
       if (callbackData.type === 'incoming_request') {
         if (callbackData.request_id === requestId) {
           incomingRequestPromise.resolve(callbackData);
@@ -114,7 +115,7 @@ describe('Spend and refill node token test', function() {
       }
     });
 
-    as1EventEmitter.on('callback', function(callbackData) {
+    as1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'data_request' &&
         callbackData.service_id === 'bank_statement'
@@ -138,7 +139,7 @@ describe('Spend and refill node token test', function() {
     await wait(5000);
   });
 
-  it('RP create request and should be out of token', async function() {
+  it('RP create request and should be out of token', async function () {
     this.timeout(30000);
     // flood 5 blocks for spend token
     for (let i of [1, 2, 3, 4]) {
@@ -204,7 +205,7 @@ describe('Spend and refill node token test', function() {
     expect(responseBodyGetToken.amount).to.equal(0);
   });
 
-  it('RP should get an error making a request when out of token', async function() {
+  it('RP should get an error making a request when out of token', async function () {
     this.timeout(15000);
 
     const response = await createRequest('rp1', {
@@ -228,7 +229,8 @@ describe('Spend and refill node token test', function() {
 
     const requestId = responseBody.request_id;
 
-    const createRequestResult = await createRequestOutOfTokenResultPromise.promise;
+    const createRequestResult =
+      await createRequestOutOfTokenResultPromise.promise;
 
     expect(createRequestResult).to.deep.include({
       type: 'create_request_result',
@@ -249,14 +251,15 @@ describe('Spend and refill node token test', function() {
     await wait(3000);
 
     const responseGetTokenAfterAddToken = await commonApi.getNodeToken('rp1');
-    const responseBodyGetTokenAfterAddToken = await responseGetTokenAfterAddToken.json();
+    const responseBodyGetTokenAfterAddToken =
+      await responseGetTokenAfterAddToken.json();
     expect(responseGetTokenAfterAddToken.status).to.equal(200);
     expect(responseBodyGetTokenAfterAddToken.amount).to.equal(100);
 
     await wait(3000);
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function () {
     this.timeout(30000);
     const incomingRequest = await incomingRequestPromise.promise;
     expect(incomingRequest).to.deep.include({
@@ -266,7 +269,7 @@ describe('Spend and refill node token test', function() {
       identifier: identifier,
       request_message: 'Spend Token #5',
       request_message_hash: hash(
-        'Spend Token #5' + incomingRequest.request_message_salt,
+        'Spend Token #5' + incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: 1.1,
@@ -283,9 +286,8 @@ describe('Spend and refill node token test', function() {
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -293,7 +295,7 @@ describe('Spend and refill node token test', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function () {
     this.timeout(30000);
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpReferenceId,
@@ -324,7 +326,7 @@ describe('Spend and refill node token test', function() {
     expect(responseBodyGetToken.amount).to.equal(0);
   });
 
-  it('AS should receive data request for "bank_statement" service', async function() {
+  it('AS should receive data request for "bank_statement" service', async function () {
     this.timeout(30000);
     const dataRequest = await dataRequestReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
@@ -345,7 +347,7 @@ describe('Spend and refill node token test', function() {
       .empty;
   });
 
-  it('AS should send data successfully (bank_statement)', async function() {
+  it('AS should send data successfully (bank_statement)', async function () {
     this.timeout(30000);
     const response = await asApi.sendData('as1', {
       requestId,
@@ -371,7 +373,7 @@ describe('Spend and refill node token test', function() {
     expect(responseBodyGetToken.amount).to.equal(0);
   });
 
-  it('NDID should add node token successfully', async function() {
+  it('NDID should add node token successfully', async function () {
     this.timeout(30000);
 
     await wait(3000);
@@ -393,13 +395,13 @@ describe('Spend and refill node token test', function() {
     ]);
 
     rpNodeTokenBeforeAddNodeToken = parseInt(
-      responseBodyGetTokenBeforeAddNodeToken[0].amount,
+      responseBodyGetTokenBeforeAddNodeToken[0].amount
     );
     idpNodeTokenBeforeAddNodeToken = parseInt(
-      responseBodyGetTokenBeforeAddNodeToken[1].amount,
+      responseBodyGetTokenBeforeAddNodeToken[1].amount
     );
     asNodeTokenBeforeAddNodeToken = parseInt(
-      responseBodyGetTokenBeforeAddNodeToken[2].amount,
+      responseBodyGetTokenBeforeAddNodeToken[2].amount
     );
 
     await Promise.all([
@@ -431,17 +433,17 @@ describe('Spend and refill node token test', function() {
     ]);
 
     expect(responseBodyGetToken[0].amount).to.equal(
-      rpNodeTokenBeforeAddNodeToken + 5,
+      rpNodeTokenBeforeAddNodeToken + 5
     ); // RP node token
     expect(responseBodyGetToken[1].amount).to.equal(
-      idpNodeTokenBeforeAddNodeToken + 5,
+      idpNodeTokenBeforeAddNodeToken + 5
     ); // IdP node token
     expect(responseBodyGetToken[2].amount).to.equal(
-      asNodeTokenBeforeAddNodeToken + 5,
+      asNodeTokenBeforeAddNodeToken + 5
     ); // AS node token
   });
 
-  it('RP should making request after add node token successfully', async function() {
+  it('RP should making request after add node token successfully', async function () {
     this.timeout(15000);
 
     const response = await createRequest('rp1', {
@@ -474,13 +476,15 @@ describe('Spend and refill node token test', function() {
 
     requestIdAfterAddNodeToken = responseBody.request_id;
 
-    const createRequestResult = await createRequestAfterAddNodeTokenResultPromise.promise;
+    const createRequestResult =
+      await createRequestAfterAddNodeTokenResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
   });
 
-  it('IdP should receive incoming request callback', async function() {
+  it('IdP should receive incoming request callback', async function () {
     this.timeout(15000);
-    const incomingRequest = await incomingRequestAfterAddNodeTokenPromise.promise;
+    const incomingRequest =
+      await incomingRequestAfterAddNodeTokenPromise.promise;
     expect(incomingRequest).to.deep.include({
       mode: 1,
       request_id: requestIdAfterAddNodeToken,
@@ -489,7 +493,7 @@ describe('Spend and refill node token test', function() {
       request_message: 'Test making a request after add node token',
       request_message_hash: hash(
         'Test making a request after add node token' +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: 1.1,
@@ -506,9 +510,8 @@ describe('Spend and refill node token test', function() {
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -516,7 +519,7 @@ describe('Spend and refill node token test', function() {
     requestMessageHash = incomingRequest.request_message_hash;
   });
 
-  it('IdP should create response (accept) successfully', async function() {
+  it('IdP should create response (accept) successfully', async function () {
     this.timeout(15000);
     const response = await idpApi.createResponse('idp1', {
       reference_id: idpAfterAddNodeTokenReferenceId,
@@ -539,9 +542,10 @@ describe('Spend and refill node token test', function() {
     });
   });
 
-  it('AS should receive data request for "bank_statement" service', async function() {
+  it('AS should receive data request for "bank_statement" service', async function () {
     this.timeout(15000);
-    const dataRequest = await dataRequestAfterAddNodeTokenReceivedPromise.promise;
+    const dataRequest =
+      await dataRequestAfterAddNodeTokenReceivedPromise.promise;
     expect(dataRequest).to.deep.include({
       request_id: requestIdAfterAddNodeToken,
       mode: 1,
@@ -560,7 +564,7 @@ describe('Spend and refill node token test', function() {
       .empty;
   });
 
-  it('AS should send data successfully (bank_statement)', async function() {
+  it('AS should send data successfully (bank_statement)', async function () {
     this.timeout(15000);
     const response = await asApi.sendData('as1', {
       requestId: requestIdAfterAddNodeToken,
@@ -578,7 +582,7 @@ describe('Spend and refill node token test', function() {
     });
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(10000);
     await Promise.all([
       ndidApi.setNodeToken('ndid1', {

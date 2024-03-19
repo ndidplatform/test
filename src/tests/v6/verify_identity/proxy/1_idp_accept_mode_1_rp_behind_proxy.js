@@ -16,7 +16,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy1_rp4) behind proxy', function
       callback_url: config.PROXY1_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['idp1'],
       data_request_list: [],
       request_message:
@@ -56,7 +56,7 @@ describe('1 IdP, accept consent, mode 1, RP (proxy1_rp4) behind proxy', function
 //       callback_url: config.PROXY1_CALLBACK_URL,
 //       mode: 1,
 //       namespace: 'citizen_id',
-//       identifier: '1234567890123',
+//       identifier: '1345951597671',
 //       idp_id_list: ['idp1'],
 //       data_request_list: [],
 //       request_message:

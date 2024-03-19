@@ -13,12 +13,13 @@ import {
   hash,
   wait,
 } from '../../../../utils';
+import { randomThaiIdNumber } from '../../../../utils/thai_id';
 import * as config from '../../../../config';
 
 describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as 1st IdP', function() {
   const nodeId = 'proxy1_idp4';
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });

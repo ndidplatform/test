@@ -7,11 +7,12 @@ import * as commonApi from '../../../api/v6/common';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import { createEventPromise, generateReferenceId } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 
 describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as 1st IdP', function() {
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -199,7 +200,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
 
 // describe('IdP (idp1) create identity (mode 2) (with providing accessor_id) as 1st IdP', function() {
 //   const namespace = 'citizen_id';
-//   const identifier = uuidv4();
+//   const identifier = randomThaiIdNumber();
 //   const keypair = crypto.generateKeyPairSync('rsa', {
 //     modulusLength: 2048,
 //   });

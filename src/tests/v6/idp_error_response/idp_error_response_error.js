@@ -61,7 +61,7 @@ describe('IdP error response when request is closed', function () {
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -331,7 +331,7 @@ describe('IdP error response when request is timed out', function () {
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,

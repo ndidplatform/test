@@ -16,6 +16,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
@@ -26,7 +27,7 @@ import {
 
 describe('Reject 2nd IdP create identity (mode 3) test', function() {
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const createIdentityRequestMessage =
     'Create identity consent request custom message ข้อความสำหรับขอสร้างตัวตนบนระบบ';
   //Keypair for 1st IdP

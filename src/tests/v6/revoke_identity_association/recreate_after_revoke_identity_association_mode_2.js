@@ -9,12 +9,13 @@ import * as apiHelpers from '../../../api/helpers';
 import { idp1EventEmitter } from '../../../callback_server';
 
 import { createEventPromise, generateReferenceId } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 
 import * as config from '../../../config';
 
 describe('IdP (idp1) re-register identity after revoke association (mode 2) test', function () {
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });

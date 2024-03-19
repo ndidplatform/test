@@ -12,13 +12,14 @@ import {
   hashRequestMessageForConsent,
   wait,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import { ndidAvailable } from '../..';
 import * as config from '../../../config';
 
-describe('IdP error callback response tests', function() {
-  describe("IdP response ial is greater than IdP node's max_ial (mode 1)", function() {
+describe('IdP error callback response tests', function () {
+  describe("IdP response ial is greater than IdP node's max_ial (mode 1)", function () {
     let namespace = 'citizen_id';
-    let identifier = uuidv4();
+    let identifier = randomThaiIdNumber();
 
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
@@ -33,7 +34,7 @@ describe('IdP error callback response tests', function() {
     let requestMessageHash;
     let requestMessageSalt;
 
-    before(async function() {
+    before(async function () {
       this.timeout(30000);
 
       if (!ndidAvailable) {
@@ -41,7 +42,7 @@ describe('IdP error callback response tests', function() {
         this.skip();
       }
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.request_id === requestId
@@ -50,7 +51,7 @@ describe('IdP error callback response tests', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -65,7 +66,7 @@ describe('IdP error callback response tests', function() {
       });
     });
 
-    it("NDID should update IDP's max ial (2.3) successfully", async function() {
+    it("NDID should update IDP's max ial (2.3) successfully", async function () {
       this.timeout(10000);
       const response = await ndidApi.updateNode('ndid1', {
         node_id: 'idp1',
@@ -75,7 +76,7 @@ describe('IdP error callback response tests', function() {
       await wait(3000);
     });
 
-    it("IDP's max ial should be updated successfully", async function() {
+    it("IDP's max ial should be updated successfully", async function () {
       this.timeout(10000);
       const response = await commonApi.getNodeInfo('idp1');
       const responseBody = await response.json();
@@ -83,7 +84,7 @@ describe('IdP error callback response tests', function() {
       expect(responseBody.role).to.equal('IdP');
     });
 
-    it('RP should create a request successfully', async function() {
+    it('RP should create a request successfully', async function () {
       this.timeout(10000);
 
       createRequestParams = {
@@ -122,26 +123,24 @@ describe('IdP error callback response tests', function() {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        }
-      );
+        });
 
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
@@ -164,9 +163,8 @@ describe('IdP error callback response tests', function() {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -175,7 +173,7 @@ describe('IdP error callback response tests', function() {
       requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it("IdP should get an error when create response (accept) with ial (3) is greater than IdP noded's max_ial", async function() {
+    it("IdP should get an error when create response (accept) with ial (3) is greater than IdP noded's max_ial", async function () {
       this.timeout(15000);
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
@@ -199,7 +197,7 @@ describe('IdP error callback response tests', function() {
       expect(responseResult.error.code).to.equal(25010);
     });
 
-    after(async function() {
+    after(async function () {
       this.timeout(10000);
       await Promise.all([
         ndidApi.updateNode('ndid1', {
@@ -218,9 +216,9 @@ describe('IdP error callback response tests', function() {
     });
   });
 
-  describe("IdP response aal is greater than IdP node's max_aal (mode 1)", function() {
+  describe("IdP response aal is greater than IdP node's max_aal (mode 1)", function () {
     let namespace = 'citizen_id';
-    let identifier = uuidv4();
+    let identifier = randomThaiIdNumber();
 
     const rpReferenceId = generateReferenceId();
     const idpReferenceId = generateReferenceId();
@@ -235,7 +233,7 @@ describe('IdP error callback response tests', function() {
     let requestMessageHash;
     let requestMessageSalt;
 
-    before(async function() {
+    before(async function () {
       this.timeout(30000);
 
       if (!ndidAvailable) {
@@ -243,7 +241,7 @@ describe('IdP error callback response tests', function() {
         this.skip();
       }
 
-      rpEventEmitter.on('callback', function(callbackData) {
+      rpEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_request_result' &&
           callbackData.request_id === requestId
@@ -252,7 +250,7 @@ describe('IdP error callback response tests', function() {
         }
       });
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -267,7 +265,7 @@ describe('IdP error callback response tests', function() {
       });
     });
 
-    it("NDID should update IDP's max aal (2.2) successfully", async function() {
+    it("NDID should update IDP's max aal (2.2) successfully", async function () {
       this.timeout(10000);
       const response = await ndidApi.updateNode('ndid1', {
         node_id: 'idp1',
@@ -277,7 +275,7 @@ describe('IdP error callback response tests', function() {
       await wait(3000);
     });
 
-    it("IDP's max aal should be updated successfully", async function() {
+    it("IDP's max aal should be updated successfully", async function () {
       this.timeout(10000);
       const response = await commonApi.getNodeInfo('idp1');
       const responseBody = await response.json();
@@ -285,7 +283,7 @@ describe('IdP error callback response tests', function() {
       expect(responseBody.role).to.equal('IdP');
     });
 
-    it('RP should create a request successfully', async function() {
+    it('RP should create a request successfully', async function () {
       this.timeout(10000);
 
       createRequestParams = {
@@ -324,26 +322,24 @@ describe('IdP error callback response tests', function() {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':'
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP should receive incoming request callback', async function() {
+    it('IdP should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        dataRequest => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        }
-      );
+        });
 
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
@@ -366,9 +362,8 @@ describe('IdP error callback response tests', function() {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -377,7 +372,7 @@ describe('IdP error callback response tests', function() {
       requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it("IdP should get an error when create response (accept) with aal (3) is greater than IdP noded's max_ial", async function() {
+    it("IdP should get an error when create response (accept) with aal (3) is greater than IdP noded's max_ial", async function () {
       this.timeout(15000);
       const response = await idpApi.createResponse('idp1', {
         reference_id: idpReferenceId,
@@ -401,7 +396,7 @@ describe('IdP error callback response tests', function() {
       expect(responseResult.error.code).to.equal(25009);
     });
 
-    after(async function() {
+    after(async function () {
       this.timeout(10000);
       await Promise.all([
         ndidApi.updateNode('ndid1', {

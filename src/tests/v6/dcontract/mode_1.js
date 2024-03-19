@@ -71,7 +71,7 @@ describe('Create request (mode 1) with dcontract request type', function () {
     this.timeout(10000);
 
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,

@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import * as rpApi from '../../../api/v6/rp';
 
 import { generateReferenceId } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import { randomString } from '../../../utils/random';
 import { ndidAvailable } from '../..';
 
@@ -18,7 +19,7 @@ describe('Create request with invalid request type test', function () {
     callback_url: config.RP_CALLBACK_URL,
     mode: 1,
     namespace: 'citizen_id',
-    identifier: randomString(13, '0123456789'),
+    identifier: randomThaiIdNumber(),
     idp_id_list: ['idp1'],
     data_request_list: [],
     request_message: 'Test request message (request type)',

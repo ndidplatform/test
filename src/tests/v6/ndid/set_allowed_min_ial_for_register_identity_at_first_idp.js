@@ -6,13 +6,14 @@ import * as ndidApi from '../../../api/v6/ndid';
 import * as identityApi from '../../../api/v6/identity';
 import { ndidAvailable } from '../../';
 import { generateReferenceId, wait, createEventPromise } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 
 import { idp1EventEmitter } from '../../../callback_server';
 
-describe('NDID set allowed min ial for register identity at first idp test', function() {
+describe('NDID set allowed min ial for register identity at first idp test', function () {
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -33,12 +34,12 @@ describe('NDID set allowed min ial for register identity at first idp test', fun
 
   let accessorId;
 
-  before(async function() {
+  before(async function () {
     if (!ndidAvailable) {
       this.skip();
     }
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === mode2ReferenceId
@@ -53,29 +54,26 @@ describe('NDID set allowed min ial for register identity at first idp test', fun
     });
   });
 
-  it('NDID should set allowed min_ial (3) for register identity at first idp successfully', async function() {
+  it('NDID should set allowed min_ial (3) for register identity at first idp successfully', async function () {
     this.timeout(10000);
-    const response = await ndidApi.setAllowedMinIalForRegisterIdentityAtFirstIdp(
-      'ndid1',
-      {
+    const response =
+      await ndidApi.setAllowedMinIalForRegisterIdentityAtFirstIdp('ndid1', {
         min_ial: 3,
-      }
-    );
+      });
     expect(response.status).to.equal(204);
     await wait(2000);
   });
 
-  it('Allowed min_ial (3) for register identity at first idp should be set successfully', async function() {
+  it('Allowed min_ial (3) for register identity at first idp should be set successfully', async function () {
     this.timeout(10000);
-    const response = await ndidApi.getAllowedMinIalForRegisterIdentityAtFirstIdp(
-      'ndid1'
-    );
+    const response =
+      await ndidApi.getAllowedMinIalForRegisterIdentityAtFirstIdp('ndid1');
     expect(response.status).to.equal(200);
     const responseBody = await response.json();
     expect(responseBody.min_ial).to.equal(3);
   });
 
-  it('IdP should create identity request (mode 2) as 1st IdP with min_ial is less than 3 unsuccessfully', async function() {
+  it('IdP should create identity request (mode 2) as 1st IdP with min_ial is less than 3 unsuccessfully', async function () {
     this.timeout(10000);
 
     const response = await identityApi.createIdentity('idp1', {
@@ -101,7 +99,7 @@ describe('NDID set allowed min ial for register identity at first idp test', fun
     accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created unsuccessfully', async function() {
+  it('Identity should be created unsuccessfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await mode2CreateIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -115,7 +113,7 @@ describe('NDID set allowed min ial for register identity at first idp test', fun
     });
   });
 
-  it('IdP should create identity request (mode 3) as 1st IdP with min_ial is less than 3 unsuccessfully', async function() {
+  it('IdP should create identity request (mode 3) as 1st IdP with min_ial is less than 3 unsuccessfully', async function () {
     this.timeout(10000);
 
     const response = await identityApi.createIdentity('idp1', {
@@ -142,7 +140,7 @@ describe('NDID set allowed min ial for register identity at first idp test', fun
     accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created unsuccessfully', async function() {
+  it('Identity should be created unsuccessfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await mode3CreateIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -156,21 +154,18 @@ describe('NDID set allowed min ial for register identity at first idp test', fun
     });
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(20000);
-    const response = await ndidApi.setAllowedMinIalForRegisterIdentityAtFirstIdp(
-      'ndid1',
-      {
+    const response =
+      await ndidApi.setAllowedMinIalForRegisterIdentityAtFirstIdp('ndid1', {
         min_ial: 1.1,
-      }
-    );
+      });
     expect(response.status).to.equal(204);
 
     await wait(2000);
 
-    const responseGet = await ndidApi.getAllowedMinIalForRegisterIdentityAtFirstIdp(
-      'ndid1'
-    );
+    const responseGet =
+      await ndidApi.getAllowedMinIalForRegisterIdentityAtFirstIdp('ndid1');
     expect(responseGet.status).to.equal(200);
     const responseBody = await responseGet.json();
     expect(responseBody.min_ial).to.equal(1.1);

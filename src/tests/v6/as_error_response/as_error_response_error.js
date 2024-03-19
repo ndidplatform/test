@@ -69,7 +69,7 @@ describe('AS error response (through callback) when request is closed', function
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -475,7 +475,7 @@ describe('AS error response when request is closed', function () {
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,

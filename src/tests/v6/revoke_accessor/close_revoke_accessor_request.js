@@ -15,6 +15,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   idp1EventEmitter,
   rpEventEmitter,
@@ -41,7 +42,7 @@ describe('Close Revoke accessor request test', function () {
     'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
 
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -240,7 +241,8 @@ describe('Close Revoke accessor request test', function () {
     requestIdAddAccessor = responseBody.request_id;
     accessorId2 = responseBody.accessor_id;
 
-    const addAccessorRequestResult = await addAccessorRequestResultPromise.promise;
+    const addAccessorRequestResult =
+      await addAccessorRequestResultPromise.promise;
     expect(addAccessorRequestResult).to.deep.include({
       reference_id: referenceId,
       request_id: requestIdAddAccessor,
@@ -248,9 +250,8 @@ describe('Close Revoke accessor request test', function () {
       success: true,
     });
     expect(addAccessorRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = addAccessorRequestResult.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      addAccessorRequestResult.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -278,7 +279,7 @@ describe('Close Revoke accessor request test', function () {
       reference_group_code: referenceGroupCode,
       request_message: addAccessorRequestMessage,
       request_message_hash: hash(
-        addAccessorRequestMessage + incomingRequest.request_message_salt,
+        addAccessorRequestMessage + incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -287,9 +288,8 @@ describe('Close Revoke accessor request test', function () {
     });
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -300,7 +300,7 @@ describe('Close Revoke accessor request test', function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -325,7 +325,7 @@ describe('Close Revoke accessor request test', function () {
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -382,7 +382,7 @@ describe('Close Revoke accessor request test', function () {
 
     const identity = db.idp1Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     identity.accessors.push({
@@ -450,8 +450,7 @@ describe('Close Revoke accessor request test', function () {
 
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       const latestAccessor = identity.accessors.length - 1;
       accessorId = identity.accessors[latestAccessor].accessorId;
@@ -469,7 +468,8 @@ describe('Close Revoke accessor request test', function () {
 
       requestIdRevokeAccessor = responseBody.request_id;
 
-      const revokeAccessorRequestResult = await revokeAccessorRequestResultPromise.promise;
+      const revokeAccessorRequestResult =
+        await revokeAccessorRequestResultPromise.promise;
       expect(revokeAccessorRequestResult).to.deep.include({
         reference_id: idpReferenceIdRevoke,
         request_id: requestIdRevokeAccessor,
@@ -477,11 +477,10 @@ describe('Close Revoke accessor request test', function () {
         success: true,
       });
       expect(revokeAccessorRequestResult.creation_block_height).to.be.a(
-        'string',
+        'string'
       );
-      const splittedCreationBlockHeight = revokeAccessorRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        revokeAccessorRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -489,22 +488,22 @@ describe('Close Revoke accessor request test', function () {
 
     it('Idp1 should get incoming request for revoke request', async function () {
       this.timeout(15000);
-      const incomingRequest = await incomingRequestRevokeAccessorPromise.promise;
+      const incomingRequest =
+        await incomingRequestRevokeAccessorPromise.promise;
       expect(incomingRequest).to.deep.include({
         mode: 3,
         request_id: requestIdRevokeAccessor,
         requester_node_id: 'idp1',
         request_message: revokeAccessorRequestMessage,
         request_message_hash: hash(
-          revokeAccessorRequestMessage + incomingRequest.request_message_salt,
+          revokeAccessorRequestMessage + incomingRequest.request_message_salt
         ),
       });
       expect(incomingRequest.reference_group_code).to.be.a('string').that.is.not
         .empty;
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -523,7 +522,8 @@ describe('Close Revoke accessor request test', function () {
 
       expect(response.status).to.equal(202);
 
-      const closeRevokeAccessorRequestResult = await closeRevokeAccessorRequestResultPromise.promise;
+      const closeRevokeAccessorRequestResult =
+        await closeRevokeAccessorRequestResultPromise.promise;
       expect(closeRevokeAccessorRequestResult).to.deep.include({
         success: true,
         reference_id: idpReferenceIdCloseRevokeAccessor,
@@ -545,8 +545,7 @@ describe('Close Revoke accessor request test', function () {
       this.timeout(20000);
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -586,9 +585,8 @@ describe('Close Revoke accessor request test', function () {
         requester_node_id: 'idp1',
       });
       expect(responseBody.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        responseBody.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -740,9 +738,8 @@ describe('Close Revoke accessor request test', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -770,21 +767,20 @@ describe('Close Revoke accessor request test', function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -797,21 +793,18 @@ describe('Close Revoke accessor request test', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-
     });
 
     it('IdP should get request_message_padded_hash successfully', async function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       let latestAccessor = identityForResponse.accessors.length - 1;
@@ -843,7 +836,7 @@ describe('Close Revoke accessor request test', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -996,7 +989,7 @@ describe('Close Revoke accessor request test', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -1021,7 +1014,7 @@ describe('Close Revoke accessor request test', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await requestStatusSignedDataPromise.promise;
@@ -1124,7 +1117,7 @@ describe('Close Revoke accessor request test', function () {
         requesterNodeId: requester_node_id,
       });
       lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
-      
+
       // const requestStatus = await requestClosedPromise.promise;
       // expect(requestStatus).to.deep.include({
       //   request_id: requestId,

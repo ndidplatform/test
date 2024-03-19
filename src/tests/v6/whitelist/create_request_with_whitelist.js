@@ -1,15 +1,9 @@
 import crypto from 'crypto';
 import { expect } from 'chai';
 import uuidv4 from 'uuid/v4';
-import {
-  generateReferenceId,
-  createEventPromise,
-  wait,
-} from '../../../utils';
-import {
-  idp1EventEmitter,
-  rpEventEmitter,
-} from '../../../callback_server';
+import { generateReferenceId, createEventPromise, wait } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
+import { idp1EventEmitter, rpEventEmitter } from '../../../callback_server';
 
 import * as config from '../../../config';
 import * as rpApi from '../../../api/v6/rp';
@@ -17,7 +11,7 @@ import * as ndidApi from '../../../api/v6/ndid';
 import * as commonApi from '../../../api/v6/common';
 import * as identityApi from '../../../api/v6/identity';
 
-describe('Create request with whitelist tests', function() {
+describe('Create request with whitelist tests', function () {
   const createIdentityResultPromise = createEventPromise();
   const createRequestResultPromise = createEventPromise();
 
@@ -42,11 +36,10 @@ describe('Create request with whitelist tests', function() {
     format: 'pem',
   });
 
-
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
 
-  before(async function() {
+  before(async function () {
     this.timeout(10000);
     createRequestParams = (idp_id_list = []) => ({
       reference_id: rpReferenceId,
@@ -73,7 +66,7 @@ describe('Create request with whitelist tests', function() {
       bypass_identity_check: false,
     });
 
-    rpEventEmitter.on('callback', function(callbackData) {
+    rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
         callbackData.reference_id === rpReferenceId
@@ -89,7 +82,7 @@ describe('Create request with whitelist tests', function() {
       }
     });
 
-    idp1EventEmitter.on('callback', function(callbackData) {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'incoming_request' &&
         callbackData.request_id === requestId
@@ -103,10 +96,9 @@ describe('Create request with whitelist tests', function() {
         createIdentityResultPromise.resolve(callbackData);
       }
     });
-
   });
 
-  it('Should create identity request (mode 3) successfully', async function() {
+  it('Should create identity request (mode 3) successfully', async function () {
     this.timeout(30000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: idpReferenceId,
@@ -138,25 +130,21 @@ describe('Create request with whitelist tests', function() {
     expect(createIdentityResult.reference_group_code).to.be.a('string').that.is
       .not.empty;
 
-    const responseGetRelevantIdpNodesBySid = await commonApi.getRelevantIdpNodesBySid(
-      'idp1',
-      {
+    const responseGetRelevantIdpNodesBySid =
+      await commonApi.getRelevantIdpNodesBySid('idp1', {
         namespace,
         identifier,
-      },
-    );
+      });
 
     const idpNodes = await responseGetRelevantIdpNodesBySid.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2, 3);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2, 3);
 
     await wait(1000);
   });
 
-  it('Should fail to reach IdPs outside RP whitelist', async function() {
+  it('Should fail to reach IdPs outside RP whitelist', async function () {
     this.timeout(30000);
     await ndidApi.updateNode('ndid1', {
       node_id: 'rp1',
@@ -171,14 +159,17 @@ describe('Create request with whitelist tests', function() {
     });
 
     await wait(2000);
-    
-    const response = await rpApi.createRequest('rp1', createRequestParams(['idp1']));
+
+    const response = await rpApi.createRequest(
+      'rp1',
+      createRequestParams(['idp1'])
+    );
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
     expect(responseBody.error.code).to.equal(20079);
   });
 
-  it('Should fail to reach IdP while not being in its whitelist', async function() {
+  it('Should fail to reach IdP while not being in its whitelist', async function () {
     this.timeout(30000);
     await ndidApi.updateNode('ndid1', {
       node_id: 'rp1',
@@ -194,13 +185,16 @@ describe('Create request with whitelist tests', function() {
 
     await wait(2000);
 
-    const response = await rpApi.createRequest('rp1', createRequestParams(['idp1']));
+    const response = await rpApi.createRequest(
+      'rp1',
+      createRequestParams(['idp1'])
+    );
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
     expect(responseBody.error.code).to.equal(20079);
   });
 
-  it('Should create a request successfully', async function() {
+  it('Should create a request successfully', async function () {
     this.timeout(30000);
     await ndidApi.updateNode('ndid1', {
       node_id: 'rp1',
@@ -216,13 +210,16 @@ describe('Create request with whitelist tests', function() {
 
     await wait(5000);
 
-    const response = await rpApi.createRequest('rp1', createRequestParams(['idp1']));
+    const response = await rpApi.createRequest(
+      'rp1',
+      createRequestParams(['idp1'])
+    );
     const responseBody = await response.json();
     expect(response.status).to.equal(202);
     expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
   });
 
-  after(async function() {
+  after(async function () {
     this.timeout(10000);
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');

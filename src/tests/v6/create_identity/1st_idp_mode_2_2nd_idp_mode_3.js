@@ -14,6 +14,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
@@ -23,9 +24,9 @@ import {
   getAndVerifyRequestMessagePaddedHashTest,
 } from '../_fragments/request_flow_fragments/idp';
 
-describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as 1st IdP', function() {
+describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as 1st IdP', function () {
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -45,8 +46,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
   let accessorId;
   let referenceGroupCode;
 
-  before(function() {
-    idp1EventEmitter.on('callback', function(callbackData) {
+  before(function () {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === referenceId
@@ -56,7 +57,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     });
   });
 
-  it('Before create identity this sid should not exist on platform ', async function() {
+  it('Before create identity this sid should not exist on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -64,7 +65,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     expect(response.status).to.equal(404);
   });
 
-  it('Before create identity this sid should not associated with idp1 ', async function() {
+  it('Before create identity this sid should not associated with idp1 ', async function () {
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
@@ -74,7 +75,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     expect(idpNode).to.be.an.undefined;
   });
 
-  it('Before create identity should not get identity ial', async function() {
+  it('Before create identity should not get identity ial', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -82,7 +83,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     expect(response.status).to.equal(404);
   });
 
-  it('Should create identity request (mode2) successfully', async function() {
+  it('Should create identity request (mode2) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -110,7 +111,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created successfully', async function() {
+  it('Identity should be created successfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -130,9 +131,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     const idpNodes = await response.json();
     const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2);
 
     db.idp1Identities.push({
       referenceGroupCode,
@@ -149,7 +148,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     });
   });
 
-  it('After create identity this sid should be existing on platform ', async function() {
+  it('After create identity this sid should be existing on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -159,7 +158,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
-  it('After create identity should get identity ial successfully', async function() {
+  it('After create identity should get identity ial successfully', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -169,7 +168,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     expect(responseBody.ial).to.equal(2.3);
   });
 
-  it('After create identity should get identity LIAL successfully', async function() {
+  it('After create identity should get identity LIAL successfully', async function () {
     const response = await identityApi.getIdentityLial('idp1', {
       namespace,
       identifier,
@@ -179,7 +178,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     expect(responseBody.lial).to.equal(false);
   });
 
-  it('After create identity should get identity LAAL successfully', async function() {
+  it('After create identity should get identity LAAL successfully', async function () {
     const response = await identityApi.getIdentityLaal('idp1', {
       namespace,
       identifier,
@@ -189,7 +188,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     expect(responseBody.laal).to.equal(false);
   });
 
-  describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as 2nd IdP', function() {
+  describe('IdP (idp2) create identity (mode 3) (without providing accessor_id) as 2nd IdP', function () {
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });
@@ -227,7 +226,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     let responseAccessorId;
     let requestMessagePaddedHash;
 
-    before(function() {
+    before(function () {
       if (!idp2Available) {
         this.test.parent.pending = true;
         this.skip();
@@ -245,19 +244,20 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         throw new Error('No created identity to use');
       }
 
-      idp1EventEmitter.on('identity_notification_callback', function(
-        callbackData
-      ) {
-        if (
-          callbackData.type === 'identity_modification_notification' &&
-          callbackData.reference_group_code === referenceGroupCode &&
-          callbackData.action === 'create_identity'
-        ) {
-          notificationCreateIdentityPromise.resolve(callbackData);
+      idp1EventEmitter.on(
+        'identity_notification_callback',
+        function (callbackData) {
+          if (
+            callbackData.type === 'identity_modification_notification' &&
+            callbackData.reference_group_code === referenceGroupCode &&
+            callbackData.action === 'create_identity'
+          ) {
+            notificationCreateIdentityPromise.resolve(callbackData);
+          }
         }
-      });
+      );
 
-      idp1EventEmitter.on('callback', function(callbackData) {
+      idp1EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'incoming_request' &&
           callbackData.request_id === requestId
@@ -271,13 +271,13 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         }
       });
 
-      idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+      idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
         if (callbackData.request_id === requestId) {
           accessorEncryptPromise.resolve(callbackData);
         }
       });
 
-      idp2EventEmitter.on('callback', function(callbackData) {
+      idp2EventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'create_identity_request_result' &&
           callbackData.reference_id === referenceId
@@ -291,7 +291,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         }
       });
 
-      nodeCallbackEventEmitter.on('callback', function(callbackData) {
+      nodeCallbackEventEmitter.on('callback', function (callbackData) {
         if (
           callbackData.type === 'message_queue_send_success' &&
           callbackData.request_id === requestId
@@ -309,7 +309,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       });
     });
 
-    it('Before create identity this sid should exist on platform ', async function() {
+    it('Before create identity this sid should exist on platform ', async function () {
       const response = await identityApi.getIdentityInfo('idp2', {
         namespace,
         identifier,
@@ -319,7 +319,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
     });
 
-    it('Before create identity this sid should associated with idp1 ', async function() {
+    it('Before create identity this sid should associated with idp1 ', async function () {
       const response = await commonApi.getRelevantIdpNodesBySid('idp2', {
         namespace,
         identifier,
@@ -329,7 +329,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       expect(idpNodes).to.be.an('array').is.not.empty;
     });
 
-    it('Before create identity should not get identity ial', async function() {
+    it('Before create identity should not get identity ial', async function () {
       const response = await identityApi.getIdentityIal('idp2', {
         namespace,
         identifier,
@@ -337,7 +337,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       expect(response.status).to.equal(404);
     });
 
-    it('Idp (idp2) should create identity request (mode 3) as 2nd IdP successfully', async function() {
+    it('Idp (idp2) should create identity request (mode 3) as 2nd IdP successfully', async function () {
       this.timeout(10000);
       const response = await identityApi.createIdentity('idp2', {
         reference_id: referenceId,
@@ -366,7 +366,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       requestId = responseBody.request_id;
       accessorId = responseBody.accessor_id;
 
-      const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
+      const createIdentityRequestResult =
+        await createIdentityRequestResultPromise.promise;
       expect(createIdentityRequestResult).to.deep.include({
         reference_id: referenceId,
         request_id: requestId,
@@ -377,15 +378,14 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       expect(createIdentityRequestResult.creation_block_height).to.be.a(
         'string'
       );
-      const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-        ':'
-      );
+      const splittedCreationBlockHeight =
+        createIdentityRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('IdP (idp2) should receive message queue send success (To idp1) callback', async function() {
+    it('IdP (idp2) should receive message queue send success (To idp1) callback', async function () {
       this.timeout(15000);
       await receiveMessagequeueSendSuccessCallback({
         nodeId: 'idp2',
@@ -395,7 +395,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       });
     });
 
-    it('1st IdP should receive create identity request', async function() {
+    it('1st IdP should receive create identity request', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
       expect(incomingRequest).to.deep.include({
@@ -414,9 +414,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
 
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':'
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -425,7 +424,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       // requestMessageHash = incomingRequest.request_message_hash;
     });
 
-    it('IdP should get request_message_padded_hash successfully', async function() {
+    it('IdP should get request_message_padded_hash successfully', async function () {
       identityForResponse = db.idp1Identities.find(
         (identity) =>
           identity.namespace === namespace && identity.identifier === identifier
@@ -448,7 +447,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     });
 
-    it('1st IdP should create response (accept) successfully', async function() {
+    it('1st IdP should create response (accept) successfully', async function () {
       this.timeout(10000);
 
       let accessorPrivateKey =
@@ -493,7 +492,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
     //   requestMessagePaddedHash = testResult.verifyRequestMessagePaddedHash;
     // });
 
-    it('IdP should receive callback create response result with success = true', async function() {
+    it('IdP should receive callback create response result with success = true', async function () {
       const responseResult = await responseResultPromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp1',
@@ -504,7 +503,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       });
     });
 
-    it('IdP (idp1) should receive message queue send success (To idp2) callback', async function() {
+    it('IdP (idp1) should receive message queue send success (To idp2) callback', async function () {
       this.timeout(15000);
       await receiveMessagequeueSendSuccessCallback({
         nodeId: 'idp1',
@@ -514,7 +513,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       });
     });
 
-    it('Should verify IdP response signature successfully', async function() {
+    it('Should verify IdP response signature successfully', async function () {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         (identity) =>
@@ -531,7 +530,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       });
     });
 
-    it('Identity should be created successfully', async function() {
+    it('Identity should be created successfully', async function () {
       this.timeout(15000);
       const createIdentityResult = await createIdentityResultPromise.promise;
       expect(createIdentityResult).to.deep.include({
@@ -552,12 +551,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       const idpNodes = await response.json();
       const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp2');
       expect(idpNode).to.not.be.undefined;
-      expect(idpNodes)
-        .to.be.an('array')
-        .that.to.have.lengthOf(2);
-      expect(idpNode.mode_list)
-        .to.be.an('array')
-        .that.include(2, 3);
+      expect(idpNodes).to.be.an('array').that.to.have.lengthOf(2);
+      expect(idpNode.mode_list).to.be.an('array').that.include(2, 3);
 
       db.idp2Identities.push({
         referenceGroupCode,
@@ -574,9 +569,10 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       });
     });
 
-    it('After create identity IdP (idp1) that associated with this sid should receive identity notification callback', async function() {
+    it('After create identity IdP (idp1) that associated with this sid should receive identity notification callback', async function () {
       this.timeout(15000);
-      const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+      const notificationCreateIdentity =
+        await notificationCreateIdentityPromise.promise;
       //const IdP2notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp1',
@@ -587,7 +583,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       });
     });
 
-    it('Special request status for create identity (mode 3) should be completed and closed', async function() {
+    it('Special request status for create identity (mode 3) should be completed and closed', async function () {
       this.timeout(10000);
       //wait for API close request
       await wait(3000);
@@ -608,15 +604,14 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
         requester_node_id: 'idp2',
       });
       expect(responseBody.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-        ':'
-      );
+      const splittedCreationBlockHeight =
+        responseBody.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
     });
 
-    it('After create identity this sid should be existing on platform ', async function() {
+    it('After create identity this sid should be existing on platform ', async function () {
       const response = await identityApi.getIdentityInfo('idp2', {
         namespace,
         identifier,
@@ -626,7 +621,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
     });
 
-    it('After create identity should get identity ial successfully', async function() {
+    it('After create identity should get identity ial successfully', async function () {
       const response = await identityApi.getIdentityIal('idp2', {
         namespace,
         identifier,
@@ -636,7 +631,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       expect(responseBody.ial).to.equal(2.3);
     });
 
-    it('After create identity should get identity LIAL successfully', async function() {
+    it('After create identity should get identity LIAL successfully', async function () {
       const response = await identityApi.getIdentityLial('idp2', {
         namespace,
         identifier,
@@ -645,8 +640,8 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       const responseBody = await response.json();
       expect(responseBody.lial).to.equal(false);
     });
-  
-    it('After create identity should get identity LAAL successfully', async function() {
+
+    it('After create identity should get identity LAAL successfully', async function () {
       const response = await identityApi.getIdentityLaal('idp2', {
         namespace,
         identifier,
@@ -656,7 +651,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       expect(responseBody.laal).to.equal(false);
     });
 
-    after(function() {
+    after(function () {
       idp1EventEmitter.removeAllListeners('callback');
       idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
       idp2EventEmitter.removeAllListeners('callback');
@@ -664,7 +659,7 @@ describe('IdP (idp1) create identity (mode 2) (without providing accessor_id) as
       nodeCallbackEventEmitter.removeAllListeners('callback');
     });
   });
-  after(function() {
+  after(function () {
     idp1EventEmitter.removeAllListeners('callback');
   });
 });

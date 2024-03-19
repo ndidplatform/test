@@ -21,6 +21,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   createIdpIdList,
   createDataRequestList,
@@ -42,7 +43,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
   const revokeAndAddAccessorRequestMessage =
     'Revoke and add accessor consent request custom message ข้อความสำหรับขอเพิกถอนและเพิ่ม accessor บนระบบ';
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -244,7 +245,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
     requestId = responseBody.request_id;
     accessorId = responseBody.accessor_id;
 
-    const revokeAndAddAccessorRequestResult = await revokeAndAddAccessorRequestResultPromise.promise;
+    const revokeAndAddAccessorRequestResult =
+      await revokeAndAddAccessorRequestResultPromise.promise;
     expect(revokeAndAddAccessorRequestResult).to.deep.include({
       reference_id: referenceId,
       request_id: requestId,
@@ -252,11 +254,10 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       success: true,
     });
     expect(revokeAndAddAccessorRequestResult.creation_block_height).to.be.a(
-      'string',
+      'string'
     );
-    const splittedCreationBlockHeight = revokeAndAddAccessorRequestResult.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      revokeAndAddAccessorRequestResult.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -286,7 +287,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       request_message: revokeAndAddAccessorRequestMessage,
       request_message_hash: hash(
         revokeAndAddAccessorRequestMessage +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -295,9 +296,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
     });
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -309,7 +309,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
     identityForResponse = db.idp1Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -334,7 +334,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -382,7 +382,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
   it('Accessor id should be remove and add successfully', async function () {
     this.timeout(10000);
-    const revokeAndAddAccessorResult = await revokeAndAddAccessorResultPromise.promise;
+    const revokeAndAddAccessorResult =
+      await revokeAndAddAccessorResultPromise.promise;
     expect(revokeAndAddAccessorResult).to.deep.include({
       reference_id: referenceId,
       request_id: requestId,
@@ -391,11 +392,11 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
     let identity = db.idp1Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     let indexAccessor = identity.accessors.findIndex(
-      (accessor) => accessor.accessorId === revokedAccessorId,
+      (accessor) => accessor.accessorId === revokedAccessorId
     );
 
     identity.accessors[indexAccessor] = {
@@ -476,8 +477,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       namespace = identity.namespace;
@@ -630,9 +630,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -706,14 +705,13 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -722,7 +720,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -736,9 +734,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -748,12 +745,11 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       const revokedAccessor = identityForResponse.accessors.find(
-        (accessor) => accessor.revoked === true,
+        (accessor) => accessor.revoked === true
       );
 
       responseAccessorId = revokedAccessor.accessorId;
@@ -862,8 +858,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
     before(function () {
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       namespace = identity.namespace;
@@ -1025,9 +1020,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1101,14 +1095,13 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -1117,7 +1110,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1131,9 +1124,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1143,12 +1135,11 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       const accessor = identityForResponse.accessors.find(
-        (accessor) => !accessor.revoked,
+        (accessor) => !accessor.revoked
       );
 
       responseAccessorId = accessor.accessorId;
@@ -1169,14 +1160,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       this.timeout(10000);
 
       const accessor = identityForResponse.accessors.find(
-        (accessor) => !accessor.revoked,
+        (accessor) => !accessor.revoked
       );
 
       let accessorPrivateKey = accessor.accessorPrivateKey;
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -1307,9 +1298,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1337,7 +1327,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -1471,7 +1461,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -2007,17 +1997,18 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         this.skip();
       }
 
-      idp1EventEmitter.on('identity_notification_callback', function (
-        callbackData,
-      ) {
-        if (
-          callbackData.type === 'identity_modification_notification' &&
-          callbackData.reference_group_code === referenceGroupCode &&
-          callbackData.action === 'create_identity'
-        ) {
-          notificationCreateIdentityPromise.resolve(callbackData);
+      idp1EventEmitter.on(
+        'identity_notification_callback',
+        function (callbackData) {
+          if (
+            callbackData.type === 'identity_modification_notification' &&
+            callbackData.reference_group_code === referenceGroupCode &&
+            callbackData.action === 'create_identity'
+          ) {
+            notificationCreateIdentityPromise.resolve(callbackData);
+          }
         }
-      });
+      );
 
       idp1EventEmitter.on('callback', function (callbackData) {
         if (
@@ -2111,7 +2102,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       requestId = responseBody.request_id;
       accessorId = responseBody.accessor_id;
 
-      const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
+      const createIdentityRequestResult =
+        await createIdentityRequestResultPromise.promise;
       expect(createIdentityRequestResult).to.deep.include({
         reference_id: referenceId,
         request_id: requestId,
@@ -2120,11 +2112,10 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         success: true,
       });
       expect(createIdentityRequestResult.creation_block_height).to.be.a(
-        'string',
+        'string'
       );
-      const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createIdentityRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2139,7 +2130,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         reference_group_code: referenceGroupCode,
         request_message: createIdentityRequestMessage,
         request_message_hash: hash(
-          createIdentityRequestMessage + incomingRequest.request_message_salt,
+          createIdentityRequestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp2',
         min_ial: 1.1,
@@ -2149,9 +2140,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2164,12 +2154,11 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       const accessor = identityForResponse.accessors.find(
-        (accessor) => !accessor.revoked,
+        (accessor) => !accessor.revoked
       );
 
       responseAccessorId = accessor.accessorId;
@@ -2190,14 +2179,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
       this.timeout(10000);
 
       const accessor = identityForResponse.accessors.find(
-        (accessor) => !accessor.revoked,
+        (accessor) => !accessor.revoked
       );
 
       let accessorPrivateKey = accessor.accessorPrivateKey;
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -2252,7 +2241,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         success: true,
       });
       expect(createIdentityResult.reference_group_code).to.equal(
-        referenceGroupCode,
+        referenceGroupCode
       );
 
       //referenceGroupCode = createIdentityResult.reference_group_code;
@@ -2284,7 +2273,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
     it('After create identity IdP (idp1) that associated with this sid should receive identity notification callback', async function () {
       this.timeout(15000);
-      const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+      const notificationCreateIdentity =
+        await notificationCreateIdentityPromise.promise;
       //const IdP2notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp1',
@@ -2316,9 +2306,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         requester_node_id: 'idp2',
       });
       expect(responseBody.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = responseBody.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        responseBody.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2414,7 +2403,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         const identity = db.idp2Identities.find(
           (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         namespace = identity.namespace;
@@ -2512,13 +2501,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
           }
         });
 
-        idp2EventEmitter.on('accessor_encrypt_callback', function (
-          callbackData,
-        ) {
-          if (callbackData.request_id === requestId) {
-            accessorEncryptPromise.resolve(callbackData);
+        idp2EventEmitter.on(
+          'accessor_encrypt_callback',
+          function (callbackData) {
+            if (callbackData.request_id === requestId) {
+              accessorEncryptPromise.resolve(callbackData);
+            }
           }
-        });
+        );
 
         as1EventEmitter.on('callback', function (callbackData) {
           if (
@@ -2569,9 +2559,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         const createRequestResult = await createRequestResultPromise.promise;
         expect(createRequestResult.success).to.equal(true);
         expect(createRequestResult.creation_block_height).to.be.a('string');
-        const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-          ':',
-        );
+        const splittedCreationBlockHeight =
+          createRequestResult.creation_block_height.split(':');
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2645,14 +2634,13 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         this.timeout(15000);
         const incomingRequest = await incomingRequestPromise.promise;
 
-        const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-          (dataRequest) => {
+        const dataRequestListWithoutParams =
+          createRequestParams.data_request_list.map((dataRequest) => {
             const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
             return {
               ...dataRequestWithoutParams,
             };
-          },
-        );
+          });
         expect(incomingRequest).to.deep.include({
           node_id: 'idp2',
           type: 'incoming_request',
@@ -2661,7 +2649,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt,
+              incomingRequest.request_message_salt
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -2675,9 +2663,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
           .not.empty;
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
-        const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':',
-        );
+        const splittedCreationBlockHeight =
+          incomingRequest.creation_block_height.split(':');
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2690,7 +2677,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         identityForResponse = db.idp2Identities.find(
           (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -2716,7 +2703,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
         const signature = createResponseSignature(
           accessorPrivateKey,
-          requestMessagePaddedHash,
+          requestMessagePaddedHash
         );
 
         let idpResponse = {
@@ -2848,9 +2835,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
           .not.empty;
         expect(dataRequest.creation_time).to.be.a('number');
         expect(dataRequest.creation_block_height).to.be.a('string');
-        const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-          ':',
-        );
+        const splittedCreationBlockHeight =
+          dataRequest.creation_block_height.split(':');
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2878,7 +2864,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         dataRequestList = setDataSigned(
           dataRequestList,
           createRequestParams.data_request_list[0].service_id,
-          as_node_id,
+          as_node_id
         );
       });
 
@@ -3012,7 +2998,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
         dataRequestList = setDataReceived(
           dataRequestList,
           createRequestParams.data_request_list[0].service_id,
-          as_node_id,
+          as_node_id
         );
 
         // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -3555,13 +3541,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             }
           });
 
-          idp2EventEmitter.on('accessor_encrypt_callback', function (
-            callbackData,
-          ) {
-            if (callbackData.request_id === requestId) {
-              accessorEncryptPromise.resolve(callbackData);
+          idp2EventEmitter.on(
+            'accessor_encrypt_callback',
+            function (callbackData) {
+              if (callbackData.request_id === requestId) {
+                accessorEncryptPromise.resolve(callbackData);
+              }
             }
-          });
+          );
 
           idp1EventEmitter.on('callback', function (callbackData) {
             if (
@@ -3572,17 +3559,18 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             }
           });
 
-          idp1EventEmitter.on('identity_notification_callback', function (
-            callbackData,
-          ) {
-            if (
-              callbackData.type === 'identity_modification_notification' &&
-              callbackData.reference_group_code === referenceGroupCode &&
-              callbackData.action === 'revoke_and_add_accessor'
-            ) {
-              notificationRevokeAndAddAccessorPromise.resolve(callbackData);
+          idp1EventEmitter.on(
+            'identity_notification_callback',
+            function (callbackData) {
+              if (
+                callbackData.type === 'identity_modification_notification' &&
+                callbackData.reference_group_code === referenceGroupCode &&
+                callbackData.action === 'revoke_and_add_accessor'
+              ) {
+                notificationRevokeAndAddAccessorPromise.resolve(callbackData);
+              }
             }
-          });
+          );
         });
 
         it('Should revoke and add accessor successfully', async function () {
@@ -3608,7 +3596,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
           requestId = responseBody.request_id;
 
-          const revokeAndAddAccessorRequestResult = await revokeAndAddAccessorRequestResultPromise.promise;
+          const revokeAndAddAccessorRequestResult =
+            await revokeAndAddAccessorRequestResultPromise.promise;
           expect(revokeAndAddAccessorRequestResult).to.deep.include({
             reference_id: referenceId,
             request_id: requestId,
@@ -3616,11 +3605,10 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             success: true,
           });
           expect(
-            revokeAndAddAccessorRequestResult.creation_block_height,
+            revokeAndAddAccessorRequestResult.creation_block_height
           ).to.be.a('string');
-          const splittedCreationBlockHeight = revokeAndAddAccessorRequestResult.creation_block_height.split(
-            ':',
-          );
+          const splittedCreationBlockHeight =
+            revokeAndAddAccessorRequestResult.creation_block_height.split(':');
           expect(splittedCreationBlockHeight).to.have.lengthOf(2);
           expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3650,7 +3638,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             request_message: revokeAndAddAccessorRequestMessage,
             request_message_hash: hash(
               revokeAndAddAccessorRequestMessage +
-                incomingRequest.request_message_salt,
+                incomingRequest.request_message_salt
             ),
             requester_node_id: 'idp2',
             min_ial: 1.1,
@@ -3659,9 +3647,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
           });
           expect(incomingRequest.creation_time).to.be.a('number');
           expect(incomingRequest.creation_block_height).to.be.a('string');
-          const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-            ':',
-          );
+          const splittedCreationBlockHeight =
+            incomingRequest.creation_block_height.split(':');
           expect(splittedCreationBlockHeight).to.have.lengthOf(2);
           expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3678,7 +3665,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             request_message: revokeAndAddAccessorRequestMessage,
             request_message_hash: hash(
               revokeAndAddAccessorRequestMessage +
-                incomingRequest.request_message_salt,
+                incomingRequest.request_message_salt
             ),
             requester_node_id: 'idp2',
             min_ial: 1.1,
@@ -3687,9 +3674,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
           });
           expect(incomingRequest.creation_time).to.be.a('number');
           expect(incomingRequest.creation_block_height).to.be.a('string');
-          const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-            ':',
-          );
+          const splittedCreationBlockHeight =
+            incomingRequest.creation_block_height.split(':');
           expect(splittedCreationBlockHeight).to.have.lengthOf(2);
           expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
           expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3701,7 +3687,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
           identityForResponse = db.idp2Identities.find(
             (identity) =>
               identity.namespace === namespace &&
-              identity.identifier === identifier,
+              identity.identifier === identifier
           );
 
           responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -3727,7 +3713,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
           const signature = createResponseSignature(
             accessorPrivateKey,
-            requestMessagePaddedHash,
+            requestMessagePaddedHash
           );
 
           const response = await idpApi.createResponse('idp2', {
@@ -3776,7 +3762,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
         it('Accessor id should be remove and add successfully', async function () {
           this.timeout(10000);
-          const revokeAndAddAccessorResult = await revokeAndAddAccessorResultPromise.promise;
+          const revokeAndAddAccessorResult =
+            await revokeAndAddAccessorResultPromise.promise;
           expect(revokeAndAddAccessorResult).to.deep.include({
             reference_id: referenceId,
             request_id: requestId,
@@ -3786,11 +3773,11 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
           let identity = db.idp2Identities.find(
             (identity) =>
               identity.namespace === namespace &&
-              identity.identifier === identifier,
+              identity.identifier === identifier
           );
 
           let indexAccessor = identity.accessors.findIndex(
-            (accessor) => accessor.accessorId === revokedAccessorId,
+            (accessor) => accessor.accessorId === revokedAccessorId
           );
 
           identity.accessors[indexAccessor] = {
@@ -3815,7 +3802,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
 
         it('After revoke and add accessor IdP (idp1) that associated with this sid should receive identity notification callback', async function () {
           this.timeout(15000);
-          const notificationCreateIdentity = await notificationRevokeAndAddAccessorPromise.promise;
+          const notificationCreateIdentity =
+            await notificationRevokeAndAddAccessorPromise.promise;
           expect(notificationCreateIdentity).to.deep.include({
             node_id: 'idp1',
             type: 'identity_modification_notification',
@@ -3879,7 +3867,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             const identity = db.idp2Identities.find(
               (identity) =>
                 identity.namespace === namespace &&
-                identity.identifier === identifier,
+                identity.identifier === identifier
             );
 
             namespace = identity.namespace;
@@ -3985,13 +3973,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
               }
             });
 
-            idp2EventEmitter.on('accessor_encrypt_callback', function (
-              callbackData,
-            ) {
-              if (callbackData.request_id === requestId) {
-                accessorEncryptPromise.resolve(callbackData);
+            idp2EventEmitter.on(
+              'accessor_encrypt_callback',
+              function (callbackData) {
+                if (callbackData.request_id === requestId) {
+                  accessorEncryptPromise.resolve(callbackData);
+                }
               }
-            });
+            );
 
             as1EventEmitter.on('callback', function (callbackData) {
               if (
@@ -4036,7 +4025,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             this.timeout(10000);
             const response = await rpApi.createRequest(
               'rp1',
-              createRequestParams,
+              createRequestParams
             );
             const responseBody = await response.json();
             expect(response.status).to.equal(202);
@@ -4047,43 +4036,40 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             requestId = responseBody.request_id;
             initialSalt = responseBody.initial_salt;
 
-            const createRequestResult = await createRequestResultPromise.promise;
+            const createRequestResult =
+              await createRequestResultPromise.promise;
             expect(createRequestResult.success).to.equal(true);
             expect(createRequestResult.creation_block_height).to.be.a('string');
-            const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-              ':',
-            );
+            const splittedCreationBlockHeight =
+              createRequestResult.creation_block_height.split(':');
             expect(splittedCreationBlockHeight).to.have.lengthOf(2);
             expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
             expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
             lastStatusUpdateBlockHeight = parseInt(
-              splittedCreationBlockHeight[1],
+              splittedCreationBlockHeight[1]
             );
           });
 
           it('RP should receive pending request status', async function () {
             this.timeout(20000);
 
-            [
-              idpIdList,
-              dataRequestList,
-              requestMessageHash,
-            ] = await Promise.all([
-              createIdpIdList({
-                createRequestParams,
-                callRpApiAtNodeId: rp_node_id,
-              }),
-              createDataRequestList({
-                createRequestParams,
-                requestId,
-                initialSalt,
-                callRpApiAtNodeId: rp_node_id,
-              }),
-              createRequestMessageHash({
-                createRequestParams,
-                initialSalt,
-              }),
-            ]); // create idp_id_list, as_id_list, request_message_hash for test
+            [idpIdList, dataRequestList, requestMessageHash] =
+              await Promise.all([
+                createIdpIdList({
+                  createRequestParams,
+                  callRpApiAtNodeId: rp_node_id,
+                }),
+                createDataRequestList({
+                  createRequestParams,
+                  requestId,
+                  initialSalt,
+                  callRpApiAtNodeId: rp_node_id,
+                }),
+                createRequestMessageHash({
+                  createRequestParams,
+                  initialSalt,
+                }),
+              ]); // create idp_id_list, as_id_list, request_message_hash for test
 
             await receivePendingRequestStatusTest({
               nodeId: rp_node_id,
@@ -4133,17 +4119,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             this.timeout(15000);
             const incomingRequest = await incomingRequestPromise.promise;
 
-            const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-              (dataRequest) => {
-                const {
-                  request_params,
-                  ...dataRequestWithoutParams
-                } = dataRequest; // eslint-disable-line no-unused-vars
+            const dataRequestListWithoutParams =
+              createRequestParams.data_request_list.map((dataRequest) => {
+                const { request_params, ...dataRequestWithoutParams } =
+                  dataRequest; // eslint-disable-line no-unused-vars
                 return {
                   ...dataRequestWithoutParams,
                 };
-              },
-            );
+              });
             expect(incomingRequest).to.deep.include({
               node_id: 'idp2',
               type: 'incoming_request',
@@ -4152,7 +4135,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
               request_message: createRequestParams.request_message,
               request_message_hash: hash(
                 createRequestParams.request_message +
-                  incomingRequest.request_message_salt,
+                  incomingRequest.request_message_salt
               ),
               requester_node_id: 'rp1',
               min_ial: createRequestParams.min_ial,
@@ -4166,9 +4149,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
               .is.not.empty;
             expect(incomingRequest.creation_time).to.be.a('number');
             expect(incomingRequest.creation_block_height).to.be.a('string');
-            const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-              ':',
-            );
+            const splittedCreationBlockHeight =
+              incomingRequest.creation_block_height.split(':');
             expect(splittedCreationBlockHeight).to.have.lengthOf(2);
             expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
             expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -4180,11 +4162,11 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             identityForResponse = db.idp2Identities.find(
               (identity) =>
                 identity.namespace === namespace &&
-                identity.identifier === identifier,
+                identity.identifier === identifier
             );
 
             const revokedAccessor = identityForResponse.accessors.find(
-              (accessor) => accessor.revoked === true,
+              (accessor) => accessor.revoked === true
             );
 
             responseAccessorId = revokedAccessor.accessorId;
@@ -4292,7 +4274,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             const identity = db.idp2Identities.find(
               (identity) =>
                 identity.namespace === namespace &&
-                identity.identifier === identifier,
+                identity.identifier === identifier
             );
 
             namespace = identity.namespace;
@@ -4407,13 +4389,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
               }
             });
 
-            idp2EventEmitter.on('accessor_encrypt_callback', function (
-              callbackData,
-            ) {
-              if (callbackData.request_id === requestId) {
-                accessorEncryptPromise.resolve(callbackData);
+            idp2EventEmitter.on(
+              'accessor_encrypt_callback',
+              function (callbackData) {
+                if (callbackData.request_id === requestId) {
+                  accessorEncryptPromise.resolve(callbackData);
+                }
               }
-            });
+            );
 
             as1EventEmitter.on('callback', function (callbackData) {
               if (
@@ -4458,7 +4441,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             this.timeout(10000);
             const response = await rpApi.createRequest(
               'rp1',
-              createRequestParams,
+              createRequestParams
             );
             const responseBody = await response.json();
             expect(response.status).to.equal(202);
@@ -4469,43 +4452,40 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             requestId = responseBody.request_id;
             initialSalt = responseBody.initial_salt;
 
-            const createRequestResult = await createRequestResultPromise.promise;
+            const createRequestResult =
+              await createRequestResultPromise.promise;
             expect(createRequestResult.success).to.equal(true);
             expect(createRequestResult.creation_block_height).to.be.a('string');
-            const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-              ':',
-            );
+            const splittedCreationBlockHeight =
+              createRequestResult.creation_block_height.split(':');
             expect(splittedCreationBlockHeight).to.have.lengthOf(2);
             expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
             expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
             lastStatusUpdateBlockHeight = parseInt(
-              splittedCreationBlockHeight[1],
+              splittedCreationBlockHeight[1]
             );
           });
 
           it('RP should receive pending request status', async function () {
             this.timeout(20000);
 
-            [
-              idpIdList,
-              dataRequestList,
-              requestMessageHash,
-            ] = await Promise.all([
-              createIdpIdList({
-                createRequestParams,
-                callRpApiAtNodeId: rp_node_id,
-              }),
-              createDataRequestList({
-                createRequestParams,
-                requestId,
-                initialSalt,
-                callRpApiAtNodeId: rp_node_id,
-              }),
-              createRequestMessageHash({
-                createRequestParams,
-                initialSalt,
-              }),
-            ]); // create idp_id_list, as_id_list, request_message_hash for test
+            [idpIdList, dataRequestList, requestMessageHash] =
+              await Promise.all([
+                createIdpIdList({
+                  createRequestParams,
+                  callRpApiAtNodeId: rp_node_id,
+                }),
+                createDataRequestList({
+                  createRequestParams,
+                  requestId,
+                  initialSalt,
+                  callRpApiAtNodeId: rp_node_id,
+                }),
+                createRequestMessageHash({
+                  createRequestParams,
+                  initialSalt,
+                }),
+              ]); // create idp_id_list, as_id_list, request_message_hash for test
 
             await receivePendingRequestStatusTest({
               nodeId: rp_node_id,
@@ -4555,17 +4535,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             this.timeout(15000);
             const incomingRequest = await idp1IncomingRequestPromise.promise;
 
-            const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-              (dataRequest) => {
-                const {
-                  request_params,
-                  ...dataRequestWithoutParams
-                } = dataRequest; // eslint-disable-line no-unused-vars
+            const dataRequestListWithoutParams =
+              createRequestParams.data_request_list.map((dataRequest) => {
+                const { request_params, ...dataRequestWithoutParams } =
+                  dataRequest; // eslint-disable-line no-unused-vars
                 return {
                   ...dataRequestWithoutParams,
                 };
-              },
-            );
+              });
             expect(incomingRequest).to.deep.include({
               node_id: 'idp1',
               type: 'incoming_request',
@@ -4574,7 +4551,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
               request_message: createRequestParams.request_message,
               request_message_hash: hash(
                 createRequestParams.request_message +
-                  incomingRequest.request_message_salt,
+                  incomingRequest.request_message_salt
               ),
               requester_node_id: 'rp1',
               min_ial: createRequestParams.min_ial,
@@ -4588,9 +4565,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
               .is.not.empty;
             expect(incomingRequest.creation_time).to.be.a('number');
             expect(incomingRequest.creation_block_height).to.be.a('string');
-            const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-              ':',
-            );
+            const splittedCreationBlockHeight =
+              incomingRequest.creation_block_height.split(':');
             expect(splittedCreationBlockHeight).to.have.lengthOf(2);
             expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
             expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -4600,17 +4576,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             this.timeout(15000);
             const incomingRequest = await incomingRequestPromise.promise;
 
-            const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-              (dataRequest) => {
-                const {
-                  request_params,
-                  ...dataRequestWithoutParams
-                } = dataRequest; // eslint-disable-line no-unused-vars
+            const dataRequestListWithoutParams =
+              createRequestParams.data_request_list.map((dataRequest) => {
+                const { request_params, ...dataRequestWithoutParams } =
+                  dataRequest; // eslint-disable-line no-unused-vars
                 return {
                   ...dataRequestWithoutParams,
                 };
-              },
-            );
+              });
             expect(incomingRequest).to.deep.include({
               node_id: 'idp2',
               type: 'incoming_request',
@@ -4619,7 +4592,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
               request_message: createRequestParams.request_message,
               request_message_hash: hash(
                 createRequestParams.request_message +
-                  incomingRequest.request_message_salt,
+                  incomingRequest.request_message_salt
               ),
               requester_node_id: 'rp1',
               min_ial: createRequestParams.min_ial,
@@ -4633,9 +4606,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
               .is.not.empty;
             expect(incomingRequest.creation_time).to.be.a('number');
             expect(incomingRequest.creation_block_height).to.be.a('string');
-            const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-              ':',
-            );
+            const splittedCreationBlockHeight =
+              incomingRequest.creation_block_height.split(':');
             expect(splittedCreationBlockHeight).to.have.lengthOf(2);
             expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
             expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -4646,11 +4618,11 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             identityForResponse = db.idp2Identities.find(
               (identity) =>
                 identity.namespace === namespace &&
-                identity.identifier === identifier,
+                identity.identifier === identifier
             );
 
             const accessor = identityForResponse.accessors.find(
-              (accessor) => !accessor.revoked,
+              (accessor) => !accessor.revoked
             );
 
             responseAccessorId = accessor.accessorId;
@@ -4672,14 +4644,14 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             this.timeout(10000);
 
             const accessor = identityForResponse.accessors.find(
-              (accessor) => !accessor.revoked,
+              (accessor) => !accessor.revoked
             );
 
             let accessorPrivateKey = accessor.accessorPrivateKey;
 
             const signature = createResponseSignature(
               accessorPrivateKey,
-              requestMessagePaddedHash,
+              requestMessagePaddedHash
             );
 
             let idpResponse = {
@@ -4813,9 +4785,8 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
               .that.is.not.empty;
             expect(dataRequest.creation_time).to.be.a('number');
             expect(dataRequest.creation_block_height).to.be.a('string');
-            const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-              ':',
-            );
+            const splittedCreationBlockHeight =
+              dataRequest.creation_block_height.split(':');
             expect(splittedCreationBlockHeight).to.have.lengthOf(2);
             expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
             expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -4843,7 +4814,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             dataRequestList = setDataSigned(
               dataRequestList,
               createRequestParams.data_request_list[0].service_id,
-              as_node_id,
+              as_node_id
             );
           });
 
@@ -4980,7 +4951,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             dataRequestList = setDataReceived(
               dataRequestList,
               createRequestParams.data_request_list[0].service_id,
-              as_node_id,
+              as_node_id
             );
 
             // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -5480,7 +5451,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             let identityIndex = db.idp1Identities.findIndex(
               (identity) =>
                 identity.namespace === namespace &&
-                identity.identifier === identifier,
+                identity.identifier === identifier
             );
 
             db.idp1Identities.splice(identityIndex, 1);
@@ -5488,7 +5459,7 @@ describe('IdP (idp1) revoke and add accessor (mode 3) test', function () {
             identityIndex = db.idp2Identities.findIndex(
               (identity) =>
                 identity.namespace === namespace &&
-                identity.identifier === identifier,
+                identity.identifier === identifier
             );
             db.idp2Identities.splice(identityIndex, 1);
 

@@ -17,6 +17,7 @@ import {
   wait,
   hash,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import { idp2Available } from '../../';
 import * as config from '../../../config';
 
@@ -25,7 +26,7 @@ describe('IdP error response create identity (mode 3) test', function () {
 
   describe('IdP (idp1) create identity (mode 3)', function () {
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });

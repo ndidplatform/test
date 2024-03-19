@@ -20,6 +20,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   createIdpIdList,
   createDataRequestList,
@@ -33,7 +34,7 @@ describe('IdP (idp1) revoke accessor (identity associated with one idp mode 3 is
   const addAccessorRequestMessage =
     'Add accessor consent request custom message ข้อความสำหรับขอเพิ่ม accessor บนระบบ';
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });

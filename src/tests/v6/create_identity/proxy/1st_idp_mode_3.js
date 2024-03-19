@@ -7,12 +7,13 @@ import * as commonApi from '../../../../api/v6/common';
 import { proxy1EventEmitter } from '../../../../callback_server';
 import * as db from '../../../../db';
 import { createEventPromise, generateReferenceId } from '../../../../utils';
+import { randomThaiIdNumber } from '../../../../utils/thai_id';
 import * as config from '../../../../config';
 
 describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as 1st IdP', function() {
   const nodeId = 'proxy1_idp4';
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -167,7 +168,7 @@ describe('IdP (idp1) create identity (mode 3) (without providing accessor_id) as
 
 // describe('IdP (idp1) create identity (mode 3) (for use in other test and will create on idp2) as 1st IdP ', function() {
 //   const namespace = 'citizen_id';
-//   const identifier = uuidv4();
+//   const identifier = randomThaiIdNumber();
 //   const keypair = crypto.generateKeyPairSync('rsa', {
 //     modulusLength: 2048,
 //   });

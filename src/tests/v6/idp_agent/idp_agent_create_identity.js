@@ -7,6 +7,7 @@ import * as commonApi from '../../../api/v6/common';
 import * as ndidApi from '../../../api/v6/ndid';
 import { idp3EventEmitter } from '../../../callback_server';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 import { ndidAvailable, idp3Available } from '../..';
 
@@ -47,7 +48,7 @@ describe('Create identity by idp agent tests', function () {
 
   describe('IdP agent (idp3) create identity (mode 2)', function () {
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });
@@ -116,7 +117,7 @@ describe('Create identity by idp agent tests', function () {
 
   describe('IdP agent (idp3) create identity (mode 3)', function () {
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });

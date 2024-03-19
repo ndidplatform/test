@@ -5,10 +5,7 @@ import uuidv4 from 'uuid/v4';
 import * as identityApi from '../../../api/v6/identity';
 import * as idpApi from '../../../api/v6/idp';
 import * as commonApi from '../../../api/v6/common';
-import {
-  idp1EventEmitter,
-  idp2EventEmitter,
-} from '../../../callback_server';
+import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import {
   createEventPromise,
@@ -17,6 +14,7 @@ import {
   hash,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import { idp2Available } from '../../';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
@@ -25,7 +23,7 @@ import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_
 
 describe('Create identity (mode 2) relevant with all IdP for test', function () {
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   describe('IdP (idp1) create identity (mode 2)', function () {
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
@@ -156,7 +154,8 @@ describe('Create identity (mode 2) relevant with all IdP for test', function () 
       }
 
       const identity = db.idp1Identities.find(
-        (identity) => identity.namespace === namespace && identity.identifier === identifier
+        (identity) =>
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       referenceGroupCode = identity.referenceGroupCode;
@@ -208,7 +207,7 @@ describe('Create identity (mode 2) relevant with all IdP for test', function () 
       });
 
       expect(createIdentityResult.reference_group_code).to.equal(
-        referenceGroupCode,
+        referenceGroupCode
       );
 
       //referenceGroupCode = createIdentityResult.reference_group_code;
@@ -249,7 +248,7 @@ describe('Create identity (mode 2) relevant with all IdP for test', function () 
 
 describe('Create identity (mode 3) relevant with all IdP for test', function () {
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   describe('IdP (idp1) create identity (mode 3)', function () {
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
@@ -378,7 +377,10 @@ describe('Create identity (mode 3) relevant with all IdP for test', function () 
       }
 
       const identity = db.idp1Identities.find(
-        (identity) => identity.mode === 3 && identity.namespace === namespace && identity.identifier === identifier,
+        (identity) =>
+          identity.mode === 3 &&
+          identity.namespace === namespace &&
+          identity.identifier === identifier
       );
       referenceGroupCode = identity.referenceGroupCode;
 
@@ -440,7 +442,8 @@ describe('Create identity (mode 3) relevant with all IdP for test', function () 
       requestId = responseBody.request_id;
       accessorId = responseBody.accessor_id;
 
-      const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
+      const createIdentityRequestResult =
+        await createIdentityRequestResultPromise.promise;
       expect(createIdentityRequestResult).to.deep.include({
         reference_id: referenceId,
         request_id: requestId,
@@ -449,11 +452,10 @@ describe('Create identity (mode 3) relevant with all IdP for test', function () 
         success: true,
       });
       expect(createIdentityRequestResult.creation_block_height).to.be.a(
-        'string',
+        'string'
       );
-      const splittedCreationBlockHeight = createIdentityRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createIdentityRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -468,7 +470,7 @@ describe('Create identity (mode 3) relevant with all IdP for test', function () 
         reference_group_code: referenceGroupCode,
         request_message: createIdentityRequestMessage,
         request_message_hash: hash(
-          createIdentityRequestMessage + incomingRequest.request_message_salt,
+          createIdentityRequestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp2',
         min_ial: 1.1,
@@ -478,9 +480,8 @@ describe('Create identity (mode 3) relevant with all IdP for test', function () 
 
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -492,8 +493,7 @@ describe('Create identity (mode 3) relevant with all IdP for test', function () 
     it('IdP should get request_message_padded_hash successfully', async function () {
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -519,7 +519,7 @@ describe('Create identity (mode 3) relevant with all IdP for test', function () 
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {

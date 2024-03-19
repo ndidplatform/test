@@ -132,7 +132,7 @@ describe('RP whitelist IdP tests', function () {
 
       before(function () {
         namespace = 'citizen_id';
-        identifier = '1234567890123';
+        identifier = '1345951597671';
 
         createRequestParams = {
           reference_id: rpReferenceId,
@@ -176,7 +176,7 @@ describe('RP whitelist IdP tests', function () {
 
       before(function () {
         namespace = 'citizen_id';
-        identifier = '1234567890123';
+        identifier = '1345951597671';
 
         createRequestParams = {
           reference_id: rpReferenceId,
@@ -573,7 +573,7 @@ describe('RP whitelist IdP tests', function () {
           callback_url: config.RP2_CALLBACK_URL,
           mode: 1,
           namespace: 'citizen_id',
-          identifier: '1234567890123',
+          identifier: '1345951597671',
           idp_id_list: ['idp3'],
           data_request_list: [
             {
@@ -886,7 +886,7 @@ describe('RP whitelist IdP tests', function () {
           callback_url: config.RP2_CALLBACK_URL,
           mode: 1,
           namespace: 'citizen_id',
-          identifier: '1234567890123',
+          identifier: '1345951597671',
           idp_id_list: ['idp1'],
           data_request_list: [
             {

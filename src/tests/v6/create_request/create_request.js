@@ -11,6 +11,7 @@ import {
   createEventPromise,
   hash,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   idp1EventEmitter,
   idp2EventEmitter,
@@ -21,16 +22,14 @@ import {
   createDataRequestList,
   createRequestMessageHash,
 } from '../_fragments/fragments_utils';
-import {
-  receivePendingRequestStatusTest,
-} from '../_fragments/common';
+import { receivePendingRequestStatusTest } from '../_fragments/common';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
 
 describe('Create request tests', function () {
   //idp1 = mode 3, idp2 = mode 2
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
 
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
@@ -112,13 +111,11 @@ describe('Create request tests', function () {
     expect(createIdentityResult.reference_group_code).to.be.a('string').that.is
       .not.empty;
 
-    const responseGetRelevantIdpNodesBySid = await commonApi.getRelevantIdpNodesBySid(
-      'idp1',
-      {
+    const responseGetRelevantIdpNodesBySid =
+      await commonApi.getRelevantIdpNodesBySid('idp1', {
         namespace,
         identifier,
-      },
-    );
+      });
 
     const idpNodes = await responseGetRelevantIdpNodesBySid.json();
     const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
@@ -162,13 +159,11 @@ describe('Create request tests', function () {
     expect(createIdentityResult.reference_group_code).to.be.a('string').that.is
       .not.empty;
 
-    const responseGetRelevantIdpNodesBySid = await commonApi.getRelevantIdpNodesBySid(
-      'idp2',
-      {
+    const responseGetRelevantIdpNodesBySid =
+      await commonApi.getRelevantIdpNodesBySid('idp2', {
         namespace,
         identifier,
-      },
-    );
+      });
 
     const idpNodes = await responseGetRelevantIdpNodesBySid.json();
     const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
@@ -275,9 +270,8 @@ describe('Create request tests', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -350,15 +344,14 @@ describe('Create request tests', function () {
     it('IdP (mode 2) should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -367,7 +360,7 @@ describe('Create request tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -381,9 +374,8 @@ describe('Create request tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -396,15 +388,14 @@ describe('Create request tests', function () {
       this.timeout(15000);
       if (!idp2Available) this.skip();
       const incomingRequest = await idp2IncomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
         type: 'incoming_request',
@@ -413,7 +404,7 @@ describe('Create request tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -427,9 +418,8 @@ describe('Create request tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -529,9 +519,8 @@ describe('Create request tests', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -604,15 +593,14 @@ describe('Create request tests', function () {
     it('IdP (mode 3) should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -621,7 +609,7 @@ describe('Create request tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -635,9 +623,8 @@ describe('Create request tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -696,7 +683,7 @@ describe('Create request tests', function () {
 describe('Create request with invalid mode tests', function () {
   describe('RP create request mode 3 with sid onboard with mode 2 tests', function () {
     let namespace = 'citizen_id';
-    let identifier = uuidv4();
+    let identifier = randomThaiIdNumber();
 
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
@@ -760,13 +747,11 @@ describe('Create request with invalid mode tests', function () {
       expect(createIdentityResult.reference_group_code).to.be.a('string').that
         .is.not.empty;
 
-      const responseGetRelevantIdpNodesBySid = await commonApi.getRelevantIdpNodesBySid(
-        'idp1',
-        {
+      const responseGetRelevantIdpNodesBySid =
+        await commonApi.getRelevantIdpNodesBySid('idp1', {
           namespace,
           identifier,
-        },
-      );
+        });
 
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
       const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
@@ -850,7 +835,7 @@ describe('Create request with invalid mode tests', function () {
 
   describe('RP create request mode 3 with sid onboard with mode 2,3 (providing idp_id_list with idp mode 2,3) tests', function () {
     let namespace = 'citizen_id';
-    let identifier = uuidv4();
+    let identifier = randomThaiIdNumber();
 
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
@@ -929,13 +914,11 @@ describe('Create request with invalid mode tests', function () {
       expect(createIdentityResult.reference_group_code).to.be.a('string').that
         .is.not.empty;
 
-      const responseGetRelevantIdpNodesBySid = await commonApi.getRelevantIdpNodesBySid(
-        'idp1',
-        {
+      const responseGetRelevantIdpNodesBySid =
+        await commonApi.getRelevantIdpNodesBySid('idp1', {
           namespace,
           identifier,
-        },
-      );
+        });
 
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
       const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
@@ -971,7 +954,8 @@ describe('Create request with invalid mode tests', function () {
 
       //accessorId = responseBody.accessor_id;
 
-      const createIdentityResult = await idp2CreateIdentityResultPromise.promise;
+      const createIdentityResult =
+        await idp2CreateIdentityResultPromise.promise;
       expect(createIdentityResult).to.deep.include({
         reference_id: idp2ReferenceId,
         success: true,
@@ -979,13 +963,11 @@ describe('Create request with invalid mode tests', function () {
       expect(createIdentityResult.reference_group_code).to.be.a('string').that
         .is.not.empty;
 
-      const responseGetRelevantIdpNodesBySid = await commonApi.getRelevantIdpNodesBySid(
-        'idp2',
-        {
+      const responseGetRelevantIdpNodesBySid =
+        await commonApi.getRelevantIdpNodesBySid('idp2', {
           namespace,
           identifier,
-        },
-      );
+        });
 
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
       const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');

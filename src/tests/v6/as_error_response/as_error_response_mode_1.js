@@ -89,7 +89,7 @@ describe('RP create request (mode 1) min_as = 1 and AS response with an error co
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -588,7 +588,7 @@ describe('RP create request (mode 1) min_as = 1 and AS response with an error co
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -1097,7 +1097,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response with
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -1956,7 +1956,7 @@ describe('RP create request (mode 1) min_as = 1 to 2 AS and 1st AS response data
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -2688,7 +2688,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response data
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -3578,7 +3578,7 @@ describe('RP create request (mode 1) min_as = 2 to 2 AS and 1st AS response erro
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,

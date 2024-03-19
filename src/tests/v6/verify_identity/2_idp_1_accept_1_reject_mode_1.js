@@ -24,7 +24,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
       callback_url: config.RP_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['idp1', 'idp2'],
       data_request_list: [],
       request_message:
@@ -84,7 +84,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
 //       callback_url: config.RP_CALLBACK_URL,
 //       mode: 1,
 //       namespace: 'citizen_id',
-//       identifier: '1234567890123',
+//       identifier: '1345951597671',
 //       idp_id_list: ['idp1', 'idp2'],
 //       data_request_list: [],
 //       request_message:
@@ -144,7 +144,7 @@ describe('2 IdPs, min_idp = 2, 1 IdP accept consent and 1 IdP reject consent mod
 //       callback_url: config.RP_CALLBACK_URL,
 //       mode: 1,
 //       namespace: 'citizen_id',
-//       identifier: '1234567890123',
+//       identifier: '1345951597671',
 //       idp_id_list: ['idp1', 'idp2'],
 //       data_request_list: [],
 //       request_message:

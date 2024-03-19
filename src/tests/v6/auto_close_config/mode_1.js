@@ -71,7 +71,7 @@ describe('mode 1, auto close on completed set to false', function () {
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -477,7 +477,7 @@ describe('mode 1, auto close on rejected set to true', function () {
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -867,7 +867,7 @@ describe('mode 1, auto close on complicated set to true', function () {
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,
@@ -1348,7 +1348,7 @@ describe('mode 1, auto close on errored set to false', function () {
 
   before(async function () {
     namespace = 'citizen_id';
-    identifier = '01234567890123';
+    identifier = '1345951597671';
 
     createRequestParams = {
       reference_id: rpReferenceId,

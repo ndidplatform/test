@@ -21,6 +21,7 @@ import {
   hash,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   setDataReceived,
   setDataSigned,
@@ -47,7 +48,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
   const upgradeIdentityModeRequestMessage =
     'upgrade identity mode consent request custom message';
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -261,18 +262,18 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
     requestId = responseBody.request_id;
 
-    const upgradeIdentityModeRequestResult = await upgradeIdentityModeRequestResultPromise.promise;
+    const upgradeIdentityModeRequestResult =
+      await upgradeIdentityModeRequestResultPromise.promise;
     expect(upgradeIdentityModeRequestResult).to.deep.include({
       reference_id: upgradeIdentityReferenceId,
       request_id: requestId,
       success: true,
     });
     expect(upgradeIdentityModeRequestResult.creation_block_height).to.be.a(
-      'string',
+      'string'
     );
-    const splittedCreationBlockHeight = upgradeIdentityModeRequestResult.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      upgradeIdentityModeRequestResult.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -297,8 +298,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       reference_group_code: referenceGroupCode,
       request_message: upgradeIdentityModeRequestMessage,
       request_message_hash: hash(
-        upgradeIdentityModeRequestMessage +
-          incomingRequest.request_message_salt,
+        upgradeIdentityModeRequestMessage + incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -308,9 +308,8 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -323,7 +322,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -348,7 +347,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     const response = await idpApi.createResponse('idp1', {
@@ -400,7 +399,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
     const identity = db.idp1Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
     let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -414,7 +413,8 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
   it('Identity should be upgraded mode successfully', async function () {
     this.timeout(20000);
-    const upgradeIdentityModeResult = await upgradeIdentityModeResultPromise.promise;
+    const upgradeIdentityModeResult =
+      await upgradeIdentityModeResultPromise.promise;
     expect(upgradeIdentityModeResult).to.deep.include({
       reference_id: upgradeIdentityReferenceId,
       request_id: requestId,
@@ -670,9 +670,8 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -756,14 +755,13 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -772,7 +770,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -786,9 +784,8 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -798,8 +795,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -825,7 +821,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -896,8 +892,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -994,9 +989,8 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1024,7 +1018,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        'as1',
+        'as1'
       );
     });
 
@@ -1164,7 +1158,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        'as1',
+        'as1'
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -1643,8 +1637,7 @@ describe('Upgrade identity mode 2 to mode 3 (user has only idp mode 2) tests', f
     after(function () {
       let identityIndex = db.idp1Identities.findIndex(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       db.idp1Identities.splice(identityIndex, 1);
       rpEventEmitter.removeAllListeners('callback');
@@ -1661,7 +1654,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
   const upgradeIdentityModeRequestMessage =
     'upgrade identity mode consent request custom message';
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -1747,23 +1740,24 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       }
     });
 
-    idp2EventEmitter.on('identity_notification_callback', function (
-      callbackData,
-    ) {
-      if (
-        callbackData.type === 'identity_modification_notification' &&
-        callbackData.reference_group_code === referenceGroupCode &&
-        callbackData.action === 'create_identity'
-      ) {
-        notificationCreateIdentityPromise.resolve(callbackData);
-      } else if (
-        callbackData.type === 'identity_modification_notification' &&
-        callbackData.reference_group_code === referenceGroupCode &&
-        callbackData.action === 'upgrade_identity_mode'
-      ) {
-        notificationUpgradeIdentityModePromise.resolve(callbackData);
+    idp2EventEmitter.on(
+      'identity_notification_callback',
+      function (callbackData) {
+        if (
+          callbackData.type === 'identity_modification_notification' &&
+          callbackData.reference_group_code === referenceGroupCode &&
+          callbackData.action === 'create_identity'
+        ) {
+          notificationCreateIdentityPromise.resolve(callbackData);
+        } else if (
+          callbackData.type === 'identity_modification_notification' &&
+          callbackData.reference_group_code === referenceGroupCode &&
+          callbackData.action === 'upgrade_identity_mode'
+        ) {
+          notificationUpgradeIdentityModePromise.resolve(callbackData);
+        }
       }
-    });
+    );
 
     nodeCallbackEventEmitter.on('callback', function (callbackData) {
       if (
@@ -2015,7 +2009,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
 
   it('After create identity IdP (idp2) that associated with this sid should receive identity notification callback', async function () {
     this.timeout(15000);
-    const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+    const notificationCreateIdentity =
+      await notificationCreateIdentityPromise.promise;
     expect(notificationCreateIdentity).to.deep.include({
       node_id: 'idp2',
       type: 'identity_modification_notification',
@@ -2075,18 +2070,18 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
 
     requestId = responseBody.request_id;
 
-    const upgradeIdentityModeRequestResult = await upgradeIdentityModeRequestResultPromise.promise;
+    const upgradeIdentityModeRequestResult =
+      await upgradeIdentityModeRequestResultPromise.promise;
     expect(upgradeIdentityModeRequestResult).to.deep.include({
       reference_id: upgradeIdentityReferenceId,
       request_id: requestId,
       success: true,
     });
     expect(upgradeIdentityModeRequestResult.creation_block_height).to.be.a(
-      'string',
+      'string'
     );
-    const splittedCreationBlockHeight = upgradeIdentityModeRequestResult.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      upgradeIdentityModeRequestResult.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2111,8 +2106,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       reference_group_code: referenceGroupCode,
       request_message: upgradeIdentityModeRequestMessage,
       request_message_hash: hash(
-        upgradeIdentityModeRequestMessage +
-          incomingRequest.request_message_salt,
+        upgradeIdentityModeRequestMessage + incomingRequest.request_message_salt
       ),
       requester_node_id: 'idp1',
       min_ial: 1.1,
@@ -2122,9 +2116,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
 
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2135,7 +2128,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     this.timeout(15000);
     identityForResponse = db.idp2Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -2160,7 +2153,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     const response = await idpApi.createResponse('idp2', {
@@ -2221,7 +2214,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     this.timeout(15000);
     const identity = db.idp2Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
     let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -2235,7 +2228,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
 
   it('Identity should be upgraded mode successfully', async function () {
     this.timeout(20000);
-    const upgradeIdentityModeResult = await upgradeIdentityModeResultPromise.promise;
+    const upgradeIdentityModeResult =
+      await upgradeIdentityModeResultPromise.promise;
     expect(upgradeIdentityModeResult).to.deep.include({
       reference_id: upgradeIdentityReferenceId,
       request_id: requestId,
@@ -2257,7 +2251,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
 
   it('After upgrade identity mode IdP (idp2) that associated with this sid should receive identity notification callback', async function () {
     this.timeout(15000);
-    const notificationUpgradeIdentityMode = await notificationUpgradeIdentityModePromise.promise;
+    const notificationUpgradeIdentityMode =
+      await notificationUpgradeIdentityModePromise.promise;
     expect(notificationUpgradeIdentityMode).to.deep.include({
       node_id: 'idp2',
       type: 'identity_modification_notification',
@@ -2517,9 +2512,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2613,14 +2607,13 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -2629,7 +2622,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -2643,9 +2636,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2655,14 +2647,13 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       this.timeout(15000);
       const incomingRequest = await idp2IncomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
         type: 'incoming_request',
@@ -2671,7 +2662,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -2685,9 +2676,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2697,8 +2687,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -2724,7 +2713,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -2796,8 +2785,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
@@ -2895,9 +2883,8 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2925,7 +2912,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        'as1',
+        'as1'
       );
     });
 
@@ -3065,7 +3052,7 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        'as1',
+        'as1'
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -3546,14 +3533,12 @@ describe('Upgrade identity mode 2 to mode 3 (user have idp mode 2 and mode 3) te
     after(function () {
       let identityIndex = db.idp1Identities.findIndex(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       db.idp1Identities.splice(identityIndex, 1);
       identityIndex = db.idp2Identities.findIndex(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       db.idp2Identities.splice(identityIndex, 1);
       rpEventEmitter.removeAllListeners('callback');

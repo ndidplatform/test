@@ -13,6 +13,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   createIdpIdList,
   createDataRequestList,
@@ -44,7 +45,7 @@ import {
 
 describe('On the fly onboard and uplift tests', function () {
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   let referenceGroupCode;
 
   before(function () {
@@ -319,9 +320,8 @@ describe('On the fly onboard and uplift tests', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -417,15 +417,14 @@ describe('On the fly onboard and uplift tests', function () {
     it('idp1 should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -436,7 +435,7 @@ describe('On the fly onboard and uplift tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -449,9 +448,8 @@ describe('On the fly onboard and uplift tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -463,15 +461,14 @@ describe('On the fly onboard and uplift tests', function () {
         this.skip();
       }
       const incomingRequest = await idp2IncomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
         type: 'incoming_request',
@@ -482,7 +479,7 @@ describe('On the fly onboard and uplift tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -496,9 +493,8 @@ describe('On the fly onboard and uplift tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -549,7 +545,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -572,7 +568,7 @@ describe('On the fly onboard and uplift tests', function () {
 
         const idp2Signature = createResponseSignature(
           idp2AccessorPrivateKey,
-          idp2RequestMessagePaddedHash,
+          idp2RequestMessagePaddedHash
         );
 
         const response = await idpApi.createResponse('idp2', {
@@ -660,8 +656,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -687,7 +682,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -760,8 +755,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
@@ -859,9 +853,8 @@ describe('On the fly onboard and uplift tests', function () {
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -889,7 +882,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -1033,7 +1026,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -1769,9 +1762,8 @@ describe('On the fly onboard and uplift tests', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1854,15 +1846,14 @@ describe('On the fly onboard and uplift tests', function () {
     it('idp1 should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -1872,7 +1863,7 @@ describe('On the fly onboard and uplift tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1886,9 +1877,8 @@ describe('On the fly onboard and uplift tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1898,8 +1888,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -1925,7 +1914,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -1954,7 +1943,8 @@ describe('On the fly onboard and uplift tests', function () {
       });
       expect(response.status).to.equal(202);
 
-      const updateIdentityIalResult = await updateIdentityIalResultPromise.promise;
+      const updateIdentityIalResult =
+        await updateIdentityIalResultPromise.promise;
       expect(updateIdentityIalResult).to.deep.include({
         reference_id: updateIalReferenceId,
         success: true,
@@ -1971,7 +1961,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -2043,8 +2033,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -2142,9 +2131,8 @@ describe('On the fly onboard and uplift tests', function () {
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2172,7 +2160,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -2316,7 +2304,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -3128,9 +3116,8 @@ describe('On the fly onboard and uplift tests', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3226,15 +3213,14 @@ describe('On the fly onboard and uplift tests', function () {
     it('idp1 (already onboard) should receive incoming request callback with reference_group_code', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -3244,7 +3230,7 @@ describe('On the fly onboard and uplift tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -3259,9 +3245,8 @@ describe('On the fly onboard and uplift tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3273,15 +3258,14 @@ describe('On the fly onboard and uplift tests', function () {
         this.skip();
       }
       const incomingRequest = await idp2IncomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
         type: 'incoming_request',
@@ -3292,7 +3276,7 @@ describe('On the fly onboard and uplift tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -3306,9 +3290,8 @@ describe('On the fly onboard and uplift tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3343,7 +3326,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp2', {
@@ -3403,7 +3386,8 @@ describe('On the fly onboard and uplift tests', function () {
 
     it('idp1 should receive create identity request', async function () {
       this.timeout(15000);
-      const incomingRequest = await incomingRequestCreateIdentityPromise.promise;
+      const incomingRequest =
+        await incomingRequestCreateIdentityPromise.promise;
       expect(incomingRequest).to.deep.include({
         mode: 2,
         request_id: createIdentityRequestId,
@@ -3426,9 +3410,8 @@ describe('On the fly onboard and uplift tests', function () {
       expect(incomingRequest.initial_salt).to.be.a('string').that.is.not.empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3440,8 +3423,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       identityForResponseCreateIdentity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorIdCreateIdentity =
@@ -3469,7 +3451,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHashCreateIdentity,
+        requestMessagePaddedHashCreateIdentity
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -3533,8 +3515,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -3557,7 +3538,7 @@ describe('On the fly onboard and uplift tests', function () {
         .is.not.empty;
 
       expect(createIdentityResult.reference_group_code).to.equal(
-        referenceGroupCode,
+        referenceGroupCode
       );
       //referenceGroupCode = createIdentityResult.reference_group_code;
 
@@ -3590,8 +3571,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       identityForResponse = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -3617,7 +3597,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -3691,8 +3671,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       const identity = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -3790,9 +3769,8 @@ describe('On the fly onboard and uplift tests', function () {
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3820,7 +3798,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -3964,7 +3942,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -4737,9 +4715,8 @@ describe('On the fly onboard and uplift tests', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -4835,15 +4812,14 @@ describe('On the fly onboard and uplift tests', function () {
     it('idp1 should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -4853,7 +4829,7 @@ describe('On the fly onboard and uplift tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -4867,9 +4843,8 @@ describe('On the fly onboard and uplift tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -4881,15 +4856,14 @@ describe('On the fly onboard and uplift tests', function () {
         this.skip();
       }
       const incomingRequest = await idp2IncomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
         type: 'incoming_request',
@@ -4899,7 +4873,7 @@ describe('On the fly onboard and uplift tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -4913,9 +4887,8 @@ describe('On the fly onboard and uplift tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -4925,8 +4898,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -4952,7 +4924,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHashIdp1,
+        requestMessagePaddedHashIdp1
       );
 
       let idpResponse = {
@@ -5003,8 +4975,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -5074,8 +5045,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       identityForResponse = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -5105,7 +5075,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHashIdp2,
+        requestMessagePaddedHashIdp2
       );
 
       let idpResponse = {
@@ -5168,8 +5138,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       const identity = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -5272,9 +5241,8 @@ describe('On the fly onboard and uplift tests', function () {
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -5302,7 +5270,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -5456,7 +5424,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -6050,7 +6018,8 @@ describe('On the fly onboard and uplift tests', function () {
     const mqSendSuccessRpToAsCallbackPromise = createEventPromise();
     const mqSendSuccessAsToRpCallbackPromise = createEventPromise();
 
-    const mqSendSuccessUpgradeIdentityIdp1ToIdp2CallbackPromise = createEventPromise();
+    const mqSendSuccessUpgradeIdentityIdp1ToIdp2CallbackPromise =
+      createEventPromise();
 
     let createRequestParams;
     let requestId;
@@ -6281,7 +6250,7 @@ describe('On the fly onboard and uplift tests', function () {
           if (callbackData.node_id === 'idp1') {
             if (callbackData.destination_node_id === 'idp2') {
               mqSendSuccessUpgradeIdentityIdp1ToIdp2CallbackPromise.resolve(
-                callbackData,
+                callbackData
               );
             }
           }
@@ -6304,9 +6273,8 @@ describe('On the fly onboard and uplift tests', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -6402,15 +6370,14 @@ describe('On the fly onboard and uplift tests', function () {
     it('idp1 should receive incoming request callback', async function () {
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -6420,7 +6387,7 @@ describe('On the fly onboard and uplift tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -6434,9 +6401,8 @@ describe('On the fly onboard and uplift tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -6448,15 +6414,14 @@ describe('On the fly onboard and uplift tests', function () {
         this.skip();
       }
       const incomingRequest = await idp2IncomingRequestPromise.promise;
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
             as_id_list: incomingRequest.data_request_list[0].as_id_list,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
         type: 'incoming_request',
@@ -6466,7 +6431,7 @@ describe('On the fly onboard and uplift tests', function () {
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -6480,9 +6445,8 @@ describe('On the fly onboard and uplift tests', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -6492,8 +6456,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -6519,7 +6482,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -6552,18 +6515,18 @@ describe('On the fly onboard and uplift tests', function () {
 
       upgradeIdentityModeRequestId = responseBody.request_id;
 
-      const upgradeIdentityModeRequestResult = await upgradeIdentityModeRequestResultPromise.promise;
+      const upgradeIdentityModeRequestResult =
+        await upgradeIdentityModeRequestResultPromise.promise;
       expect(upgradeIdentityModeRequestResult).to.deep.include({
         reference_id: upgradeIdentityReferenceId,
         request_id: upgradeIdentityModeRequestId,
         success: true,
       });
       expect(upgradeIdentityModeRequestResult.creation_block_height).to.be.a(
-        'string',
+        'string'
       );
-      const splittedCreationBlockHeight = upgradeIdentityModeRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        upgradeIdentityModeRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -6574,14 +6537,16 @@ describe('On the fly onboard and uplift tests', function () {
       await receiveMessagequeueSendSuccessCallback({
         nodeId: 'idp1',
         requestId: upgradeIdentityModeRequestId,
-        mqSendSuccessCallbackPromise: mqSendSuccessUpgradeIdentityIdp1ToIdp2CallbackPromise,
+        mqSendSuccessCallbackPromise:
+          mqSendSuccessUpgradeIdentityIdp1ToIdp2CallbackPromise,
         destinationNodeId: 'idp2',
       });
     });
 
     it('idp2 should receive upgrade identity request', async function () {
       this.timeout(15000);
-      const incomingRequest = await upgradeIdentityModeincomingRequestPromise.promise;
+      const incomingRequest =
+        await upgradeIdentityModeincomingRequestPromise.promise;
       expect(incomingRequest).to.deep.include({
         mode: 3,
         request_id: upgradeIdentityModeRequestId,
@@ -6596,9 +6561,8 @@ describe('On the fly onboard and uplift tests', function () {
 
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -6611,8 +6575,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       identityForResponse = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -6639,7 +6602,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHashUpgradeIdentity,
+        requestMessagePaddedHashUpgradeIdentity
       );
 
       const response = await idpApi.createResponse('idp2', {
@@ -6679,7 +6642,8 @@ describe('On the fly onboard and uplift tests', function () {
 
     it('idp2 should receive callback create response result with success = true', async function () {
       this.timeout(15000);
-      const responseResult = await idp2ResponseResultUpgradeIdentityModePromise.promise;
+      const responseResult =
+        await idp2ResponseResultUpgradeIdentityModePromise.promise;
       expect(responseResult).to.deep.include({
         node_id: 'idp2',
         type: 'response_result',
@@ -6695,8 +6659,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       const identity = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -6712,8 +6675,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -6739,7 +6701,7 @@ describe('On the fly onboard and uplift tests', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -6811,8 +6773,7 @@ describe('On the fly onboard and uplift tests', function () {
       this.timeout(15000);
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       let accessorPrivateKey = identity.accessors[0].accessorPrivateKey;
 
@@ -6910,9 +6871,8 @@ describe('On the fly onboard and uplift tests', function () {
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -6940,7 +6900,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -7084,7 +7044,7 @@ describe('On the fly onboard and uplift tests', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;

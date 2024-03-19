@@ -6,13 +6,14 @@ import * as identityApi from '../../../api/v6/identity';
 import * as commonApi from '../../../api/v6/common';
 import { idp1EventEmitter } from '../../../callback_server';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 
-describe('Error response upgrade identity mode tests', function() {
+describe('Error response upgrade identity mode tests', function () {
   const upgradeIdentityModeRequestMessage =
     'upgrade identity mode consent request custom message';
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -36,8 +37,8 @@ describe('Error response upgrade identity mode tests', function() {
 
   let requestId;
 
-  before(function() {
-    idp1EventEmitter.on('callback', function(callbackData) {
+  before(function () {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === referenceId
@@ -66,14 +67,14 @@ describe('Error response upgrade identity mode tests', function() {
       }
     });
 
-    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === requestId) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
   });
 
-  it('Before create identity this sid should not exist on platform ', async function() {
+  it('Before create identity this sid should not exist on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -81,7 +82,7 @@ describe('Error response upgrade identity mode tests', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Before create identity this sid should not associated with idp1 ', async function() {
+  it('Before create identity this sid should not associated with idp1 ', async function () {
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
@@ -91,7 +92,7 @@ describe('Error response upgrade identity mode tests', function() {
     expect(idpNode).to.be.an.undefined;
   });
 
-  it('Before create identity should not get identity ial', async function() {
+  it('Before create identity should not get identity ial', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -99,7 +100,7 @@ describe('Error response upgrade identity mode tests', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Should create identity request (mode2) successfully', async function() {
+  it('Should create identity request (mode2) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -127,7 +128,7 @@ describe('Error response upgrade identity mode tests', function() {
     accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created successfully', async function() {
+  it('Identity should be created successfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -147,12 +148,10 @@ describe('Error response upgrade identity mode tests', function() {
     const idpNodes = await response.json();
     const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2);
   });
 
-  it('After create identity this sid should be existing on platform ', async function() {
+  it('After create identity this sid should be existing on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -162,7 +161,7 @@ describe('Error response upgrade identity mode tests', function() {
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
-  it('After create identity should get identity ial successfully', async function() {
+  it('After create identity should get identity ial successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
@@ -175,7 +174,7 @@ describe('Error response upgrade identity mode tests', function() {
     await wait(2000);
   });
 
-  it('idp1 should upgrade identity mode (identity already on mode 3) unsuccessfully', async function() {
+  it('idp1 should upgrade identity mode (identity already on mode 3) unsuccessfully', async function () {
     this.timeout(25000);
     const response = await identityApi.upgradeIdentityMode('idp1', {
       reference_id: upgradeIdentityReferenceId,

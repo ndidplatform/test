@@ -8,11 +8,12 @@ import * as commonApi from '../../../api/v6/common';
 
 import { idp1EventEmitter } from '../../../callback_server';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 
-describe('NDID enable namespace test', function() {
+describe('NDID enable namespace test', function () {
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -34,8 +35,8 @@ describe('NDID enable namespace test', function() {
   let requestId;
   let referenceGroupCode;
 
-  before(async function() {
-    idp1EventEmitter.on('callback', function(callbackData) {
+  before(async function () {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_request_result' &&
         callbackData.reference_id === referenceId
@@ -49,14 +50,14 @@ describe('NDID enable namespace test', function() {
       }
     });
 
-    idp1EventEmitter.on('accessor_encrypt_callback', function(callbackData) {
+    idp1EventEmitter.on('accessor_encrypt_callback', function (callbackData) {
       if (callbackData.request_id === requestId) {
         accessorEncryptPromise.resolve(callbackData);
       }
     });
   });
 
-  it('NDID should enable namespace (cid) successfully', async function() {
+  it('NDID should enable namespace (cid) successfully', async function () {
     this.timeout(10000);
 
     const response = await ndidApi.enableNamespace('ndid1', {
@@ -67,20 +68,20 @@ describe('NDID enable namespace test', function() {
     await wait(1000);
   });
 
-  it('Namespace (cid) should be enabled successfully', async function() {
+  it('Namespace (cid) should be enabled successfully', async function () {
     this.timeout(10000);
 
     const responseUtilityGetNamespaces = await commonApi.getNamespaces('ndid1');
     const responseBody = await responseUtilityGetNamespaces.json();
 
     let namespace = responseBody.find(
-      namespace => namespace.namespace === 'citizen_id'
+      (namespace) => namespace.namespace === 'citizen_id'
     );
 
     expect(namespace).to.be.an('object');
   });
 
-  it('should create identity request successfully', async function() {
+  it('should create identity request successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -101,7 +102,7 @@ describe('NDID enable namespace test', function() {
     //accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created successfully', async function() {
+  it('Identity should be created successfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -119,14 +120,12 @@ describe('NDID enable namespace test', function() {
     });
 
     const idpNodes = await response.json();
-    const idpNode = idpNodes.find(idpNode => idpNode.node_id === 'idp1');
+    const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2);
   });
 
-  it('After create identity this sid should be existing on platform ', async function() {
+  it('After create identity this sid should be existing on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -136,7 +135,7 @@ describe('NDID enable namespace test', function() {
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
-  it('After create identity should get identity ial successfully', async function() {
+  it('After create identity should get identity ial successfully', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -146,7 +145,7 @@ describe('NDID enable namespace test', function() {
     expect(responseBody.ial).to.equal(2.3);
   });
 
-  after(function() {
+  after(function () {
     idp1EventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
   });

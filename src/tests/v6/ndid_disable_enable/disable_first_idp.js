@@ -17,6 +17,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   as1EventEmitter,
   idp1EventEmitter,
@@ -42,7 +43,7 @@ import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_
 describe('NDID disable first IdP and following IdP create identity tests', function () {
   describe('Disable first IdP and following IdP create identity (mode 2) test', function () {
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });
@@ -205,17 +206,18 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         }
       });
 
-      idp1EventEmitter.on('identity_notification_callback', function (
-        callbackData,
-      ) {
-        if (
-          callbackData.type === 'identity_modification_notification' &&
-          callbackData.reference_group_code === referenceGroupCode &&
-          callbackData.action === 'create_identity'
-        ) {
-          notificationCreateIdentityPromise.resolve(callbackData);
+      idp1EventEmitter.on(
+        'identity_notification_callback',
+        function (callbackData) {
+          if (
+            callbackData.type === 'identity_modification_notification' &&
+            callbackData.reference_group_code === referenceGroupCode &&
+            callbackData.action === 'create_identity'
+          ) {
+            notificationCreateIdentityPromise.resolve(callbackData);
+          }
         }
-      });
+      );
 
       idp2EventEmitter.on('callback', function (callbackData) {
         if (
@@ -378,7 +380,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('Identity should be created successfully', async function () {
       this.timeout(15000);
-      const createIdentityIdp2Result = await createIdentityResultIdp2Promise.promise;
+      const createIdentityIdp2Result =
+        await createIdentityResultIdp2Promise.promise;
       expect(createIdentityIdp2Result).to.deep.include({
         reference_id: referenceIdIdp2,
         // request_id: createIdentityRequestIdIdp2,
@@ -386,7 +389,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       });
 
       expect(createIdentityIdp2Result.reference_group_code).to.equal(
-        referenceGroupCode,
+        referenceGroupCode
       );
       const response = await commonApi.getRelevantIdpNodesBySid('idp2', {
         namespace,
@@ -419,7 +422,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('After create identity IdP (idp1) that associated with this sid should receive identity notification callback', async function () {
       this.timeout(15000);
-      const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+      const notificationCreateIdentity =
+        await notificationCreateIdentityPromise.promise;
       //const IdP2notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp1',
@@ -449,7 +453,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       expect(response.status).to.equal(200);
       const responseBody = await response.json();
       expect(responseBody.ial).to.equal(2.3);
-      await wait(3000);  //wait for data propagate
+      await wait(3000); //wait for data propagate
     });
 
     it('RP should create a request (mode 2) successfully', async function () {
@@ -467,9 +471,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -542,21 +545,20 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -570,9 +572,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -582,8 +583,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       this.timeout(15000);
       identityForResponse = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -609,7 +609,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -739,9 +739,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -767,7 +766,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -792,7 +791,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
       // const requestStatus = await requestStatusSignedDataPromise.promise;
       // expect(requestStatus).to.deep.include({
@@ -1003,12 +1002,12 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       requestIdAfterEnableNode = responseBody.request_id;
       initialSalt = responseBody.initial_salt;
 
-      const createRequestResult = await createRequestResultAfterEnableNodePromise.promise;
+      const createRequestResult =
+        await createRequestResultAfterEnableNodePromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1079,23 +1078,23 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('IdP (idp1) should receive incoming request callback', async function () {
       this.timeout(15000);
-      const incomingRequest = await idp1IncomingRequestAfterEnableNodePromise.promise;
+      const incomingRequest =
+        await idp1IncomingRequestAfterEnableNodePromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestIdAfterEnableNode,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1109,9 +1108,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1119,23 +1117,23 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('IdP (idp2) should receive incoming request callback', async function () {
       this.timeout(15000);
-      const incomingRequest = await idp2IncomingRequestAfterEnableNodePromise.promise;
+      const incomingRequest =
+        await idp2IncomingRequestAfterEnableNodePromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestIdAfterEnableNode,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1149,9 +1147,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1174,7 +1171,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
   describe('Disable first IdP and following IdP create identity (mode 3) test', function () {
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });
@@ -1337,17 +1334,18 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         }
       });
 
-      idp1EventEmitter.on('identity_notification_callback', function (
-        callbackData,
-      ) {
-        if (
-          callbackData.type === 'identity_modification_notification' &&
-          callbackData.reference_group_code === referenceGroupCode &&
-          callbackData.action === 'create_identity'
-        ) {
-          notificationCreateIdentityPromise.resolve(callbackData);
+      idp1EventEmitter.on(
+        'identity_notification_callback',
+        function (callbackData) {
+          if (
+            callbackData.type === 'identity_modification_notification' &&
+            callbackData.reference_group_code === referenceGroupCode &&
+            callbackData.action === 'create_identity'
+          ) {
+            notificationCreateIdentityPromise.resolve(callbackData);
+          }
         }
-      });
+      );
 
       idp2EventEmitter.on('callback', function (callbackData) {
         if (
@@ -1510,7 +1508,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('Identity should be created successfully', async function () {
       this.timeout(15000);
-      const createIdentityIdp2Result = await createIdentityResultIdp2Promise.promise;
+      const createIdentityIdp2Result =
+        await createIdentityResultIdp2Promise.promise;
       expect(createIdentityIdp2Result).to.deep.include({
         reference_id: referenceIdIdp2,
         // request_id: createIdentityRequestIdIdp2,
@@ -1518,7 +1517,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       });
 
       expect(createIdentityIdp2Result.reference_group_code).to.equal(
-        referenceGroupCode,
+        referenceGroupCode
       );
       const response = await commonApi.getRelevantIdpNodesBySid('idp2', {
         namespace,
@@ -1551,7 +1550,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('After create identity IdP (idp1) that associated with this sid should receive identity notification callback', async function () {
       this.timeout(15000);
-      const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+      const notificationCreateIdentity =
+        await notificationCreateIdentityPromise.promise;
       //const IdP2notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp1',
@@ -1599,9 +1599,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1674,21 +1673,20 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1702,9 +1700,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1714,8 +1711,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       this.timeout(15000);
       identityForResponse = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -1741,7 +1737,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -1852,9 +1848,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1880,7 +1875,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -1905,7 +1900,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await requestStatusSignedDataPromise.promise;
@@ -2117,12 +2112,12 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       requestIdAfterEnableNode = responseBody.request_id;
       initialSalt = responseBody.initial_salt;
 
-      const createRequestResult = await createRequestResultAfterEnableNodePromise.promise;
+      const createRequestResult =
+        await createRequestResultAfterEnableNodePromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2193,23 +2188,23 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('IdP (idp1) should receive incoming request callback', async function () {
       this.timeout(15000);
-      const incomingRequest = await idp1IncomingRequestAfterEnableNodePromise.promise;
+      const incomingRequest =
+        await idp1IncomingRequestAfterEnableNodePromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestIdAfterEnableNode,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -2223,9 +2218,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2233,23 +2227,23 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('IdP (idp2) should receive incoming request callback', async function () {
       this.timeout(15000);
-      const incomingRequest = await idp2IncomingRequestAfterEnableNodePromise.promise;
+      const incomingRequest =
+        await idp2IncomingRequestAfterEnableNodePromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestIdAfterEnableNode,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -2263,9 +2257,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2288,7 +2281,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
   describe('Disable first IdP (mode 2) and following IdP create identity (mode 3) test', function () {
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });
@@ -2451,17 +2444,18 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         }
       });
 
-      idp1EventEmitter.on('identity_notification_callback', function (
-        callbackData,
-      ) {
-        if (
-          callbackData.type === 'identity_modification_notification' &&
-          callbackData.reference_group_code === referenceGroupCode &&
-          callbackData.action === 'create_identity'
-        ) {
-          notificationCreateIdentityPromise.resolve(callbackData);
+      idp1EventEmitter.on(
+        'identity_notification_callback',
+        function (callbackData) {
+          if (
+            callbackData.type === 'identity_modification_notification' &&
+            callbackData.reference_group_code === referenceGroupCode &&
+            callbackData.action === 'create_identity'
+          ) {
+            notificationCreateIdentityPromise.resolve(callbackData);
+          }
         }
-      });
+      );
 
       idp2EventEmitter.on('callback', function (callbackData) {
         if (
@@ -2624,7 +2618,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('Identity should be created successfully', async function () {
       this.timeout(15000);
-      const createIdentityIdp2Result = await createIdentityResultIdp2Promise.promise;
+      const createIdentityIdp2Result =
+        await createIdentityResultIdp2Promise.promise;
       expect(createIdentityIdp2Result).to.deep.include({
         reference_id: referenceIdIdp2,
         // request_id: createIdentityRequestIdIdp2,
@@ -2632,7 +2627,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       });
 
       expect(createIdentityIdp2Result.reference_group_code).to.equal(
-        referenceGroupCode,
+        referenceGroupCode
       );
       const response = await commonApi.getRelevantIdpNodesBySid('idp2', {
         namespace,
@@ -2665,7 +2660,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('After create identity IdP (idp1) that associated with this sid should receive identity notification callback', async function () {
       this.timeout(15000);
-      const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+      const notificationCreateIdentity =
+        await notificationCreateIdentityPromise.promise;
       //const IdP2notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp1',
@@ -2713,9 +2709,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2788,21 +2783,20 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -2816,9 +2810,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2828,8 +2821,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       this.timeout(15000);
       identityForResponse = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -2855,7 +2847,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -2985,9 +2977,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3013,7 +3004,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -3038,7 +3029,7 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
       // const requestStatus = await requestStatusSignedDataPromise.promise;
       // expect(requestStatus).to.deep.include({
@@ -3250,12 +3241,12 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
       requestIdAfterEnableNode = responseBody.request_id;
       initialSalt = responseBody.initial_salt;
 
-      const createRequestResult = await createRequestResultAfterEnableNodePromise.promise;
+      const createRequestResult =
+        await createRequestResultAfterEnableNodePromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3326,23 +3317,23 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('IdP (idp1) should receive incoming request callback', async function () {
       this.timeout(15000);
-      const incomingRequest = await idp1IncomingRequestAfterEnableNodePromise.promise;
+      const incomingRequest =
+        await idp1IncomingRequestAfterEnableNodePromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestIdAfterEnableNode,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -3356,9 +3347,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -3366,23 +3356,23 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
 
     it('IdP (idp2) should receive incoming request callback', async function () {
       this.timeout(15000);
-      const incomingRequest = await idp2IncomingRequestAfterEnableNodePromise.promise;
+      const incomingRequest =
+        await idp2IncomingRequestAfterEnableNodePromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestIdAfterEnableNode,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -3396,9 +3386,8 @@ describe('NDID disable first IdP and following IdP create identity tests', funct
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);

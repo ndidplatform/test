@@ -22,6 +22,7 @@ import {
   createResponseSignature,
 } from '../../../utils';
 import * as cryptoUtils from '../../../utils/crypto';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   createIdpIdList,
   createDataRequestList,
@@ -152,7 +153,7 @@ describe('Update node (keys) tests with external crypto service (same key algori
 
     let createRequestParams;
     let namespace = 'citizen_id';
-    let identifier = uuidv4();
+    let identifier = randomThaiIdNumber();
     let requestId;
     let requestMessageHash;
     let responseAccessorId;

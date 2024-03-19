@@ -3,9 +3,7 @@ import { expect } from 'chai';
 import * as rpApi from '../../../../api/v6/rp';
 import * as db from '../../../../db';
 import { ndidAvailable, proxy1Available } from '../../..';
-import {
-  generateReferenceId,
-} from '../../../../utils';
+import { generateReferenceId } from '../../../../utils';
 import * as config from '../../../../config';
 
 describe('Proxy node create request with non-existent RP node ID (mode 1) test', function () {
@@ -24,7 +22,7 @@ describe('Proxy node create request with non-existent RP node ID (mode 1) test',
       callback_url: config.PROXY1_CALLBACK_URL,
       mode: 1,
       namespace: 'citizen_id',
-      identifier: '1234567890123',
+      identifier: '1345951597671',
       idp_id_list: ['idp1'],
       data_request_list: [
         {
@@ -68,7 +66,7 @@ describe('Proxy node create request with non-existent RP node ID (mode 2) test',
     }
 
     const identity = db.proxy1Idp4Identities.find(
-      (identity) => identity.mode === 2,
+      (identity) => identity.mode === 2
     );
 
     if (!identity) {
@@ -128,7 +126,7 @@ describe('Proxy node create request with non-existent RP node ID (mode 3) test',
     }
 
     const identity = db.proxy1Idp4Identities.find(
-      (identity) => identity.mode === 3,
+      (identity) => identity.mode === 3
     );
 
     if (!identity) {

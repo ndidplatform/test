@@ -12,6 +12,7 @@ import {
   wait,
   hash,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
@@ -20,7 +21,7 @@ describe('Create identity request (mode 3) with duplicate reference id test', fu
   const createIdentityRequestMessage =
     'Create identity consent request custom message ข้อความสำหรับขอสร้าง identity บนระบบ';
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
 
   //Keypair for 1st IdP
   const keypair = crypto.generateKeyPairSync('rsa', {

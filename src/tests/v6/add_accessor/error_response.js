@@ -7,12 +7,13 @@ import * as identityApi from '../../../api/v6/identity';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 import { idp2Available } from '../../';
 
-describe('IdP error response add accessor test', function() {
+describe('IdP error response add accessor test', function () {
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -28,12 +29,11 @@ describe('IdP error response add accessor test', function() {
   const keypairLengthShorterThan2048Bit = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2047,
   });
-  const accessorPublicKeyLengthShorterThan2048Bit = keypairLengthShorterThan2048Bit.publicKey.export(
-    {
+  const accessorPublicKeyLengthShorterThan2048Bit =
+    keypairLengthShorterThan2048Bit.publicKey.export({
       type: 'spki',
       format: 'pem',
-    }
-  );
+    });
 
   const referenceId = generateReferenceId();
 
@@ -42,8 +42,8 @@ describe('IdP error response add accessor test', function() {
   let accessorId;
   let referenceGroupCode;
 
-  before(function() {
-    idp1EventEmitter.on('callback', function(callbackData) {
+  before(function () {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === referenceId
@@ -53,7 +53,7 @@ describe('IdP error response add accessor test', function() {
     });
   });
 
-  it('Before create identity this sid should not exist on platform ', async function() {
+  it('Before create identity this sid should not exist on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -61,7 +61,7 @@ describe('IdP error response add accessor test', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Before create identity this sid should not associated with idp1 ', async function() {
+  it('Before create identity this sid should not associated with idp1 ', async function () {
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
@@ -71,7 +71,7 @@ describe('IdP error response add accessor test', function() {
     expect(idpNode).to.be.an.undefined;
   });
 
-  it('Before create identity should not get identity ial', async function() {
+  it('Before create identity should not get identity ial', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -79,7 +79,7 @@ describe('IdP error response add accessor test', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Should create identity request (mode 3) successfully', async function() {
+  it('Should create identity request (mode 3) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -106,7 +106,7 @@ describe('IdP error response add accessor test', function() {
     accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created successfully', async function() {
+  it('Identity should be created successfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -126,9 +126,7 @@ describe('IdP error response add accessor test', function() {
     const idpNodes = await response.json();
     const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2, 3);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2, 3);
 
     db.idp1Identities.push({
       referenceGroupCode,
@@ -147,7 +145,7 @@ describe('IdP error response add accessor test', function() {
     await wait(3000);
   });
 
-  it('After create identity this sid should be existing on platform ', async function() {
+  it('After create identity this sid should be existing on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -157,7 +155,7 @@ describe('IdP error response add accessor test', function() {
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
-  it('After create identity should get identity ial successfully', async function() {
+  it('After create identity should get identity ial successfully', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -167,7 +165,7 @@ describe('IdP error response add accessor test', function() {
     expect(responseBody.ial).to.equal(2.3);
   });
 
-  it('idp2 that is not associated with this sid should add accessor unsuccessfully', async function() {
+  it('idp2 that is not associated with this sid should add accessor unsuccessfully', async function () {
     this.timeout(10000);
 
     if (!idp2Available) this.skip();
@@ -187,7 +185,7 @@ describe('IdP error response add accessor test', function() {
     expect(responseBody.error.code).to.equal(20071);
   });
 
-  it('Should add accessor with not existing namespace and identifier unsuccessfully', async function() {
+  it('Should add accessor with not existing namespace and identifier unsuccessfully', async function () {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: 'notExistNamespace',
@@ -204,7 +202,7 @@ describe('IdP error response add accessor test', function() {
     expect(responseBody.error.code).to.equal(20013);
   });
 
-  it('Should add accessor with duplicated accessor id in platform unsuccessfully', async function() {
+  it('Should add accessor with duplicated accessor id in platform unsuccessfully', async function () {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
@@ -221,7 +219,7 @@ describe('IdP error response add accessor test', function() {
     expect(responseBody.error.code).to.equal(20030);
   });
 
-  it('Should add accessor with invalid format accessor_public_key unsuccessfully', async function() {
+  it('Should add accessor with invalid format accessor_public_key unsuccessfully', async function () {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
@@ -238,7 +236,7 @@ describe('IdP error response add accessor test', function() {
     expect(responseBody.error.code).to.equal(20040);
   });
 
-  it('Should add accessor with using accessor public key with wrong accessor_type unsuccessfully', async function() {
+  it('Should add accessor with using accessor public key with wrong accessor_type unsuccessfully', async function () {
     this.timeout(10000);
 
     const accessorPublicKey = `-----BEGIN PUBLIC KEY-----
@@ -262,7 +260,7 @@ describe('IdP error response add accessor test', function() {
     expect(responseBody.error.code).to.equal(20040);
   });
 
-  it('Should add accessor with using accessor public key with length shorter than 2048-bit unsuccessfully', async function() {
+  it('Should add accessor with using accessor public key with length shorter than 2048-bit unsuccessfully', async function () {
     this.timeout(10000);
     const response = await identityApi.addAccessor('idp1', {
       namespace: namespace,
@@ -279,7 +277,7 @@ describe('IdP error response add accessor test', function() {
     expect(responseBody.error.code).to.equal(20044);
   });
 
-  after(function() {
+  after(function () {
     idp1EventEmitter.removeAllListeners('callback');
   });
 });

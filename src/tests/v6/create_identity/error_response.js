@@ -7,10 +7,11 @@ import * as commonApi from '../../../api/v6/common';
 import * as db from '../../../db';
 import { idp1EventEmitter } from '../../../callback_server';
 import { generateReferenceId, wait, createEventPromise } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 import { idp2Available } from '../..';
 
-describe('Create identity errors', function() {
+describe('Create identity errors', function () {
   let namespace;
   let identifier;
   let accessorId;
@@ -30,16 +31,15 @@ describe('Create identity errors', function() {
   const keypairLengthShorterThan2048Bit = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2047,
   });
-  const accessorPublicKeyLengthShorterThan2048Bit = keypairLengthShorterThan2048Bit.publicKey.export(
-    {
+  const accessorPublicKeyLengthShorterThan2048Bit =
+    keypairLengthShorterThan2048Bit.publicKey.export({
       type: 'spki',
       format: 'pem',
-    }
-  );
+    });
 
   const referenceId = generateReferenceId();
 
-  before(function() {
+  before(function () {
     let identity = db.idp1Identities.filter(
       (identity) =>
         identity.namespace === 'citizen_id' &&
@@ -64,7 +64,7 @@ describe('Create identity errors', function() {
     // accessorId = db.idp1Identities[0].accessors[0].accessorId;
   });
 
-  it('IdP should get an error when creating duplicate identity (at IdP where already created an idenity for this user)', async function() {
+  it('IdP should get an error when creating duplicate identity (at IdP where already created an idenity for this user)', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -88,7 +88,7 @@ describe('Create identity errors', function() {
     expect(responseBody.error.code).to.equal(20019); // Already created an idenity for this user
   });
 
-  it('IdP should get an error when creating identity with duplicate accessor_id', async function() {
+  it('IdP should get an error when creating identity with duplicate accessor_id', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -96,7 +96,7 @@ describe('Create identity errors', function() {
       identity_list: [
         {
           namespace,
-          identifier: uuidv4(),
+          identifier: randomThaiIdNumber(),
         },
       ],
       accessor_type: 'RSA',
@@ -112,7 +112,7 @@ describe('Create identity errors', function() {
     expect(responseBody.error.code).to.equal(20030);
   });
 
-  it('IdP should get an error when using namespace that is not registered by NDID', async function() {
+  it('IdP should get an error when using namespace that is not registered by NDID', async function () {
     this.timeout(10000);
     const namespace = 'namespace_is_not_registered';
     const identifier = '1234';
@@ -147,7 +147,7 @@ describe('Create identity errors', function() {
     expect(responseBody.error.code).to.equal(20013); // This namespace is not registered by NDID
   });
 
-  it('IdP should get an error when using invalid format accessor public key', async function() {
+  it('IdP should get an error when using invalid format accessor public key', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -171,7 +171,7 @@ describe('Create identity errors', function() {
     expect(responseBody.error.code).to.equal(20040);
   });
 
-  it('IdP should get an mismatched type error when using accessor public key with wrong accessor_type', async function() {
+  it('IdP should get an mismatched type error when using accessor public key with wrong accessor_type', async function () {
     this.timeout(10000);
     const accessorPublicKey = `-----BEGIN PUBLIC KEY-----
 MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
@@ -195,7 +195,7 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
     expect(responseBody.error.code).to.equal(20042);
   });
 
-  it('IdP should get an error when using accessor public key with length shorter than 2048-bit', async function() {
+  it('IdP should get an error when using accessor public key with length shorter than 2048-bit', async function () {
     this.timeout(30000);
     // const keypair = crypto.generateKeyPairSync('rsa', {
     //   modulusLength: 2047,
@@ -227,10 +227,10 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEZYQxuM06/obj3ae0R2UUTt/JWrnvDzx+
   });
 });
 
-describe('Create identity errors', function() {
+describe('Create identity errors', function () {
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
-  let identifier2 = uuidv4();
+  let identifier = randomThaiIdNumber();
+  let identifier2 = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -248,8 +248,8 @@ describe('Create identity errors', function() {
   let accessorId;
   let referenceGroupCode;
 
-  before(function() {
-    idp1EventEmitter.on('callback', function(callbackData) {
+  before(function () {
+    idp1EventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_identity_result' &&
         callbackData.reference_id === referenceId
@@ -264,7 +264,7 @@ describe('Create identity errors', function() {
     });
   });
 
-  it('Before create identity this sid should not exist on platform ', async function() {
+  it('Before create identity this sid should not exist on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -272,7 +272,7 @@ describe('Create identity errors', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Before create identity this sid should not associated with idp1 ', async function() {
+  it('Before create identity this sid should not associated with idp1 ', async function () {
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier,
@@ -282,7 +282,7 @@ describe('Create identity errors', function() {
     expect(idpNode).to.be.an.undefined;
   });
 
-  it('Before create identity should not get identity ial', async function() {
+  it('Before create identity should not get identity ial', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -290,7 +290,7 @@ describe('Create identity errors', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Should create identity request (mode 2) successfully', async function() {
+  it('Should create identity request (mode 2) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -317,7 +317,7 @@ describe('Create identity errors', function() {
     accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created successfully', async function() {
+  it('Identity should be created successfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise.promise;
     expect(createIdentityResult).to.deep.include({
@@ -337,13 +337,11 @@ describe('Create identity errors', function() {
     const idpNodes = await response.json();
     const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2);
     await wait(1500);
   });
 
-  it('After create identity this sid should be existing on platform ', async function() {
+  it('After create identity this sid should be existing on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier,
@@ -353,7 +351,7 @@ describe('Create identity errors', function() {
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
-  it('After create identity should get identity ial successfully', async function() {
+  it('After create identity should get identity ial successfully', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier,
@@ -363,7 +361,7 @@ describe('Create identity errors', function() {
     expect(responseBody.ial).to.equal(2.3);
   });
 
-  it('Before create identity this sid should not exist on platform ', async function() {
+  it('Before create identity this sid should not exist on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier: identifier2,
@@ -371,7 +369,7 @@ describe('Create identity errors', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Before create identity this sid should not associated with idp1 ', async function() {
+  it('Before create identity this sid should not associated with idp1 ', async function () {
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
       identifier: identifier2,
@@ -381,7 +379,7 @@ describe('Create identity errors', function() {
     expect(idpNode).to.be.an.undefined;
   });
 
-  it('Before create identity should not get identity ial', async function() {
+  it('Before create identity should not get identity ial', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier: identifier2,
@@ -389,7 +387,7 @@ describe('Create identity errors', function() {
     expect(response.status).to.equal(404);
   });
 
-  it('Should create identity request (mode 2) successfully', async function() {
+  it('Should create identity request (mode 2) successfully', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId2,
@@ -416,7 +414,7 @@ describe('Create identity errors', function() {
     accessorId = responseBody.accessor_id;
   });
 
-  it('Identity should be created successfully', async function() {
+  it('Identity should be created successfully', async function () {
     this.timeout(15000);
     const createIdentityResult = await createIdentityResultPromise2.promise;
     expect(createIdentityResult).to.deep.include({
@@ -436,13 +434,11 @@ describe('Create identity errors', function() {
     const idpNodes = await response.json();
     const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
     expect(idpNode).to.not.be.undefined;
-    expect(idpNode.mode_list)
-      .to.be.an('array')
-      .that.include(2);
+    expect(idpNode.mode_list).to.be.an('array').that.include(2);
     await wait(1500);
   });
 
-  it('After create identity this sid should be existing on platform ', async function() {
+  it('After create identity this sid should be existing on platform ', async function () {
     const response = await identityApi.getIdentityInfo('idp1', {
       namespace,
       identifier: identifier2,
@@ -452,7 +448,7 @@ describe('Create identity errors', function() {
     expect(responseBody.reference_group_code).to.equal(referenceGroupCode);
   });
 
-  it('After create identity should get identity ial successfully', async function() {
+  it('After create identity should get identity ial successfully', async function () {
     const response = await identityApi.getIdentityIal('idp1', {
       namespace,
       identifier: identifier2,
@@ -462,7 +458,7 @@ describe('Create identity errors', function() {
     expect(responseBody.ial).to.equal(2.3);
   });
 
-  it('IdP should get an error when creating duplicate identity in identity_list', async function() {
+  it('IdP should get an error when creating duplicate identity in identity_list', async function () {
     this.timeout(10000);
     const response = await identityApi.createIdentity('idp1', {
       reference_id: referenceId,
@@ -490,7 +486,7 @@ describe('Create identity errors', function() {
     expect(responseBody.error.code).to.equal(20003);
   });
 
-  it('IdP should get an error when input sid already onboard in this idp in identity_list', async function() {
+  it('IdP should get an error when input sid already onboard in this idp in identity_list', async function () {
     this.timeout(10000);
     //if need to add new sid to existing ref group code should use addIdentity instead of createIdentity
     const response = await identityApi.createIdentity('idp1', {
@@ -503,7 +499,7 @@ describe('Create identity errors', function() {
         },
         {
           namespace,
-          identifier: uuidv4(),
+          identifier: randomThaiIdNumber(),
         },
       ],
       accessor_type: 'RSA',
@@ -519,7 +515,7 @@ describe('Create identity errors', function() {
     expect(responseBody.error.code).to.equal(20019);
   });
 
-  it('IdP (idp2) should get an error when creating identity with multiple reference group in identity list', async function() {
+  it('IdP (idp2) should get an error when creating identity with multiple reference group in identity list', async function () {
     this.timeout(15000);
 
     if (!idp2Available) this.skip();
@@ -538,7 +534,7 @@ describe('Create identity errors', function() {
         },
         {
           namespace,
-          identifier: uuidv4(),
+          identifier: randomThaiIdNumber(),
         },
       ],
       accessor_type: 'RSA',
@@ -553,7 +549,7 @@ describe('Create identity errors', function() {
     const responseBody = await response.json();
     expect(responseBody.error.code).to.equal(20069);
   });
-  after(function() {
+  after(function () {
     idp1EventEmitter.removeAllListeners('callback');
   });
 });

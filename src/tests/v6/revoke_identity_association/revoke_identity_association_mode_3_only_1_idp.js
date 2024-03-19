@@ -22,6 +22,7 @@ import {
   wait,
   createResponseSignature,
 } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import {
   createIdpIdList,
   createDataRequestList,
@@ -40,7 +41,7 @@ import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_
 
 describe('IdP (idp1) revoke identity association (identity associated with one idp mode 3) test', function () {
   let namespace = 'citizen_id';
-  let identifier = uuidv4();
+  let identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });
@@ -261,18 +262,18 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
 
       requestId = responseBody.request_id;
 
-      const revokeIdentityAssociationRequestResult = await revokeIdentityAssociationRequestResultPromise.promise;
+      const revokeIdentityAssociationRequestResult =
+        await revokeIdentityAssociationRequestResultPromise.promise;
       expect(revokeIdentityAssociationRequestResult).to.deep.include({
         reference_id: referenceId,
         request_id: requestId,
         success: true,
       });
       expect(
-        revokeIdentityAssociationRequestResult.creation_block_height,
+        revokeIdentityAssociationRequestResult.creation_block_height
       ).to.be.a('string');
-      const splittedCreationBlockHeight = revokeIdentityAssociationRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        revokeIdentityAssociationRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -299,7 +300,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         reference_group_code: referenceGroupCode,
         request_message: requestMessage,
         request_message_hash: hash(
-          requestMessage + incomingRequest.request_message_salt,
+          requestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -308,9 +309,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       });
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -324,7 +324,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier &&
-          identity.mode === 3,
+          identity.mode === 3
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -350,7 +350,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -399,7 +399,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
 
     it('Identity association should be revoked successfully', async function () {
       this.timeout(10000);
-      const revokeIdentityAssociationResult = await revokeIdentityAssociationResultPromise.promise;
+      const revokeIdentityAssociationResult =
+        await revokeIdentityAssociationResultPromise.promise;
       expect(revokeIdentityAssociationResult).to.deep.include({
         reference_id: referenceId,
         success: true,
@@ -522,7 +523,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         let identityIndex = db.idp1Identities.findIndex(
           (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
         db.idp1Identities.splice(identityIndex, 1);
 
@@ -825,13 +826,14 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           }
         });
 
-        idp1EventEmitter.on('accessor_encrypt_callback', function (
-          callbackData,
-        ) {
-          if (callbackData.request_id === requestId) {
-            accessorEncryptPromise.resolve(callbackData);
+        idp1EventEmitter.on(
+          'accessor_encrypt_callback',
+          function (callbackData) {
+            if (callbackData.request_id === requestId) {
+              accessorEncryptPromise.resolve(callbackData);
+            }
           }
-        });
+        );
 
         as1EventEmitter.on('callback', function (callbackData) {
           if (
@@ -882,9 +884,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         const createRequestResult = await createRequestResultPromise.promise;
         expect(createRequestResult.success).to.equal(true);
         expect(createRequestResult.creation_block_height).to.be.a('string');
-        const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-          ':',
-        );
+        const splittedCreationBlockHeight =
+          createRequestResult.creation_block_height.split(':');
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -958,14 +959,13 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         this.timeout(15000);
         const incomingRequest = await incomingRequestPromise.promise;
 
-        const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-          (dataRequest) => {
+        const dataRequestListWithoutParams =
+          createRequestParams.data_request_list.map((dataRequest) => {
             const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
             return {
               ...dataRequestWithoutParams,
             };
-          },
-        );
+          });
         expect(incomingRequest).to.deep.include({
           node_id: 'idp1',
           type: 'incoming_request',
@@ -974,7 +974,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt,
+              incomingRequest.request_message_salt
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -988,9 +988,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           .not.empty;
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
-        const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':',
-        );
+        const splittedCreationBlockHeight =
+          incomingRequest.creation_block_height.split(':');
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1001,11 +1000,11 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         identityForResponse = db.idp1Identities.find(
           (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         let identity = identityForResponse.accessors.find(
-          (accessor) => accessor.accessorId === accessorId,
+          (accessor) => accessor.accessorId === accessorId
         );
 
         responseAccessorId = identity.accessorId;
@@ -1027,14 +1026,14 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         this.timeout(10000);
 
         let identity = identityForResponse.accessors.find(
-          (accessor) => accessor.accessorId === accessorId,
+          (accessor) => accessor.accessorId === accessorId
         );
 
         let accessorPrivateKey = identity.accessorPrivateKey;
 
         const signature = createResponseSignature(
           accessorPrivateKey,
-          requestMessagePaddedHash,
+          requestMessagePaddedHash
         );
 
         let idpResponse = {
@@ -1166,9 +1165,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           .not.empty;
         expect(dataRequest.creation_time).to.be.a('number');
         expect(dataRequest.creation_block_height).to.be.a('string');
-        const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-          ':',
-        );
+        const splittedCreationBlockHeight =
+          dataRequest.creation_block_height.split(':');
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1196,7 +1194,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         dataRequestList = setDataSigned(
           dataRequestList,
           createRequestParams.data_request_list[0].service_id,
-          as_node_id,
+          as_node_id
         );
       });
 
@@ -1330,7 +1328,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         dataRequestList = setDataReceived(
           dataRequestList,
           createRequestParams.data_request_list[0].service_id,
-          as_node_id,
+          as_node_id
         );
 
         // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -1897,18 +1895,18 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
 
       requestId = responseBody.request_id;
 
-      const revokeIdentityAssociationRequestResult = await revokeIdentityAssociationRequestResultPromise.promise;
+      const revokeIdentityAssociationRequestResult =
+        await revokeIdentityAssociationRequestResultPromise.promise;
       expect(revokeIdentityAssociationRequestResult).to.deep.include({
         reference_id: referenceId,
         request_id: requestId,
         success: true,
       });
       expect(
-        revokeIdentityAssociationRequestResult.creation_block_height,
+        revokeIdentityAssociationRequestResult.creation_block_height
       ).to.be.a('string');
-      const splittedCreationBlockHeight = revokeIdentityAssociationRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        revokeIdentityAssociationRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1935,7 +1933,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         reference_group_code: referenceGroupCode,
         request_message: requestMessage,
         request_message_hash: hash(
-          requestMessage + incomingRequest.request_message_salt,
+          requestMessage + incomingRequest.request_message_salt
         ),
         requester_node_id: 'idp1',
         min_ial: 1.1,
@@ -1944,9 +1942,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
       });
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1959,7 +1956,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         (identity) =>
           identity.namespace === namespace &&
           identity.identifier === identifier &&
-          identity.mode === 3,
+          identity.mode === 3
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -1985,7 +1982,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       const response = await idpApi.createResponse('idp1', {
@@ -2034,7 +2031,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
 
     it('Identity association should be revoked successfully', async function () {
       this.timeout(10000);
-      const revokeIdentityAssociationResult = await revokeIdentityAssociationResultPromise.promise;
+      const revokeIdentityAssociationResult =
+        await revokeIdentityAssociationResultPromise.promise;
       expect(revokeIdentityAssociationResult).to.deep.include({
         reference_id: referenceId,
         success: true,
@@ -2190,8 +2188,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
     before(function () {
       let identityIndex = db.idp1Identities.findIndex(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       revokedAccessorId =
@@ -2473,13 +2470,14 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           }
         });
 
-        idp1EventEmitter.on('accessor_encrypt_callback', function (
-          callbackData,
-        ) {
-          if (callbackData.request_id === requestId) {
-            accessorEncryptPromise.resolve(callbackData);
+        idp1EventEmitter.on(
+          'accessor_encrypt_callback',
+          function (callbackData) {
+            if (callbackData.request_id === requestId) {
+              accessorEncryptPromise.resolve(callbackData);
+            }
           }
-        });
+        );
 
         as1EventEmitter.on('callback', function (callbackData) {
           if (
@@ -2530,9 +2528,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         const createRequestResult = await createRequestResultPromise.promise;
         expect(createRequestResult.success).to.equal(true);
         expect(createRequestResult.creation_block_height).to.be.a('string');
-        const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-          ':',
-        );
+        const splittedCreationBlockHeight =
+          createRequestResult.creation_block_height.split(':');
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2606,14 +2603,13 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         this.timeout(15000);
         const incomingRequest = await incomingRequestPromise.promise;
 
-        const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-          (dataRequest) => {
+        const dataRequestListWithoutParams =
+          createRequestParams.data_request_list.map((dataRequest) => {
             const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
             return {
               ...dataRequestWithoutParams,
             };
-          },
-        );
+          });
         expect(incomingRequest).to.deep.include({
           node_id: 'idp1',
           type: 'incoming_request',
@@ -2622,7 +2618,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           request_message: createRequestParams.request_message,
           request_message_hash: hash(
             createRequestParams.request_message +
-              incomingRequest.request_message_salt,
+              incomingRequest.request_message_salt
           ),
           requester_node_id: 'rp1',
           min_ial: createRequestParams.min_ial,
@@ -2636,9 +2632,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           .not.empty;
         expect(incomingRequest.creation_time).to.be.a('number');
         expect(incomingRequest.creation_block_height).to.be.a('string');
-        const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-          ':',
-        );
+        const splittedCreationBlockHeight =
+          incomingRequest.creation_block_height.split(':');
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2649,7 +2644,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         identityForResponse = db.idp1Identities.find(
           (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
 
         responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -2693,7 +2688,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
 
         const signature = createResponseSignature(
           accessorPrivateKey,
-          requestMessagePaddedHash,
+          requestMessagePaddedHash
         );
 
         let idpResponse = {
@@ -2825,9 +2820,8 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           .not.empty;
         expect(dataRequest.creation_time).to.be.a('number');
         expect(dataRequest.creation_block_height).to.be.a('string');
-        const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-          ':',
-        );
+        const splittedCreationBlockHeight =
+          dataRequest.creation_block_height.split(':');
         expect(splittedCreationBlockHeight).to.have.lengthOf(2);
         expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
         expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2855,7 +2849,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         dataRequestList = setDataSigned(
           dataRequestList,
           createRequestParams.data_request_list[0].service_id,
-          as_node_id,
+          as_node_id
         );
       });
 
@@ -2874,7 +2868,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           lastStatusUpdateBlockHeight,
           requesterNodeId: requester_node_id,
         });
-  
+
         lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
 
         // const requestStatus = await requestStatusSignedDataPromise.promise;
@@ -2985,11 +2979,11 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           requesterNodeId: requester_node_id,
           isNotRp: true,
         });
-  
+
         dataRequestList = setDataReceived(
           dataRequestList,
           createRequestParams.data_request_list[0].service_id,
-          as_node_id,
+          as_node_id
         );
 
         // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -3043,7 +3037,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           lastStatusUpdateBlockHeight,
           requesterNodeId: requester_node_id,
         });
-  
+
         lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
 
         // const requestStatus = await requestStatusCompletedPromise.promise;
@@ -3154,7 +3148,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           requesterNodeId: requester_node_id,
           isNotRp: true,
         });
-        
+
         // const requestStatus = await as_requestStatusCompletedPromise.promise;
         // expect(requestStatus).to.deep.include({
         //   request_id: requestId,
@@ -3315,7 +3309,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
           testForEqualLastStatusUpdateBlockHeight: true,
           requesterNodeId: requester_node_id,
         });
-        
+
         // const requestStatus = await as_requestClosedPromise.promise;
         // expect(requestStatus).to.deep.include({
         //   request_id: requestId,
@@ -3478,7 +3472,7 @@ describe('IdP (idp1) revoke identity association (identity associated with one i
         let identityIndex = db.idp1Identities.findIndex(
           (identity) =>
             identity.namespace === namespace &&
-            identity.identifier === identifier,
+            identity.identifier === identifier
         );
         db.idp1Identities.splice(identityIndex, 1);
 

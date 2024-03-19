@@ -9,6 +9,7 @@ import * as apiHelpers from '../../../api/helpers';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import { createEventPromise, generateReferenceId } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 
 import { ndidAvailable } from '../..';
@@ -21,7 +22,7 @@ describe('Create identity with new IAL test', function () {
   let originalSupportedIALList;
 
   const namespace = 'citizen_id';
-  const identifier = uuidv4();
+  const identifier = randomThaiIdNumber();
   const keypair = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
   });

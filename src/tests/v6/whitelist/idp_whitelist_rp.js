@@ -5,6 +5,7 @@ import uuidv4 from 'uuid/v4';
 import * as identityApi from '../../../api/v6/identity';
 import * as commonApi from '../../../api/v6/common';
 import * as rpApi from '../../../api/v6/rp';
+import * as ndidApi from '../../../api/v6/ndid';
 import {
   idp3EventEmitter,
   rp2EventEmitter,
@@ -13,11 +14,16 @@ import {
   rpEventEmitter,
 } from '../../../callback_server';
 import * as db from '../../../db';
-import { createEventPromise, generateReferenceId } from '../../../utils';
+import {
+  createEventPromise,
+  generateReferenceId,
+  wait,
+  createSignature,
+  createResponseSignature,
+} from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 
-import * as ndidApi from '../../../api/v6/ndid';
-import { wait, createSignature, createResponseSignature } from '../../../utils';
 import { ndidAvailable, idp3Available, rp2Available } from '../..';
 import { mode1DataRequestFlowTest } from '../_fragments/data_request_mode_1_flow';
 import { mode2And3DataRequestFlowTest } from '../_fragments/data_request_mode_2_and_3_flow';
@@ -48,7 +54,7 @@ describe('IdP whitelist RP tests', function () {
 
   describe('IdP (idp3) create identity (mode 2) (without providing accessor_id) as 1st IdP', function () {
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });
@@ -187,7 +193,7 @@ describe('IdP whitelist RP tests', function () {
 
   describe('IdP (idp3) create identity (mode 3) (without providing accessor_id) as 1st IdP', function () {
     const namespace = 'citizen_id';
-    const identifier = uuidv4();
+    const identifier = randomThaiIdNumber();
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
     });
@@ -352,23 +358,24 @@ describe('IdP whitelist RP tests', function () {
 
     before(function () {
       const identity = db.idp2Identities.find(
-        (identity) => identity.mode === 2,
+        (identity) => identity.mode === 2
       );
       namespace = identity.namespace;
       identifier = identity.identifier;
       referenceGroupCode = identity.referenceGroupCode;
 
-      idp2EventEmitter.on('identity_notification_callback', function (
-        callbackData,
-      ) {
-        if (
-          callbackData.type === 'identity_modification_notification' &&
-          callbackData.reference_group_code === referenceGroupCode &&
-          callbackData.action === 'create_identity'
-        ) {
-          notificationCreateIdentityPromise.resolve(callbackData);
+      idp2EventEmitter.on(
+        'identity_notification_callback',
+        function (callbackData) {
+          if (
+            callbackData.type === 'identity_modification_notification' &&
+            callbackData.reference_group_code === referenceGroupCode &&
+            callbackData.action === 'create_identity'
+          ) {
+            notificationCreateIdentityPromise.resolve(callbackData);
+          }
         }
-      });
+      );
 
       idp3EventEmitter.on('callback', function (callbackData) {
         if (
@@ -447,7 +454,8 @@ describe('IdP whitelist RP tests', function () {
 
     it('After create identity IdP (idp2) that associated with this sid should receive identity notification callback', async function () {
       this.timeout(15000);
-      const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+      const notificationCreateIdentity =
+        await notificationCreateIdentityPromise.promise;
       //const IdP2notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp2',
@@ -516,23 +524,24 @@ describe('IdP whitelist RP tests', function () {
 
     before(function () {
       const identity = db.idp3Identities.find(
-        (identity) => identity.mode === 2 && identity.remark !== '2nd_idp',
+        (identity) => identity.mode === 2 && identity.remark !== '2nd_idp'
       );
       namespace = identity.namespace;
       identifier = identity.identifier;
       referenceGroupCode = identity.referenceGroupCode;
 
-      idp3EventEmitter.on('identity_notification_callback', function (
-        callbackData,
-      ) {
-        if (
-          callbackData.type === 'identity_modification_notification' &&
-          callbackData.reference_group_code === referenceGroupCode &&
-          callbackData.action === 'create_identity'
-        ) {
-          notificationCreateIdentityPromise.resolve(callbackData);
+      idp3EventEmitter.on(
+        'identity_notification_callback',
+        function (callbackData) {
+          if (
+            callbackData.type === 'identity_modification_notification' &&
+            callbackData.reference_group_code === referenceGroupCode &&
+            callbackData.action === 'create_identity'
+          ) {
+            notificationCreateIdentityPromise.resolve(callbackData);
+          }
         }
-      });
+      );
 
       idp2EventEmitter.on('callback', function (callbackData) {
         if (
@@ -611,7 +620,8 @@ describe('IdP whitelist RP tests', function () {
 
     it('After create identity IdP (idp2) that associated with this sid should receive identity notification callback', async function () {
       this.timeout(15000);
-      const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+      const notificationCreateIdentity =
+        await notificationCreateIdentityPromise.promise;
       //const IdP2notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
       expect(notificationCreateIdentity).to.deep.include({
         node_id: 'idp3',
@@ -692,23 +702,24 @@ describe('IdP whitelist RP tests', function () {
       }
 
       const identity = db.idp3Identities.find(
-        (identity) => identity.mode === 3,
+        (identity) => identity.mode === 3
       );
       namespace = identity.namespace;
       identifier = identity.identifier;
       referenceGroupCode = identity.referenceGroupCode;
 
-      idp3EventEmitter.on('identity_notification_callback', function (
-        callbackData,
-      ) {
-        if (
-          callbackData.type === 'identity_modification_notification' &&
-          callbackData.reference_group_code === referenceGroupCode &&
-          callbackData.action === 'create_identity'
-        ) {
-          notificationCreateIdentityPromise.resolve(callbackData);
+      idp3EventEmitter.on(
+        'identity_notification_callback',
+        function (callbackData) {
+          if (
+            callbackData.type === 'identity_modification_notification' &&
+            callbackData.reference_group_code === referenceGroupCode &&
+            callbackData.action === 'create_identity'
+          ) {
+            notificationCreateIdentityPromise.resolve(callbackData);
+          }
         }
-      });
+      );
 
       idp3EventEmitter.on('callback', function (callbackData) {
         if (
@@ -802,7 +813,8 @@ describe('IdP whitelist RP tests', function () {
       requestId = responseBody.request_id;
       accessorId = responseBody.accessor_id;
 
-      const createIdentityRequestResult = await createIdentityRequestResultPromise.promise;
+      const createIdentityRequestResult =
+        await createIdentityRequestResultPromise.promise;
       expect(createIdentityRequestResult).to.deep.include({
         reference_id: referenceId,
         request_id: requestId,
@@ -851,7 +863,7 @@ describe('IdP whitelist RP tests', function () {
     it('Other RP is not being in whitelist idp3 should not got idp3 when get relevant idp by sid (sid only onboard at idp3)', async function () {
       this.timeout(30000);
       const identity = db.idp3Identities.find(
-        (identity) => identity.mode === 3,
+        (identity) => identity.mode === 3
       );
       let namespace = identity.namespace;
       let identifier = identity.identifier;
@@ -869,7 +881,7 @@ describe('IdP whitelist RP tests', function () {
     it('Other RP is not being in whitelist idp3 should not got idp3 when get relevant idp by sid (sid onboard at idp3 and other idp)', async function () {
       this.timeout(30000);
       const identity = db.idp3Identities.find(
-        (identity) => identity.mode === 2 && identity.remark === '2nd_idp',
+        (identity) => identity.mode === 2 && identity.remark === '2nd_idp'
       );
       let namespace = identity.namespace;
       let identifier = identity.identifier;
@@ -898,7 +910,7 @@ describe('IdP whitelist RP tests', function () {
 
       before(function () {
         namespace = 'citizen_id';
-        identifier = '1234567890123';
+        identifier = '1345951597671';
 
         createRequestParams = {
           reference_id: rpReferenceId,
@@ -942,7 +954,7 @@ describe('IdP whitelist RP tests', function () {
 
       before(function () {
         namespace = 'citizen_id';
-        identifier = '1234567890123';
+        identifier = '1345951597671';
 
         createRequestParams = {
           reference_id: rpReferenceId,
@@ -987,7 +999,7 @@ describe('IdP whitelist RP tests', function () {
 
       before(function () {
         const identity = db.idp3Identities.find(
-          (identity) => identity.mode === 3,
+          (identity) => identity.mode === 3
         );
 
         namespace = identity.namespace;
@@ -1058,7 +1070,7 @@ describe('IdP whitelist RP tests', function () {
 
       before(function () {
         const identity = db.idp3Identities.find(
-          (identity) => identity.mode === 3,
+          (identity) => identity.mode === 3
         );
 
         namespace = identity.namespace;
@@ -1106,7 +1118,7 @@ describe('IdP whitelist RP tests', function () {
 
       before(function () {
         const identity = db.idp3Identities.find(
-          (identity) => identity.mode === 2 && identity.remark === '2nd_idp',
+          (identity) => identity.mode === 2 && identity.remark === '2nd_idp'
         );
         let namespace = identity.namespace;
         let identifier = identity.identifier;
@@ -1154,7 +1166,7 @@ describe('IdP whitelist RP tests', function () {
 
       before(function () {
         const identity = db.idp3Identities.find(
-          (identity) => identity.mode === 2 && identity.remark === '2nd_idp',
+          (identity) => identity.mode === 2 && identity.remark === '2nd_idp'
         );
         let namespace = identity.namespace;
         let identifier = identity.identifier;
@@ -1223,7 +1235,7 @@ describe('IdP whitelist RP tests', function () {
 
       before(function () {
         const identity = db.idp3Identities.find(
-          (identity) => identity.mode === 2 && identity.remark !== '2nd_idp',
+          (identity) => identity.mode === 2 && identity.remark !== '2nd_idp'
         );
         let namespace = identity.namespace;
         let identifier = identity.identifier;
@@ -1272,7 +1284,7 @@ describe('IdP whitelist RP tests', function () {
 
       before(function () {
         const identity = db.idp3Identities.find(
-          (identity) => identity.mode === 2 && identity.remark === '2nd_idp',
+          (identity) => identity.mode === 2 && identity.remark === '2nd_idp'
         );
         let namespace = identity.namespace;
         let identifier = identity.identifier;
@@ -1329,7 +1341,7 @@ describe('IdP whitelist RP tests', function () {
           callback_url: config.RP2_CALLBACK_URL,
           mode: 1,
           namespace: 'citizen_id',
-          identifier: '1234567890123',
+          identifier: '1345951597671',
           idp_id_list: ['idp3'],
           data_request_list: [
             {
@@ -1431,7 +1443,7 @@ describe('IdP whitelist RP tests', function () {
                 (identity) =>
                   (identity.namespace === namespace &&
                     identity.identifier === identifier) ||
-                  identity.referenceGroupCode === referenceGroupCode,
+                  identity.referenceGroupCode === referenceGroupCode
               );
               return identity.accessors[0];
             },
@@ -1444,7 +1456,7 @@ describe('IdP whitelist RP tests', function () {
               createResponseSignature: (privatekey, request_message) => {
                 const signature = createResponseSignature(
                   privatekey,
-                  request_message,
+                  request_message
                 );
                 return signature;
               },
@@ -1517,7 +1529,7 @@ describe('IdP whitelist RP tests', function () {
                 (identity) =>
                   (identity.namespace === namespace &&
                     identity.identifier === identifier) ||
-                  identity.referenceGroupCode === referenceGroupCode,
+                  identity.referenceGroupCode === referenceGroupCode
               );
               return identity.accessors[0];
             },
@@ -1530,7 +1542,7 @@ describe('IdP whitelist RP tests', function () {
               createResponseSignature: (privatekey, request_message) => {
                 const signature = createResponseSignature(
                   privatekey,
-                  request_message,
+                  request_message
                 );
                 return signature;
               },
@@ -1590,7 +1602,7 @@ describe('IdP whitelist RP tests', function () {
 
       const identity = db.idp3Identities.find(
         // SID from idp1
-        (identity) => identity.mode === 2 && identity.remark === '2nd_idp',
+        (identity) => identity.mode === 2 && identity.remark === '2nd_idp'
       );
       let namespace = identity.namespace;
       let identifier = identity.identifier;
@@ -1623,7 +1635,7 @@ describe('IdP whitelist RP tests', function () {
           callback_url: config.RP_CALLBACK_URL,
           mode: 1,
           namespace: 'citizen_id',
-          identifier: '1234567890123',
+          identifier: '1345951597671',
           idp_id_list: ['idp3'],
           data_request_list: [
             {
@@ -1725,7 +1737,7 @@ describe('IdP whitelist RP tests', function () {
                 (identity) =>
                   (identity.namespace === namespace &&
                     identity.identifier === identifier) ||
-                  identity.referenceGroupCode === referenceGroupCode,
+                  identity.referenceGroupCode === referenceGroupCode
               );
               return identity.accessors[0];
             },
@@ -1738,7 +1750,7 @@ describe('IdP whitelist RP tests', function () {
               createResponseSignature: (privatekey, request_message) => {
                 const signature = createResponseSignature(
                   privatekey,
-                  request_message,
+                  request_message
                 );
                 return signature;
               },
@@ -1811,7 +1823,7 @@ describe('IdP whitelist RP tests', function () {
                 (identity) =>
                   (identity.namespace === namespace &&
                     identity.identifier === identifier) ||
-                  identity.referenceGroupCode === referenceGroupCode,
+                  identity.referenceGroupCode === referenceGroupCode
               );
               return identity.accessors[0];
             },
@@ -1824,7 +1836,7 @@ describe('IdP whitelist RP tests', function () {
               createResponseSignature: (privatekey, request_message) => {
                 const signature = createResponseSignature(
                   privatekey,
-                  request_message,
+                  request_message
                 );
                 return signature;
               },

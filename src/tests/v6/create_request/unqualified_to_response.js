@@ -7,13 +7,14 @@ import * as asApi from '../../../api/v6/as';
 import * as commonApi from '../../../api/v6/common';
 import { ndidAvailable, as2Available } from '../..';
 import { generateReferenceId, createEventPromise, wait } from '../../../utils';
+import { randomThaiIdNumber } from '../../../utils/thai_id';
 import { as1EventEmitter } from '../../../callback_server';
 import * as config from '../../../config';
 
 describe('RP create request errors (unqualified to response)', function() {
   describe('IdP ID list are unqualified to response (max_ial) test', function() {
     let namespace = 'citizen_id';
-    let identifier = uuidv4();
+    let identifier = randomThaiIdNumber();
 
     const rpReferenceId = generateReferenceId();
 
@@ -76,7 +77,7 @@ describe('RP create request errors (unqualified to response)', function() {
 
   describe('IdP ID list are unqualified to response (max_aal) test', function() {
     let namespace = 'citizen_id';
-    let identifier = uuidv4();
+    let identifier = randomThaiIdNumber();
 
     const rpReferenceId = generateReferenceId();
 
@@ -139,7 +140,7 @@ describe('RP create request errors (unqualified to response)', function() {
 
   describe('Some services in data request list are unqualified to release data (min_ial) test', function() {
     let namespace = 'citizen_id';
-    let identifier = uuidv4();
+    let identifier = randomThaiIdNumber();
 
     const rpReferenceId = generateReferenceId();
     const bankStatementReferenceId = generateReferenceId();
@@ -230,7 +231,7 @@ describe('RP create request errors (unqualified to response)', function() {
 
   describe('Some services in data request list are unqualified to release data (min_aal) test', function() {
     let namespace = 'citizen_id';
-    let identifier = uuidv4();
+    let identifier = randomThaiIdNumber();
 
     const rpReferenceId = generateReferenceId();
     const bankStatementReferenceId = generateReferenceId();
