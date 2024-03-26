@@ -48,7 +48,8 @@ describe('Proxy node create message with non-existent RP node ID test', function
 
       const createMessageResult = await createMessageResultPromise.promise;
       expect(createMessageResult.success).to.equal(false);
-      expect(createMessageResult.error.code).to.equal(10034);
+      // expect(createMessageResult.error.code).to.equal(10034);
+      expect(createMessageResult.error.code).to.equal(10032);
     } else {
       const response = await rpApi.createMessage('proxy1', createMessageParams);
       // const responseBody = await response.json();
