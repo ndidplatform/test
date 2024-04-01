@@ -16,7 +16,6 @@ import {
   createEventPromise,
   generateReferenceId,
   hash,
-  wait,
   createResponseSignature,
 } from '../../../utils';
 import * as config from '../../../config';
@@ -226,7 +225,6 @@ describe('Close add accessor request (mode 3) (providing accessor id) test', fun
       request_id: requestId,
       error: { code: 20025, message: 'Request is already closed' },
     });
-    await wait(2000);
   });
 
   it('IdP (idp1) should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
@@ -469,6 +467,5 @@ describe('IdP (idp1) response with new accessor id test', function() {
     rpEventEmitter.removeAllListeners('callback');
     idp1EventEmitter.removeAllListeners('callback');
     as1EventEmitter.removeAllListeners('callback');
-    await wait(2000);
   });
 });

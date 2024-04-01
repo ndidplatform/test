@@ -30,7 +30,7 @@ import {
   hasNoPrivateMessagesTest,
 } from './common';
 
-import { createEventPromise, wait } from '../../../utils';
+import { createEventPromise } from '../../../utils';
 import {
   createDataRequestList,
   createIdpIdList,
@@ -931,7 +931,6 @@ export function mode2And3DataRequestFlowTest({
 
         dataRequestList = setDataReceived(dataRequestList, serviceId, asNodeId);
 
-        await wait(1500);
         // const testResult = await receiveConfirmedRequestStatusTest({
         //   nodeId: rpNodeId,
         //   requestStatusConfirmedPromise: requestStatusSignedDataPromise,

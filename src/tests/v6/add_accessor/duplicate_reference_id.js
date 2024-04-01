@@ -138,7 +138,6 @@ describe('Add accessor with duplicate reference id test', function() {
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-    await wait(3000);
   });
 
   it('Should add accessor with duplicate reference id unsuccessfully', async function() {
@@ -215,7 +214,6 @@ describe('Add accessor with duplicate reference id test', function() {
       request_id: requestId,
       error: { code: 20025, message: 'Request is already closed' },
     });
-    await wait(2000);
   });
 
   it('IdP should get response status code 404 when get request_id by reference_id after request is finished (closed)', async function() {
@@ -260,7 +258,6 @@ describe('Add accessor with duplicate reference id test', function() {
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
-    await wait(3000);
   });
 
   it('IdP (idp1) should receive add accessor request', async function() {

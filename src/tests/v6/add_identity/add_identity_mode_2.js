@@ -38,6 +38,7 @@ import {
 import * as config from '../../../config';
 import * as db from '../../../db';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('Add identity (mode 2) tests', function () {
   let alreadyAddedNamespace;
@@ -110,12 +111,9 @@ describe('Add identity (mode 2) tests', function () {
     } else {
       expect(response.status).to.equal(201);
     }
-    await wait(1000);
   });
 
   it('Namespace (test_add_identity) should be added successfully', async function () {
-    this.timeout(10000);
-
     const response = await commonApi.getNamespaces('ndid1');
     const responseBody = await response.json();
     const namespace = responseBody.find(
@@ -131,6 +129,10 @@ describe('Add identity (mode 2) tests', function () {
   });
 
   it('AS should add offered service (update supported_namespace_list bank_statement) successfully', async function () {
+    this.timeout(5000);
+
+    await waitUntilBlockHeightMatch('as1', 'ndid1');
+
     const responseUpdateService = await asApi.addOrUpdateService('as1', {
       serviceId: 'bank_statement',
       reference_id: bankStatementReferenceId,
@@ -160,8 +162,6 @@ describe('Add identity (mode 2) tests', function () {
       suspended: false,
       supported_namespace_list: ['citizen_id', 'test_add_identity'],
     });
-
-    await wait(1000);
   });
 
   describe('idp1 create identity request and add identity (mode 2) tests', function () {
@@ -436,8 +436,6 @@ describe('Add identity (mode 2) tests', function () {
       const idpNodes = await responseGetRelevantIdpNodesBySid.json();
       const idpNode = idpNodes.find((idpNode) => idpNode.node_id === 'idp1');
       expect(idpNode).to.be.undefined;
-
-      await wait(3000); //Wait for data propagate
     });
 
     describe('Create request with new identity (1 IdP, 1 AS, mode 2)', function () {
@@ -495,7 +493,7 @@ describe('Add identity (mode 2) tests', function () {
       let idpResponseParams = [];
       let requestMessageHash;
 
-      before(function () {
+      before(async function () {
         createRequestParams = {
           reference_id: rpReferenceId,
           callback_url: config.RP_CALLBACK_URL,
@@ -629,6 +627,8 @@ describe('Add identity (mode 2) tests', function () {
             }
           }
         });
+
+        await waitUntilBlockHeightMatch('rp1', 'idp1');
       });
 
       it('RP should create a request successfully', async function () {
@@ -1659,7 +1659,6 @@ describe('Add identity (mode 2) tests', function () {
       });
 
       expect(response.status).to.equal(204);
-      await wait(1000);
     });
 
     it('Namespace (test_add_identity) should be added successfully', async function () {
@@ -1689,7 +1688,7 @@ describe('Add identity (mode 2) tests', function () {
       let accessorId;
       let referenceGroupCode;
 
-      before(function () {
+      before(async function () {
         if (!idp2Available) {
           this.test.parent.pending = true;
           this.skip();
@@ -1726,6 +1725,8 @@ describe('Add identity (mode 2) tests', function () {
             notificationAddIdentityPromise.resolve(callbackData);
           }
         });
+
+        await waitUntilBlockHeightMatch('idp2', 'ndid1');
       });
 
       it('idp2 should create identity request (mode 2) successfully', async function () {

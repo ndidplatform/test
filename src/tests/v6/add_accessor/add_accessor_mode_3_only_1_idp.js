@@ -35,6 +35,7 @@ import {
 } from '../_fragments/common';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (providing custom request_message and without providing accessor_id) test', function () {
   let namespace = 'citizen_id';
@@ -488,7 +489,7 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
       let idpResponseParams = [];
       let requestMessageHash;
 
-      before(function () {
+      before(async function () {
         if (db.idp1Identities[0] == null) {
           throw new Error('No created identity to use');
         }
@@ -636,6 +637,8 @@ describe('IdP (idp1) add accessor (identity associated with one idp mode 3) (pro
             }
           }
         });
+
+        await waitUntilBlockHeightMatch('rp1', 'idp1');
       });
 
       it('RP should create a request successfully', async function () {

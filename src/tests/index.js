@@ -1,3 +1,4 @@
+import { connectWs, disconnectWS } from '../tendermint';
 import { startCallbackServers, stopCallbackServers } from '../callback_server';
 import {
   startCallbackServer as startKmsCallbackServer,
@@ -65,6 +66,9 @@ async function checkForAvailableNodes() {
 describe('End-to-End NDID API test', function () {
   before(async function () {
     this.timeout(5000);
+
+    connectWs();
+
     startCallbackServers();
     startNodeCallbackServer();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {
@@ -85,6 +89,8 @@ describe('End-to-End NDID API test', function () {
   });
 
   after(function () {
+    disconnectWS();
+
     stopCallbackServers();
     stopNodeCallbackServer();
     if (config.USE_EXTERNAL_CRYPTO_SERVICE) {

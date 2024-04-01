@@ -9,6 +9,7 @@ import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
 import { createEventPromise, generateReferenceId, wait } from '../../../utils';
 import * as config from '../../../config';
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('IdP update identity ial test', function() {
   let namespace;
@@ -148,7 +149,7 @@ describe("IdP update identity ial greater than node's max ial test", function() 
       node_id: 'idp1',
       max_ial: 1.1,
     });
-    await wait(5000);
+    await waitUntilBlockHeightMatch('idp1', 'ndid1');
   });
 
   it("IdP should update identity ial greater than node's max ial unsuccessfully", async function() {
@@ -179,6 +180,6 @@ describe("IdP update identity ial greater than node's max ial test", function() 
       node_id: 'idp1',
       max_ial: maxIalNodeBeforeUpdate,
     });
-    await wait(5000);
+    await waitUntilBlockHeightMatch('idp1', 'ndid1');
   });
 });

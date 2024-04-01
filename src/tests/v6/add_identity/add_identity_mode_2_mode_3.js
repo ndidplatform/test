@@ -16,7 +16,6 @@ import {
 } from '../../../callback_server';
 import { ndidAvailable, idp2Available } from '../..';
 import {
-  wait,
   generateReferenceId,
   createEventPromise,
   hash,
@@ -38,6 +37,7 @@ import {
 import * as config from '../../../config';
 import * as db from '../../../db';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('Add identity (mode 2,3) tests', function () {
   let alreadyAddedNamespace;
@@ -114,8 +114,6 @@ describe('Add identity (mode 2,3) tests', function () {
       });
       expect(response.status).to.equal(201);
     }
-
-    await wait(1000);
   });
 
   it('Namespace (test_add_identity) should be added successfully', async function () {
@@ -146,6 +144,10 @@ describe('Add identity (mode 2,3) tests', function () {
   });
 
   it('AS should add offered service (update supported_namespace_list bank_statement) successfully', async function () {
+    this.timeout(5000);
+
+    await waitUntilBlockHeightMatch('as1', 'ndid1');
+
     const responseUpdateService = await asApi.addOrUpdateService('as1', {
       serviceId: 'bank_statement',
       reference_id: bankStatementReferenceId,
@@ -175,8 +177,6 @@ describe('Add identity (mode 2,3) tests', function () {
       suspended: false,
       supported_namespace_list: ['citizen_id', 'test_add_identity'],
     });
-
-    await wait(1000);
   });
 
   describe('idp1 create identity request and add identity (mode 3) tests', function () {
@@ -706,8 +706,6 @@ describe('Add identity (mode 2,3) tests', function () {
       expect(response.status).to.equal(200);
       const responseBody = await response.json();
       expect(responseBody.ial).to.equal(2.3);
-
-      await wait(3000); //Wait for data propagate
     });
 
     describe('Create request with new identity (1 IdP, 1 AS, mode 2)', function () {
@@ -766,7 +764,7 @@ describe('Add identity (mode 2,3) tests', function () {
       let idpResponseParams = [];
       let requestMessageHash;
 
-      before(function () {
+      before(async function () {
         createRequestParams = {
           reference_id: rpReferenceId,
           callback_url: config.RP_CALLBACK_URL,
@@ -909,6 +907,8 @@ describe('Add identity (mode 2,3) tests', function () {
             }
           }
         });
+
+        await waitUntilBlockHeightMatch('rp1', 'idp1');
       });
 
       it('RP should create a request successfully', async function () {
@@ -1925,9 +1925,8 @@ describe('Add identity (mode 2,3) tests', function () {
         const responseBody = await response.json();
         expect(response.status).to.equal(200);
         expect(responseBody).to.be.an('array').that.is.empty;
-
-        await wait(3000); //Wait for data propagate
       });
+
       // after(function() {
       //   rpEventEmitter.removeAllListeners('callback');
       //   idp1EventEmitter.removeAllListeners('callback');
@@ -3108,7 +3107,6 @@ describe('Add identity (mode 2,3) tests', function () {
         allowed_identifier_count_in_reference_group: 2,
       });
       expect(response.status).to.equal(204);
-      await wait(1000);
 
       const responseUpdateService = await asApi.addOrUpdateService('as1', {
         serviceId: 'bank_statement',
@@ -3123,8 +3121,6 @@ describe('Add identity (mode 2,3) tests', function () {
         reference_id: bankStatementReferenceIdAfterTest,
         success: true,
       });
-
-      await wait(1000);
 
       const responseGetService = await asApi.getService('as1', {
         serviceId: 'bank_statement',

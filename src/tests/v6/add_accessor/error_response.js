@@ -6,7 +6,7 @@ import * as commonApi from '../../../api/v6/common';
 import * as identityApi from '../../../api/v6/identity';
 import { idp1EventEmitter } from '../../../callback_server';
 import * as db from '../../../db';
-import { createEventPromise, generateReferenceId, wait } from '../../../utils';
+import { createEventPromise, generateReferenceId } from '../../../utils';
 import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
 import { idp2Available } from '../../';
@@ -141,8 +141,6 @@ describe('IdP error response add accessor test', function () {
         },
       ],
     });
-
-    await wait(3000);
   });
 
   it('After create identity this sid should be existing on platform ', async function () {

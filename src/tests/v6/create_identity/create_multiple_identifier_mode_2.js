@@ -7,8 +7,9 @@ import * as commonApi from '../../../api/v6/common';
 import * as identityApi from '../../../api/v6/identity';
 import { idp1EventEmitter, idp2EventEmitter } from '../../../callback_server';
 import { ndidAvailable, idp2Available } from '../..';
-import { wait, generateReferenceId, createEventPromise } from '../../../utils';
+import { generateReferenceId, createEventPromise } from '../../../utils';
 import * as config from '../../../config';
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('Create identity with same namespace and multiple identifier (mode 2) tests', function() {
   before(function() {
@@ -63,7 +64,6 @@ describe('Create identity with same namespace and multiple identifier (mode 2) t
       } else {
         expect(response.status).to.equal(201);
       }
-      await wait(1000);
     });
 
     it('Namespace (same_idp_allowed_2) should be added successfully', async function() {
@@ -87,7 +87,8 @@ describe('Create identity with same namespace and multiple identifier (mode 2) t
       const referenceId = generateReferenceId();
       const createIdentityResultPromise = createEventPromise();
       let accessorId;
-      before(function() {
+
+      before(async function() {
         idp1EventEmitter.on('callback', function(callbackData) {
           if (
             callbackData.type === 'create_identity_result' &&
@@ -96,7 +97,10 @@ describe('Create identity with same namespace and multiple identifier (mode 2) t
             createIdentityResultPromise.resolve(callbackData);
           }
         });
+
+        await waitUntilBlockHeightMatch('idp1', 'ndid1');
       });
+
       it('idp1 should create identity request (mode 2) unsuccessfully', async function() {
         this.timeout(10000);
         const response = await identityApi.createIdentity('idp1', {
@@ -315,7 +319,6 @@ describe('Create identity with same namespace and multiple identifier (mode 2) t
       } else {
         expect(response.status).to.equal(201);
       }
-      await wait(1000);
     });
 
     it('Namespace (different_idp_allowed_2) should be added successfully', async function() {
@@ -343,7 +346,8 @@ describe('Create identity with same namespace and multiple identifier (mode 2) t
       const idp2CreateIdentityResultPromise = createEventPromise();
 
       let accessorId;
-      before(function() {
+
+      before(async function() {
         idp1EventEmitter.on('callback', function(callbackData) {
           if (
             callbackData.type === 'create_identity_result' &&
@@ -361,7 +365,10 @@ describe('Create identity with same namespace and multiple identifier (mode 2) t
             idp2CreateIdentityResultPromise.resolve(callbackData);
           }
         });
+
+        await waitUntilBlockHeightMatch('idp1', 'ndid1');
       });
+
       it('idp1 should create identity request (mode 2) successfully', async function() {
         this.timeout(10000);
         const response = await identityApi.createIdentity('idp1', {

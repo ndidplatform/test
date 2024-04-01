@@ -18,7 +18,6 @@ import {
   generateReferenceId,
   hash,
   createResponseSignature,
-  wait,
 } from '../../../utils';
 import {
   createIdpIdList,
@@ -41,6 +40,7 @@ import {
   verifyResponseSignature,
   getAndVerifyRequestMessagePaddedHashTest,
 } from '../_fragments/request_flow_fragments/idp';
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as 2nd IdP', function () {
   let namespace;
@@ -268,7 +268,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
   });
 
   it('Should get relevant IdP nodes by sid successfully', async function () {
-    this.timeout(30000);
+    this.timeout(10000);
 
     const response = await commonApi.getRelevantIdpNodesBySid('idp1', {
       namespace,
@@ -284,8 +284,6 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     expect(idp.ial).to.equal(2.3);
     expect(idp.lial).to.equal(null);
     expect(idp.laal).to.equal(null);
-
-    await wait(3000); // wait for data propagate
   });
 
   after(function () {
@@ -354,7 +352,7 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
     let idpResponseParams = [];
     let requestMessageHash;
 
-    before(function () {
+    before(async function () {
       if (db.idp1Identities[0] == null) {
         throw new Error('No created identity to use');
       }
@@ -522,6 +520,8 @@ describe('IdP (idp2) create identity (mode 2) (without providing accessor_id) as
           }
         }
       });
+
+      await waitUntilBlockHeightMatch('rp1', 'idp2');
     });
 
     it('RP should create a request successfully', async function () {

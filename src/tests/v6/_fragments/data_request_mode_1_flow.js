@@ -26,7 +26,7 @@ import {
   receiveMessagequeueSendSuccessCallback,
 } from './common';
 
-import { createEventPromise, wait } from '../../../utils';
+import { createEventPromise } from '../../../utils';
 import {
   createIdpIdList,
   createDataRequestList,
@@ -479,8 +479,6 @@ export function mode1DataRequestFlowTest({
       requestStatusPendingPromise,
       requesterNodeId: rpNodeId,
     });
-
-    await wait(3000); // wait for receive message queue send success callback
   });
 
   it('RP should receive message queue send success (to IdP) callback', async function () {
