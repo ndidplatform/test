@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "E2E test for NDID platform",
   "scripts": {
-    "test": "mocha src/tests/index.js --require babel-core/register --require source-map-support/register",
+    "test": "node --security-revert=CVE-2023-46809 node_modules/mocha/bin/_mocha src/tests/index.js --require @babel/register --require source-map-support/register",
     "test-with-kms": "USE_EXTERNAL_CRYPTO_SERVICE=true npm run test-exit-on-error",
-    "test-exit-on-error": "mocha src/tests/index.js --require babel-core/register --require source-map-support/register --bail",
+    "test-exit-on-error": "node --security-revert=CVE-2023-46809 node_modules/mocha/bin/_mocha src/tests/index.js --require @babel/register --require source-map-support/register --bail",
     "test-with-ndid-http-headers": "HTTP_HEADER_NDID_MEMBER_APP_TYPE=custom_member_app HTTP_HEADER_NDID_MEMBER_APP_VERSION=1.0.0 npm run test-exit-on-error"
   },
   "repository": {
@@ -17,23 +17,27 @@
   },
   "homepage": "https://github.com/ndidplatform/test#readme",
   "dependencies": {
-    "asn1.js": "^5.0.1",
+    "asn1.js": "^5.4.1",
     "bigint-buffer": "^1.1.5",
     "body-parser": "^1.18.3",
     "express": "^4.16.3",
-    "node-fetch": "^2.1.2",
-    "source-map-support": "^0.5.6",
-    "uuid": "^3.3.2"
+    "node-fetch": "^2.7.0",
+    "simple-backoff": "^1.1.0",
+    "source-map-support": "^0.5.21",
+    "uuid": "^3.4.0",
+    "ws": "^8.16.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-eslint": "^8.2.5",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-env": "^1.7.0",
-    "chai": "^4.1.2",
-    "eslint": "^5.1.0",
-    "eslint-plugin-babel": "^5.1.0",
-    "mocha": "^5.2.0"
+    "@babel/cli": "^7.17.6",
+    "@babel/core": "^7.17.7",
+    "@babel/eslint-parser": "^7.17.0",
+    "@babel/eslint-plugin": "^7.17.7",
+    "@babel/plugin-proposal-object-rest-spread": "^7.17.3",
+    "@babel/plugin-transform-runtime": "^7.17.0",
+    "@babel/preset-env": "^7.16.11",
+    "@babel/register": "^7.17.7",
+    "chai": "^4.4.1",
+    "eslint": "^8.57.0",
+    "mocha": "^10.4.0"
   }
 }

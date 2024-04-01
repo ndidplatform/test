@@ -140,7 +140,7 @@ export function getServicePriceList(nodeId, params) {
   );
 }
 
-export function getServicePriceCeiling(nodeId, params) {
+export function getServicePriceCeiling(nodeId, params = {}) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { ...queryParams } = params;
 
@@ -156,7 +156,7 @@ export function getServicePriceCeiling(nodeId, params) {
   );
 }
 
-export function getServicePriceMinEffectiveDatetimeDelay(nodeId, params) {
+export function getServicePriceMinEffectiveDatetimeDelay(nodeId, params = {}) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { ...queryParams } = params;
 
@@ -178,7 +178,7 @@ export function getMessage(nodeId, data) {
   return httpGet(`${apiBaseUrl}/utility/messages/${messageId}`);
 }
 
-export function getRequestTypeList(nodeId, params) {
+export function getRequestTypeList(nodeId, params = {}) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { ...queryParams } = params;
 
@@ -194,7 +194,7 @@ export function getRequestTypeList(nodeId, params) {
 
 export function getSuppressedIdentityModificationNotificationNodeList(
   nodeId,
-  params
+  params = {}
 ) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { ...queryParams } = params;
@@ -228,7 +228,6 @@ export function getAllowedNodeSupportedFeatureList(nodeId) {
 
   return httpGet(`${apiBaseUrl}/utility/node_supported_features`);
 }
-
 
 export function getSupportedIALList(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
