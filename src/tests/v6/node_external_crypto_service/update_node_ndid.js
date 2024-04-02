@@ -42,15 +42,6 @@ describe('NDID update node keys test', function () {
 
   const NDIDUpdateNodeResultPromise = createEventPromise();
 
-  ndidEventEmitter.on('callback', function (callbackData) {
-    if (
-      callbackData.type === 'update_node_result' &&
-      callbackData.reference_id === NDIDUpdateNodeReferenceId
-    ) {
-      NDIDUpdateNodeResultPromise.resolve(callbackData);
-    }
-  });
-
   let nodeInfo;
   let nodePublicKeys;
 
@@ -58,6 +49,15 @@ describe('NDID update node keys test', function () {
     if (!ndidAvailable) {
       this.skip();
     }
+
+    ndidEventEmitter.on('callback', function (callbackData) {
+      if (
+        callbackData.type === 'update_node_result' &&
+        callbackData.reference_id === NDIDUpdateNodeReferenceId
+      ) {
+        NDIDUpdateNodeResultPromise.resolve(callbackData);
+      }
+    });
 
     let response;
 
