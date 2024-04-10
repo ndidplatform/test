@@ -40,36 +40,63 @@ const HTTP_HEADER_FIELDS = {
 };
 
 export async function httpGet(url) {
+  let additionalHeaders = {};
+  if (httpHeaderNdidMemberAppType) {
+    additionalHeaders[HTTP_HEADER_FIELDS.ndidMemberAppType] =
+      httpHeaderNdidMemberAppType;
+  }
+  if (httpHeaderNdidMemberAppVersion) {
+    additionalHeaders[HTTP_HEADER_FIELDS.ndidMemberAppVersion] =
+      httpHeaderNdidMemberAppVersion;
+  }
+
   return fetch(url, {
     method: 'GET',
     headers: {
       Accept: 'application/json',
-      [HTTP_HEADER_FIELDS.ndidMemberAppType]: httpHeaderNdidMemberAppType,
-      [HTTP_HEADER_FIELDS.ndidMemberAppVersion]: httpHeaderNdidMemberAppVersion,
+      ...additionalHeaders,
     },
   });
 }
 
 export async function httpPost(url, body) {
+  let additionalHeaders = {};
+  if (httpHeaderNdidMemberAppType) {
+    additionalHeaders[HTTP_HEADER_FIELDS.ndidMemberAppType] =
+      httpHeaderNdidMemberAppType;
+  }
+  if (httpHeaderNdidMemberAppVersion) {
+    additionalHeaders[HTTP_HEADER_FIELDS.ndidMemberAppVersion] =
+      httpHeaderNdidMemberAppVersion;
+  }
+
   return fetch(url, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      [HTTP_HEADER_FIELDS.ndidMemberAppType]: httpHeaderNdidMemberAppType,
-      [HTTP_HEADER_FIELDS.ndidMemberAppVersion]: httpHeaderNdidMemberAppVersion,
+      ...additionalHeaders,
     },
     body: JSON.stringify(body),
   });
 }
 
 export async function httpDelete(url) {
+  let additionalHeaders = {};
+  if (httpHeaderNdidMemberAppType) {
+    additionalHeaders[HTTP_HEADER_FIELDS.ndidMemberAppType] =
+      httpHeaderNdidMemberAppType;
+  }
+  if (httpHeaderNdidMemberAppVersion) {
+    additionalHeaders[HTTP_HEADER_FIELDS.ndidMemberAppVersion] =
+      httpHeaderNdidMemberAppVersion;
+  }
+
   return fetch(url, {
     method: 'DELETE',
     headers: {
       Accept: 'application/json',
-      [HTTP_HEADER_FIELDS.ndidMemberAppType]: httpHeaderNdidMemberAppType,
-      [HTTP_HEADER_FIELDS.ndidMemberAppVersion]: httpHeaderNdidMemberAppVersion,
+      ...additionalHeaders,
     },
   });
 }
