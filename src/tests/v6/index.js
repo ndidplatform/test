@@ -6,6 +6,7 @@ describe('API v6', function () {
   require('./as_setup');
   require('./as_service_setup');
   require('./proxy_setup');
+  require('./kms_callback');
   require('./create_identity');
   require('./upgrade_identity_mode');
   require('./verify_identity');
