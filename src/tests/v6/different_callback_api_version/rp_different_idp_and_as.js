@@ -2,8 +2,8 @@ import { expect } from 'chai';
 
 import * as rpApi from '../../../api/v4/rp'; //v4
 
-import * as idpApi from '../../../api/v6/idp'; // v5
-import * as asApi from '../../../api/v6/as'; // v5
+import * as idpApi from '../../../api/v6/idp'; // v5/v6
+import * as asApi from '../../../api/v6/as'; // v5/v6
 
 import * as commonApi from '../../../api/common';
 import {
@@ -22,8 +22,8 @@ import * as config from '../../../config';
 import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_server/node';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 
-describe('RP callback api version v4 create request to IdP and AS with callback api version v5', function () {
-  describe('AS (v5) response data request test', function () {
+describe('RP callback api version v4 create request to IdP and AS with callback api version v5/v6', function () {
+  describe('AS (v5/v6) response data request test', function () {
     let namespace;
     let identifier;
 
@@ -520,7 +520,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
     });
   });
 
-  describe('AS (v5) error response request test', function () {
+  describe('AS (v5/v6) error response request test', function () {
     let namespace;
     let identifier;
 
@@ -971,7 +971,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
 
   after(async function () {
     await commonApi.setConfig('rp1', {
-      CALLBACK_API_VERSION: '5.2',
+      CALLBACK_API_VERSION: '6.0',
     });
   });
 });

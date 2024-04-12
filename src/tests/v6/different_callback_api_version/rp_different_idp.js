@@ -2,7 +2,7 @@ import { expect } from 'chai';
 
 import * as rpApi from '../../../api/v4/rp'; //v4
 
-import * as idpApi from '../../../api/v6/idp'; // v5
+import * as idpApi from '../../../api/v6/idp'; // v5/v6
 
 import * as commonApi from '../../../api/common';
 import {
@@ -22,8 +22,8 @@ import { eventEmitter as nodeCallbackEventEmitter } from '../../../callback_serv
 import {} from '../_fragments/request_flow_fragments/idp';
 import { receiveMessagequeueSendSuccessCallback } from '../_fragments/common';
 
-describe('RP callback api version v4 create request to IdP with callback api version v5', function () {
-  describe('Idp (v5) accept request test', function () {
+describe('RP callback api version v4 create request to IdP with callback api version v5/v6', function () {
+  describe('Idp (v5/v6) accept request test', function () {
     let namespace;
     let identifier;
 
@@ -366,7 +366,7 @@ describe('RP callback api version v4 create request to IdP with callback api ver
     });
   });
 
-  describe('Idp (v5) reject request test', function () {
+  describe('Idp (v5/v6) reject request test', function () {
     let namespace;
     let identifier;
 
@@ -673,7 +673,7 @@ describe('RP callback api version v4 create request to IdP with callback api ver
     });
   });
 
-  describe('Idp (v5) error response request test', function () {
+  describe('Idp (v5/v6) error response request test', function () {
     let namespace;
     let identifier;
 
@@ -964,7 +964,7 @@ describe('RP callback api version v4 create request to IdP with callback api ver
     });
   });
 
-  describe('Idp (v5) min_idp = 1 to 2 IdPs, 1st IdP error response and 2nd IdP accept request test', function () {
+  describe('Idp (v5/v6) min_idp = 1 to 2 IdPs, 1st IdP error response and 2nd IdP accept request test', function () {
     let namespace;
     let identifier;
 
@@ -1411,7 +1411,7 @@ describe('RP callback api version v4 create request to IdP with callback api ver
     });
   });
 
-  describe('Idp (v5) min_idp = 2 to 2 IdPs, 1st IdP accept and 2nd error response test', function () {
+  describe('Idp (v5/v6) min_idp = 2 to 2 IdPs, 1st IdP accept and 2nd error response test', function () {
     let namespace;
     let identifier;
 
@@ -1827,7 +1827,7 @@ describe('RP callback api version v4 create request to IdP with callback api ver
 
   after(async function () {
     await commonApi.setConfig('rp1', {
-      CALLBACK_API_VERSION: '5.2',
+      CALLBACK_API_VERSION: '6.0',
     });
   });
 });
