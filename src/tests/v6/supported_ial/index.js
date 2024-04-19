@@ -7,4 +7,5 @@ describe('Supported IAL tests', function () {
   require('./create_request_mode_1');
 
   require('./create_identity');
+  require('./create_identity_with_invalid_ial');
 });
