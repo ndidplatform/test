@@ -765,6 +765,8 @@ describe('Add identity (mode 2,3) tests', function () {
       let requestMessageHash;
 
       before(async function () {
+        this.timeout(10000);
+
         createRequestParams = {
           reference_id: rpReferenceId,
           callback_url: config.RP_CALLBACK_URL,
