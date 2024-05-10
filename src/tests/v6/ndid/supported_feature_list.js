@@ -110,7 +110,8 @@ describe('Node feature support list tests', function () {
   });
 
   describe('NDID update node with node supported feature list test', function () {
-    const nodeId = 'rp1';
+    const nodeId = 'idp1';
+    let nodeName = '';
     let nodeInfoBeforeUpdateNode;
 
     before(async function () {
@@ -143,6 +144,37 @@ describe('Node feature support list tests', function () {
         ...nodeInfoBeforeUpdateNode,
         supported_feature_list: [featureFlag1],
       });
+      nodeName = responseBody.node_name;
+    });
+
+    it('should get idp node with supported_feature_list successfully', async function () {
+      const response = await commonApi.getIdP('ndid1', {
+        supported_feature_list: featureFlag1,
+      });
+      expect(response.status).to.equal(200);
+      const responseBody = await response.json();
+      const idpInformation = responseBody.find((idp) => idp.node_id === nodeId);
+      expect(idpInformation).to.not.be.an('undefined');
+      expect(idpInformation).to.deep.equal({
+        node_id: nodeId,
+        node_name: nodeName,
+        max_aal: 3,
+        max_ial: 3,
+        lial: null,
+        laal: null,
+        supported_request_message_data_url_type_list: [],
+        agent: false,
+        supported_feature_list: [featureFlag1],
+      });
+    });
+
+    it('should get idp node with supported_feature_list that this node does not support successfully', async function () {
+      const response = await commonApi.getIdP('ndid1', {
+        supported_feature_list: 'dContract',
+      });
+      expect(response.status).to.equal(200);
+      const responseBody = await response.json();
+      expect(responseBody).to.deep.equal([]);
     });
 
     after(async function () {
