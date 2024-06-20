@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import * as commonApi from '../../../api/v6/common';
+import * as commonApi from '../../../api/v5/common';
 
 import { rpCreateRequestTest } from './request_flow_fragments/rp';
 import {

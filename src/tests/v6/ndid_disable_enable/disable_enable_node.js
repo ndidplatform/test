@@ -5,6 +5,7 @@ import * as asApi from '../../../api/v6/as';
 import * as idpApi from '../../../api/v6/idp';
 import * as ndidApi from '../../../api/v6/ndid';
 import * as commonApi from '../../../api/v6/common';
+import * as apiHelpers from '../../../api/helpers';
 import * as db from '../../../db';
 import { ndidAvailable } from '../..';
 import {
@@ -582,11 +583,18 @@ describe('NDID disable RP node and enable RP node test', function () {
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
 
+    const nodeInfoResponse = await apiHelpers.getResponseAndBody(
+      commonApi.getNodeInfo('rp1', {
+        node_id: 'as1',
+      })
+    );
+    const asNodeInfo = nodeInfoResponse.responseBody;
+
     expect(dataArr).to.have.lengthOf(1);
     expect(dataArr[0]).to.deep.include({
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
-      signature_sign_method: 'RSA-SHA256',
+      signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -1151,11 +1159,18 @@ describe('NDID disable IdP node and enable IdP node test', function () {
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
 
+    const nodeInfoResponse = await apiHelpers.getResponseAndBody(
+      commonApi.getNodeInfo('rp1', {
+        node_id: 'as1',
+      })
+    );
+    const asNodeInfo = nodeInfoResponse.responseBody;
+
     expect(dataArr).to.have.lengthOf(1);
     expect(dataArr[0]).to.deep.include({
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
-      signature_sign_method: 'RSA-SHA256',
+      signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -1694,11 +1709,18 @@ describe('NDID disable AS node and enable AS node test', function () {
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
 
+    const nodeInfoResponse = await apiHelpers.getResponseAndBody(
+      commonApi.getNodeInfo('rp1', {
+        node_id: 'as1',
+      })
+    );
+    const asNodeInfo = nodeInfoResponse.responseBody;
+
     expect(dataArr).to.have.lengthOf(1);
     expect(dataArr[0]).to.deep.include({
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
-      signature_sign_method: 'RSA-SHA256',
+      signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;

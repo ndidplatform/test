@@ -8,6 +8,7 @@ import * as idpApi from '../../../api/v6/idp';
 import * as asApi from '../../../api/v6/as';
 import * as commonApi from '../../../api/v6/common';
 import * as identityApi from '../../../api/v6/identity';
+import * as apiHelpers from '../../../api/helpers';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 import {
   idp1EventEmitter,
@@ -88,17 +89,18 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       }
     });
 
-    idp2EventEmitter.on('identity_notification_callback', function (
-      callbackData,
-    ) {
-      if (
-        callbackData.type === 'identity_modification_notification' &&
-        callbackData.reference_group_code === referenceGroupCode &&
-        callbackData.action === 'add_accessor'
-      ) {
-        notificationCreateIdentityPromise.resolve(callbackData);
+    idp2EventEmitter.on(
+      'identity_notification_callback',
+      function (callbackData) {
+        if (
+          callbackData.type === 'identity_modification_notification' &&
+          callbackData.reference_group_code === referenceGroupCode &&
+          callbackData.action === 'add_accessor'
+        ) {
+          notificationCreateIdentityPromise.resolve(callbackData);
+        }
       }
-    });
+    );
   });
 
   it('Should add accessor successfully', async function () {
@@ -141,7 +143,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
 
     const identity = db.idp1Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     identity.accessors.push({
@@ -153,7 +155,8 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
 
   it('After add acessor IdP (idp2) that associated with this sid should receive identity notification callback', async function () {
     this.timeout(15000);
-    const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+    const notificationCreateIdentity =
+      await notificationCreateIdentityPromise.promise;
     expect(notificationCreateIdentity).to.deep.include({
       node_id: 'idp2',
       type: 'identity_modification_notification',
@@ -223,7 +226,6 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
     const as_requestStatusUpdates = [];
     let lastStatusUpdateBlockHeight;
 
-
     let rp_node_id = 'rp1';
     let requester_node_id = 'rp1';
     let idp_node_id = 'idp1';
@@ -240,8 +242,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
 
       const identity = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       //const identity = db.idp1Identities[0]
@@ -405,9 +406,8 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -481,14 +481,13 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -497,7 +496,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -511,9 +510,8 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -523,14 +521,13 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       this.timeout(15000);
       const incomingRequest = await idp2IncomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
         type: 'incoming_request',
@@ -539,7 +536,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -553,9 +550,8 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -566,8 +562,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
 
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
       let latestAccessor;
       if (identityForResponse) {
@@ -606,7 +601,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -737,9 +732,8 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -767,7 +761,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -901,7 +895,7 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -1175,7 +1169,6 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
         requesterNodeId: requester_node_id,
       });
 
-
       // const requestStatus = await idp_requestClosedPromise.promise;
       // expect(requestStatus).to.deep.include({
       //   request_id: requestId,
@@ -1274,11 +1267,18 @@ describe('IdP (idp1) add accessor (mode 2) (providing custom request_message and
       const dataArr = await response.json();
       expect(response.status).to.equal(200);
 
+      const nodeInfoResponse = await apiHelpers.getResponseAndBody(
+        commonApi.getNodeInfo('rp1', {
+          node_id: 'as1',
+        })
+      );
+      const asNodeInfo = nodeInfoResponse.responseBody;
+
       expect(dataArr).to.have.lengthOf(1);
       expect(dataArr[0]).to.deep.include({
         source_node_id: 'as1',
         service_id: createRequestParams.data_request_list[0].service_id,
-        signature_sign_method: 'RSA-SHA256',
+        signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
         data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -1443,17 +1443,18 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       }
     });
 
-    idp1EventEmitter.on('identity_notification_callback', function (
-      callbackData,
-    ) {
-      if (
-        callbackData.type === 'identity_modification_notification' &&
-        callbackData.reference_group_code === referenceGroupCode &&
-        callbackData.action === 'add_accessor'
-      ) {
-        notificationCreateIdentityPromise.resolve(callbackData);
+    idp1EventEmitter.on(
+      'identity_notification_callback',
+      function (callbackData) {
+        if (
+          callbackData.type === 'identity_modification_notification' &&
+          callbackData.reference_group_code === referenceGroupCode &&
+          callbackData.action === 'add_accessor'
+        ) {
+          notificationCreateIdentityPromise.resolve(callbackData);
+        }
       }
-    });
+    );
   });
 
   it('Should add accessor successfully', async function () {
@@ -1495,7 +1496,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
 
     const identity = db.idp2Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     identity.accessors.push({
@@ -1507,7 +1508,8 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
 
   it('After add acessor (idp1) that associated with this sid should receive identity notification callback', async function () {
     this.timeout(15000);
-    const notificationCreateIdentity = await notificationCreateIdentityPromise.promise;
+    const notificationCreateIdentity =
+      await notificationCreateIdentityPromise.promise;
     expect(notificationCreateIdentity).to.deep.include({
       node_id: 'idp1',
       type: 'identity_modification_notification',
@@ -1594,8 +1596,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
 
       const identity = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       //const identity = db.idp1Identities[0]
@@ -1759,9 +1760,8 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1835,14 +1835,13 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       this.timeout(15000);
       const incomingRequest = await idp1IncomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp1',
         type: 'incoming_request',
@@ -1851,7 +1850,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1865,9 +1864,8 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1877,14 +1875,13 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       this.timeout(15000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         node_id: 'idp2',
         type: 'incoming_request',
@@ -1893,7 +1890,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1907,9 +1904,8 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1919,8 +1915,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       this.timeout(15000);
       identityForResponse = db.idp2Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       let latestAccessor;
@@ -1959,7 +1954,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -1980,7 +1975,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         valid_ial: true,
       });
 
-      const response = await idpApi.createResponse('idp2',idpResponse);
+      const response = await idpApi.createResponse('idp2', idpResponse);
 
       expect(response.status).to.equal(202);
     });
@@ -2030,7 +2025,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         requesterNodeId: requester_node_id,
       });
       lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
-      
+
       // const requestStatus = await requestStatusConfirmedPromise.promise;
       // expect(requestStatus).to.deep.include({
       //   request_id: requestId,
@@ -2090,9 +2085,8 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -2120,9 +2114,8 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
-
     });
 
     it('RP should receive request status with signed data count = 1', async function () {
@@ -2255,7 +2248,7 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await as_requestStatusSignedDataPromise.promise;
@@ -2296,7 +2289,6 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
 
     it('RP should receive completed request status with received data count = 1', async function () {
       this.timeout(15000);
-
 
       const testResult = await receiveCompletedRequestStatusTest({
         nodeId: rp_node_id,
@@ -2628,11 +2620,18 @@ describe('IdP (idp2) add accessor (mode 2) (providing custom request_message and
       const dataArr = await response.json();
       expect(response.status).to.equal(200);
 
+      const nodeInfoResponse = await apiHelpers.getResponseAndBody(
+        commonApi.getNodeInfo('rp1', {
+          node_id: 'as1',
+        })
+      );
+      const asNodeInfo = nodeInfoResponse.responseBody;
+
       expect(dataArr).to.have.lengthOf(1);
       expect(dataArr[0]).to.deep.include({
         source_node_id: 'as1',
         service_id: createRequestParams.data_request_list[0].service_id,
-        signature_sign_method: 'RSA-SHA256',
+        signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
         data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;

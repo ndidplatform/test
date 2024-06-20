@@ -2,10 +2,11 @@ import { expect } from 'chai';
 
 import * as rpApi from '../../../api/v4/rp'; //v4
 
+import * as commonBaseApi from '../../../api/common';
 import * as idpApi from '../../../api/v6/idp'; // v5/v6
 import * as asApi from '../../../api/v6/as'; // v5/v6
-
-import * as commonApi from '../../../api/common';
+import * as commonApi from '../../../api/v6/common';
+import * as apiHelpers from '../../../api/helpers';
 import {
   rpEventEmitter,
   idp1EventEmitter,
@@ -179,7 +180,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
     it('RP should set config callback api version v4 successfully', async function () {
       this.timeout(15000);
 
-      const response = await commonApi.setConfig('rp1', {
+      const response = await commonBaseApi.setConfig('rp1', {
         CALLBACK_API_VERSION: '4.0',
       });
 
@@ -188,7 +189,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
 
       await wait(3000);
 
-      const responseGetConfig = await commonApi.getConfig('rp1');
+      const responseGetConfig = await commonBaseApi.getConfig('rp1');
       const responseBodyGetConfig = await responseGetConfig.json();
       expect(responseBodyGetConfig.callbackApiVersion).to.equal('4.0');
     });
@@ -501,11 +502,18 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
       const dataArr = await response.json();
       expect(response.status).to.equal(200);
 
+      const nodeInfoResponse = await apiHelpers.getResponseAndBody(
+        commonApi.getNodeInfo('rp1', {
+          node_id: 'as1',
+        })
+      );
+      const asNodeInfo = nodeInfoResponse.responseBody;
+
       expect(dataArr).to.have.lengthOf(1);
       expect(dataArr[0]).to.deep.include({
         source_node_id: 'as1',
         service_id: createRequestParams.data_request_list[0].service_id,
-        signature_sign_method: 'RSA-SHA256',
+        signature_sign_method: asNodeInfo.signing_public_key.algorithm,
         data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -669,7 +677,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
     it('RP should set config callback api version v4 successfully', async function () {
       this.timeout(15000);
 
-      const response = await commonApi.setConfig('rp1', {
+      const response = await commonBaseApi.setConfig('rp1', {
         CALLBACK_API_VERSION: '4.0',
       });
 
@@ -678,7 +686,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
 
       await wait(3000);
 
-      const responseGetConfig = await commonApi.getConfig('rp1');
+      const responseGetConfig = await commonBaseApi.getConfig('rp1');
       const responseBodyGetConfig = await responseGetConfig.json();
       expect(responseBodyGetConfig.callbackApiVersion).to.equal('4.0');
     });
@@ -970,7 +978,7 @@ describe('RP callback api version v4 create request to IdP and AS with callback 
   });
 
   after(async function () {
-    await commonApi.setConfig('rp1', {
+    await commonBaseApi.setConfig('rp1', {
       CALLBACK_API_VERSION: '6.0',
     });
   });

@@ -1,4 +1,4 @@
-import * as commonApi from '../../../api/v6/common';
+import * as commonApi from '../../../api/v5/common';
 import * as utils from '../../../utils';
 import { idpReceiveCreateResponseResultCallbackTest } from './request_flow_fragments/idp';
 

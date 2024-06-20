@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import * as idpApi from '../../../../api/v6/idp';
-import * as commonApi from '../../../../api/v6/common';
+import * as idpApi from '../../../../api/v5/idp';
+import * as commonApi from '../../../../api/v5/common';
 import {
   hash,
   hashRequestMessageForConsent,

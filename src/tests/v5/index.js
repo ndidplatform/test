@@ -4,6 +4,7 @@ describe('API v5', function () {
   require('./as_service_setup');
   require('./kms_callback');
   require('./create_identity');
+  require('./data_request');
   require('./create_request');
 
   require('./node_external_crypto_service');

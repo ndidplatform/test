@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import * as asApi from '../../../../api/v6/as';
+import * as asApi from '../../../../api/v5/as';
 
 export async function asReceiveDataRequestTest({
   dataRequestReceivedPromise,

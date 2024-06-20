@@ -1,7 +1,9 @@
 import { expect } from 'chai';
 
-import * as rpApi from '../../../../api/v6/rp';
-import * as commonApi from '../../../../api/v6/common';
+import * as rpApi from '../../../../api/v5/rp';
+import * as commonApi from '../../../../api/v5/common';
+import * as commonApiV6 from '../../../../api/v6/common';
+import * as apiHelpers from '../../../../api/helpers';
 import * as util from '../../../../utils';
 
 export async function rpCreateRequestTest({
@@ -109,8 +111,24 @@ export async function rpGotDataFromAsTest({
 
   expect(dataArray).to.have.lengthOf(dataArrLength);
 
+  const asResponseDataWithNodeInfoArr = await Promise.all(
+    asResponseDataArr.map(async (responseData) => {
+      const response = await apiHelpers.getResponseAndBody(
+        commonApiV6.getNodeInfo(callApiAtNodeId, {
+          node_id: responseData.sourceNodeId,
+        })
+      );
+      const nodeInfo = response.responseBody;
+
+      return {
+        ...responseData,
+        nodeInfo,
+      };
+    })
+  );
+
   dataArray.forEach((dataArr) => {
-    let asResponseData = asResponseDataArr.find(
+    let asResponseData = asResponseDataWithNodeInfoArr.find(
       (asResponseData) =>
         asResponseData.sourceNodeId === dataArr.source_node_id &&
         asResponseData.serviceId === dataArr.service_id
@@ -119,7 +137,8 @@ export async function rpGotDataFromAsTest({
     expect(dataArr).to.deep.include({
       source_node_id: asResponseData.sourceNodeId,
       service_id: asResponseData.serviceId,
-      signature_sign_method: 'RSA-SHA256',
+      signature_sign_method:
+        asResponseData.nodeInfo.signing_public_key.algorithm,
       data: asResponseData.data,
     });
     expect(dataArr.source_signature).to.be.a('string').that.is.not.empty;

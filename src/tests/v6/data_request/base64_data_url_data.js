@@ -5,6 +5,7 @@ import * as idpApi from '../../../api/v6/idp';
 import * as asApi from '../../../api/v6/as';
 import * as nodeApi from '../../../api/v6/node';
 import * as commonApi from '../../../api/v6/common';
+import * as apiHelpers from '../../../api/helpers';
 import {
   rpEventEmitter,
   idp1EventEmitter,
@@ -1287,11 +1288,18 @@ describe('Base64 encoded data URL request_message and data, 1 IdP, 1 AS, mode 2'
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
 
+    const nodeInfoResponse = await apiHelpers.getResponseAndBody(
+      commonApi.getNodeInfo('rp1', {
+        node_id: 'as1',
+      })
+    );
+    const asNodeInfo = nodeInfoResponse.responseBody;
+
     expect(dataArr).to.have.lengthOf(1);
     expect(dataArr[0]).to.deep.include({
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
-      signature_sign_method: 'RSA-SHA256',
+      signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;

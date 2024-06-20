@@ -4,6 +4,7 @@ import * as rpApi from '../../../api/v6/rp';
 import * as idpApi from '../../../api/v6/idp';
 import * as asApi from '../../../api/v6/as';
 import * as commonApi from '../../../api/v6/common';
+import * as apiHelpers from '../../../api/helpers';
 import {
   idp1EventEmitter,
   rpEventEmitter,
@@ -965,11 +966,18 @@ describe('No min AS, 2 AS, with error response, 1 Service, mode 2', function () 
     const dataArr = await response.json();
     expect(response.status).to.equal(200);
 
+    const nodeInfoResponse = await apiHelpers.getResponseAndBody(
+      commonApi.getNodeInfo('rp1', {
+        node_id: 'as2',
+      })
+    );
+    const asNodeInfo = nodeInfoResponse.responseBody;
+
     expect(dataArr).to.have.lengthOf(1);
     expect(dataArr[0]).to.deep.include({
       source_node_id: 'as2',
       service_id: createRequestParams.data_request_list[0].service_id,
-      signature_sign_method: 'RSA-SHA256',
+      signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
