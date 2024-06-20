@@ -7,4 +7,7 @@ describe('API v5', function () {
   require('./create_request');
 
   require('./node_external_crypto_service');
+
+  require('./supported_ial');
+  require('./supported_aal');
 });

@@ -209,3 +209,15 @@ export function isSuppressedIdentityModificationNotificationNode(
     `${apiBaseUrl}/utility/suppressed_identity_modification_notification_node_ids/${node_id}`
   );
 }
+
+export function getSupportedIALList(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+
+  return httpGet(`${apiBaseUrl}/utility/supported_ial`);
+}
+
+export function getSupportedAALList(nodeId) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+
+  return httpGet(`${apiBaseUrl}/utility/supported_aal`);
+}

@@ -29,7 +29,7 @@ describe('Decrypt callback', function () {
     nodeInfo = response.responseBody;
 
     await commonBaseApi.setConfig('rp1', {
-      EXTERNAL_CRYPTO_SERVICE_CALLBACK_API_VERSION: '5.2',
+      EXTERNAL_CRYPTO_SERVICE_CALLBACK_API_VERSION: '5.3',
     });
 
     kmsEventEmitter.on('decryptCallback', function (callbackData) {
