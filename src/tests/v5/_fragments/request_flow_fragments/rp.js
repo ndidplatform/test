@@ -5,6 +5,7 @@ import * as commonApi from '../../../../api/v5/common';
 import * as commonApiV6 from '../../../../api/v6/common';
 import * as apiHelpers from '../../../../api/helpers';
 import * as util from '../../../../utils';
+import * as cryptoUtils from '../../../../utils/crypto';
 
 export async function rpCreateRequestTest({
   callApiAtNodeId,
@@ -134,11 +135,20 @@ export async function rpGotDataFromAsTest({
         asResponseData.serviceId === dataArr.service_id
     );
 
+    let expectedSignMethod;
+    if (
+      asResponseData.nodeInfo.signing_public_key.algorithm ===
+      cryptoUtils.signatureAlgorithm.RSASSA_PKCS1_V1_5_SHA_256.name
+    ) {
+      expectedSignMethod = 'RSA-SHA256';
+    } else {
+      expectedSignMethod = asResponseData.nodeInfo.signing_public_key.algorithm;
+    }
+
     expect(dataArr).to.deep.include({
       source_node_id: asResponseData.sourceNodeId,
       service_id: asResponseData.serviceId,
-      signature_sign_method:
-        asResponseData.nodeInfo.signing_public_key.algorithm,
+      signature_sign_method: expectedSignMethod,
       data: asResponseData.data,
     });
     expect(dataArr.source_signature).to.be.a('string').that.is.not.empty;

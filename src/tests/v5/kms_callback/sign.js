@@ -54,11 +54,21 @@ describe('Sign callback', function () {
     const signatureAlgorithm =
       cryptoUtils.signatureAlgorithm[nodeInfo.signing_public_key.algorithm];
 
+    let expectedSignMethod;
+    if (
+      nodeInfo.signing_public_key.algorithm ===
+      cryptoUtils.signatureAlgorithm.RSASSA_PKCS1_V1_5_SHA_256.name
+    ) {
+      expectedSignMethod = 'RSA-SHA256';
+    } else {
+      expectedSignMethod = nodeInfo.signing_public_key.algorithm;
+    }
+
     expect(signCallback).to.include({
       node_id: 'rp1',
       hash_method: signatureAlgorithm.hashAlgorithm,
       key_type: signatureAlgorithm.keyAlgorithm,
-      sign_method: nodeInfo.signing_public_key.algorithm,
+      sign_method: expectedSignMethod,
     });
     expect(signCallback.request_message).to.be.a('string').that.is.not.empty;
     expect(signCallback.request_message_hash).to.be.a('string').that.is.not
@@ -115,11 +125,21 @@ describe('Master sign callback', function () {
         nodeInfo.signing_master_public_key.algorithm
       ];
 
+    let expectedSignMethod;
+    if (
+      nodeInfo.signing_master_public_key.algorithm ===
+      cryptoUtils.signatureAlgorithm.RSASSA_PKCS1_V1_5_SHA_256.name
+    ) {
+      expectedSignMethod = 'RSA-SHA256';
+    } else {
+      expectedSignMethod = nodeInfo.signing_master_public_key.algorithm;
+    }
+
     expect(signCallback).to.include({
       node_id: 'rp1',
       hash_method: signatureAlgorithm.hashAlgorithm,
       key_type: signatureAlgorithm.keyAlgorithm,
-      sign_method: nodeInfo.signing_master_public_key.algorithm,
+      sign_method: expectedSignMethod,
     });
     expect(signCallback.request_message).to.be.a('string').that.is.not.empty;
     expect(signCallback.request_message_hash).to.be.a('string').that.is.not
