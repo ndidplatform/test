@@ -11,7 +11,7 @@ import { randomThaiIdNumber } from '../../../utils/thai_id';
 import { ndidAvailable } from '../..';
 
 import * as config from '../../../config';
-
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('Create request with new AAL test', function () {
   const supportedAALList = [1, 2.1, 2.2, 2.8, 3, 3.2, 4.1];
@@ -56,8 +56,6 @@ describe('Create request with new AAL test', function () {
       supported_aal_list: supportedAALList,
     });
 
-    await wait(3000);
-
     rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
@@ -66,6 +64,8 @@ describe('Create request with new AAL test', function () {
         createRequestResultPromise.resolve(callbackData);
       }
     });
+
+    await waitUntilBlockHeightMatch('rp1', 'ndid1');
   });
 
   let requestId;

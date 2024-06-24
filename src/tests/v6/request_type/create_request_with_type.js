@@ -11,6 +11,7 @@ import { randomString } from '../../../utils/random';
 import { ndidAvailable } from '../..';
 
 import * as config from '../../../config';
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('Create request with request type test', function () {
   const requestType = `request_type_test_${randomString(5)}`;
@@ -47,8 +48,6 @@ describe('Create request with request type test', function () {
       name: requestType,
     });
 
-    await wait(3000);
-
     rpEventEmitter.on('callback', function (callbackData) {
       if (
         callbackData.type === 'create_request_result' &&
@@ -57,6 +56,8 @@ describe('Create request with request type test', function () {
         createRequestResultPromise.resolve(callbackData);
       }
     });
+
+    await waitUntilBlockHeightMatch('rp1', 'ndid1');
   });
 
   let requestId;
