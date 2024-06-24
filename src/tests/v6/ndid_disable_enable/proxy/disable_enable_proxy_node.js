@@ -607,6 +607,7 @@ describe('NDID disable proxy node and enable proxy node test', function () {
         source_node_id: 'as1',
         service_id: createRequestParams.data_request_list[0].service_id,
         signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+        signature_signing_key_version: asNodeInfo.signing_public_key.version,
         data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -1192,6 +1193,7 @@ describe('NDID disable proxy node and enable proxy node test', function () {
         source_node_id: 'as1',
         service_id: createRequestParams.data_request_list[0].service_id,
         signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+        signature_signing_key_version: asNodeInfo.signing_public_key.version,
         data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -1779,6 +1781,7 @@ describe('NDID disable proxy node and enable proxy node test', function () {
         source_node_id: 'proxy1_as4',
         service_id: createRequestParams.data_request_list[0].service_id,
         signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+        signature_signing_key_version: asNodeInfo.signing_public_key.version,
         data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -2363,6 +2366,7 @@ describe('NDID disable node RP behind proxy and enable node RP behind proxy test
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+      signature_signing_key_version: asNodeInfo.signing_public_key.version,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -2941,6 +2945,7 @@ describe('NDID disable node IdP behind proxy and enable node IdP behind proxy te
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+      signature_signing_key_version: asNodeInfo.signing_public_key.version,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -3519,6 +3524,7 @@ describe('NDID disable node AS behind proxy and enable node AS behind proxy test
       source_node_id: 'proxy1_as4',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+      signature_signing_key_version: asNodeInfo.signing_public_key.version,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;

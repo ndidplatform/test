@@ -1212,6 +1212,7 @@ describe('Reject revoke accessor test', function () {
         source_node_id: 'as1',
         service_id: createRequestParams.data_request_list[0].service_id,
         signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+        signature_signing_key_version: asNodeInfo.signing_public_key.version,
         data,
       });
       expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;

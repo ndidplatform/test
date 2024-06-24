@@ -138,6 +138,8 @@ export async function rpGotDataFromAsTest({
       service_id: asResponseData.serviceId,
       signature_signing_algorithm:
         asResponseData.nodeInfo.signing_public_key.algorithm,
+      signature_signing_key_version:
+        asResponseData.nodeInfo.signing_public_key.version,
       data: asResponseData.data,
     });
     expect(dataArr.source_signature).to.be.a('string').that.is.not.empty;

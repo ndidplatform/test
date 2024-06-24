@@ -2030,6 +2030,7 @@ describe('RP create request (mode 2) min_as = 1 to 2 AS and 1st AS response with
       source_node_id: 'as2',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+      signature_signing_key_version: asNodeInfo.signing_public_key.version,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -2809,6 +2810,7 @@ describe('RP create request (mode 2) min_as = 1 to 2 AS and 1st AS response data
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+      signature_signing_key_version: asNodeInfo.signing_public_key.version,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
@@ -3764,6 +3766,7 @@ describe('RP create request (mode 2) min_as = 2 to 2 AS and 1st AS response data
       source_node_id: 'as1',
       service_id: createRequestParams.data_request_list[0].service_id,
       signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
+      signature_signing_key_version: asNodeInfo.signing_public_key.version,
       data,
     });
     expect(dataArr[0].source_signature).to.be.a('string').that.is.not.empty;
