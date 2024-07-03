@@ -7,6 +7,8 @@ export async function asReceiveDataRequestTest({
   requestId,
   createRequestParams,
   serviceId,
+  maxIal = 2.3,
+  maxAal = 3,
   requestParams,
   requesterNodeId,
 }) {
@@ -19,8 +21,8 @@ export async function asReceiveDataRequestTest({
     identifier: createRequestParams.identifier,
     service_id: serviceId, //createRequestParams.data_request_list[0].service_id,
     //request_params: requestParams, //createRequestParams.data_request_list[0].request_params,
-    max_ial: 2.3,
-    max_aal: 3,
+    max_ial: maxIal,
+    max_aal: maxAal,
     request_type: createRequestParams.request_type
       ? createRequestParams.request_type
       : null,
