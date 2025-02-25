@@ -825,12 +825,15 @@ export function mode2And3DataRequestFlowTest({
     });
   }
 
-  const hasZeroMinAsInDataRequest = createRequestParams.data_request_list.find(
-    (service) => service.min_as === 0
-  ) != null;
+  const hasZeroMinAsInDataRequest =
+    createRequestParams.data_request_list.find(
+      (service) => service.min_as === 0
+    ) != null;
   for (let i = 0; i < asParams.length; i++) {
     let asNodeId = asNodeIds[i];
     let callApiAtNodeId = asParams[i].callAsApiAtNodeId;
+    let maxIal = asParams[i].maxIal;
+    let maxAal = asParams[i].maxAal;
     for (let j = 0; j < asParams[i].asResponseParams.length; j++) {
       let asReferenceId = asParams[i].asResponseParams[j].reference_id;
       let callbackUrl = asParams[i].asResponseParams[j].callback_url;
@@ -849,6 +852,8 @@ export function mode2And3DataRequestFlowTest({
           requestId,
           createRequestParams,
           serviceId,
+          maxIal,
+          maxAal,
           requestParams,
           requesterNodeId: rpNodeId,
         });
@@ -903,7 +908,8 @@ export function mode2And3DataRequestFlowTest({
         if (hasZeroMinAsInDataRequest && i > 0) {
           testResult = await receivePartialCompletedRequestStatusTest({
             nodeId: rpNodeId,
-            requestStatusPartialCompletedPromise: requestStatusSignedDataPromise,
+            requestStatusPartialCompletedPromise:
+              requestStatusSignedDataPromise,
             requestId,
             createRequestParams,
             dataRequestList,
