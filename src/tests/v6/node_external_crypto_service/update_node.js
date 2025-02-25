@@ -4,6 +4,7 @@ describe('Update node (keys) tests with external crypto service', function () {
   require('./update_node_ndid');
   require('./update_node_same_key_algo');
   require('./update_node_different_key_algo');
+  require('./update_node_different_key_algo_same_node');
   require('./update_node_error');
 
   describe('Node behind proxy', function () {

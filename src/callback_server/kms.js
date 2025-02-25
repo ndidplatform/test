@@ -326,6 +326,11 @@ app.post('/kms/sign', (req, res) => {
     const {
       request_message,
       request_message_hash,
+      hash_algorithm,
+      key_algorithm,
+      signing_algorithm,
+      key_version,
+      // v5
       hash_method,
       key_type,
       sign_method,
@@ -352,6 +357,15 @@ app.post('/kms/sign', (req, res) => {
     }
 
     // Optional: Check hash equality
+
+    if (
+      signing_algorithm != null &&
+      signing_algorithm !== key.signingAlgorithm.name
+    ) {
+      throw new Error(
+        `mismatch signing algorithm: expected: ${key.signingAlgorithm.name}, got: ${signing_algorithm}`
+      );
+    }
 
     // Hash then encrypt OR encrypt received hash
 
@@ -382,6 +396,11 @@ app.post('/kms/master/sign', (req, res) => {
       node_id,
       request_message,
       request_message_hash,
+      hash_algorithm,
+      key_algorithm,
+      signing_algorithm,
+      key_version,
+      // v5
       hash_method,
       key_type,
       sign_method,
@@ -402,7 +421,17 @@ app.post('/kms/master/sign', (req, res) => {
 
     // Optional: Check hash equality
 
+    if (
+      signing_algorithm != null &&
+      signing_algorithm !== key.signingAlgorithm.name
+    ) {
+      throw new Error(
+        `mismatch signing algorithm: expected: ${key.signingAlgorithm.name}, got: ${signing_algorithm}`
+      );
+    }
+
     // Hash then encrypt OR encrypt received hash
+
     const requestMessageBuffer = Buffer.from(request_message, 'base64');
     const signature = cryptoUtils.createSignature(
       key.signingAlgorithm.name,
