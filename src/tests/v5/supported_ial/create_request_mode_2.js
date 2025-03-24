@@ -237,7 +237,10 @@ describe('1 IdP, 1 AS, mode 2', function () {
         callRpApiAtNodeId: 'rp1',
         rpEventEmitter,
         getIdentityForRequest: () => {
-          return db.idp1Identities.find((identity) => identity.mode === 2);
+          return {
+            namespace,
+            identifier,
+          };
         },
         createRequestParams: {
           reference_id: generateReferenceId(),

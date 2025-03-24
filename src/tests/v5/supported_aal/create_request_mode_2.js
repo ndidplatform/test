@@ -235,7 +235,10 @@ describe('1 IdP, 1 AS, mode 2', function () {
         callRpApiAtNodeId: 'rp1',
         rpEventEmitter,
         getIdentityForRequest: () => {
-          return db.idp1Identities.find((identity) => identity.mode === 2);
+          return {
+            namespace,
+            identifier,
+          }
         },
         createRequestParams: {
           reference_id: generateReferenceId(),
@@ -317,7 +320,7 @@ describe('1 IdP, 1 AS, mode 2', function () {
       idp1EventEmitter.removeAllListeners('callback');
 
       await ndidApiV6.setSupportedAALList('ndid1', {
-        supported_ial_list: originalSupportedAALList,
+        supported_aal_list: originalSupportedAALList,
       });
     });
   });
