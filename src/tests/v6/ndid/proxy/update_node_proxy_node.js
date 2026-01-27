@@ -7,7 +7,7 @@ import * as idpApi from '../../../../api/v6/idp';
 import * as asApi from '../../../../api/v6/as';
 import * as serverCommonApi from '../../../../api/common';
 import * as apiHelpers from '../../../../api/helpers';
-import { wait, hash } from '../../../../utils';
+import { hash } from '../../../../utils';
 import {
   proxy1EventEmitter,
   proxy2EventEmitter,
@@ -35,6 +35,7 @@ import {
 } from '../../_fragments/common';
 import * as config from '../../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../../_fragments/request_flow_fragments/idp';
+import { waitUntilBlockHeightMatch } from '../../../../tendermint';
 
 describe('NDID update node config', function () {
   it('NDID should update RP node (proxy1_rp4) config to KEY_ON_NODE', async function () {
@@ -45,7 +46,8 @@ describe('NDID update node config', function () {
       config: 'KEY_ON_NODE',
     });
     expect(response.status).to.equal(204);
-    await wait(3000);
+
+    await waitUntilBlockHeightMatch('proxy1', 'ndid1');
   });
 
   it('RP node (proxy1_rp4) should be updated config successfully', async function () {
@@ -66,7 +68,8 @@ describe('NDID update node config', function () {
       proxy_node_id: 'proxy1',
       config: 'KEY_ON_PROXY',
     });
-    await wait(3000);
+
+    await waitUntilBlockHeightMatch('proxy1', 'ndid1');
   });
 });
 
@@ -108,7 +111,7 @@ describe('NDID update RP node to other proxy node', function () {
 
   before(function () {
     const identity = db.idp1Identities.find(
-      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation,
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation
     );
 
     if (!identity) {
@@ -184,7 +187,8 @@ describe('NDID update RP node to other proxy node', function () {
       proxy_node_id: 'proxy2',
     });
     expect(response.status).to.equal(204);
-    await wait(3000);
+
+    await waitUntilBlockHeightMatch('proxy2', 'ndid1');
   });
 
   it('RP node (proxy1_rp4) should be updated to proxy2 successfully', async function () {
@@ -222,9 +226,8 @@ describe('NDID update RP node to other proxy node', function () {
       success: true,
     });
     expect(createRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      createRequestResult.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -294,7 +297,7 @@ describe('NDID update RP node to other proxy node', function () {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: createRequestParams.node_id,
       min_ial: createRequestParams.min_ial,
@@ -307,9 +310,8 @@ describe('NDID update RP node to other proxy node', function () {
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -319,7 +321,7 @@ describe('NDID update RP node to other proxy node', function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -344,7 +346,7 @@ describe('NDID update RP node to other proxy node', function () {
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     let idpResponse = {
@@ -498,7 +500,8 @@ describe('NDID update RP node to other proxy node', function () {
       node_id: 'proxy1_rp4',
       proxy_node_id: 'proxy1',
     });
-    await wait(3000);
+
+    await waitUntilBlockHeightMatch('proxy1', 'ndid1');
   });
   idp1EventEmitter.removeAllListeners('callback');
   idp1EventEmitter.removeAllListeners('accessor_encrypt_callback');
@@ -544,7 +547,7 @@ describe('NDID update IdP node to other proxy node', function () {
 
   before(function () {
     const identity = db.proxy1Idp4Identities.find(
-      (identity) => identity.mode === 3,
+      (identity) => identity.mode === 3
     );
 
     if (!identity) {
@@ -621,7 +624,8 @@ describe('NDID update IdP node to other proxy node', function () {
       config: 'KEY_ON_PROXY',
     });
     expect(response.status).to.equal(204);
-    await wait(3000);
+
+    await waitUntilBlockHeightMatch('proxy2', 'ndid1');
   });
 
   it('IdP node (proxy1_idp4) should be updated successfully', async function () {
@@ -659,9 +663,8 @@ describe('NDID update IdP node to other proxy node', function () {
       success: true,
     });
     expect(createRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      createRequestResult.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -731,7 +734,7 @@ describe('NDID update IdP node to other proxy node', function () {
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: createRequestParams.node_id,
       min_ial: createRequestParams.min_ial,
@@ -744,9 +747,8 @@ describe('NDID update IdP node to other proxy node', function () {
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -758,7 +760,7 @@ describe('NDID update IdP node to other proxy node', function () {
     this.timeout(15000);
     identityForResponse = db.proxy1Idp4Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -783,7 +785,7 @@ describe('NDID update IdP node to other proxy node', function () {
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     let idpResponse = {
@@ -939,7 +941,8 @@ describe('NDID update IdP node to other proxy node', function () {
       node_id: 'proxy1_idp4',
       proxy_node_id: 'proxy1',
     });
-    await wait(3000);
+
+    await waitUntilBlockHeightMatch('proxy1', 'ndid1');
   });
 
   proxy1EventEmitter.removeAllListeners('callback');
@@ -1000,7 +1003,7 @@ describe('NDID update AS node to other proxy node', function () {
 
   before(function () {
     const identity = db.idp1Identities.find(
-      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation,
+      (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation
     );
 
     if (!identity) {
@@ -1118,7 +1121,8 @@ describe('NDID update AS node to other proxy node', function () {
       proxy_node_id: 'proxy2',
     });
     expect(response.status).to.equal(204);
-    await wait(3000);
+
+    await waitUntilBlockHeightMatch('proxy2', 'ndid1');
   });
 
   it('AS node (proxy1_as4) should be updated successfully', async function () {
@@ -1153,7 +1157,8 @@ describe('NDID update AS node to other proxy node', function () {
     });
     expect(response.status).to.equal(202);
 
-    const addOrUpdateServiceResult = await addOrUpdateServiceBankStatementResultPromise.promise;
+    const addOrUpdateServiceResult =
+      await addOrUpdateServiceBankStatementResultPromise.promise;
     expect(addOrUpdateServiceResult).to.deep.include({
       node_id: asNodeId,
       reference_id: bankStatementReferenceId,
@@ -1192,9 +1197,8 @@ describe('NDID update AS node to other proxy node', function () {
     const createRequestResult = await createRequestResultPromise.promise;
     expect(createRequestResult.success).to.equal(true);
     expect(createRequestResult.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      createRequestResult.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1264,21 +1268,20 @@ describe('NDID update AS node to other proxy node', function () {
     this.timeout(15000);
     const incomingRequest = await incomingRequestPromise.promise;
 
-    const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-      (dataRequest) => {
+    const dataRequestListWithoutParams =
+      createRequestParams.data_request_list.map((dataRequest) => {
         const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
         return {
           ...dataRequestWithoutParams,
         };
-      },
-    );
+      });
     expect(incomingRequest).to.deep.include({
       mode: createRequestParams.mode,
       request_id: requestId,
       request_message: createRequestParams.request_message,
       request_message_hash: hash(
         createRequestParams.request_message +
-          incomingRequest.request_message_salt,
+          incomingRequest.request_message_salt
       ),
       requester_node_id: 'rp1',
       min_ial: createRequestParams.min_ial,
@@ -1292,9 +1295,8 @@ describe('NDID update AS node to other proxy node', function () {
       .empty;
     expect(incomingRequest.creation_time).to.be.a('number');
     expect(incomingRequest.creation_block_height).to.be.a('string');
-    const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-      ':',
-    );
+    const splittedCreationBlockHeight =
+      incomingRequest.creation_block_height.split(':');
     expect(splittedCreationBlockHeight).to.have.lengthOf(2);
     expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
     expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1304,7 +1306,7 @@ describe('NDID update AS node to other proxy node', function () {
     this.timeout(15000);
     identityForResponse = db.idp1Identities.find(
       (identity) =>
-        identity.namespace === namespace && identity.identifier === identifier,
+        identity.namespace === namespace && identity.identifier === identifier
     );
 
     responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -1329,7 +1331,7 @@ describe('NDID update AS node to other proxy node', function () {
 
     const signature = createResponseSignature(
       accessorPrivateKey,
-      requestMessagePaddedHash,
+      requestMessagePaddedHash
     );
 
     let idpResponse = {
@@ -1475,7 +1477,7 @@ describe('NDID update AS node to other proxy node', function () {
     dataRequestList = setDataSigned(
       dataRequestList,
       createRequestParams.data_request_list[0].service_id,
-      as_node_id,
+      as_node_id
     );
   });
 
@@ -1500,7 +1502,7 @@ describe('NDID update AS node to other proxy node', function () {
     dataRequestList = setDataReceived(
       dataRequestList,
       createRequestParams.data_request_list[0].service_id,
-      as_node_id,
+      as_node_id
     );
 
     // const requestStatus = await requestStatusSignedDataPromise.promise;
@@ -1673,7 +1675,8 @@ describe('NDID update AS node to other proxy node', function () {
       node_id: 'proxy1_as4',
       proxy_node_id: 'proxy1',
     });
-    await wait(3000);
+
+    await waitUntilBlockHeightMatch('proxy1', 'ndid1');
   });
 
   rpEventEmitter.removeAllListeners('callback');
