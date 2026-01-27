@@ -11,6 +11,9 @@ import { randomString } from '../../../utils/random';
 
 describe('Node feature support list tests', function () {
   const featureFlag1 = randomString(5);
+  const featureFlag2 = randomString(5);
+  const featureFlag3 = randomString(5);
+  const featureFlag4 = randomString(5);
 
   before(async function () {
     if (!ndidAvailable) {
@@ -34,6 +37,56 @@ describe('Node feature support list tests', function () {
       expect(response.status).to.equal(200);
       const responseBody = await response.json();
       expect(responseBody).to.include.members([featureFlag1]);
+    });
+  });
+
+  describe('NDID add multiple allowed node supported features', function () {
+    it('NDID should add allowed node supported feature successfully', async function () {
+      this.timeout(10000);
+
+      let response;
+
+      response = await ndidApi.addAllowedNodeSupportedFeature('ndid1', {
+        name: featureFlag2,
+      });
+      expect(response.status).to.equal(204);
+
+      response = await ndidApi.addAllowedNodeSupportedFeature('ndid1', {
+        name: featureFlag3,
+      });
+      expect(response.status).to.equal(204);
+
+      response = await ndidApi.addAllowedNodeSupportedFeature('ndid1', {
+        name: featureFlag4,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('should get allowed node supported feature successfully', async function () {
+      const response = await commonApi.getAllowedNodeSupportedFeatureList(
+        'ndid1'
+      );
+      expect(response.status).to.equal(200);
+      const responseBody = await response.json();
+      expect(responseBody).to.include.members([
+        featureFlag2,
+        featureFlag3,
+        featureFlag4,
+      ]);
+    });
+
+    after(async function () {
+      this.timeout(5000);
+
+      await ndidApi.removeAllowedNodeSupportedFeature('ndid1', {
+        name: featureFlag2,
+      });
+      await ndidApi.removeAllowedNodeSupportedFeature('ndid1', {
+        name: featureFlag3,
+      });
+      await ndidApi.removeAllowedNodeSupportedFeature('ndid1', {
+        name: featureFlag4,
+      });
     });
   });
 
