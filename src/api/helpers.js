@@ -101,11 +101,20 @@ export async function httpDelete(url) {
   });
 }
 
-export async function getResponseAndBody(apiFunctionCall) {
+export async function getResponseAndBody(
+  apiFunctionCall,
+  throwErrorIfNotOk = true
+) {
   const response = await apiFunctionCall;
-  const responseBody = await response.json();
-  if (!response.ok) {
-    throw new Error(`response: ${JSON.stringify(responseBody)}`);
+  let responseBody;
+  if (response.status !== 204) {
+    responseBody = await response.json();
+  }
+
+  if (throwErrorIfNotOk) {
+    if (!response.ok) {
+      throw new Error(`response: ${JSON.stringify(responseBody)}`);
+    }
   }
 
   return {
