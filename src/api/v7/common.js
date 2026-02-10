@@ -70,9 +70,17 @@ export function getNamespaces(nodeId) {
   return httpGet(`${apiBaseUrl}/utility/namespaces`);
 }
 
-export function getServices(nodeId) {
+export function getServices(nodeId, params = {}) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  return httpGet(`${apiBaseUrl}/utility/services`);
+
+  let arrayQueryString = Object.keys(params).map(
+    (key) => `${key}=${params[key]}`
+  );
+  let queryString = arrayQueryString.join('&');
+
+  return httpGet(
+    `${apiBaseUrl}/utility/services${queryString ? `?${queryString}` : ''}`
+  );
 }
 
 export function getASByServiceId(nodeId, serviceId) {
@@ -84,6 +92,14 @@ export function getService(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { serviceId } = data;
   return httpGet(`${apiBaseUrl}/utility/services/${serviceId}`);
+}
+
+export function getServiceRequesterNodeWhitelistByServiceId(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { serviceId } = data;
+  return httpGet(
+    `${apiBaseUrl}/utility/services/${serviceId}/requester_node_whitelist`
+  );
 }
 
 export function getPrivateMessages(nodeId, data) {

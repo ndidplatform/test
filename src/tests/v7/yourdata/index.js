@@ -12,6 +12,8 @@ describe('Your Data', async function () {
   //   await wait(8000);
   // });
 
+  require('./as_setup');
+
   // TODO
   //
   require('./complete_success');

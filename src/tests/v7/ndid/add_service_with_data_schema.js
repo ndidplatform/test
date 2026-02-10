@@ -35,6 +35,7 @@ import {
 } from '../_fragments/common';
 import * as config from '../../../config';
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('NDID add and update service with data_schema test', function () {
   const originalDataSchema = JSON.stringify({
@@ -115,7 +116,7 @@ describe('NDID add and update service with data_schema test', function () {
         (identity) =>
           identity.namespace === 'citizen_id' &&
           identity.mode === 3 &&
-          !identity.revokeIdentityAssociation,
+          !identity.revokeIdentityAssociation
       );
 
       if (identity.length === 0) {
@@ -219,7 +220,7 @@ describe('NDID add and update service with data_schema test', function () {
       const responseGetServices = await commonApi.getServices('ndid1');
       const responseBody = await responseGetServices.json();
       alreadyAddedService = responseBody.find(
-        (service) => service.service_id === 'service_with_data_schema',
+        (service) => service.service_id === 'service_with_data_schema'
       );
     });
 
@@ -242,7 +243,6 @@ describe('NDID add and update service with data_schema test', function () {
         });
         expect(response.status).to.equal(201);
       }
-      await wait(3000);
     });
 
     it('Service (service_with_data_schema) should be added successfully', async function () {
@@ -250,11 +250,12 @@ describe('NDID add and update service with data_schema test', function () {
       const response = await commonApi.getServices('ndid1');
       const responseBody = await response.json();
       const service = responseBody.find(
-        (service) => service.service_id === 'service_with_data_schema',
+        (service) => service.service_id === 'service_with_data_schema'
       );
       expect(service).to.deep.equal({
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
+        requester_node_whitelist_enabled: false,
         active: true,
       });
     });
@@ -268,6 +269,7 @@ describe('NDID add and update service with data_schema test', function () {
       expect(responseBody).to.deep.equal({
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
+        requester_node_whitelist_enabled: false,
         active: true,
         data_schema: originalDataSchema,
         data_schema_version: '1',
@@ -281,7 +283,8 @@ describe('NDID add and update service with data_schema test', function () {
         service_id: 'service_with_data_schema',
       });
       expect(response.status).to.equal(204);
-      await wait(3000);
+
+      await waitUntilBlockHeightMatch('as1', 'ndid1');
     });
 
     it('AS should add offered service (service_with_data_schema) successfully', async function () {
@@ -297,12 +300,14 @@ describe('NDID add and update service with data_schema test', function () {
       });
       expect(response.status).to.equal(202);
 
-      const addOrUpdateServiceResult = await addOrUpdateServiceResultPromise.promise;
+      const addOrUpdateServiceResult =
+        await addOrUpdateServiceResultPromise.promise;
       expect(addOrUpdateServiceResult).to.deep.include({
         reference_id: serviceWithDataSchemaReferenceId,
         success: true,
       });
-      await wait(5000);
+
+      await waitUntilBlockHeightMatch('rp1', 'as1');
     });
 
     it('RP should create a request successfully', async function () {
@@ -319,9 +324,8 @@ describe('NDID add and update service with data_schema test', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -349,21 +353,20 @@ describe('NDID add and update service with data_schema test', function () {
       this.timeout(20000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -377,9 +380,8 @@ describe('NDID add and update service with data_schema test', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -389,8 +391,7 @@ describe('NDID add and update service with data_schema test', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -416,7 +417,7 @@ describe('NDID add and update service with data_schema test', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -472,9 +473,8 @@ describe('NDID add and update service with data_schema test', function () {
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -559,7 +559,7 @@ describe('NDID add and update service with data_schema test', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -584,7 +584,7 @@ describe('NDID add and update service with data_schema test', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await requestStatusSignedDataPromise.promise;
@@ -832,8 +832,7 @@ describe('NDID add and update service with data_schema test', function () {
       }
 
       let identity = db.idp1Identities.filter(
-        (identity) =>
-          identity.mode === 3 && !identity.revokeIdentityAssociation,
+        (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation
       );
 
       if (identity.length === 0) {
@@ -941,7 +940,7 @@ describe('NDID add and update service with data_schema test', function () {
       const responseGetServices = await commonApi.getServices('ndid1');
       const responseBody = await responseGetServices.json();
       alreadyAddedService = responseBody.find(
-        (service) => service.service_id === 'service_with_data_schema',
+        (service) => service.service_id === 'service_with_data_schema'
       );
     });
 
@@ -954,7 +953,6 @@ describe('NDID add and update service with data_schema test', function () {
         data_schema_version: '1',
       });
       expect(response.status).to.equal(204);
-      await wait(3000);
     });
 
     it('Data schema for service (service_with_data_schema) should be added successfully', async function () {
@@ -966,6 +964,7 @@ describe('NDID add and update service with data_schema test', function () {
       expect(responseBody).to.deep.equal({
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
+        requester_node_whitelist_enabled: false,
         active: true,
         data_schema: dataSchema,
         data_schema_version: '1',
@@ -974,6 +973,9 @@ describe('NDID add and update service with data_schema test', function () {
 
     it('RP should create a request successfully', async function () {
       this.timeout(30000);
+
+      await waitUntilBlockHeightMatch('rp1', 'ndid1');
+
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -986,9 +988,8 @@ describe('NDID add and update service with data_schema test', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1016,21 +1017,20 @@ describe('NDID add and update service with data_schema test', function () {
       this.timeout(20000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1044,9 +1044,8 @@ describe('NDID add and update service with data_schema test', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1056,8 +1055,7 @@ describe('NDID add and update service with data_schema test', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -1083,7 +1081,7 @@ describe('NDID add and update service with data_schema test', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -1158,9 +1156,8 @@ describe('NDID add and update service with data_schema test', function () {
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1244,7 +1241,7 @@ describe('NDID add and update service with data_schema test', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
     });
 
@@ -1269,7 +1266,7 @@ describe('NDID add and update service with data_schema test', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
 
       // const requestStatus = await requestStatusSignedDataPromise.promise;
@@ -1504,8 +1501,7 @@ describe('NDID add and update service with data_schema test', function () {
       }
 
       let identity = db.idp1Identities.filter(
-        (identity) =>
-          identity.mode === 3 && !identity.revokeIdentityAssociation,
+        (identity) => identity.mode === 3 && !identity.revokeIdentityAssociation
       );
 
       if (identity.length === 0) {
@@ -1613,7 +1609,7 @@ describe('NDID add and update service with data_schema test', function () {
       const responseGetServices = await commonApi.getServices('ndid1');
       const responseBody = await responseGetServices.json();
       alreadyAddedService = responseBody.find(
-        (service) => service.service_id === 'service_with_data_schema',
+        (service) => service.service_id === 'service_with_data_schema'
       );
     });
 
@@ -1626,7 +1622,6 @@ describe('NDID add and update service with data_schema test', function () {
         data_schema_version: 'n/a',
       });
       expect(response.status).to.equal(204);
-      await wait(3000);
     });
 
     it('Data schema for service (service_with_data_schema) should be added successfully', async function () {
@@ -1638,12 +1633,16 @@ describe('NDID add and update service with data_schema test', function () {
       expect(responseBody).to.deep.equal({
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
+        requester_node_whitelist_enabled: false,
         active: true,
       });
     });
 
     it('RP should create a request successfully', async function () {
       this.timeout(30000);
+
+      await waitUntilBlockHeightMatch('rp1', 'ndid1');
+
       const response = await rpApi.createRequest('rp1', createRequestParams);
       const responseBody = await response.json();
       expect(response.status).to.equal(202);
@@ -1656,9 +1655,8 @@ describe('NDID add and update service with data_schema test', function () {
       const createRequestResult = await createRequestResultPromise.promise;
       expect(createRequestResult.success).to.equal(true);
       expect(createRequestResult.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = createRequestResult.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        createRequestResult.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1686,21 +1684,20 @@ describe('NDID add and update service with data_schema test', function () {
       this.timeout(20000);
       const incomingRequest = await incomingRequestPromise.promise;
 
-      const dataRequestListWithoutParams = createRequestParams.data_request_list.map(
-        (dataRequest) => {
+      const dataRequestListWithoutParams =
+        createRequestParams.data_request_list.map((dataRequest) => {
           const { request_params, ...dataRequestWithoutParams } = dataRequest; // eslint-disable-line no-unused-vars
           return {
             ...dataRequestWithoutParams,
           };
-        },
-      );
+        });
       expect(incomingRequest).to.deep.include({
         mode: createRequestParams.mode,
         request_id: requestId,
         request_message: createRequestParams.request_message,
         request_message_hash: hash(
           createRequestParams.request_message +
-            incomingRequest.request_message_salt,
+            incomingRequest.request_message_salt
         ),
         requester_node_id: 'rp1',
         min_ial: createRequestParams.min_ial,
@@ -1714,9 +1711,8 @@ describe('NDID add and update service with data_schema test', function () {
         .empty;
       expect(incomingRequest.creation_time).to.be.a('number');
       expect(incomingRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = incomingRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        incomingRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1726,8 +1722,7 @@ describe('NDID add and update service with data_schema test', function () {
       this.timeout(15000);
       identityForResponse = db.idp1Identities.find(
         (identity) =>
-          identity.namespace === namespace &&
-          identity.identifier === identifier,
+          identity.namespace === namespace && identity.identifier === identifier
       );
 
       responseAccessorId = identityForResponse.accessors[0].accessorId;
@@ -1753,7 +1748,7 @@ describe('NDID add and update service with data_schema test', function () {
 
       const signature = createResponseSignature(
         accessorPrivateKey,
-        requestMessagePaddedHash,
+        requestMessagePaddedHash
       );
 
       let idpResponse = {
@@ -1809,9 +1804,8 @@ describe('NDID add and update service with data_schema test', function () {
         .not.empty;
       expect(dataRequest.creation_time).to.be.a('number');
       expect(dataRequest.creation_block_height).to.be.a('string');
-      const splittedCreationBlockHeight = dataRequest.creation_block_height.split(
-        ':',
-      );
+      const splittedCreationBlockHeight =
+        dataRequest.creation_block_height.split(':');
       expect(splittedCreationBlockHeight).to.have.lengthOf(2);
       expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
       expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
@@ -1841,9 +1835,8 @@ describe('NDID add and update service with data_schema test', function () {
       dataRequestList = setDataSigned(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
-
     });
 
     it('RP should receive request status with signed data count = 1', async function () {
@@ -1867,7 +1860,7 @@ describe('NDID add and update service with data_schema test', function () {
       dataRequestList = setDataReceived(
         dataRequestList,
         createRequestParams.data_request_list[0].service_id,
-        as_node_id,
+        as_node_id
       );
       // const requestStatus = await requestStatusSignedDataPromise.promise;
       // expect(requestStatus).to.deep.include({
@@ -1969,7 +1962,7 @@ describe('NDID add and update service with data_schema test', function () {
         requesterNodeId: requester_node_id,
       });
       lastStatusUpdateBlockHeight = testResult.lastStatusUpdateBlockHeight;
-      
+
       // const requestStatus = await requestClosedPromise.promise;
       // expect(requestStatus).to.deep.include({
       //   request_id: requestId,

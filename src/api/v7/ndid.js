@@ -37,7 +37,10 @@ export function setServicePriceCeiling(nodeId, data) {
 
 export function setServicePriceMinEffectiveDatetimeDelay(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(`${apiBaseUrl}/ndid/set_service_price_min_effective_datetime_delay`, data);
+  return httpPost(
+    `${apiBaseUrl}/ndid/set_service_price_min_effective_datetime_delay`,
+    data
+  );
 }
 
 export function enableServiceDestination(nodeId, data) {
@@ -138,49 +141,43 @@ export function getAllowedMinIalForRegisterIdentityAtFirstIdp(nodeId) {
 
 export function addErrorCode(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(
-    `${apiBaseUrl}/ndid/add_error_code`,
-    data,
-  );
+  return httpPost(`${apiBaseUrl}/ndid/add_error_code`, data);
 }
 
 export function removeErrorCode(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(
-    `${apiBaseUrl}/ndid/remove_error_code`,
-    data,
-  );
+  return httpPost(`${apiBaseUrl}/ndid/remove_error_code`, data);
 }
 
 export function addRequestType(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(
-    `${apiBaseUrl}/ndid/add_request_type`,
-    data,
-  );
+  return httpPost(`${apiBaseUrl}/ndid/add_request_type`, data);
 }
 
 export function removeRequestType(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(
-    `${apiBaseUrl}/ndid/remove_request_type`,
-    data,
-  );
+  return httpPost(`${apiBaseUrl}/ndid/remove_request_type`, data);
 }
 
-export function addSuppressedIdentityModificationNotificationNode(nodeId, data) {
+export function addSuppressedIdentityModificationNotificationNode(
+  nodeId,
+  data
+) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(
     `${apiBaseUrl}/ndid/add_suppressed_identity_modification_notification_node`,
-    data,
+    data
   );
 }
 
-export function removeSuppressedIdentityModificationNotificationNode(nodeId, data) {
+export function removeSuppressedIdentityModificationNotificationNode(
+  nodeId,
+  data
+) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(
     `${apiBaseUrl}/ndid/remove_suppressed_identity_modification_notification_node`,
-    data,
+    data
   );
 }
 
@@ -188,7 +185,7 @@ export function addAllowedNodeSupportedFeature(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(
     `${apiBaseUrl}/ndid/add_allowed_node_supported_feature`,
-    data,
+    data
   );
 }
 
@@ -196,22 +193,100 @@ export function removeAllowedNodeSupportedFeature(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(
     `${apiBaseUrl}/ndid/remove_allowed_node_supported_feature`,
-    data,
+    data
   );
 }
 
 export function setSupportedIALList(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(
-    `${apiBaseUrl}/ndid/set_supported_ial_list`,
-    data,
-  );
+  return httpPost(`${apiBaseUrl}/ndid/set_supported_ial_list`, data);
 }
 
 export function setSupportedAALList(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/set_supported_aal_list`, data);
+}
+
+export function addNodeToServiceRequesterNodeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(
-    `${apiBaseUrl}/ndid/set_supported_aal_list`,
-    data,
+    `${apiBaseUrl}/ndid/add_node_to_service_requester_node_whitelist`,
+    data
+  );
+}
+
+export function removeNodeFromServiceRequesterNodeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/remove_node_from_service_requester_node_whitelist`,
+    data
+  );
+}
+
+export function enableServiceRequesterNodeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/enable_service_requester_node_whitelist`,
+    data
+  );
+}
+
+export function disableServiceRequesterNodeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/disable_service_requester_node_whitelist`,
+    data
+  );
+}
+
+export function addNodeToYourDataNodeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/add_node_to_your_data_node_whitelist`,
+    data
+  );
+}
+
+export function removeNodeFromYourDataNodeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/remove_node_from_your_data_node_whitelist`,
+    data
+  );
+}
+
+export function enableYourDataNodeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/enable_your_data_node_whitelist`, data);
+}
+
+export function disableYourDataNodeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/disable_your_data_node_whitelist`, data);
+}
+
+export function addYourdataErrorCode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/add_yourdata_error_code`, data);
+}
+
+export function removeYourdataErrorCode(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/remove_yourdata_error_code`, data);
+}
+
+export function allowYourDataServiceToBeMixedInRequest(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/allow_your_data_service_to_be_mixed_in_request`,
+    data
+  );
+}
+
+export function disallowYourDataServiceToBeMixedInRequest(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/disallow_your_data_service_to_be_mixed_in_request`,
+    data
   );
 }
