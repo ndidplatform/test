@@ -239,54 +239,50 @@ export function disableServiceRequesterNodeWhitelist(nodeId, data) {
   );
 }
 
-export function addNodeToYourDataNodeWhitelist(nodeId, data) {
+export function addDomain(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/add_domain`, data);
+}
+
+export function enableDomain(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/enable_domain`, data);
+}
+
+export function disableDomain(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/disable_domain`, data);
+}
+
+export function addNodeToDomainNodeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(`${apiBaseUrl}/ndid/add_node_to_domain_node_whitelist`, data);
+}
+
+export function removeNodeFromDomainNodeWhitelist(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(
-    `${apiBaseUrl}/ndid/add_node_to_your_data_node_whitelist`,
+    `${apiBaseUrl}/ndid/remove_node_from_domain_node_whitelist`,
     data
   );
 }
 
-export function removeNodeFromYourDataNodeWhitelist(nodeId, data) {
+export function enableDomainNodeWhitelist(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(
-    `${apiBaseUrl}/ndid/remove_node_from_your_data_node_whitelist`,
-    data
-  );
+  return httpPost(`${apiBaseUrl}/ndid/enable_domain_node_whitelist`, data);
 }
 
-export function enableYourDataNodeWhitelist(nodeId, data) {
+export function disableDomainNodeWhitelist(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(`${apiBaseUrl}/ndid/enable_your_data_node_whitelist`, data);
+  return httpPost(`${apiBaseUrl}/ndid/disable_domain_node_whitelist`, data);
 }
 
-export function disableYourDataNodeWhitelist(nodeId, data) {
+export function addDomainErrorCode(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(`${apiBaseUrl}/ndid/disable_your_data_node_whitelist`, data);
+  return httpPost(`${apiBaseUrl}/ndid/add_domain_error_code`, data);
 }
 
-export function addYourdataErrorCode(nodeId, data) {
+export function removeDomainErrorCode(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(`${apiBaseUrl}/ndid/add_yourdata_error_code`, data);
-}
-
-export function removeYourdataErrorCode(nodeId, data) {
-  const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(`${apiBaseUrl}/ndid/remove_yourdata_error_code`, data);
-}
-
-export function allowYourDataServiceToBeMixedInRequest(nodeId, data) {
-  const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(
-    `${apiBaseUrl}/ndid/allow_your_data_service_to_be_mixed_in_request`,
-    data
-  );
-}
-
-export function disallowYourDataServiceToBeMixedInRequest(nodeId, data) {
-  const apiBaseUrl = getApiAddressUrl(nodeId);
-  return httpPost(
-    `${apiBaseUrl}/ndid/disallow_your_data_service_to_be_mixed_in_request`,
-    data
-  );
+  return httpPost(`${apiBaseUrl}/ndid/remove_domain_error_code`, data);
 }

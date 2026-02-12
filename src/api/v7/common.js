@@ -256,3 +256,17 @@ export function getSupportedAALList(nodeId) {
 
   return httpGet(`${apiBaseUrl}/utility/supported_aal`);
 }
+
+export function getDomainList(nodeId, params = {}) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { ...queryParams } = params;
+
+  let arrayQueryString = Object.keys(queryParams).map(
+    (key) => `${key}=${queryParams[key]}`
+  );
+  let queryString = arrayQueryString.join('&');
+
+  return httpGet(
+    `${apiBaseUrl}/utility/domains${queryString ? `?${queryString}` : ''}`
+  );
+}

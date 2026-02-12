@@ -6,6 +6,8 @@ import * as commonApi from '../../../api/v7/common';
 import { ndidAvailable } from '../..';
 import { randomString } from '../../../utils/random';
 
+import { ensureDomain } from '../_helpers/domain';
+
 describe('NDID add new service test', function () {
   let alreadyAddedService = false;
   before(async function () {
@@ -121,12 +123,14 @@ describe('NDID add new service test', function () {
 describe('Service with domain', function () {
   const serviceId = `service_test_${randomString(8)}`;
   const serviceName = `Service (${serviceId})`;
-  const serviceDomain = 'YourData';
+  const domain = 'YourData';
 
   before(async function () {
     if (!ndidAvailable) {
       this.skip();
     }
+
+    await ensureDomain({ domain });
   });
 
   it('NDID should add new service successfully', async function () {
@@ -135,7 +139,7 @@ describe('Service with domain', function () {
     const response = await ndidApi.addService('ndid1', {
       service_id: serviceId,
       service_name: serviceName,
-      domain: serviceDomain,
+      domain,
     });
 
     expect(response.status).to.equal(201);
@@ -153,7 +157,7 @@ describe('Service with domain', function () {
     expect(service).to.deep.equal({
       service_id: serviceId,
       service_name: serviceName,
-      domain: serviceDomain,
+      domain,
       requester_node_whitelist_enabled: false,
       active: true,
     });
@@ -168,7 +172,7 @@ describe('Service with domain', function () {
     expect(responseBody).to.deep.equal({
       service_id: serviceId,
       service_name: serviceName,
-      domain: serviceDomain,
+      domain,
       requester_node_whitelist_enabled: false,
       active: true,
     });
@@ -197,7 +201,7 @@ describe('Service with domain', function () {
     expect(service).to.deep.equal({
       service_id: serviceId,
       service_name: serviceNewName,
-      domain: serviceDomain,
+      domain,
       requester_node_whitelist_enabled: false,
       active: true,
     });
@@ -227,19 +231,21 @@ describe('Error - Invalid Domain', function () {
     expect(response.status).to.equal(400);
 
     const responseBody = await response.json();
-    expect(responseBody.error.code).to.equal(25100);
+    expect(responseBody.error.code).to.equal(25101);
   });
 });
 
 describe('Service with requester node whitelist flag', function () {
   const serviceId = `service_test_${randomString(8)}`;
   const serviceName = `Service (${serviceId})`;
-  const serviceDomain = 'YourData';
+  const domain = 'YourData';
 
   before(async function () {
     if (!ndidAvailable) {
       this.skip();
     }
+
+    await ensureDomain({ domain });
   });
 
   it('NDID should add new service successfully', async function () {
@@ -248,7 +254,7 @@ describe('Service with requester node whitelist flag', function () {
     const response = await ndidApi.addService('ndid1', {
       service_id: serviceId,
       service_name: serviceName,
-      domain: serviceDomain,
+      domain,
       requester_node_whitelist_enabled: true,
     });
 
@@ -267,7 +273,7 @@ describe('Service with requester node whitelist flag', function () {
     expect(service).to.deep.equal({
       service_id: serviceId,
       service_name: serviceName,
-      domain: serviceDomain,
+      domain,
       requester_node_whitelist_enabled: true,
       active: true,
     });
@@ -282,7 +288,7 @@ describe('Service with requester node whitelist flag', function () {
     expect(responseBody).to.deep.equal({
       service_id: serviceId,
       service_name: serviceName,
-      domain: serviceDomain,
+      domain,
       requester_node_whitelist_enabled: true,
       active: true,
     });
