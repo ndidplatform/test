@@ -16,7 +16,16 @@ export function getDataFromAS(nodeId, data) {
   );
 }
 
+export function removeAllDataFromAS(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  return httpPost(`${apiBaseUrl}/yourdata//rp/request_data_removal`, data);
+}
+
 export function removeDataFromAS(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  return httpPost(`${apiBaseUrl}/rp/request_data_removal`, data);
+  const { node_id, request_id } = data;
+  return httpPost(
+    `${apiBaseUrl}/yourdata/rp/request_data_removal/${request_id}`,
+    node_id ? { node_id } : {}
+  );
 }

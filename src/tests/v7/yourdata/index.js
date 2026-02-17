@@ -13,10 +13,13 @@ describe('Your Data', async function () {
   // });
 
   require('./as_setup');
+  require('./as_service_setup');
 
   // TODO
   //
   require('./complete_success');
+  require('./error_response');
+  require('./request_timeout');
 
   // AS response through callback
   // - data

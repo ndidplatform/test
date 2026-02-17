@@ -270,3 +270,11 @@ export function getDomainList(nodeId, params = {}) {
     `${apiBaseUrl}/utility/domains${queryString ? `?${queryString}` : ''}`
   );
 }
+
+export function getDomainNodeWhitelistByDomain(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { domain } = data;
+  return httpGet(
+    `${apiBaseUrl}/utility/domains/${domain}/node_whitelist`
+  );
+}

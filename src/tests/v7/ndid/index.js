@@ -9,6 +9,7 @@ describe('NDID API tests', function () {
     }
   });
   require('./add_namespace');
+  require('./domain');
   require('./add_service');
   require('./add_service_with_data_schema');
   require('./register_node');

@@ -42,7 +42,7 @@ export function getRequestIdByReferenceId(nodeId, data) {
 
 export function removeAllDataRequestedFromAS(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  return httpPost(`${apiBaseUrl}/rp/request_data_removal/`, data);
+  return httpPost(`${apiBaseUrl}/rp/request_data_removal`, data);
 }
 
 export function removeDataRequestedFromAS(nodeId, data) {

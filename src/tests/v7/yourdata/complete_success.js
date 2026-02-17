@@ -1067,6 +1067,22 @@ describe('Complete success scenario', function () {
       expect(data.data_salt).to.be.a('string').that.is.not.empty;
     });
 
+    it('RP should remove data received from AS successfully', async function () {
+      this.timeout(10000);
+      const response = await yourDataRpApi.removeDataFromAS('rp1', {
+        request_id: requestId,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('RP should have no saved data requested from AS left after removal', async function () {
+      this.timeout(10000);
+      const response = await yourDataRpApi.getDataFromAS('rp1', {
+        requestId,
+      });
+      expect(response.status).to.equal(404);
+    });
+
     after(function () {
       rpEventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
@@ -1496,6 +1512,22 @@ describe('Complete success scenario', function () {
       });
       expect(data.source_signature).to.be.a('string').that.is.not.empty;
       expect(data.data_salt).to.be.a('string').that.is.not.empty;
+    });
+
+    it('RP should remove data received from AS successfully', async function () {
+      this.timeout(10000);
+      const response = await yourDataRpApi.removeDataFromAS('rp1', {
+        request_id: requestId,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('RP should have no saved data requested from AS left after removal', async function () {
+      this.timeout(10000);
+      const response = await yourDataRpApi.getDataFromAS('rp1', {
+        requestId,
+      });
+      expect(response.status).to.equal(404);
     });
 
     after(function () {
