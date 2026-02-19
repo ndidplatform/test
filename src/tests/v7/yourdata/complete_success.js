@@ -27,7 +27,12 @@ import * as config from '../../../config';
 
 import { getAndVerifyRequestMessagePaddedHashTest } from '../_fragments/request_flow_fragments/idp';
 
-import { ensureRequestType, ensureService, ensureASService } from '../_helpers';
+import {
+  ensureRequestType,
+  ensureService,
+  ensureASService,
+  ensureDomain,
+} from '../_helpers';
 
 describe('Complete success scenario', function () {
   const rpNodeId = 'rp1';
@@ -91,6 +96,8 @@ describe('Complete success scenario', function () {
 
     // ensure request type - YourData
     await ensureRequestType({ requestType: preConsentRequestType });
+
+    await ensureDomain({ domain: 'YourData' });
 
     // ensure service ID(s)
     await ensureService({

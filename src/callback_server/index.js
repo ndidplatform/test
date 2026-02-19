@@ -20,6 +20,8 @@ export const proxy2EventEmitter = new EventEmitter();
 
 let asSendDataThroughCallback = false;
 let asSendErrorThroughCallback = false;
+let asYourDataSendDataThroughCallback = false;
+let asYourDataSendErrorThroughCallback = false;
 let useSpecificPrivateKeyForSign = false;
 let responseAccessorEncryptWithRandomByte = false;
 let privateKeyForSign;
@@ -33,9 +35,17 @@ export function setAsSendErrorThroughCallback(sendThroughCallback) {
   asSendErrorThroughCallback = sendThroughCallback;
 }
 
+export function setAsYourDataSendDataThroughCallback(sendThroughCallback) {
+  asYourDataSendDataThroughCallback = sendThroughCallback;
+}
+
+export function setAsYourDataSendErrorThroughCallback(sendThroughCallback) {
+  asYourDataSendErrorThroughCallback = sendThroughCallback;
+}
+
 export function setIdPUseSpecificPrivateKeyForSign(
   specificPrivateKeyForSign,
-  privateKey = null,
+  privateKey = null
 ) {
   useSpecificPrivateKeyForSign = specificPrivateKeyForSign;
   privateKeyForSign = privateKey;
@@ -43,7 +53,7 @@ export function setIdPUseSpecificPrivateKeyForSign(
 
 export function setIdPAccessorEncryptWithRamdomByte(
   accessorEncryptWithRandomByte,
-  randomByte = null,
+  randomByte = null
 ) {
   responseAccessorEncryptWithRandomByte = accessorEncryptWithRandomByte;
   responseRandomByte = randomByte;
@@ -106,12 +116,12 @@ idp1App.post('/idp/accessor/sign', async function (req, res) {
   idp1EventEmitter.emit('accessor_sign_callback', callbackData);
 
   const reference = db.createIdentityReferences.find(
-    (ref) => ref.referenceId === callbackData.reference_id,
+    (ref) => ref.referenceId === callbackData.reference_id
   );
   res.status(200).json({
     signature: utils.createSignature(
       reference.accessorPrivateKey,
-      callbackData.sid,
+      callbackData.sid
     ),
   });
 });
@@ -139,7 +149,7 @@ idp1App.post('/idp/accessor/encrypt', async function (req, res) {
   } else {
     signature = utils.createResponseSignature(
       accessorPrivateKey,
-      callbackData.request_message_padded_hash,
+      callbackData.request_message_padded_hash
     );
   }
   res.status(200).json({
@@ -171,12 +181,12 @@ idp2App.post('/idp/accessor/sign', async function (req, res) {
   idp2EventEmitter.emit('accessor_sign_callback', callbackData);
 
   const reference = db.createIdentityReferences.find(
-    (ref) => ref.referenceId === callbackData.reference_id,
+    (ref) => ref.referenceId === callbackData.reference_id
   );
   res.status(200).json({
     signature: utils.createSignature(
       reference.accessorPrivateKey,
-      callbackData.sid,
+      callbackData.sid
     ),
   });
 });
@@ -197,7 +207,7 @@ idp2App.post('/idp/accessor/encrypt', async function (req, res) {
   res.status(200).json({
     signature: utils.createResponseSignature(
       accessorPrivateKey,
-      callbackData.request_message_padded_hash,
+      callbackData.request_message_padded_hash
     ),
   });
 });
@@ -226,12 +236,12 @@ idp3App.post('/idp/accessor/sign', async function (req, res) {
   idp3EventEmitter.emit('accessor_sign_callback', callbackData);
 
   const reference = db.createIdentityReferences.find(
-    (ref) => ref.referenceId === callbackData.reference_id,
+    (ref) => ref.referenceId === callbackData.reference_id
   );
   res.status(200).json({
     signature: utils.createSignature(
       reference.accessorPrivateKey,
-      callbackData.sid,
+      callbackData.sid
     ),
   });
 });
@@ -259,7 +269,7 @@ idp3App.post('/idp/accessor/encrypt', async function (req, res) {
   } else {
     signature = utils.createResponseSignature(
       accessorPrivateKey,
-      callbackData.request_message_padded_hash,
+      callbackData.request_message_padded_hash
     );
   }
   res.status(200).json({
@@ -292,6 +302,20 @@ as1App.post('/as/callback', async function (req, res) {
   ) {
     as1EventEmitter.emit('callback', callbackData, function (error_code) {
       res.status(200).json(error_code);
+    });
+  } else if (
+    callbackData.type === 'yourdata.data_request' &&
+    asYourDataSendDataThroughCallback
+  ) {
+    as1EventEmitter.emit('callback', callbackData, function (data) {
+      res.status(200).json(data);
+    });
+  } else if (
+    callbackData.type === 'yourdata.data_request' &&
+    asYourDataSendErrorThroughCallback
+  ) {
+    as1EventEmitter.emit('callback', callbackData, function (error) {
+      res.status(200).json(error);
     });
   } else {
     as1EventEmitter.emit('callback', callbackData);
@@ -330,12 +354,12 @@ proxy1App.post('/proxy/accessor/sign', async function (req, res) {
   proxy1EventEmitter.emit('accessor_sign_callback', callbackData);
 
   const reference = db.createIdentityReferences.find(
-    (ref) => ref.referenceId === callbackData.reference_id,
+    (ref) => ref.referenceId === callbackData.reference_id
   );
   res.status(200).json({
     signature: utils.createSignature(
       reference.accessorPrivateKey,
-      callbackData.sid,
+      callbackData.sid
     ),
   });
 });
@@ -360,7 +384,7 @@ proxy1App.post('/proxy/accessor/encrypt', async function (req, res) {
   res.status(200).json({
     signature: utils.createResponseSignature(
       accessorPrivateKey,
-      callbackData.request_message_padded_hash,
+      callbackData.request_message_padded_hash
     ),
   });
 });
@@ -389,12 +413,12 @@ proxy2App.post('/proxy/accessor/sign', async function (req, res) {
   proxy2EventEmitter.emit('accessor_sign_callback', callbackData);
 
   const reference = db.createIdentityReferences.find(
-    (ref) => ref.referenceId === callbackData.reference_id,
+    (ref) => ref.referenceId === callbackData.reference_id
   );
   res.status(200).json({
     signature: utils.createSignature(
       reference.accessorPrivateKey,
-      callbackData.sid,
+      callbackData.sid
     ),
   });
 });
@@ -419,7 +443,7 @@ proxy2App.post('/proxy/accessor/encrypt', async function (req, res) {
   res.status(200).json({
     signature: utils.createResponseSignature(
       accessorPrivateKey,
-      callbackData.request_message_padded_hash,
+      callbackData.request_message_padded_hash
     ),
   });
 });

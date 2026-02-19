@@ -88,7 +88,7 @@ describe('Request timeout', function () {
     authorizationToken = responseBody.token;
   });
 
-  describe('Response with error', function () {
+  describe('Timeout', function () {
     const rpReferenceId = generateReferenceId();
 
     const rp_requestStatusPendingPromise = createEventPromise();
