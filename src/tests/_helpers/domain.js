@@ -1,6 +1,6 @@
-import * as commonApi from '../../../api/v7/common';
-import * as ndidApi from '../../../api/v7/ndid';
-import * as apiHelpers from '../../../api/helpers';
+import * as commonApi from '../../api/v7/common';
+import * as ndidApi from '../../api/v7/ndid';
+import * as apiHelpers from '../../api/helpers';
 
 export async function ensureDomain({ domain }) {
   const res = await apiHelpers.getResponseAndBody(

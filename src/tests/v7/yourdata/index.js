@@ -1,6 +1,9 @@
-describe('Your Data', async function () {
+describe('Your Data', function () {
   require('./as_setup');
   require('./as_service_setup');
+
+  // create signed token
+  require('./create_signed_token');
 
   // normal scenarios
   require('./complete_success');
@@ -10,4 +13,7 @@ describe('Your Data', async function () {
 
   // edge cases
   require('./multiple_as_data_responses'); // NOTE: each test run may not be deterministic
+
+  require('./create_request');
+  require('./as_response');
 });

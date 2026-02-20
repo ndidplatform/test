@@ -1,6 +1,5 @@
 describe('API v6', function () {
-  // TODO
-  //
-  // changes:
+  // differences from APIv7:
   // - get service response body
+  require('./service');
 });

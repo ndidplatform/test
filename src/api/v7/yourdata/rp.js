@@ -6,6 +6,14 @@ export function createRequest(nodeId, data) {
   return httpPost(`${apiBaseUrl}/yourdata/rp/requests`, data);
 }
 
+export function getRequestIdByReferenceId(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { reference_id } = data;
+  return httpGet(
+    `${apiBaseUrl}/yourdata/rp/request_references/${reference_id}`
+  );
+}
+
 export function getDataFromAS(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { requestId, node_id } = data;

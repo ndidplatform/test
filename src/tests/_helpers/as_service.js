@@ -1,11 +1,11 @@
-import * as ndidApi from '../../../api/v7/ndid';
-import * as asApi from '../../../api/v7/as';
+import * as ndidApi from '../../api/v7/ndid';
+import * as asApi from '../../api/v7/as';
 
-import { as1EventEmitter } from '../../../callback_server';
+import { as1EventEmitter } from '../../callback_server';
 
-import { createEventPromise, generateReferenceId } from '../../../utils';
+import { createEventPromise, generateReferenceId } from '../../utils';
 
-import * as config from '../../../config';
+import * as config from '../../config';
 
 export async function ensureASService({
   asNodeId,

@@ -111,6 +111,7 @@ describe('NDID disable service destination test', function () {
       service_id: 'test_disable_service_destination',
       service_name: 'Test disable service destination',
       active: true,
+      requester_node_whitelist_enabled: false,
     });
   });
 

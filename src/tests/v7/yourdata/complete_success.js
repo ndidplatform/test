@@ -32,7 +32,7 @@ import {
   ensureService,
   ensureASService,
   ensureDomain,
-} from '../_helpers';
+} from '../../_helpers';
 
 describe('Complete success scenario', function () {
   const rpNodeId = 'rp1';
@@ -781,6 +781,19 @@ describe('Complete success scenario', function () {
       rp_currentStatusCallbackOrder = order;
     });
 
+    it('RP should get request ID by reference ID while request is not completed successfully', async function () {
+      this.timeout(10000);
+      const response = await yourDataRpApi.getRequestIdByReferenceId('rp1', {
+        reference_id: rpReferenceId,
+      });
+      expect(response.status).to.equal(200);
+
+      const responseBody = await response.json();
+      expect(responseBody).to.deep.equal({
+        request_id: requestId,
+      });
+    });
+
     it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
@@ -1047,6 +1060,14 @@ describe('Complete success scenario', function () {
       as_currentStatusCallbackOrder = order;
     });
 
+    it('RP should NOT be able to get request ID by reference ID after request is completed', async function () {
+      this.timeout(10000);
+      const response = await yourDataRpApi.getRequestIdByReferenceId('rp1', {
+        reference_id: rpReferenceId,
+      });
+      expect(response.status).to.equal(404);
+    });
+
     it('RP should get data received from AS successfully', async function () {
       this.timeout(10000);
       const response = await yourDataRpApi.getDataFromAS('rp1', {
@@ -1075,7 +1096,6 @@ describe('Complete success scenario', function () {
     });
 
     it('RP should remove data received from AS successfully', async function () {
-      this.timeout(10000);
       const response = await yourDataRpApi.removeDataFromAS('rp1', {
         request_id: requestId,
       });
@@ -1083,11 +1103,60 @@ describe('Complete success scenario', function () {
     });
 
     it('RP should have no saved data requested from AS left after removal', async function () {
-      this.timeout(10000);
       const response = await yourDataRpApi.getDataFromAS('rp1', {
         requestId,
       });
       expect(response.status).to.equal(404);
+    });
+
+    it('RP should have and able to get saved private messages', async function () {
+      const response = await yourDataUtilityApi.getPrivateMessages('rp1', {
+        request_id: requestId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.be.an('array').that.is.not.empty;
+    });
+
+    it('RP should remove saved private messages successfully', async function () {
+      const response = await commonApi.removePrivateMessages('rp1', {
+        request_id: requestId,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('RP should have no saved private messages left after removal', async function () {
+      const response = await yourDataUtilityApi.getPrivateMessages('rp1', {
+        request_id: requestId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.be.an('array').that.is.empty;
+    });
+
+    it('AS should have and able to get saved private messages', async function () {
+      const response = await yourDataUtilityApi.getPrivateMessages('as1', {
+        request_id: requestId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.be.an('array').that.is.not.empty;
+    });
+
+    it('AS should remove saved private messages successfully', async function () {
+      const response = await commonApi.removePrivateMessages('as1', {
+        request_id: requestId,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('AS should have no saved private messages left after removal', async function () {
+      const response = await yourDataUtilityApi.getPrivateMessages('as1', {
+        request_id: requestId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.be.an('array').that.is.empty;
     });
 
     after(function () {
@@ -1535,6 +1604,56 @@ describe('Complete success scenario', function () {
         requestId,
       });
       expect(response.status).to.equal(404);
+    });
+
+    it('RP should have and able to get saved private messages', async function () {
+      const response = await yourDataUtilityApi.getPrivateMessages('rp1', {
+        request_id: requestId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.be.an('array').that.is.not.empty;
+    });
+
+    it('RP should remove saved private messages successfully', async function () {
+      const response = await commonApi.removePrivateMessages('rp1', {
+        request_id: requestId,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('RP should have no saved private messages left after removal', async function () {
+      const response = await yourDataUtilityApi.getPrivateMessages('rp1', {
+        request_id: requestId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.be.an('array').that.is.empty;
+    });
+
+    it('AS should have and able to get saved private messages', async function () {
+      const response = await yourDataUtilityApi.getPrivateMessages('as1', {
+        request_id: requestId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.be.an('array').that.is.not.empty;
+    });
+
+    it('AS should remove saved private messages successfully', async function () {
+      const response = await commonApi.removePrivateMessages('as1', {
+        request_id: requestId,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('AS should have no saved private messages left after removal', async function () {
+      const response = await yourDataUtilityApi.getPrivateMessages('as1', {
+        request_id: requestId,
+      });
+      const responseBody = await response.json();
+      expect(response.status).to.equal(200);
+      expect(responseBody).to.be.an('array').that.is.empty;
     });
 
     after(function () {

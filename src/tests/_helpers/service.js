@@ -1,5 +1,5 @@
-import * as commonApi from '../../../api/v7/common';
-import * as ndidApi from '../../../api/v7/ndid';
+import * as commonApi from '../../api/v7/common';
+import * as ndidApi from '../../api/v7/ndid';
 
 export async function ensureService({
   serviceId,

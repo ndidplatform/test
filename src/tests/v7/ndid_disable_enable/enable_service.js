@@ -140,6 +140,7 @@ describe('NDID enable service test', function () {
       service_id: 'test_disable_service',
       service_name: 'Test disable service',
       active: true,
+      requester_node_whitelist_enabled: false,
     });
   });
 

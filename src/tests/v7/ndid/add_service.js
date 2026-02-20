@@ -6,7 +6,7 @@ import * as commonApi from '../../../api/v7/common';
 import { ndidAvailable } from '../..';
 import { randomString } from '../../../utils/random';
 
-import { ensureDomain } from '../_helpers';
+import { ensureDomain } from '../../_helpers';
 
 describe('NDID add new service test', function () {
   let alreadyAddedService = false;

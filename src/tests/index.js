@@ -84,10 +84,10 @@ describe('End-to-End NDID API test', function () {
   require('./v7');
 
   // backward compatibility tests
-  // describe('Backward compatibility tests', function () {
-  //   require('./v5');
-  //   require('./v6');
-  // });
+  describe('Backward compatibility tests', function () {
+    require('./v5');
+    require('./v6');
+  });
 
   after(function () {
     disconnectWS();

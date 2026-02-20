@@ -220,6 +220,19 @@ describe('Request timeout', function () {
       rp_currentStatusCallbackOrder = order;
     });
 
+    it('RP should get request ID by reference ID while request is not timed out successfully', async function () {
+      this.timeout(10000);
+      const response = await yourDataRpApi.getRequestIdByReferenceId('rp1', {
+        reference_id: rpReferenceId,
+      });
+      expect(response.status).to.equal(200);
+
+      const responseBody = await response.json();
+      expect(responseBody).to.deep.equal({
+        request_id: requestId,
+      });
+    });
+
     it('AS should receive data request', async function () {
       this.timeout(15000);
       const dataRequest = await dataRequestReceivedPromise.promise;
@@ -283,6 +296,14 @@ describe('Request timeout', function () {
       expect(order).to.be.greaterThan(as_currentStatusCallbackOrder);
 
       as_currentStatusCallbackOrder = order;
+    });
+
+    it('RP should NOT be able to get request ID by reference ID after request is timed out', async function () {
+      this.timeout(10000);
+      const response = await yourDataRpApi.getRequestIdByReferenceId('rp1', {
+        reference_id: rpReferenceId,
+      });
+      expect(response.status).to.equal(404);
     });
 
     after(function () {

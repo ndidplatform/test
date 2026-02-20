@@ -21,6 +21,7 @@ import {
 } from '../../../utils';
 import { randomThaiIdNumber } from '../../../utils/thai_id';
 import * as config from '../../../config';
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
 
 describe('NDID disable service test', function () {
   const namespace = 'citizen_id';
@@ -109,6 +110,7 @@ describe('NDID disable service test', function () {
       service_id: 'test_disable_service',
       service_name: 'Test disable service',
       active: true,
+      requester_node_whitelist_enabled: false,
     });
   });
 
@@ -152,11 +154,12 @@ describe('NDID disable service test', function () {
     });
 
     expect(response.status).to.equal(204);
-    await wait(3000);
   });
 
   it('Service (test_disable_service) should be disabled successfully', async function () {
     this.timeout(10000);
+
+    await waitUntilBlockHeightMatch('as1', 'ndid1');
 
     const responseAsGetService = await asApi.getService('as1', {
       serviceId: 'test_disable_service',
@@ -176,18 +179,24 @@ describe('NDID disable service test', function () {
 
   it('After NDID disabled service (test_disable_service) RP should create a request unsuccessfully', async function () {
     this.timeout(10000);
+
+    await waitUntilBlockHeightMatch('rp1', 'ndid1');
+
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20024);
+    expect(responseBody.error.code).to.equal(20083);
   });
 
   after(async function () {
-    this.timeout(5000);
+    this.timeout(10000);
+
     await ndidApi.enableService('ndid1', {
       service_id: 'test_disable_service',
     });
-    await wait(3000);
+
+    await waitUntilBlockHeightMatch('rp1', 'ndid1');
+    await waitUntilBlockHeightMatch('as1', 'ndid1');
 
     as1EventEmitter.removeAllListeners('callback');
   });
@@ -380,11 +389,12 @@ describe('NDID disable service after RP create request test', function () {
     });
 
     expect(response.status).to.equal(204);
-    await wait(3000);
   });
 
   it('Service (test_disable_service) should be disabled successfully', async function () {
     this.timeout(10000);
+
+    await waitUntilBlockHeightMatch('as1', 'ndid1');
 
     const responseAsGetService = await asApi.getService('as1', {
       serviceId: 'test_disable_service',
@@ -497,6 +507,7 @@ describe('NDID disable service before AS offered service test', function () {
       service_id: 'test_disable_service_before_as_offered_service',
       service_name: 'Test disable service before as offerred service',
       active: true,
+      requester_node_whitelist_enabled: false,
     });
   });
 
