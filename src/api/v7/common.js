@@ -104,11 +104,15 @@ export function getServiceRequesterNodeWhitelistByServiceId(nodeId, data) {
 
 export function getPrivateMessages(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  const { request_id, node_id } = data;
+  const { request_id, ...queryParams } = data;
+
+  let arrayQueryString = Object.keys(queryParams).map(
+    (key) => `${key}=${queryParams[key]}`
+  );
+  let queryString = arrayQueryString.join('&');
+
   return httpGet(
-    `${apiBaseUrl}/utility/private_messages/${request_id}${
-      node_id ? `?node_id=${node_id}` : ''
-    }`
+    `${apiBaseUrl}/utility/private_messages/${request_id}${queryString ? `?${queryString}` : ''}`
   );
 }
 
@@ -274,7 +278,5 @@ export function getDomainList(nodeId, params = {}) {
 export function getDomainNodeWhitelistByDomain(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { domain } = data;
-  return httpGet(
-    `${apiBaseUrl}/utility/domains/${domain}/node_whitelist`
-  );
+  return httpGet(`${apiBaseUrl}/utility/domains/${domain}/node_whitelist`);
 }

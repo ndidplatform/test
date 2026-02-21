@@ -15,13 +15,3 @@ export function getNodeWhitelist(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpGet(`${apiBaseUrl}/yourdata/utility/node_whitelist`);
 }
-
-export function getPrivateMessages(nodeId, data) {
-  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  const { request_id, node_id } = data;
-  return httpGet(
-    `${apiBaseUrl}/yourdata/utility/private_messages/${request_id}${
-      node_id ? `?node_id=${node_id}` : ''
-    }`
-  );
-}
