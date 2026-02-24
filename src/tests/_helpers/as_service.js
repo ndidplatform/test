@@ -43,6 +43,21 @@ export async function ensureASService({
 
   //
 
+  // enabled by default on approve
+
+  // response = await ndidApi.enableServiceDestination('ndid1', {
+  //   node_id: asNodeId,
+  //   service_id: serviceId,
+  // });
+
+  // if (!response.ok) {
+  //   throw new Error(
+  //     `error enable service destination (AS), response status: ${response.status}`
+  //   );
+  // }
+
+  //
+
   const referenceId = generateReferenceId();
 
   const resultPromise = createEventPromise();

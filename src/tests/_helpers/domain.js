@@ -17,3 +17,36 @@ export async function ensureDomain({ domain }) {
     );
   }
 }
+
+export async function ensureDomainNodeWhitelistEnabled({ domain }) {
+  const res = await apiHelpers.getResponseAndBody(
+    commonApi.getDomainNodeWhitelistByDomain('ndid1', { domain })
+  );
+
+  const enabled = res.responseBody.enabled;
+
+  if (!enabled) {
+    await apiHelpers.getResponseAndBody(
+      ndidApi.enableDomainNodeWhitelist('ndid1', {
+        domain,
+      })
+    );
+  }
+}
+
+export async function ensureNodeInDomainNodeWhitelist({ domain, nodeId }) {
+  const res = await apiHelpers.getResponseAndBody(
+    commonApi.getDomainNodeWhitelistByDomain('ndid1', { domain })
+  );
+
+  const foundNode = res.responseBody.node_id_list.find((nid) => nid === nodeId);
+
+  if (foundNode == null) {
+    await apiHelpers.getResponseAndBody(
+      ndidApi.addNodeToDomainNodeWhitelist('ndid1', {
+        domain,
+        node_id: nodeId,
+      })
+    );
+  }
+}

@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 
+import * as ndidApi from '../../../api/v7/ndid';
 import * as rpApi from '../../../api/v7/rp';
 import * as idpApi from '../../../api/v7/idp';
 import * as asApi from '../../../api/v7/as';
@@ -32,6 +33,10 @@ import {
   ensureService,
   ensureASService,
   ensureDomain,
+  ensureDomainNodeWhitelistEnabled,
+  ensureNodeInDomainNodeWhitelist,
+  ensureServiceRequesterNodeWhitelistEnabled,
+  ensureNodeInServiceRequesterNodeWhitelist,
 } from '../../_helpers';
 
 describe('Complete success scenario', function () {
@@ -39,6 +44,8 @@ describe('Complete success scenario', function () {
   const requesterNodeId = rpNodeId;
   const idpNodeId = 'idp1';
   const asNodeId = 'as1';
+
+  const domain = 'YourData';
 
   const preConsentRequestType = 'YourData';
   const preConsentServiceId = 'pre_consent_deposit';
@@ -97,7 +104,12 @@ describe('Complete success scenario', function () {
     // ensure request type - YourData
     await ensureRequestType({ requestType: preConsentRequestType });
 
-    await ensureDomain({ domain: 'YourData' });
+    await ensureDomain({ domain });
+
+    await ensureDomainNodeWhitelistEnabled({ domain });
+
+    await ensureNodeInDomainNodeWhitelist({ domain, nodeId: rpNodeId });
+    await ensureNodeInDomainNodeWhitelist({ domain, nodeId: asNodeId });
 
     // ensure service ID(s)
     await ensureService({
@@ -105,7 +117,20 @@ describe('Complete success scenario', function () {
       serviceName: 'Pre-Consent Deposit',
       dataSchema: 'n/a',
       dataSchemaVersion: 'n/a',
-      domain: 'YourData',
+      domain,
+    });
+
+    await ensureServiceRequesterNodeWhitelistEnabled({
+      serviceId: preConsentServiceId,
+    });
+
+    await ensureNodeInServiceRequesterNodeWhitelist({
+      serviceId: preConsentServiceId,
+      nodeId: rpNodeId,
+    });
+    await ensureNodeInServiceRequesterNodeWhitelist({
+      serviceId: preConsentServiceId,
+      nodeId: asNodeId,
     });
 
     // ensure AS provides services
@@ -1664,7 +1689,47 @@ describe('Complete success scenario', function () {
       expect(responseBody).to.be.an('array').that.is.empty;
     });
 
-    after(function () {
+    after(async function () {
+      this.timeout(10000);
+
+      await apiHelpers.getResponseAndBody(
+        ndidApi.disableDomainNodeWhitelist('ndid1', {
+          domain,
+        })
+      );
+
+      await apiHelpers.getResponseAndBody(
+        ndidApi.removeNodeFromDomainNodeWhitelist('ndid1', {
+          domain,
+          node_id: rpNodeId,
+        })
+      );
+      await apiHelpers.getResponseAndBody(
+        ndidApi.removeNodeFromDomainNodeWhitelist('ndid1', {
+          domain,
+          node_id: asNodeId,
+        })
+      );
+
+      await apiHelpers.getResponseAndBody(
+        ndidApi.disableServiceRequesterNodeWhitelist('ndid1', {
+          service_id: preConsentServiceId,
+        })
+      );
+
+      await apiHelpers.getResponseAndBody(
+        ndidApi.removeNodeFromServiceRequesterNodeWhitelist('ndid1', {
+          service_id: preConsentServiceId,
+          node_id: rpNodeId,
+        })
+      );
+      await apiHelpers.getResponseAndBody(
+        ndidApi.removeNodeFromServiceRequesterNodeWhitelist('ndid1', {
+          service_id: preConsentServiceId,
+          node_id: asNodeId,
+        })
+      );
+
       rpEventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
     });
