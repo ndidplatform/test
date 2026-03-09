@@ -185,7 +185,7 @@ describe('NDID disable service test', function () {
     const response = await rpApi.createRequest('rp1', createRequestParams);
     const responseBody = await response.json();
     expect(response.status).to.equal(400);
-    expect(responseBody.error.code).to.equal(20083);
+    expect(responseBody.error.code).to.equal(20118);
   });
 
   after(async function () {
