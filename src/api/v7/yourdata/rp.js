@@ -14,6 +14,22 @@ export function getRequestIdByReferenceId(nodeId, data) {
   );
 }
 
+export function createDataDecryptionKeyRetryRequest(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  return httpPost(
+    `${apiBaseUrl}/yourdata/rp/data_decryption_key_retry_requests`,
+    data
+  );
+}
+
+export function getDataDecryptionKeyRetryRequestIdByReferenceId(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { reference_id } = data;
+  return httpGet(
+    `${apiBaseUrl}/yourdata/rp/data_decryption_key_retry_request_references/${reference_id}`
+  );
+}
+
 export function getDataFromAS(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { requestId, node_id } = data;
