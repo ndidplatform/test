@@ -1,26 +1,33 @@
 /**
- * IMPORTANT: Code modification on RP node required.
+ * IMPORTANT: Code modifications on RP node (and optionally AS node) required.
  * RP node needs to stop processing futher after receiving encrypted data from AS node. (Don't/Stop before request for key.)
+ * 
+ * AND
+ * 
+ * AS node needs to not accept/process data decryption key retry request from RP, 
+ * or simply stop/not start AS node process, 
+ * or RP node must not send retry request to AS.
  */
 
 import { expect } from 'chai';
 
-import * as ndidApi from '../../../api/v7/ndid';
-import * as commonApi from '../../../api/v7/common';
-import * as yourDataRpApi from '../../../api/v7/yourdata/rp';
-import * as yourDataAsApi from '../../../api/v7/yourdata/as';
-import * as yourDataUtilityApi from '../../../api/v7/yourdata/utility';
-import * as apiHelpers from '../../../api/helpers';
-import { rpEventEmitter, as1EventEmitter } from '../../../callback_server';
-import * as db from '../../../db';
-import { createEventPromise, generateReferenceId } from '../../../utils';
-import { randomNumber, randomString } from '../../../utils/random';
-import yourDataRequestStatus from './request_status';
-import yourDataDataDecryptionKeyRetryRequestStatus from './data_decryption_key_retry_request_status';
-import { waitUntilBlockHeightMatch } from '../../../tendermint';
-import * as config from '../../../config';
+import * as ndidApi from '../../../../api/v7/ndid';
+import * as commonApi from '../../../../api/v7/common';
+import * as yourDataRpApi from '../../../../api/v7/yourdata/rp';
+import * as yourDataAsApi from '../../../../api/v7/yourdata/as';
+import * as yourDataUtilityApi from '../../../../api/v7/yourdata/utility';
+import * as apiHelpers from '../../../../api/helpers';
+import { rpEventEmitter, as1EventEmitter } from '../../../../callback_server';
+import * as db from '../../../../db';
+import { createEventPromise, generateReferenceId } from '../../../../utils';
+import { randomNumber, randomString } from '../../../../utils/random';
+import yourDataRequestStatus from '../request_status';
+import yourDataDataDecryptionKeyRetryRequestStatus from '../data_decryption_key_retry_request_status';
+import { ensureDomain } from '../../../_helpers';
+import { waitUntilBlockHeightMatch } from '../../../../tendermint';
+import * as config from '../../../../config';
 
-describe('Data decryption key retry request after request timeout', function () {
+describe('Data decryption key retry request timeout (Code modification required)', function () {
   const rpNodeId = 'rp1';
   const asNodeId = 'as1';
 
@@ -36,6 +43,10 @@ describe('Data decryption key retry request after request timeout', function () 
   let requestId;
 
   before(async function () {
+    if (!config.runYourDataWithCodeModificationRequiredTests) {
+      this.skip();
+    }
+
     this.timeout(10000);
 
     const identity = db.idp1Identities.find((identity) => identity.mode === 2);
@@ -61,6 +72,8 @@ describe('Data decryption key retry request after request timeout', function () 
     if (!response.ok) {
       throw new Error('error adding or updating YourData AS service');
     }
+
+    await ensureDomain({ domain: 'YourData' });
 
     const authorizationTokenPayload = {
       rp_node_id: 'rp1',
@@ -98,6 +111,8 @@ describe('Data decryption key retry request after request timeout', function () 
     responseBody = await response.json();
 
     authorizationToken = responseBody.token;
+
+    await waitUntilBlockHeightMatch('rp1', 'ndid1');
   });
 
   describe('Request timeout after AS respond', function () {
@@ -340,12 +355,11 @@ describe('Data decryption key retry request after request timeout', function () 
     });
   });
 
-  describe('Retry request for data decryption key', function () {
+  describe('Retry request for data decryption key timeout', function () {
     const rpReferenceId = generateReferenceId();
 
     const rp_requestStatusPendingPromise = createEventPromise();
-    const rp_requestStatusCompletedPromise = createEventPromise();
-    // const rp_requestStatusTimedOutPromise = createEventPromise();
+    const rp_requestStatusTimedOutPromise = createEventPromise();
 
     let createRequestParams;
 
@@ -358,7 +372,7 @@ describe('Data decryption key retry request after request timeout', function () 
         request_id: requestId,
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
-        request_timeout: 3600,
+        request_timeout: 1,
       };
 
       rpEventEmitter.on('callback', function (callbackData) {
@@ -375,21 +389,13 @@ describe('Data decryption key retry request after request timeout', function () 
               order: rp_statusCallbackOrder++,
               callbackData,
             });
-          } else if (
-            callbackData.status ===
-            yourDataDataDecryptionKeyRetryRequestStatus.COMPLETED
-          ) {
-            rp_requestStatusCompletedPromise.resolve({
+          }
+          if (callbackData.timed_out) {
+            rp_requestStatusTimedOutPromise.resolve({
               order: rp_statusCallbackOrder++,
               callbackData,
             });
           }
-          // if (callbackData.timed_out) {
-          //   rp_requestStatusTimedOutPromise.resolve({
-          //     order: rp_statusCallbackOrder++,
-          //     callbackData,
-          //   });
-          // }
         }
       });
     });
@@ -443,12 +449,12 @@ describe('Data decryption key retry request after request timeout', function () 
       });
     });
 
-    // request status callback at RP (yourDataDataDecryptionKeyRetryRequestStatus.COMPLETED)
-    it('RP should receive retry request completed status', async function () {
+    // request status callback at RP (yourDataDataDecryptionKeyRetryRequestStatus.PENDING), timed_out = true
+    it('RP should receive retry request timed out status', async function () {
       this.timeout(10000);
 
       const { order, callbackData: requestStatus } =
-        await rp_requestStatusCompletedPromise.promise;
+        await rp_requestStatusTimedOutPromise.promise;
 
       expect(requestStatus).to.deep.include({
         node_id: rpNodeId,
@@ -457,8 +463,8 @@ describe('Data decryption key retry request after request timeout', function () 
         as_node_id: asNodeId,
         request_id: requestId,
         request_timeout: createRequestParams.request_timeout,
-        timed_out: false,
-        status: yourDataDataDecryptionKeyRetryRequestStatus.COMPLETED,
+        timed_out: true,
+        status: yourDataDataDecryptionKeyRetryRequestStatus.PENDING,
       });
 
       expect(order).to.be.greaterThan(rp_currentStatusCallbackOrder);
@@ -466,7 +472,7 @@ describe('Data decryption key retry request after request timeout', function () 
       rp_currentStatusCallbackOrder = order;
     });
 
-    it('RP should NOT be able to get request ID by reference ID after request is completed', async function () {
+    it('RP should NOT be able to get request ID by reference ID after request is timed out', async function () {
       this.timeout(10000);
       const response =
         await yourDataRpApi.getDataDecryptionKeyRetryRequestIdByReferenceId(
@@ -476,105 +482,6 @@ describe('Data decryption key retry request after request timeout', function () 
           }
         );
       expect(response.status).to.equal(404);
-    });
-
-    //
-
-    it('RP should get data received from AS successfully', async function () {
-      this.timeout(10000);
-      const response = await yourDataRpApi.getDataFromAS('rp1', {
-        requestId,
-      });
-
-      const data = await response.json();
-      expect(response.status).to.equal(200);
-
-      const nodeInfoResponse = await apiHelpers.getResponseAndBody(
-        commonApi.getNodeInfo('rp1', {
-          node_id: 'as1',
-        })
-      );
-      const asNodeInfo = nodeInfoResponse.responseBody;
-
-      expect(data).to.deep.include({
-        source_node_id: asNodeId,
-        service_id: serviceId,
-        signature_signing_algorithm: asNodeInfo.signing_public_key.algorithm,
-        signature_signing_key_version: asNodeInfo.signing_public_key.version,
-        data: asData,
-      });
-      expect(data.source_signature).to.be.a('string').that.is.not.empty;
-      expect(data.data_salt).to.be.a('string').that.is.not.empty;
-    });
-
-    it('RP should remove data received from AS successfully', async function () {
-      this.timeout(10000);
-      const response = await yourDataRpApi.removeDataFromAS('rp1', {
-        request_id: requestId,
-      });
-      expect(response.status).to.equal(204);
-    });
-
-    it('RP should have no saved data requested from AS left after removal', async function () {
-      this.timeout(10000);
-      const response = await yourDataRpApi.getDataFromAS('rp1', {
-        requestId,
-      });
-      expect(response.status).to.equal(404);
-    });
-
-    it('RP should have and able to get saved private messages', async function () {
-      const response = await commonApi.getPrivateMessages('rp1', {
-        request_id: requestId,
-        skip_request_id_check: true,
-      });
-      const responseBody = await response.json();
-      expect(response.status).to.equal(200);
-      expect(responseBody).to.be.an('array').that.is.not.empty;
-    });
-
-    it('RP should remove saved private messages successfully', async function () {
-      const response = await commonApi.removePrivateMessages('rp1', {
-        request_id: requestId,
-      });
-      expect(response.status).to.equal(204);
-    });
-
-    it('RP should have no saved private messages left after removal', async function () {
-      const response = await commonApi.getPrivateMessages('rp1', {
-        request_id: requestId,
-        skip_request_id_check: true,
-      });
-      const responseBody = await response.json();
-      expect(response.status).to.equal(200);
-      expect(responseBody).to.be.an('array').that.is.empty;
-    });
-
-    it('AS should have and able to get saved private messages', async function () {
-      const response = await commonApi.getPrivateMessages('as1', {
-        request_id: requestId,
-        skip_request_id_check: true,
-      });
-      const responseBody = await response.json();
-      expect(response.status).to.equal(200);
-      expect(responseBody).to.be.an('array').that.is.not.empty;
-    });
-
-    it('AS should remove saved private messages successfully', async function () {
-      const response = await commonApi.removePrivateMessages('as1', {
-        request_id: requestId,
-      });
-      expect(response.status).to.equal(204);
-    });
-
-    it('AS should have no saved private messages left after removal', async function () {
-      const response = await commonApi.getPrivateMessages('as1', {
-        request_id: requestId,
-        skip_request_id_check: true,
-      });
-      const responseBody = await response.json();
-      expect(response.status).to.equal(200);
-      expect(responseBody).to.be.an('array').that.is.empty;
     });
 
     after(function () {

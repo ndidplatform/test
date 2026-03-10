@@ -12,10 +12,7 @@ describe('Your Data', function () {
   require('./request_timeout');
 
   // decryption key retry scenarios
-  //
-  // IMPORTANT: need code modification
-  //
-  // require('./data_decryption_key_retry');
+  require('./data_decryption_key_retry');
 
   // edge cases
   require('./multiple_as_data_responses'); // NOTE: each test run may not be deterministic

@@ -1,27 +1,32 @@
 import { expect } from 'chai';
 
-import * as ndidApi from '../../../api/v7/ndid';
-import * as yourDataRpApi from '../../../api/v7/yourdata/rp';
-import * as yourDataAsApi from '../../../api/v7/yourdata/as';
-import * as yourDataUtilityApi from '../../../api/v7/yourdata/utility';
-import { rpEventEmitter, as1EventEmitter } from '../../../callback_server';
-import * as db from '../../../db';
-import { createEventPromise, generateReferenceId } from '../../../utils';
-import { randomNumber, randomString } from '../../../utils/random';
-import yourDataRequestStatus from './request_status';
-import { waitUntilBlockHeightMatch } from '../../../tendermint';
-import * as config from '../../../config';
+import * as commonApi from '../../../../api/v7/common';
+import * as yourDataRpApi from '../../../../api/v7/yourdata/rp';
+import * as yourDataAsApi from '../../../../api/v7/yourdata/as';
+import * as yourDataUtilityApi from '../../../../api/v7/yourdata/utility';
+import { rpEventEmitter, as1EventEmitter } from '../../../../callback_server';
+import * as db from '../../../../db';
+import { createEventPromise, generateReferenceId } from '../../../../utils';
+import { randomString } from '../../../../utils/random';
+import yourDataRequestStatus from '../request_status';
+import { ensureDomain } from '../../../_helpers';
+import { waitUntilBlockHeightMatch } from '../../../../tendermint';
+import * as config from '../../../../config';
 
-describe('Error response', function () {
+describe('Negative cases', function () {
   const rpNodeId = 'rp1';
   const asNodeId = 'as1';
 
   const serviceId = `test_service_${randomString(8)}`;
 
+  const asData = '<DATA>';
+
   let namespace;
   let identifier;
 
   let authorizationToken;
+
+  let requestId;
 
   before(async function () {
     this.timeout(10000);
@@ -49,6 +54,8 @@ describe('Error response', function () {
     if (!response.ok) {
       throw new Error('error adding or updating YourData AS service');
     }
+
+    await ensureDomain({ domain: 'YourData' });
 
     const authorizationTokenPayload = {
       rp_node_id: 'rp1',
@@ -86,27 +93,21 @@ describe('Error response', function () {
     responseBody = await response.json();
 
     authorizationToken = responseBody.token;
+
+    await waitUntilBlockHeightMatch('rp1', 'ndid1');
   });
 
-  describe('Response with error', function () {
+  describe('Request with retry request', function () {
     const rpReferenceId = generateReferenceId();
 
     const rp_requestStatusPendingPromise = createEventPromise();
-    const rp_requestStatusErroredPromise = createEventPromise();
+    const rp_requestStatusCompletedPromise = createEventPromise();
 
     const dataRequestReceivedPromise = createEventPromise();
 
-    const as_requestStatusErroredPromise = createEventPromise();
-
-    const errorCode = randomNumber(10000, 99999);
-    const type = 'as';
-    const description = `Test error code - ${errorCode}`;
-
-    const errorMessage = 'Test error response';
+    const as_requestStatusCompletedPromise = createEventPromise();
 
     let createRequestParams;
-
-    let requestId;
 
     let rp_statusCallbackOrder = 1;
     let as_statusCallbackOrder = 1;
@@ -115,8 +116,6 @@ describe('Error response', function () {
     let as_currentStatusCallbackOrder = 0;
 
     before(async function () {
-      this.timeout(10000);
-
       createRequestParams = {
         service_id: serviceId,
         service_version: 'v1',
@@ -137,7 +136,7 @@ describe('Error response', function () {
           ],
         }),
         authorization: authorizationToken,
-        request_timeout: 86400,
+        request_timeout: 3600,
       };
 
       rpEventEmitter.on('callback', function (callbackData) {
@@ -150,8 +149,8 @@ describe('Error response', function () {
               order: rp_statusCallbackOrder++,
               callbackData,
             });
-          } else if (callbackData.status === yourDataRequestStatus.ERRORED) {
-            rp_requestStatusErroredPromise.resolve({
+          } else if (callbackData.status === yourDataRequestStatus.COMPLETED) {
+            rp_requestStatusCompletedPromise.resolve({
               order: rp_statusCallbackOrder++,
               callbackData,
             });
@@ -169,8 +168,8 @@ describe('Error response', function () {
           callbackData.type === 'yourdata.request_status' &&
           callbackData.request_id === requestId
         ) {
-          if (callbackData.status === yourDataRequestStatus.ERRORED) {
-            as_requestStatusErroredPromise.resolve({
+          if (callbackData.status === yourDataRequestStatus.COMPLETED) {
+            as_requestStatusCompletedPromise.resolve({
               order: as_statusCallbackOrder++,
               callbackData,
             });
@@ -180,17 +179,6 @@ describe('Error response', function () {
 
       let response;
 
-      // add error code
-      response = await ndidApi.addDomainErrorCode('ndid1', {
-        domain: 'YourData',
-        error_code: errorCode,
-        type,
-        description,
-      });
-      if (!response.ok) {
-        throw new Error('error adding YourData error code');
-      }
-
       // set AS callback
       response = await yourDataAsApi.setCallbacks('as1', {
         incoming_request_status_update_url: config.AS1_CALLBACK_URL,
@@ -257,23 +245,62 @@ describe('Error response', function () {
       expect(dataRequest.request_time).to.be.a('number');
     });
 
-    it('AS should respond with error successfully', async function () {
+    it('RP should NOT be able to create a data decryption key retry request while data request is active/in-progress', async function () {
+      this.timeout(10000);
+      const response = await yourDataRpApi.createDataDecryptionKeyRetryRequest(
+        'rp1',
+        {
+          request_id: requestId,
+          reference_id: generateReferenceId(),
+          callback_url: config.RP_CALLBACK_URL,
+          request_timeout: 3600,
+        }
+      );
+      expect(response.status).to.equal(400);
+
+      const responseBody = await response.json();
+      expect(responseBody.error.code).to.equal(20119);
+    });
+
+    it('AS should send data successfully', async function () {
       this.timeout(20000);
-      const response = await yourDataAsApi.sendError('as1', {
+      const response = await yourDataAsApi.sendData('as1', {
         // node_id: asNodeId,
         request_id: requestId,
-        error_code: errorCode,
-        error_message: errorMessage,
+        data: asData,
       });
       expect(response.status).to.equal(204);
     });
 
-    // request status callback at AS (yourDataRequestStatus.ERRORED)
-    it('AS should receive request errored status', async function () {
+    // request status callback at RP (yourDataRequestStatus.COMPLETED)
+    it('RP should receive request completed status', async function () {
       this.timeout(10000);
 
       const { order, callbackData: requestStatus } =
-        await as_requestStatusErroredPromise.promise;
+        await rp_requestStatusCompletedPromise.promise;
+
+      expect(requestStatus).to.deep.include({
+        node_id: rpNodeId,
+        type: 'yourdata.request_status',
+        requester_node_id: rpNodeId,
+        as_node_id: asNodeId,
+        request_id: requestId,
+        request_timeout: createRequestParams.request_timeout,
+        timed_out: false,
+        status: yourDataRequestStatus.COMPLETED,
+      });
+
+      expect(order).to.be.greaterThan(rp_currentStatusCallbackOrder);
+
+      rp_currentStatusCallbackOrder = order;
+    });
+
+    // request status callback at AS (yourDataRequestStatus.COMPLETED)
+    it('AS should receive request completed status', async function () {
+      this.timeout(10000);
+
+      const { order, callbackData: requestStatus } =
+        await as_requestStatusCompletedPromise.promise;
 
       expect(requestStatus).to.deep.include({
         node_id: asNodeId,
@@ -283,9 +310,7 @@ describe('Error response', function () {
         request_id: requestId,
         request_timeout: createRequestParams.request_timeout,
         timed_out: false,
-        status: yourDataRequestStatus.ERRORED,
-        error_code: errorCode,
-        error_message: errorMessage,
+        status: yourDataRequestStatus.COMPLETED,
       });
 
       expect(order).to.be.greaterThan(as_currentStatusCallbackOrder);
@@ -293,187 +318,32 @@ describe('Error response', function () {
       as_currentStatusCallbackOrder = order;
     });
 
-    // request status callback at RP (yourDataRequestStatus.ERRORED)
-    it('RP should receive request errored status', async function () {
+    it('RP should NOT be able to create a data decryption key retry request after data request is completed', async function () {
       this.timeout(10000);
-
-      const { order, callbackData: requestStatus } =
-        await rp_requestStatusErroredPromise.promise;
-
-      expect(requestStatus).to.deep.include({
-        node_id: rpNodeId,
-        type: 'yourdata.request_status',
-        requester_node_id: rpNodeId,
-        as_node_id: asNodeId,
-        request_id: requestId,
-        request_timeout: createRequestParams.request_timeout,
-        timed_out: false,
-        status: yourDataRequestStatus.ERRORED,
-        error_code: errorCode,
-        error_message: errorMessage,
-      });
-
-      expect(order).to.be.greaterThan(rp_currentStatusCallbackOrder);
-
-      rp_currentStatusCallbackOrder = order;
-    });
-
-    after(function () {
-      rpEventEmitter.removeAllListeners('callback');
-      as1EventEmitter.removeAllListeners('callback');
-    });
-  });
-
-  describe('Response with invalid/non-existent error code', function () {
-    const rpReferenceId = generateReferenceId();
-
-    const rp_requestStatusPendingPromise = createEventPromise();
-
-    const dataRequestReceivedPromise = createEventPromise();
-
-    const errorCode = randomNumber(10000, 99999);
-
-    const errorMessage = 'Test error response';
-
-    let createRequestParams;
-
-    let requestId;
-
-    let rp_statusCallbackOrder = 1;
-    let as_statusCallbackOrder = 1;
-
-    let rp_currentStatusCallbackOrder = 0;
-    let as_currentStatusCallbackOrder = 0;
-
-    before(async function () {
-      createRequestParams = {
-        service_id: serviceId,
-        service_version: 'v1',
-        // service_extension: '',
-        as_node_id: asNodeId,
-        reference_id: rpReferenceId,
-        callback_url: config.RP_CALLBACK_URL,
-        namespace,
-        identifier,
-        request_params: JSON.stringify({
-          selected_accounts: [
-            {
-              namespace: 'account_no',
-              idenfifier: '123-45678-90',
-              visible_identifier: '123-45XXX-XX',
-              identifier_extension: '{account_type:savings}',
-            },
-          ],
-        }),
-        authorization: authorizationToken,
-        request_timeout: 86400,
-      };
-
-      rpEventEmitter.on('callback', function (callbackData) {
-        if (
-          callbackData.type === 'yourdata.request_status' &&
-          callbackData.request_id === requestId
-        ) {
-          if (callbackData.status === yourDataRequestStatus.PENDING) {
-            rp_requestStatusPendingPromise.resolve({
-              order: rp_statusCallbackOrder++,
-              callbackData,
-            });
-          }
-        }
-      });
-
-      as1EventEmitter.on('callback', function (callbackData) {
-        if (
-          callbackData.type === 'yourdata.data_request' &&
-          callbackData.request_id === requestId
-        ) {
-          dataRequestReceivedPromise.resolve(callbackData);
-        }
-      });
-
-      let response;
-
-      // set AS callback
-      response = await yourDataAsApi.setCallbacks('as1', {
-        incoming_request_status_update_url: config.AS1_CALLBACK_URL,
-      });
-      if (!response.ok) {
-        throw new Error('error settings AS callbacks');
-      }
-
-      await waitUntilBlockHeightMatch('as1', 'ndid1');
-    });
-
-    it('RP should create a request successfully', async function () {
-      this.timeout(10000);
-      const response = await yourDataRpApi.createRequest(
+      const response = await yourDataRpApi.createDataDecryptionKeyRetryRequest(
         'rp1',
-        createRequestParams
+        {
+          request_id: requestId,
+          reference_id: generateReferenceId(),
+          callback_url: config.RP_CALLBACK_URL,
+          request_timeout: 3600,
+        }
       );
-      const responseBody = await response.json();
-      expect(response.status).to.equal(200);
-      expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
-
-      requestId = responseBody.request_id;
-    });
-
-    // request status callback at RP (yourDataRequestStatus.PENDING)
-    it('RP should receive request pending status', async function () {
-      this.timeout(10000);
-
-      const { order, callbackData: requestStatus } =
-        await rp_requestStatusPendingPromise.promise;
-
-      expect(requestStatus).to.deep.include({
-        node_id: rpNodeId,
-        type: 'yourdata.request_status',
-        requester_node_id: rpNodeId,
-        as_node_id: asNodeId,
-        request_id: requestId,
-        request_timeout: createRequestParams.request_timeout,
-        timed_out: false,
-        status: yourDataRequestStatus.PENDING,
-      });
-
-      expect(order).to.be.greaterThan(rp_currentStatusCallbackOrder);
-
-      rp_currentStatusCallbackOrder = order;
-    });
-
-    it('AS should receive data request', async function () {
-      this.timeout(15000);
-      const dataRequest = await dataRequestReceivedPromise.promise;
-      expect(dataRequest).to.deep.include({
-        type: 'yourdata.data_request',
-        request_id: requestId,
-        service_id: createRequestParams.service_id,
-        service_version: createRequestParams.service_version,
-        // service_extension: createRequestParams.service_extension,
-        requester_node_id: rpNodeId,
-        namespace: createRequestParams.namespace,
-        identifier: createRequestParams.identifier,
-        request_params: createRequestParams.request_params,
-        authorization: createRequestParams.authorization,
-        request_timeout: createRequestParams.request_timeout,
-      });
-      expect(dataRequest.request_time).to.be.a('number');
-    });
-
-    it('AS should NOT be able to respond with invalid error code', async function () {
-      this.timeout(20000);
-      const response = await yourDataAsApi.sendError('as1', {
-        // node_id: asNodeId,
-        request_id: requestId,
-        error_code: errorCode,
-        error_message: errorMessage,
-      });
-      const responseBody = await response.json();
       expect(response.status).to.equal(400);
-      expect(responseBody.error.code).to.equal(20078);
+
+      const responseBody = await response.json();
+      expect(responseBody.error.code).to.equal(20120);
     });
 
-    after(function () {
+    after(async function () {
+      await commonApi.removePrivateMessages('rp1', {
+        request_id: requestId,
+      });
+
+      await commonApi.removePrivateMessages('as1', {
+        request_id: requestId,
+      });
+
       rpEventEmitter.removeAllListeners('callback');
       as1EventEmitter.removeAllListeners('callback');
     });
