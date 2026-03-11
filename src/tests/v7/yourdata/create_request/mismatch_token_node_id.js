@@ -33,7 +33,7 @@ describe('Mismatch RP node ID (in parameter and token)', function () {
     let responseBody;
 
     const authorizationTokenPayload = {
-      rp_node_id: 'other_rp',
+      requester_node_id: 'other_rp',
       as_node_id: 'as1',
       namespace,
       identifier,
@@ -131,7 +131,7 @@ describe('Mismatch AS node ID (in parameter and token)', function () {
     let responseBody;
 
     const authorizationTokenPayload = {
-      rp_node_id: 'rp1',
+      requester_node_id: 'rp1',
       as_node_id: 'other_as',
       namespace,
       identifier,

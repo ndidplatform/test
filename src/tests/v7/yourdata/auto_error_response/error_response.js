@@ -44,7 +44,7 @@ describe('Error response with auto error response config', function () {
     let responseBody;
 
     const authorizationTokenPayload = {
-      rp_node_id: 'rp1',
+      requester_node_id: 'rp1',
       as_node_id: 'as1',
       namespace,
       identifier,

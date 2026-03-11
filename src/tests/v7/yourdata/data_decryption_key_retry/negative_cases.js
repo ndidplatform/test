@@ -55,7 +55,7 @@ describe('Negative cases', function () {
     }
 
     const authorizationTokenPayload = {
-      rp_node_id: 'rp1',
+      requester_node_id: 'rp1',
       as_node_id: 'as1',
       namespace,
       identifier,

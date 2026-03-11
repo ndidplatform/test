@@ -506,7 +506,7 @@ describe('Complete success scenario', function () {
       this.timeout(20000);
 
       authorizationTokenPayload = {
-        rp_node_id: rpNodeId,
+        requester_node_id: rpNodeId,
         as_node_id: asNodeId,
         namespace,
         identifier,
@@ -852,7 +852,7 @@ describe('Complete success scenario', function () {
       const response = await yourDataUtilityApi.createSignedAuthorizationToken(
         'as1',
         {
-          rp_node_id: rpNodeId,
+          requester_node_id: rpNodeId,
           as_node_id: asNodeId,
           namespace,
           identifier,

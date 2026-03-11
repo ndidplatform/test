@@ -7,7 +7,7 @@ describe('Negative cases', function () {
     this.timeout(10000);
 
     const authorizationTokenPayload = {
-      rp_node_id: 'rp1',
+      requester_node_id: 'rp1',
       as_node_id: 'as1',
       namespace: 'namespace',
       identifier: 'identifier',
@@ -50,7 +50,7 @@ describe('Negative cases', function () {
     const issueDatetime = Math.floor(Date.now() / 1000) + 1000;
 
     const authorizationTokenPayload = {
-      rp_node_id: 'rp1',
+      requester_node_id: 'rp1',
       as_node_id: 'as1',
       namespace: 'namespace',
       identifier: 'identifier',
@@ -92,7 +92,7 @@ describe('Negative cases', function () {
     this.timeout(10000);
 
     const authorizationTokenPayload = {
-      rp_node_id: 'rp1',
+      requester_node_id: 'rp1',
       as_node_id: 'as1',
       namespace: 'namespace',
       identifier: 'identifier',
@@ -132,7 +132,7 @@ describe('Negative cases', function () {
     this.timeout(10000);
 
     const authorizationTokenPayload = {
-      rp_node_id: 'rp1',
+      requester_node_id: 'rp1',
       as_node_id: 'as1',
       namespace: 'namespace',
       identifier: 'identifier',

@@ -33,7 +33,7 @@ describe('Mismatch namespace (in parameter and token)', function () {
     let responseBody;
 
     const authorizationTokenPayload = {
-      rp_node_id: 'rp1',
+      requester_node_id: 'rp1',
       as_node_id: 'as1',
       namespace: 'other_namespace',
       identifier,
@@ -131,7 +131,7 @@ describe('Mismatch identifier (in parameter and token)', function () {
     let responseBody;
 
     const authorizationTokenPayload = {
-      rp_node_id: 'rp1',
+      requester_node_id: 'rp1',
       as_node_id: 'as1',
       namespace,
       identifier: 'other_identifier',
