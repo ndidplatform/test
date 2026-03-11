@@ -13,10 +13,10 @@ export function setCallbacks(nodeId, data) {
 
 export function getService(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
-  const { serviceId, as_node_id } = data;
+  const { serviceId, node_id } = data;
   return httpGet(
     `${apiBaseUrl}/yourdata/as/service/${serviceId}${
-      as_node_id ? `?as_node_id=${as_node_id}` : ''
+      node_id ? `?node_id=${node_id}` : ''
     }`
   );
 }
@@ -35,4 +35,19 @@ export function sendData(nodeId, data) {
 export function sendError(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpPost(`${apiBaseUrl}/yourdata/as/error`, data);
+}
+
+export function getAutoErrorResponses(nodeId, data = {}) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { node_id } = data;
+  return httpGet(
+    `${apiBaseUrl}/yourdata/as/auto_error_responses${
+      node_id ? `?node_id=${node_id}` : ''
+    }`
+  );
+}
+
+export function setAutoErrorResponses(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  return httpPost(`${apiBaseUrl}/yourdata/as/auto_error_responses`, data);
 }

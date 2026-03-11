@@ -17,7 +17,6 @@ import { createEventPromise, generateReferenceId } from '../../../../utils';
 import { randomNumber, randomString } from '../../../../utils/random';
 import yourDataRequestStatus from '../request_status';
 import yourDataDataDecryptionKeyRetryRequestStatus from '../data_decryption_key_retry_request_status';
-import { ensureDomain } from '../../../_helpers';
 import { waitUntilBlockHeightMatch } from '../../../../tendermint';
 import * as config from '../../../../config';
 
@@ -66,8 +65,6 @@ describe('Data decryption key retry request after request timeout (Code modifica
     if (!response.ok) {
       throw new Error('error adding or updating YourData AS service');
     }
-
-    await ensureDomain({ domain: 'YourData' });
 
     const authorizationTokenPayload = {
       rp_node_id: 'rp1',

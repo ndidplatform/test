@@ -9,7 +9,6 @@ import * as db from '../../../../db';
 import { createEventPromise, generateReferenceId } from '../../../../utils';
 import { randomString } from '../../../../utils/random';
 import yourDataRequestStatus from '../request_status';
-import { ensureDomain } from '../../../_helpers';
 import { waitUntilBlockHeightMatch } from '../../../../tendermint';
 import * as config from '../../../../config';
 
@@ -54,8 +53,6 @@ describe('Negative cases', function () {
     if (!response.ok) {
       throw new Error('error adding or updating YourData AS service');
     }
-
-    await ensureDomain({ domain: 'YourData' });
 
     const authorizationTokenPayload = {
       rp_node_id: 'rp1',

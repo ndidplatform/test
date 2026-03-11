@@ -1,4 +1,14 @@
+import { ensureDomain } from '../../_helpers';
+
 describe('Your Data', function () {
+  before(async function () {
+    this.timeout(5000);
+
+    await ensureDomain({
+      domain: 'YourData',
+    });
+  });
+
   require('./as_setup');
   require('./as_service_setup');
 
@@ -10,6 +20,9 @@ describe('Your Data', function () {
   require('./error_response');
   require('./as_response_through_callback');
   require('./request_timeout');
+
+  // auto error response from AS
+  require('./auto_error_response');
 
   // decryption key retry scenarios
   require('./data_decryption_key_retry');
