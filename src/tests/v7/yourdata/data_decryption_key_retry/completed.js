@@ -14,7 +14,7 @@ import * as apiHelpers from '../../../../api/helpers';
 import { rpEventEmitter, as1EventEmitter } from '../../../../callback_server';
 import * as db from '../../../../db';
 import { createEventPromise, generateReferenceId } from '../../../../utils';
-import { randomNumber, randomString } from '../../../../utils/random';
+import { randomString } from '../../../../utils/random';
 import yourDataRequestStatus from '../request_status';
 import yourDataDataDecryptionKeyRetryRequestStatus from '../data_decryption_key_retry_request_status';
 import { waitUntilBlockHeightMatch } from '../../../../tendermint';
@@ -23,6 +23,8 @@ import * as config from '../../../../config';
 describe('Data decryption key retry request after request timeout (Code modification required)', function () {
   const rpNodeId = 'rp1';
   const asNodeId = 'as1';
+
+  const domain = 'YourData';
 
   const serviceId = `test_service_${randomString(8)}`;
 
@@ -532,7 +534,7 @@ describe('Data decryption key retry request after request timeout (Code modifica
     it('RP should have and able to get saved private messages', async function () {
       const response = await commonApi.getPrivateMessages('rp1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -549,7 +551,7 @@ describe('Data decryption key retry request after request timeout (Code modifica
     it('RP should have no saved private messages left after removal', async function () {
       const response = await commonApi.getPrivateMessages('rp1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -559,7 +561,7 @@ describe('Data decryption key retry request after request timeout (Code modifica
     it('AS should have and able to get saved private messages', async function () {
       const response = await commonApi.getPrivateMessages('as1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -576,7 +578,7 @@ describe('Data decryption key retry request after request timeout (Code modifica
     it('AS should have no saved private messages left after removal', async function () {
       const response = await commonApi.getPrivateMessages('as1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);

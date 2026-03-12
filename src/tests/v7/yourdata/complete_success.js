@@ -1137,7 +1137,7 @@ describe('Complete success scenario', function () {
     it('RP should have and able to get saved private messages', async function () {
       const response = await commonApi.getPrivateMessages('rp1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -1154,7 +1154,7 @@ describe('Complete success scenario', function () {
     it('RP should have no saved private messages left after removal', async function () {
       const response = await commonApi.getPrivateMessages('rp1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -1164,7 +1164,7 @@ describe('Complete success scenario', function () {
     it('AS should have and able to get saved private messages', async function () {
       const response = await commonApi.getPrivateMessages('as1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -1181,7 +1181,7 @@ describe('Complete success scenario', function () {
     it('AS should have no saved private messages left after removal', async function () {
       const response = await commonApi.getPrivateMessages('as1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -1638,7 +1638,7 @@ describe('Complete success scenario', function () {
     it('RP should have and able to get saved private messages', async function () {
       const response = await commonApi.getPrivateMessages('rp1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -1655,7 +1655,7 @@ describe('Complete success scenario', function () {
     it('RP should have no saved private messages left after removal', async function () {
       const response = await commonApi.getPrivateMessages('rp1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -1665,7 +1665,7 @@ describe('Complete success scenario', function () {
     it('AS should have and able to get saved private messages', async function () {
       const response = await commonApi.getPrivateMessages('as1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
@@ -1682,7 +1682,7 @@ describe('Complete success scenario', function () {
     it('AS should have no saved private messages left after removal', async function () {
       const response = await commonApi.getPrivateMessages('as1', {
         request_id: requestId,
-        skip_request_id_check: true,
+        domain,
       });
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
