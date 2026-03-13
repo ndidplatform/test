@@ -8,6 +8,10 @@ import { ensureYourDataASErrorCode } from '../../../_helpers';
 import { waitUntilBlockHeightMatch } from '../../../../tendermint';
 
 describe('AS setup auto error response', function () {
+  const unsupportedServiceErrorCode = 50000;
+  const unsupportedServiceErrorCodeDesc =
+    'unsuported/unknown service error test';
+
   const serviceNotAvailbleErrorCode = 50001;
   const serviceNotAvailbleErrorCodeDesc = 'service not available error test';
 
@@ -24,6 +28,11 @@ describe('AS setup auto error response', function () {
     if (!as1Available) {
       this.skip();
     }
+
+    await ensureYourDataASErrorCode({
+      errorCode: unsupportedServiceErrorCode,
+      description: unsupportedServiceErrorCodeDesc,
+    });
 
     await ensureYourDataASErrorCode({
       errorCode: serviceNotAvailbleErrorCode,
@@ -44,6 +53,10 @@ describe('AS setup auto error response', function () {
   });
 
   describe('set auto error response', function () {
+    const unsupportedServiceAutoResConfig = {
+      error_code: unsupportedServiceErrorCode,
+      error_message: 'unsupported/unknown service',
+    };
     const serviceNotAvailableAutoResConfig = {
       error_code: serviceNotAvailbleErrorCode,
       error_message: 'service is currently not available',
@@ -59,6 +72,7 @@ describe('AS setup auto error response', function () {
 
     it('should set auto error response config successfully', async function () {
       const response = await yourDataAsApi.setAutoErrorResponses('as1', {
+        unsupported_service: unsupportedServiceAutoResConfig,
         service_not_available: serviceNotAvailableAutoResConfig,
         unsupported_namespace: unsupportedNamespaceAutoResConfig,
         unsupported_authorization: unsupportedAuthorizationAutoResConfig,
@@ -71,6 +85,7 @@ describe('AS setup auto error response', function () {
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
       expect(responseBody).to.deep.equal({
+        unsupported_service: unsupportedServiceAutoResConfig,
         service_not_available: serviceNotAvailableAutoResConfig,
         unsupported_namespace: unsupportedNamespaceAutoResConfig,
         unsupported_authorization: unsupportedAuthorizationAutoResConfig,
@@ -79,6 +94,7 @@ describe('AS setup auto error response', function () {
 
     after(async function () {
       await yourDataAsApi.setAutoErrorResponses('as1', {
+        unsupported_service: null,
         service_not_available: null,
         unsupported_namespace: null,
         unsupported_authorization: null,
@@ -87,6 +103,10 @@ describe('AS setup auto error response', function () {
   });
 
   describe('unset auto error response', function () {
+    const unsupportedServiceAutoResConfig = {
+      error_code: unsupportedServiceErrorCode,
+      error_message: 'unsupported/unknown service',
+    };
     const serviceNotAvailableAutoResConfig = {
       error_code: serviceNotAvailbleErrorCode,
       error_message: 'service is currently not available',
@@ -102,6 +122,7 @@ describe('AS setup auto error response', function () {
 
     it('should set auto error response config successfully', async function () {
       const response = await yourDataAsApi.setAutoErrorResponses('as1', {
+        unsupported_service: unsupportedServiceAutoResConfig,
         service_not_available: serviceNotAvailableAutoResConfig,
         unsupported_namespace: unsupportedNamespaceAutoResConfig,
         unsupported_authorization: unsupportedAuthorizationAutoResConfig,
@@ -114,6 +135,7 @@ describe('AS setup auto error response', function () {
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
       expect(responseBody).to.deep.equal({
+        unsupported_service: unsupportedServiceAutoResConfig,
         service_not_available: serviceNotAvailableAutoResConfig,
         unsupported_namespace: unsupportedNamespaceAutoResConfig,
         unsupported_authorization: unsupportedAuthorizationAutoResConfig,
@@ -132,6 +154,7 @@ describe('AS setup auto error response', function () {
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
       expect(responseBody).to.deep.equal({
+        unsupported_service: unsupportedServiceAutoResConfig,
         service_not_available: null,
         unsupported_namespace: unsupportedNamespaceAutoResConfig,
         unsupported_authorization: unsupportedAuthorizationAutoResConfig,
@@ -140,6 +163,7 @@ describe('AS setup auto error response', function () {
 
     it('should unset auto error response config successfully', async function () {
       const response = await yourDataAsApi.setAutoErrorResponses('as1', {
+        unsupported_service: null,
         service_not_available: null,
         unsupported_namespace: null,
         unsupported_authorization: null,
@@ -152,6 +176,7 @@ describe('AS setup auto error response', function () {
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
       expect(responseBody).to.deep.equal({
+        unsupported_service: null,
         service_not_available: null,
         unsupported_namespace: null,
         unsupported_authorization: null,
@@ -162,6 +187,10 @@ describe('AS setup auto error response', function () {
   describe('set auto error response (bypass error code check)', function () {
     const unregisteredErrorCode = Date.now(); // this error code doesn't exist on platform
 
+    const unsupportedServiceAutoResConfig = {
+      error_code: unregisteredErrorCode,
+      error_message: 'unsupported/unknown service',
+    };
     const serviceNotAvailableAutoResConfig = {
       error_code: unregisteredErrorCode,
       error_message: 'service is currently not available',
@@ -178,6 +207,7 @@ describe('AS setup auto error response', function () {
     it('should set auto error response config successfully', async function () {
       const response = await yourDataAsApi.setAutoErrorResponses('as1', {
         bypass_error_code_check: true,
+        unsupported_service: unsupportedServiceAutoResConfig,
         service_not_available: serviceNotAvailableAutoResConfig,
         unsupported_namespace: unsupportedNamespaceAutoResConfig,
         unsupported_authorization: unsupportedAuthorizationAutoResConfig,
@@ -190,6 +220,7 @@ describe('AS setup auto error response', function () {
       const responseBody = await response.json();
       expect(response.status).to.equal(200);
       expect(responseBody).to.deep.equal({
+        unsupported_service: unsupportedServiceAutoResConfig,
         service_not_available: serviceNotAvailableAutoResConfig,
         unsupported_namespace: unsupportedNamespaceAutoResConfig,
         unsupported_authorization: unsupportedAuthorizationAutoResConfig,
@@ -198,6 +229,7 @@ describe('AS setup auto error response', function () {
 
     after(async function () {
       await yourDataAsApi.setAutoErrorResponses('as1', {
+        unsupported_service: null,
         service_not_available: null,
         unsupported_namespace: null,
         unsupported_authorization: null,
