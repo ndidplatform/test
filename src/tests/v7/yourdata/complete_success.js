@@ -143,6 +143,7 @@ describe('Complete success scenario', function () {
     });
 
     await waitUntilBlockHeightMatch('rp1', 'ndid1');
+    await waitUntilBlockHeightMatch('rp1', 'as1');
   });
 
   let preConsentToken;
