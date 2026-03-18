@@ -42,7 +42,7 @@ describe('Service requester node whitelist', function () {
     it('Service should be added successfully', async function () {
       this.timeout(10000);
 
-      const response = await commonApi.getServices('ndid1', { domain: 'all' });
+      const response = await commonApi.getServices('ndid1');
       const responseBody = await response.json();
       const service = responseBody.find(
         (service) => service.service_id === serviceId
@@ -87,7 +87,7 @@ describe('Service requester node whitelist', function () {
       let response;
       let responseBody;
 
-      response = await commonApi.getServices('ndid1', { domain: 'all' });
+      response = await commonApi.getServices('ndid1');
       responseBody = await response.json();
       const service = responseBody.find(
         (service) => service.service_id === serviceId
@@ -142,7 +142,7 @@ describe('Service requester node whitelist', function () {
       let response;
       let responseBody;
 
-      response = await commonApi.getServices('ndid1', { domain: 'all' });
+      response = await commonApi.getServices('ndid1');
       responseBody = await response.json();
       const service = responseBody.find(
         (service) => service.service_id === serviceId
