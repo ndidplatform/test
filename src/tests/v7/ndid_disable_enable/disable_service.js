@@ -174,7 +174,7 @@ describe('NDID disable service test', function () {
       (service) => service.service_id === 'test_disable_service'
     );
 
-    expect(service).to.be.an('undefined');
+    expect(service.active).to.equal(false);
   });
 
   it('After NDID disabled service (test_disable_service) RP should create a request unsuccessfully', async function () {
@@ -409,7 +409,7 @@ describe('NDID disable service after RP create request test', function () {
       (service) => service.service_id === 'test_disable_service'
     );
 
-    expect(service).to.be.an('undefined');
+    expect(service.active).to.equal(false);
   });
 
   it('AS should send data unsuccessfully (test_disable_service)', async function () {
@@ -530,11 +530,12 @@ describe('NDID disable service before AS offered service test', function () {
     });
 
     expect(response.status).to.equal(204);
-    await wait(3000);
   });
 
   it('Service (test_disable_service_before_as_offered_service) should be disabled successfully', async function () {
     this.timeout(10000);
+
+    await waitUntilBlockHeightMatch('as1', 'ndid1');
 
     const responseAsGetService = await asApi.getService('as1', {
       serviceId: 'test_disable_service_before_as_offered_service',
@@ -550,7 +551,7 @@ describe('NDID disable service before AS offered service test', function () {
         service.service_id === 'test_disable_service_before_as_offered_service'
     );
 
-    expect(service).to.be.an('undefined');
+    expect(service.active).to.equal(false);
   });
 
   it('AS should add offered service (test_disable_service_before_as_offered_service) unsuccessfully', async function () {
