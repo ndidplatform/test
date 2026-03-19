@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "E2E test for NDID platform",
   "scripts": {
-    "test": "node --security-revert=CVE-2023-46809 node_modules/mocha/bin/_mocha src/tests/index.js --require @babel/register --require source-map-support/register",
+    "test": "node node_modules/mocha/bin/_mocha src/tests/index.js --require @babel/register --require source-map-support/register",
     "test-with-kms": "USE_EXTERNAL_CRYPTO_SERVICE=true npm run test-exit-on-error",
-    "test-exit-on-error": "node --security-revert=CVE-2023-46809 node_modules/mocha/bin/_mocha src/tests/index.js --require @babel/register --require source-map-support/register --bail",
+    "test-exit-on-error": "node node_modules/mocha/bin/_mocha src/tests/index.js --require @babel/register --require source-map-support/register --bail",
     "test-with-ndid-http-headers": "HTTP_HEADER_NDID_MEMBER_APP_TYPE=custom_member_app HTTP_HEADER_NDID_MEMBER_APP_VERSION=1.0.0 npm run test-exit-on-error"
   },
   "repository": {
