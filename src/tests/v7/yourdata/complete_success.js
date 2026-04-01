@@ -64,7 +64,11 @@ describe('Complete success scenario', function () {
   before(async function () {
     this.timeout(10000);
 
-    const identity = db.idp1Identities.find((identity) => identity.mode === 2);
+    const identity = db.idp1Identities.find(
+      (identity) =>
+        (identity.mode === 2 || identity.mode === 3) &&
+        !identity.revokeIdentityAssociation
+    );
     namespace = identity.namespace;
     identifier = identity.identifier;
 
