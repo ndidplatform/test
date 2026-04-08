@@ -1,11 +1,11 @@
 /**
- * IMPORTANT: Code modifications on RP node (and optionally AS node) required.
+ * IMPORTANT: IMPORTANT: Set test config/flag OR Code modifications on RP node (and AS node) required.
  * RP node needs to stop processing futher after receiving encrypted data from AS node. (Don't/Stop before request for key.)
- * 
+ *
  * AND
- * 
- * AS node needs to not accept/process data decryption key retry request from RP, 
- * or simply stop/not start AS node process, 
+ *
+ * AS node needs to not accept/process data decryption key retry request from RP,
+ * or simply stop/not start AS node process,
  * or RP node must not send retry request to AS.
  */
 
@@ -17,6 +17,7 @@ import * as yourDataRpApi from '../../../../api/v7/yourdata/rp';
 import * as yourDataAsApi from '../../../../api/v7/yourdata/as';
 import * as yourDataUtilityApi from '../../../../api/v7/yourdata/utility';
 import * as apiHelpers from '../../../../api/helpers';
+import * as debugApi from '../../../../api/debug';
 import { rpEventEmitter, as1EventEmitter } from '../../../../callback_server';
 import * as db from '../../../../db';
 import { createEventPromise, generateReferenceId } from '../../../../utils';
@@ -26,7 +27,7 @@ import yourDataDataDecryptionKeyRetryRequestStatus from '../data_decryption_key_
 import { waitUntilBlockHeightMatch } from '../../../../tendermint';
 import * as config from '../../../../config';
 
-describe('Data decryption key retry request timeout (Code modification required)', function () {
+describe('Data decryption key retry request timeout', function () {
   const rpNodeId = 'rp1';
   const asNodeId = 'as1';
 
@@ -42,10 +43,6 @@ describe('Data decryption key retry request timeout (Code modification required)
   let requestId;
 
   before(async function () {
-    if (!config.runYourDataWithCodeModificationRequiredTests) {
-      this.skip();
-    }
-
     this.timeout(10000);
 
     const identity = db.idp1Identities.find((identity) => identity.mode === 2);
@@ -54,6 +51,20 @@ describe('Data decryption key retry request timeout (Code modification required)
 
     let response;
     let responseBody;
+
+    // set test config
+    response = await debugApi.setTestConfig('rp1', {
+      doNotRequestForYourDataDataDecryptionKey: true,
+    });
+    if (!response.ok) {
+      throw new Error('unable to set test config at node rp1');
+    }
+    response = await debugApi.setTestConfig('as1', {
+      doNotProcessYourDataDataDecryptionKeyRetryRequest: true,
+    });
+    if (!response.ok) {
+      throw new Error('unable to set test config at node as1');
+    }
 
     // ensure YourData AS service register
     response = await yourDataAsApi.addOrUpdateService(asNodeId, {
@@ -484,5 +495,23 @@ describe('Data decryption key retry request timeout (Code modification required)
     after(function () {
       rpEventEmitter.removeAllListeners('callback');
     });
+  });
+
+  after(async function () {
+    // set test config
+    let response;
+
+    response = await debugApi.setTestConfig('rp1', {
+      doNotRequestForYourDataDataDecryptionKey: false,
+    });
+    if (!response.ok) {
+      throw new Error('unable to set test config at node rp1');
+    }
+    response = await debugApi.setTestConfig('as1', {
+      doNotProcessYourDataDataDecryptionKeyRetryRequest: false,
+    });
+    if (!response.ok) {
+      throw new Error('unable to set test config at node as1');
+    }
   });
 });

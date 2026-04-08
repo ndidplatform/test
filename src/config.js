@@ -71,8 +71,3 @@ export const httpHeaderNdidMemberAppType =
   process.env.HTTP_HEADER_NDID_MEMBER_APP_TYPE;
 export const httpHeaderNdidMemberAppVersion =
   process.env.HTTP_HEADER_NDID_MEMBER_APP_VERSION;
-
-//
-
-export const runYourDataWithCodeModificationRequiredTests =
-  process.env.RUN_YOUR_DATA_WITH_CODE_MODIFICATION_REQUIRED_TESTS === 'true';
