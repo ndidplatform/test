@@ -121,7 +121,7 @@ describe('AS response through callback', function () {
       createRequestParams = {
         service_id: serviceId,
         service_version: 'v1',
-        // service_extension: '',
+        // service_extension: [''],
         as_node_id: asNodeId,
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -378,7 +378,7 @@ describe('AS response through callback', function () {
       createRequestParams = {
         service_id: serviceId,
         service_version: 'v1',
-        // service_extension: '',
+        // service_extension: [''],
         as_node_id: asNodeId,
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,

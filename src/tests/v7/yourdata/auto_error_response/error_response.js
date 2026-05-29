@@ -173,7 +173,7 @@ describe('Error response with auto error response config', function () {
       createRequestParams = {
         service_id: 'some_unsupported_service_id',
         service_version: 'v1',
-        // service_extension: '',
+        // service_extension: [''],
         as_node_id: asNodeId,
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -377,7 +377,7 @@ describe('Error response with auto error response config', function () {
       createRequestParams = {
         service_id: serviceId,
         service_version: 'v1',
-        // service_extension: '',
+        // service_extension: [''],
         as_node_id: asNodeId,
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -600,7 +600,7 @@ describe('Error response with auto error response config', function () {
       createRequestParams = {
         service_id: serviceId,
         service_version: 'v1',
-        // service_extension: '',
+        // service_extension: [''],
         as_node_id: asNodeId,
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -823,7 +823,7 @@ describe('Error response with auto error response config', function () {
       createRequestParams = {
         service_id: serviceId,
         service_version: 'v1',
-        // service_extension: '',
+        // service_extension: [''],
         as_node_id: asNodeId,
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,

@@ -660,7 +660,7 @@ describe('Complete success scenario', function () {
       createRequestParams = {
         service_id: completeConsentServiceId,
         service_version: 'v1',
-        // service_extension: '',
+        // service_extension: [''],
         as_node_id: asNodeId,
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,
@@ -1233,7 +1233,7 @@ describe('Complete success scenario', function () {
       createRequestParams = {
         service_id: dataRequestServiceId,
         service_version: 'v1',
-        service_extension: 'transactions_detail',
+        service_extension: ['transactions_detail'],
         as_node_id: asNodeId,
         reference_id: rpReferenceId,
         callback_url: config.RP_CALLBACK_URL,

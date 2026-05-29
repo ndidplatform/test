@@ -72,7 +72,7 @@ describe('Mismatch service ID (in parameter and token)', function () {
     createRequestParams = {
       service_id: 'other_service',
       service_version: 'v1',
-      // service_extension: '',
+      // service_extension: [''],
       as_node_id: asNodeId,
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
@@ -171,7 +171,7 @@ describe('Mismatch service extension (in parameter and token)', function () {
     createRequestParams = {
       service_id: serviceId,
       service_version: 'v1',
-      service_extension: 'other_service_ext',
+      service_extension: ['other_service_ext'],
       as_node_id: asNodeId,
       reference_id: rpReferenceId,
       callback_url: config.RP_CALLBACK_URL,
