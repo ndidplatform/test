@@ -66,7 +66,7 @@ describe('AS response through callback', function () {
       sub_identity_list: [
         {
           namespace: 'account_no',
-          idenfifier: '123-45678-90',
+          identifier: '123-45678-90',
           visible_identifier: '123-45XXX-XX',
           identifier_extension: '{account_type:savings}',
         },
@@ -131,7 +131,7 @@ describe('AS response through callback', function () {
           selected_accounts: [
             {
               namespace: 'account_no',
-              idenfifier: '123-45678-90',
+              identifier: '123-45678-90',
               visible_identifier: '123-45XXX-XX',
               identifier_extension: '{account_type:savings}',
             },
@@ -388,7 +388,7 @@ describe('AS response through callback', function () {
           selected_accounts: [
             {
               namespace: 'account_no',
-              idenfifier: '123-45678-90',
+              identifier: '123-45678-90',
               visible_identifier: '123-45XXX-XX',
               identifier_extension: '{account_type:savings}',
             },
