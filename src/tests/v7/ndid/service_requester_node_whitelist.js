@@ -199,14 +199,32 @@ describe('Service requester node whitelist', function () {
     it('should be added successfully', async function () {
       this.timeout(10000);
 
-      const response =
-        await commonApi.getServiceRequesterNodeWhitelistByServiceId('ndid1', {
+      let response;
+      let responseBody;
+
+      response = await commonApi.getServiceRequesterNodeWhitelistByServiceId(
+        'ndid1',
+        {
           serviceId,
-        });
-      const responseBody = await response.json();
+        }
+      );
+      responseBody = await response.json();
 
       expect(responseBody).to.deep.equal({
         node_id_list: ['rp1'],
+        enabled: false,
+      });
+
+      response = await commonApi.getRequesterNodeWhitelistedServiceList(
+        'ndid1',
+        {
+          node_id: 'rp1',
+        }
+      );
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.include({
+        service_id: serviceId,
         enabled: false,
       });
     });
@@ -226,14 +244,32 @@ describe('Service requester node whitelist', function () {
     it('should be removed successfully', async function () {
       this.timeout(10000);
 
-      const response =
-        await commonApi.getServiceRequesterNodeWhitelistByServiceId('ndid1', {
+      let response;
+      let responseBody;
+
+      response = await commonApi.getServiceRequesterNodeWhitelistByServiceId(
+        'ndid1',
+        {
           serviceId,
-        });
-      const responseBody = await response.json();
+        }
+      );
+      responseBody = await response.json();
 
       expect(responseBody).to.deep.equal({
         node_id_list: [],
+        enabled: false,
+      });
+
+      response = await commonApi.getRequesterNodeWhitelistedServiceList(
+        'ndid1',
+        {
+          node_id: 'rp1',
+        }
+      );
+      responseBody = await response.json();
+
+      expect(responseBody).to.not.deep.include({
+        service_id: serviceId,
         enabled: false,
       });
     });

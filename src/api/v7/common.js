@@ -65,6 +65,15 @@ export function getNodeToken(nodeId, data) {
   );
 }
 
+export function getRequesterNodeWhitelistedServiceList(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  return httpGet(
+    `${apiBaseUrl}/utility/nodes/${
+      data ? `${data.node_id}` : `${nodeId}`
+    }/requester_whitelisted_services`
+  );
+}
+
 export function getNamespaces(nodeId) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   return httpGet(`${apiBaseUrl}/utility/namespaces`);
