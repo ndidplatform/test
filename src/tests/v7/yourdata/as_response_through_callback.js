@@ -464,6 +464,7 @@ describe('AS response through callback', function () {
       }
 
       await waitUntilBlockHeightMatch('as1', 'ndid1');
+      await waitUntilBlockHeightMatch('rp1', 'ndid1');
     });
 
     it('RP should create a request successfully', async function () {
