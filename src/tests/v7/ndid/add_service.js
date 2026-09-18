@@ -206,6 +206,64 @@ describe('Service with domain', function () {
       active: true,
     });
   });
+
+  // update to no domain
+
+  it('NDID should update service domain (to no domain) successfully', async function () {
+    this.timeout(10000);
+
+    const response = await ndidApi.updateService('ndid1', {
+      service_id: serviceId,
+      domain: '',
+    });
+    expect(response.status).to.equal(204);
+  });
+
+  it('Service domain should be updated successfully', async function () {
+    this.timeout(10000);
+    const response = await commonApi.getServices('ndid1');
+    const responseBody = await response.json();
+    const service = responseBody.find(
+      (service) => service.service_id === serviceId
+    );
+
+    expect(service).to.deep.equal({
+      service_id: serviceId,
+      service_name: serviceNewName,
+      // domain: undefined,
+      requester_node_whitelist_enabled: false,
+      active: true,
+    });
+  });
+
+  // update back to YourData domain
+
+  it('NDID should update service domain successfully', async function () {
+    this.timeout(10000);
+
+    const response = await ndidApi.updateService('ndid1', {
+      service_id: serviceId,
+      domain,
+    });
+    expect(response.status).to.equal(204);
+  });
+
+  it('Service domain should be updated successfully', async function () {
+    this.timeout(10000);
+    const response = await commonApi.getServices('ndid1');
+    const responseBody = await response.json();
+    const service = responseBody.find(
+      (service) => service.service_id === serviceId
+    );
+
+    expect(service).to.deep.equal({
+      service_id: serviceId,
+      service_name: serviceNewName,
+      domain,
+      requester_node_whitelist_enabled: false,
+      active: true,
+    });
+  });
 });
 
 describe('Error - Invalid Domain', function () {

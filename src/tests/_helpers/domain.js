@@ -50,3 +50,47 @@ export async function ensureNodeInDomainNodeWhitelist({ domain, nodeId }) {
     );
   }
 }
+
+export async function ensureDomainCrossDomainRequestDisabled({ domain }) {
+  const res = await apiHelpers.getResponseAndBody(
+    commonApi.getDomainList('ndid1')
+  );
+
+  const foundDomain = res.responseBody.find(({ domain: d }) => d === domain);
+
+  if (!foundDomain) {
+    throw new Error('domain not found');
+  }
+
+  const disabled = foundDomain.cross_domain_request_disabled;
+
+  if (!disabled) {
+    await apiHelpers.getResponseAndBody(
+      ndidApi.disableDomainCrossDomainRequest('ndid1', {
+        domain,
+      })
+    );
+  }
+}
+
+export async function ensureDomainCrossDomainRequestEnabled({ domain }) {
+  const res = await apiHelpers.getResponseAndBody(
+    commonApi.getDomainList('ndid1')
+  );
+
+  const foundDomain = res.responseBody.find(({ domain: d }) => d === domain);
+
+  if (!foundDomain) {
+    throw new Error('domain not found');
+  }
+
+  const disabled = foundDomain.cross_domain_request_disabled;
+
+  if (disabled) {
+    await apiHelpers.getResponseAndBody(
+      ndidApi.enableDomainCrossDomainRequest('ndid1', {
+        domain,
+      })
+    );
+  }
+}

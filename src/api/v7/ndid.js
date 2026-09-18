@@ -277,6 +277,22 @@ export function disableDomainNodeWhitelist(nodeId, data) {
   return httpPost(`${apiBaseUrl}/ndid/disable_domain_node_whitelist`, data);
 }
 
+export function enableDomainCrossDomainRequest(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/enable_domain_cross_domain_request`,
+    data
+  );
+}
+
+export function disableDomainCrossDomainRequest(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/disable_domain_cross_domain_request`,
+    data
+  );
+}
+
 export function addDomainErrorCode(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/add_domain_error_code`, data);

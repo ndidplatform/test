@@ -1,17 +1,27 @@
 import { expect } from 'chai';
 
 import * as ndidApi from '../../../../api/v7/ndid';
+import * as rpApi from '../../../../api/v7/rp';
 import * as yourdataRpApi from '../../../../api/v7/yourdata/rp';
 import * as yourDataUtilityApi from '../../../../api/v7/yourdata/utility';
 import * as commonApi from '../../../../api/v7/common';
+import * as apiHelpers from '../../../../api/helpers';
 
 import * as db from '../../../../db';
 
 import { generateReferenceId } from '../../../../utils';
+import { randomString } from '../../../../utils/random';
 
 import { waitUntilBlockHeightMatch } from '../../../../tendermint';
 
 import * as config from '../../../../config';
+
+import {
+  ensureASService,
+  ensureDomainCrossDomainRequestDisabled,
+  ensureDomainCrossDomainRequestEnabled,
+  ensureService,
+} from '../../../_helpers';
 
 describe('General', function () {
   const domain = 'YourData';
@@ -33,6 +43,7 @@ describe('General', function () {
       const response = await ndidApi.addDomain('ndid1', {
         domain,
         // node_whitelist_enabled: false, // default: false
+        // cross_domain_request_disabled: false, // default: false
       });
 
       expect(response.status).to.equal(204);
@@ -49,6 +60,7 @@ describe('General', function () {
         domain,
         active: true,
         node_whitelist_enabled: false,
+        cross_domain_request_disabled: false,
       });
     });
   });
@@ -156,10 +168,11 @@ describe('General', function () {
         domain,
         active: true,
         node_whitelist_enabled: true,
+        cross_domain_request_disabled: false,
       });
     });
 
-    it('NDID should disable domain successfully', async function () {
+    it('NDID should disable domain node whitelist successfully', async function () {
       this.timeout(10000);
 
       const response = await ndidApi.disableDomainNodeWhitelist('ndid1', {
@@ -181,6 +194,7 @@ describe('General', function () {
         domain,
         active: true,
         node_whitelist_enabled: false,
+        cross_domain_request_disabled: false,
       });
     });
   });
@@ -254,6 +268,74 @@ describe('General', function () {
       expect(responseBody).to.deep.include({
         // node_id_list: [],
         enabled: false,
+      });
+    });
+  });
+
+  describe('Enable/Disable cross service domain request', function () {
+    before(async function () {
+      this.timeout(5000);
+
+      const response = await commonApi.getDomainList('ndid1');
+      const responseBody = await response.json();
+      const expectedDomain = responseBody.find((d) => d.domain === domain);
+
+      if (expectedDomain.cross_domain_request_disabled) {
+        await ndidApi.enableDomainCrossDomainRequest('ndid1', {
+          domain,
+        });
+      }
+    });
+
+    it('NDID should disable domain cross service domain request successfully', async function () {
+      this.timeout(10000);
+
+      const response = await ndidApi.disableDomainCrossDomainRequest('ndid1', {
+        domain,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('Domain should be updated successfully', async function () {
+      this.timeout(10000);
+      let response;
+      let responseBody;
+
+      response = await commonApi.getDomainList('ndid1');
+      responseBody = await response.json();
+      const expectedDomain = responseBody.find((d) => d.domain === domain);
+
+      expect(expectedDomain).to.deep.equal({
+        domain,
+        active: true,
+        node_whitelist_enabled: false,
+        cross_domain_request_disabled: true,
+      });
+    });
+
+    it('NDID should enable domain cross service domain request successfully', async function () {
+      this.timeout(10000);
+
+      const response = await ndidApi.enableDomainCrossDomainRequest('ndid1', {
+        domain,
+      });
+      expect(response.status).to.equal(204);
+    });
+
+    it('Domain should be updated successfully', async function () {
+      this.timeout(10000);
+      let response;
+      let responseBody;
+
+      response = await commonApi.getDomainList('ndid1');
+      responseBody = await response.json();
+      const expectedDomain = responseBody.find((d) => d.domain === domain);
+
+      expect(expectedDomain).to.deep.equal({
+        domain,
+        active: true,
+        node_whitelist_enabled: false,
+        cross_domain_request_disabled: false,
       });
     });
   });
@@ -585,6 +667,167 @@ describe('General', function () {
         const responseBody = await response.json();
         expect(response.status).to.equal(200);
         expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+      });
+    });
+
+    describe('Cross service domain request disabled', function () {
+      const rpReferenceId = generateReferenceId();
+
+      const serviceInDomain = `service_test_${randomString(8)}`;
+
+      const asNodeId = 'as1';
+
+      let createRequestParams;
+
+      before(async function () {
+        this.timeout(15000);
+
+        await ensureDomainCrossDomainRequestDisabled({
+          domain,
+        });
+
+        await ensureService({
+          serviceId: serviceInDomain,
+          serviceName: serviceInDomain,
+          dataSchema: 'n/a',
+          dataSchemaVersion: 'n/a',
+          domain,
+        });
+
+        await ensureASService({
+          asNodeId,
+          serviceId: serviceInDomain,
+          minIal: 1.1,
+          minAal: 1,
+          supportedNamespaceList: ['citizen_id'],
+        });
+
+        createRequestParams = {
+          reference_id: rpReferenceId,
+          callback_url: config.RP_CALLBACK_URL,
+          mode: 2,
+          namespace,
+          identifier,
+          idp_id_list: ['idp1'],
+          data_request_list: [
+            {
+              service_id: 'bank_statement',
+              as_id_list: [asNodeId],
+              min_as: 1,
+              request_params: JSON.stringify({
+                format: 'pdf',
+              }),
+            },
+            {
+              service_id: serviceInDomain,
+              as_id_list: [asNodeId],
+              min_as: 1,
+              request_params: '',
+            },
+          ],
+          request_message:
+            'Test request message (cross service domain request disabled)',
+          min_ial: 1.1,
+          min_aal: 1,
+          min_idp: 1,
+          request_timeout: 86400,
+          bypass_identity_check: false,
+        };
+
+        await waitUntilBlockHeightMatch('rp1', 'ndid1');
+      });
+
+      it('RP should NOT be able to create a request', async function () {
+        this.timeout(10000);
+        const response = await rpApi.createRequest('rp1', createRequestParams);
+        const responseBody = await response.json();
+        expect(response.status).to.equal(400);
+        expect(responseBody.error.code).to.equal(20122);
+      });
+
+      after(async function () {
+        this.timeout(10000);
+
+        await apiHelpers.getResponseAndBody(
+          ndidApi.enableDomainCrossDomainRequest('ndid1', {
+            domain,
+          })
+        );
+      });
+    });
+
+    describe('Cross service domain request enabled', function () {
+      const rpReferenceId = generateReferenceId();
+
+      const serviceInDomain = `service_test_${randomString(8)}`;
+
+      const asNodeId = 'as1';
+
+      let createRequestParams;
+
+      before(async function () {
+        this.timeout(15000);
+
+        await ensureDomainCrossDomainRequestEnabled({
+          domain,
+        });
+
+        await ensureService({
+          serviceId: serviceInDomain,
+          serviceName: serviceInDomain,
+          dataSchema: 'n/a',
+          dataSchemaVersion: 'n/a',
+          domain,
+        });
+
+        await ensureASService({
+          asNodeId,
+          serviceId: serviceInDomain,
+          minIal: 1.1,
+          minAal: 1,
+          supportedNamespaceList: ['citizen_id'],
+        });
+
+        createRequestParams = {
+          reference_id: rpReferenceId,
+          callback_url: config.RP_CALLBACK_URL,
+          mode: 2,
+          namespace,
+          identifier,
+          idp_id_list: ['idp1'],
+          data_request_list: [
+            {
+              service_id: 'bank_statement',
+              as_id_list: [asNodeId],
+              min_as: 1,
+              request_params: JSON.stringify({
+                format: 'pdf',
+              }),
+            },
+            {
+              service_id: serviceInDomain,
+              as_id_list: [asNodeId],
+              min_as: 1,
+              request_params: '',
+            },
+          ],
+          request_message:
+            'Test request message (cross service domain request enabled)',
+          min_ial: 1.1,
+          min_aal: 1,
+          min_idp: 1,
+          request_timeout: 86400,
+          bypass_identity_check: false,
+        };
+
+        await waitUntilBlockHeightMatch('rp1', 'ndid1');
+      });
+
+      it('RP should be able to create a request successfully', async function () {
+        this.timeout(10000);
+        const response = await rpApi.createRequest('rp1', createRequestParams);
+        // const responseBody = await response.json();
+        expect(response.status).to.equal(202);
       });
     });
   });
