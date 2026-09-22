@@ -239,6 +239,38 @@ export function disableServiceRequesterNodeWhitelist(nodeId, data) {
   );
 }
 
+export function addRequestTypeToServiceRequestTypeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/add_request_type_to_service_request_type_whitelist`,
+    data
+  );
+}
+
+export function removeRequestTypeFromServiceRequestTypeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/remove_request_type_from_service_request_type_whitelist`,
+    data
+  );
+}
+
+export function enableServiceRequestTypeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/enable_service_request_type_whitelist`,
+    data
+  );
+}
+
+export function disableServiceRequestTypeWhitelist(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId);
+  return httpPost(
+    `${apiBaseUrl}/ndid/disable_service_request_type_whitelist`,
+    data
+  );
+}
+
 export function addDomain(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId);
   return httpPost(`${apiBaseUrl}/ndid/add_domain`, data);

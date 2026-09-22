@@ -1,0 +1,920 @@
+import { expect } from 'chai';
+
+import * as ndidApi from '../../../api/v7/ndid';
+import * as rpApi from '../../../api/v7/rp';
+import * as asApi from '../../../api/v7/as';
+import * as commonApi from '../../../api/v7/common';
+import * as apiHelpers from '../../../api/helpers';
+
+import { ndidAvailable } from '../..';
+
+import * as db from '../../../db';
+import { rpEventEmitter, as1EventEmitter } from '../../../callback_server';
+
+import { createEventPromise, generateReferenceId } from '../../../utils';
+import { randomString } from '../../../utils/random';
+
+import { waitUntilBlockHeightMatch } from '../../../tendermint';
+
+import * as config from '../../../config';
+
+describe('Service request type whitelist', function () {
+  const serviceId = `service_test_${randomString(8)}`;
+  const serviceName = `Service (${serviceId})`;
+
+  const requestType = `request_type_test_${randomString(8)}`;
+
+  before(async function () {
+    this.timeout(10000);
+
+    if (!ndidAvailable) {
+      this.skip();
+    }
+
+    await apiHelpers.getResponseAndBody(
+      ndidApi.addRequestType('ndid1', {
+        name: requestType,
+      })
+    );
+  });
+
+  describe('Enable/Disable', function () {
+    it('NDID should add new service successfully', async function () {
+      this.timeout(10000);
+
+      const response = await ndidApi.addService('ndid1', {
+        service_id: serviceId,
+        service_name: serviceName,
+      });
+
+      expect(response.status).to.equal(201);
+    });
+
+    it('Service should be added successfully', async function () {
+      this.timeout(10000);
+
+      const response = await commonApi.getServices('ndid1');
+      const responseBody = await response.json();
+      const service = responseBody.find(
+        (service) => service.service_id === serviceId
+      );
+
+      expect(service).to.deep.equal({
+        service_id: serviceId,
+        service_name: serviceName,
+        requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
+        active: true,
+      });
+    });
+
+    it('should get service successfully', async function () {
+      this.timeout(15000);
+      const response = await commonApi.getService('ndid1', {
+        serviceId,
+      });
+      const responseBody = await response.json();
+      expect(responseBody).to.deep.equal({
+        service_id: serviceId,
+        service_name: serviceName,
+        requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
+        active: true,
+      });
+    });
+
+    it('NDID should enable service request type whitelist successfully', async function () {
+      this.timeout(10000);
+
+      const response = await ndidApi.enableServiceRequestTypeWhitelist(
+        'ndid1',
+        {
+          service_id: serviceId,
+        }
+      );
+      expect(response.status).to.equal(204);
+    });
+
+    it('Service should be updated successfully', async function () {
+      this.timeout(10000);
+      let response;
+      let responseBody;
+
+      response = await commonApi.getServices('ndid1');
+      responseBody = await response.json();
+      const service = responseBody.find(
+        (service) => service.service_id === serviceId
+      );
+
+      expect(service).to.deep.equal({
+        service_id: serviceId,
+        service_name: serviceName,
+        requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: true,
+        active: true,
+      });
+
+      response = await commonApi.getService('ndid1', {
+        serviceId,
+      });
+      responseBody = await response.json();
+      expect(responseBody).to.deep.equal({
+        service_id: serviceId,
+        service_name: serviceName,
+        requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: true,
+        active: true,
+      });
+
+      response = await commonApi.getServiceRequestTypeWhitelistByServiceId(
+        'ndid1',
+        {
+          serviceId,
+        }
+      );
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.equal({
+        request_type_list: [],
+        enabled: true,
+      });
+    });
+
+    it('NDID should disable service request type whitelist successfully', async function () {
+      this.timeout(10000);
+
+      const response = await ndidApi.disableServiceRequestTypeWhitelist(
+        'ndid1',
+        {
+          service_id: serviceId,
+        }
+      );
+      expect(response.status).to.equal(204);
+    });
+
+    it('Service should be updated successfully', async function () {
+      this.timeout(10000);
+      let response;
+      let responseBody;
+
+      response = await commonApi.getServices('ndid1');
+      responseBody = await response.json();
+      const service = responseBody.find(
+        (service) => service.service_id === serviceId
+      );
+
+      expect(service).to.deep.equal({
+        service_id: serviceId,
+        service_name: serviceName,
+        requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
+        active: true,
+      });
+
+      response = await commonApi.getService('ndid1', {
+        serviceId,
+      });
+      responseBody = await response.json();
+      expect(responseBody).to.deep.equal({
+        service_id: serviceId,
+        service_name: serviceName,
+        requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
+        active: true,
+      });
+
+      response = await commonApi.getServiceRequestTypeWhitelistByServiceId(
+        'ndid1',
+        {
+          serviceId,
+        }
+      );
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.equal({
+        request_type_list: [],
+        enabled: false,
+      });
+    });
+  });
+
+  describe('Add/Remove request type', function () {
+    it('NDID should add request type to service request type whitelist successfully', async function () {
+      this.timeout(10000);
+
+      const response =
+        await ndidApi.addRequestTypeToServiceRequestTypeWhitelist('ndid1', {
+          service_id: serviceId,
+          request_type: requestType,
+        });
+
+      expect(response.status).to.equal(204);
+    });
+
+    it('should be added successfully', async function () {
+      this.timeout(10000);
+
+      let response;
+      let responseBody;
+
+      response = await commonApi.getServiceRequestTypeWhitelistByServiceId(
+        'ndid1',
+        {
+          serviceId,
+        }
+      );
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.equal({
+        request_type_list: [requestType],
+        enabled: false,
+      });
+
+      response = await commonApi.getRequestTypeWhitelistedServiceList('ndid1', {
+        request_type: requestType,
+      });
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.include({
+        service_id: serviceId,
+        enabled: false,
+      });
+    });
+
+    it('NDID should remove node from service request type whitelist successfully', async function () {
+      this.timeout(10000);
+
+      const response =
+        await ndidApi.removeRequestTypeFromServiceRequestTypeWhitelist(
+          'ndid1',
+          {
+            service_id: serviceId,
+            request_type: requestType,
+          }
+        );
+
+      expect(response.status).to.equal(204);
+    });
+
+    it('should be removed successfully', async function () {
+      this.timeout(10000);
+
+      let response;
+      let responseBody;
+
+      response = await commonApi.getServiceRequestTypeWhitelistByServiceId(
+        'ndid1',
+        {
+          serviceId,
+        }
+      );
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.equal({
+        request_type_list: [],
+        enabled: false,
+      });
+
+      response = await commonApi.getRequestTypeWhitelistedServiceList('ndid1', {
+        request_type: requestType,
+      });
+      responseBody = await response.json();
+
+      expect(responseBody).to.not.deep.include({
+        service_id: serviceId,
+        enabled: false,
+      });
+    });
+  });
+
+  describe('Add/Remove default request type (null or empty string)', function () {
+    it('NDID should add request type to service request type whitelist successfully', async function () {
+      this.timeout(10000);
+
+      const response =
+        await ndidApi.addRequestTypeToServiceRequestTypeWhitelist('ndid1', {
+          service_id: serviceId,
+          request_type: null,
+        });
+
+      expect(response.status).to.equal(204);
+    });
+
+    it('should be added successfully', async function () {
+      this.timeout(10000);
+
+      let response;
+      let responseBody;
+
+      response = await commonApi.getServiceRequestTypeWhitelistByServiceId(
+        'ndid1',
+        {
+          serviceId,
+        }
+      );
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.equal({
+        request_type_list: [null],
+        enabled: false,
+      });
+
+      response = await commonApi.getRequestTypeWhitelistedServiceList('ndid1', {
+        request_type: '',
+      });
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.include({
+        service_id: serviceId,
+        enabled: false,
+      });
+    });
+
+    it('NDID should remove node from service request type whitelist successfully', async function () {
+      this.timeout(10000);
+
+      const response =
+        await ndidApi.removeRequestTypeFromServiceRequestTypeWhitelist(
+          'ndid1',
+          {
+            service_id: serviceId,
+            request_type: null,
+          }
+        );
+
+      expect(response.status).to.equal(204);
+    });
+
+    it('should be removed successfully', async function () {
+      this.timeout(10000);
+
+      let response;
+      let responseBody;
+
+      response = await commonApi.getServiceRequestTypeWhitelistByServiceId(
+        'ndid1',
+        {
+          serviceId,
+        }
+      );
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.equal({
+        request_type_list: [],
+        enabled: false,
+      });
+
+      response = await commonApi.getRequestTypeWhitelistedServiceList('ndid1', {
+        request_type: '',
+      });
+      responseBody = await response.json();
+
+      expect(responseBody).to.not.deep.include({
+        service_id: serviceId,
+        enabled: false,
+      });
+    });
+  });
+
+  describe('Create Request', function () {
+    let namespace;
+    let identifier;
+
+    before(function () {
+      const identity = db.idp1Identities.filter(
+        (identity) => identity.mode === 2
+      );
+
+      if (identity.length === 0) {
+        throw new Error('No created identity to use');
+      }
+
+      namespace = identity[0].namespace;
+      identifier = identity[0].identifier;
+    });
+
+    describe('Whitelist enabled, request type not in whitelist', function () {
+      const rpReferenceId = generateReferenceId();
+
+      let createRequestParams;
+
+      before(async function () {
+        this.timeout(15000);
+
+        let response;
+
+        response = await ndidApi.enableServiceRequestTypeWhitelist('ndid1', {
+          service_id: serviceId,
+        });
+
+        if (!response.ok) {
+          throw new Error('cannot enable service request type whitelist');
+        }
+
+        createRequestParams = {
+          reference_id: rpReferenceId,
+          callback_url: config.RP_CALLBACK_URL,
+          mode: 2,
+          namespace,
+          identifier,
+          idp_id_list: [],
+          data_request_list: [
+            {
+              service_id: serviceId,
+              as_id_list: ['as1'],
+              min_as: 1,
+              request_params: JSON.stringify({
+                format: 'pdf',
+              }),
+            },
+          ],
+          request_message: 'Test request message',
+          min_ial: 1.1,
+          min_aal: 1,
+          min_idp: 1,
+          request_timeout: 86400,
+          bypass_identity_check: false,
+          request_type: requestType,
+        };
+
+        await waitUntilBlockHeightMatch('rp1', 'ndid1');
+      });
+
+      it('RP should NOT be able to create a request', async function () {
+        this.timeout(10000);
+        const response = await rpApi.createRequest('rp1', createRequestParams);
+        const responseBody = await response.json();
+        expect(response.status).to.equal(400);
+
+        expect(responseBody.error.code).to.equal(20099);
+      });
+    });
+
+    describe('Whitelist enabled, request type in whitelist', function () {
+      const addOrUpdateServiceReferenceId = generateReferenceId(); // AS - setup
+
+      const addOrUpdateServiceResultPromise = createEventPromise(); // AS - setup
+
+      const rpReferenceId = generateReferenceId();
+
+      const createRequestResultPromise = createEventPromise(); // RP
+
+      let createRequestParams;
+
+      before(async function () {
+        this.timeout(15000);
+
+        let response;
+
+        response = await ndidApi.addRequestTypeToServiceRequestTypeWhitelist(
+          'ndid1',
+          {
+            service_id: serviceId,
+            request_type: requestType,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('cannot add node to request type whitelist');
+        }
+
+        response = await ndidApi.approveService('ndid1', {
+          service_id: serviceId,
+          node_id: 'as1',
+        });
+
+        if (!response.ok) {
+          throw new Error('cannot approve service');
+        }
+
+        await waitUntilBlockHeightMatch('as1', 'ndid1');
+
+        as1EventEmitter.on('callback', function (callbackData) {
+          if (callbackData.type === 'add_or_update_service_result') {
+            if (callbackData.reference_id === addOrUpdateServiceReferenceId) {
+              addOrUpdateServiceResultPromise.resolve(callbackData);
+            }
+          }
+        });
+
+        response = await asApi.addOrUpdateService('as1', {
+          serviceId,
+          reference_id: addOrUpdateServiceReferenceId,
+          callback_url: config.AS1_CALLBACK_URL,
+          min_ial: 1.1,
+          min_aal: 1,
+          url: config.AS1_CALLBACK_URL,
+          supported_namespace_list: ['citizen_id'],
+        });
+
+        if (!response.ok) {
+          throw new Error('cannot add/update service');
+        }
+
+        const addOrUpdateServiceResult =
+          await addOrUpdateServiceResultPromise.promise;
+
+        if (!addOrUpdateServiceResult.success) {
+          throw new Error('cannot add/update service');
+        }
+
+        rpEventEmitter.on('callback', function (callbackData) {
+          if (
+            callbackData.type === 'create_request_result' &&
+            callbackData.reference_id === rpReferenceId
+          ) {
+            createRequestResultPromise.resolve(callbackData);
+          }
+        });
+
+        createRequestParams = {
+          reference_id: rpReferenceId,
+          callback_url: config.RP_CALLBACK_URL,
+          mode: 2,
+          namespace,
+          identifier,
+          idp_id_list: [],
+          data_request_list: [
+            {
+              service_id: serviceId,
+              as_id_list: ['as1'],
+              min_as: 1,
+              request_params: JSON.stringify({
+                format: 'pdf',
+              }),
+            },
+          ],
+          request_message: 'Test request message',
+          min_ial: 1.1,
+          min_aal: 1,
+          min_idp: 1,
+          request_timeout: 86400,
+          bypass_identity_check: false,
+          request_type: requestType,
+        };
+
+        await waitUntilBlockHeightMatch('rp1', 'as1');
+      });
+
+      it('RP should create a request successfully', async function () {
+        this.timeout(10000);
+        const response = await rpApi.createRequest('rp1', createRequestParams);
+        const responseBody = await response.json();
+        expect(response.status).to.equal(202);
+        expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+        expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+
+        const createRequestResult = await createRequestResultPromise.promise;
+        expect(createRequestResult.success).to.equal(true);
+        expect(createRequestResult.creation_block_height).to.be.a('string');
+        const splittedCreationBlockHeight =
+          createRequestResult.creation_block_height.split(':');
+        expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+        expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+        expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      });
+
+      after(function () {
+        rpEventEmitter.removeAllListeners('callback');
+        as1EventEmitter.removeAllListeners('callback');
+      });
+    });
+
+    describe('Whitelist disabled, request type not in whitelist', function () {
+      const rpReferenceId = generateReferenceId();
+
+      const createRequestResultPromise = createEventPromise(); // RP
+
+      let createRequestParams;
+
+      before(async function () {
+        this.timeout(15000);
+
+        let response;
+
+        response =
+          await ndidApi.removeRequestTypeFromServiceRequestTypeWhitelist(
+            'ndid1',
+            {
+              service_id: serviceId,
+              request_type: requestType,
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error('cannot remove node from request type whitelist');
+        }
+
+        response = await ndidApi.disableServiceRequestTypeWhitelist('ndid1', {
+          service_id: serviceId,
+          request_type: requestType,
+        });
+
+        if (!response.ok) {
+          throw new Error('cannot disable service request type whitelist');
+        }
+
+        rpEventEmitter.on('callback', function (callbackData) {
+          if (
+            callbackData.type === 'create_request_result' &&
+            callbackData.reference_id === rpReferenceId
+          ) {
+            createRequestResultPromise.resolve(callbackData);
+          }
+        });
+
+        createRequestParams = {
+          reference_id: rpReferenceId,
+          callback_url: config.RP_CALLBACK_URL,
+          mode: 2,
+          namespace,
+          identifier,
+          idp_id_list: [],
+          data_request_list: [
+            {
+              service_id: serviceId,
+              as_id_list: ['as1'],
+              min_as: 1,
+              request_params: JSON.stringify({
+                format: 'pdf',
+              }),
+            },
+          ],
+          request_message: 'Test request message',
+          min_ial: 1.1,
+          min_aal: 1,
+          min_idp: 1,
+          request_timeout: 86400,
+          bypass_identity_check: false,
+          request_type: requestType,
+        };
+
+        await waitUntilBlockHeightMatch('rp1', 'ndid1');
+      });
+
+      it('RP should create a request successfully', async function () {
+        this.timeout(10000);
+        const response = await rpApi.createRequest('rp1', createRequestParams);
+        const responseBody = await response.json();
+        expect(response.status).to.equal(202);
+        expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+        expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+
+        const createRequestResult = await createRequestResultPromise.promise;
+        expect(createRequestResult.success).to.equal(true);
+        expect(createRequestResult.creation_block_height).to.be.a('string');
+        const splittedCreationBlockHeight =
+          createRequestResult.creation_block_height.split(':');
+        expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+        expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+        expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      });
+
+      after(function () {
+        rpEventEmitter.removeAllListeners('callback');
+        as1EventEmitter.removeAllListeners('callback');
+      });
+    });
+
+    describe('Whitelist enabled, default request type (null or empty string) in whitelist', function () {
+      const addOrUpdateServiceReferenceId = generateReferenceId(); // AS - setup
+
+      const addOrUpdateServiceResultPromise = createEventPromise(); // AS - setup
+
+      const rpReferenceId = generateReferenceId();
+
+      const createRequestResultPromise = createEventPromise(); // RP
+
+      let createRequestParams;
+
+      before(async function () {
+        this.timeout(15000);
+
+        let response;
+
+        response = await ndidApi.enableServiceRequestTypeWhitelist('ndid1', {
+          service_id: serviceId,
+        });
+
+        if (!response.ok) {
+          throw new Error('cannot enable service request type whitelist');
+        }
+
+        response = await ndidApi.addRequestTypeToServiceRequestTypeWhitelist(
+          'ndid1',
+          {
+            service_id: serviceId,
+            request_type: null,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('cannot add node to request type whitelist');
+        }
+
+        response = await ndidApi.approveService('ndid1', {
+          service_id: serviceId,
+          node_id: 'as1',
+        });
+
+        if (!response.ok) {
+          throw new Error('cannot approve service');
+        }
+
+        await waitUntilBlockHeightMatch('as1', 'ndid1');
+
+        as1EventEmitter.on('callback', function (callbackData) {
+          if (callbackData.type === 'add_or_update_service_result') {
+            if (callbackData.reference_id === addOrUpdateServiceReferenceId) {
+              addOrUpdateServiceResultPromise.resolve(callbackData);
+            }
+          }
+        });
+
+        response = await asApi.addOrUpdateService('as1', {
+          serviceId,
+          reference_id: addOrUpdateServiceReferenceId,
+          callback_url: config.AS1_CALLBACK_URL,
+          min_ial: 1.1,
+          min_aal: 1,
+          url: config.AS1_CALLBACK_URL,
+          supported_namespace_list: ['citizen_id'],
+        });
+
+        if (!response.ok) {
+          throw new Error('cannot add/update service');
+        }
+
+        const addOrUpdateServiceResult =
+          await addOrUpdateServiceResultPromise.promise;
+
+        if (!addOrUpdateServiceResult.success) {
+          throw new Error('cannot add/update service');
+        }
+
+        rpEventEmitter.on('callback', function (callbackData) {
+          if (
+            callbackData.type === 'create_request_result' &&
+            callbackData.reference_id === rpReferenceId
+          ) {
+            createRequestResultPromise.resolve(callbackData);
+          }
+        });
+
+        createRequestParams = {
+          reference_id: rpReferenceId,
+          callback_url: config.RP_CALLBACK_URL,
+          mode: 2,
+          namespace,
+          identifier,
+          idp_id_list: [],
+          data_request_list: [
+            {
+              service_id: serviceId,
+              as_id_list: ['as1'],
+              min_as: 1,
+              request_params: JSON.stringify({
+                format: 'pdf',
+              }),
+            },
+          ],
+          request_message: 'Test request message',
+          min_ial: 1.1,
+          min_aal: 1,
+          min_idp: 1,
+          request_timeout: 86400,
+          bypass_identity_check: false,
+          // request_type: null, // no request type specified
+        };
+
+        await waitUntilBlockHeightMatch('rp1', 'as1');
+      });
+
+      it('RP should create a request successfully', async function () {
+        this.timeout(10000);
+        const response = await rpApi.createRequest('rp1', createRequestParams);
+        const responseBody = await response.json();
+        expect(response.status).to.equal(202);
+        expect(responseBody.request_id).to.be.a('string').that.is.not.empty;
+        expect(responseBody.initial_salt).to.be.a('string').that.is.not.empty;
+
+        const createRequestResult = await createRequestResultPromise.promise;
+        expect(createRequestResult.success).to.equal(true);
+        expect(createRequestResult.creation_block_height).to.be.a('string');
+        const splittedCreationBlockHeight =
+          createRequestResult.creation_block_height.split(':');
+        expect(splittedCreationBlockHeight).to.have.lengthOf(2);
+        expect(splittedCreationBlockHeight[0]).to.have.lengthOf.at.least(1);
+        expect(splittedCreationBlockHeight[1]).to.have.lengthOf.at.least(1);
+      });
+
+      after(async function () {
+        this.timeout(10000);
+
+        await apiHelpers.getResponseAndBody(
+          ndidApi.disableServiceRequestTypeWhitelist('ndid1', {
+            service_id: serviceId,
+          })
+        );
+
+        await apiHelpers.getResponseAndBody(
+          ndidApi.removeRequestTypeFromServiceRequestTypeWhitelist('ndid1', {
+            service_id: serviceId,
+            request_type: null,
+          })
+        );
+
+        rpEventEmitter.removeAllListeners('callback');
+        as1EventEmitter.removeAllListeners('callback');
+      });
+    });
+  });
+
+  describe('Remove request type while exist in service request type whitelist', function () {
+    before(async function () {
+      this.timeout(10000);
+
+      await apiHelpers.getResponseAndBody(
+        ndidApi.enableServiceRequestTypeWhitelist('ndid1', {
+          service_id: serviceId,
+        })
+      );
+
+      await apiHelpers.getResponseAndBody(
+        ndidApi.addRequestTypeToServiceRequestTypeWhitelist('ndid1', {
+          service_id: serviceId,
+          request_type: requestType,
+        })
+      );
+    });
+
+    it('NDID should remove request type successfully', async function () {
+      this.timeout(20000);
+
+      const response = await ndidApi.removeRequestType('ndid1', {
+        name: requestType,
+      });
+
+      expect(response.status).to.equal(204);
+    });
+
+    it('should be removed successfully', async function () {
+      this.timeout(10000);
+
+      let response;
+      let responseBody;
+
+      response = await commonApi.getServiceRequestTypeWhitelistByServiceId(
+        'ndid1',
+        {
+          serviceId,
+        }
+      );
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.equal({
+        request_type_list: [],
+        enabled: true,
+      });
+
+      response = await commonApi.getRequestTypeWhitelistedServiceList('ndid1', {
+        request_type: requestType,
+      });
+      responseBody = await response.json();
+
+      expect(responseBody).to.deep.equal([]);
+    });
+
+    it('should NOT be able to remove again', async function () {
+      this.timeout(10000);
+
+      let response;
+      let responseBody;
+
+      response = await ndidApi.removeRequestTypeFromServiceRequestTypeWhitelist(
+        'ndid1',
+        {
+          service_id: serviceId,
+          request_type: requestType,
+        }
+      );
+      responseBody = await response.json();
+
+      expect(response.status).to.equal(400);
+      expect(responseBody.error.code).to.equal(25099);
+    });
+
+    after(async function () {
+      this.timeout(10000);
+
+      await apiHelpers.getResponseAndBody(
+        ndidApi.disableServiceRequestTypeWhitelist('ndid1', {
+          service_id: serviceId,
+        })
+      );
+
+      rpEventEmitter.removeAllListeners('callback');
+      as1EventEmitter.removeAllListeners('callback');
+    });
+  });
+});

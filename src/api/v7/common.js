@@ -111,6 +111,14 @@ export function getServiceRequesterNodeWhitelistByServiceId(nodeId, data) {
   );
 }
 
+export function getServiceRequestTypeWhitelistByServiceId(nodeId, data) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { serviceId } = data;
+  return httpGet(
+    `${apiBaseUrl}/utility/services/${serviceId}/request_type_whitelist`
+  );
+}
+
 export function getPrivateMessages(nodeId, data) {
   const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
   const { request_id, ...queryParams } = data;
@@ -218,6 +226,19 @@ export function getRequestTypeList(nodeId, params = {}) {
 
   return httpGet(
     `${apiBaseUrl}/utility/request_types${queryString ? `?${queryString}` : ''}`
+  );
+}
+
+export function getRequestTypeWhitelistedServiceList(nodeId, params = {}) {
+  const apiBaseUrl = getApiAddressUrl(nodeId) + API_VERSION;
+  const { ...queryParams } = params;
+
+  let arrayQueryString = Object.keys(queryParams).map(
+    (key) => `${key}=${queryParams[key]}`
+  );
+  let queryString = arrayQueryString.join('&');
+  return httpGet(
+    `${apiBaseUrl}/utility/request_type_whitelisted_services${queryString ? `?${queryString}` : ''}`
   );
 }
 

@@ -20,6 +20,7 @@ describe('NDID API tests', function () {
   require('./on_the_fly_support');
   require('./supported_feature_list');
   require('./service_requester_node_whitelist');
+  require('./service_request_type_whitelist');
 });
 
 describe('NDID API tests (proxy)', function () {
