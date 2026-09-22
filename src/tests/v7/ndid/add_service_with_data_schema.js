@@ -256,6 +256,7 @@ describe('NDID add and update service with data_schema test', function () {
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
         requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
         active: true,
       });
     });
@@ -270,6 +271,7 @@ describe('NDID add and update service with data_schema test', function () {
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
         requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
         active: true,
         data_schema: originalDataSchema,
         data_schema_version: '1',
@@ -965,6 +967,7 @@ describe('NDID add and update service with data_schema test', function () {
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
         requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
         active: true,
         data_schema: dataSchema,
         data_schema_version: '1',
@@ -1634,6 +1637,7 @@ describe('NDID add and update service with data_schema test', function () {
         service_id: 'service_with_data_schema',
         service_name: 'Test add new service with data schema',
         requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
         active: true,
       });
     });

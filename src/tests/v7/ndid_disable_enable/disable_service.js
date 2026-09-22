@@ -111,6 +111,7 @@ describe('NDID disable service test', function () {
       service_name: 'Test disable service',
       active: true,
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
     });
   });
 
@@ -508,6 +509,7 @@ describe('NDID disable service before AS offered service test', function () {
       service_name: 'Test disable service before as offerred service',
       active: true,
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
     });
   });
 

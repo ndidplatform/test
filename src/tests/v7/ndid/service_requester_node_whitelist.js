@@ -52,6 +52,7 @@ describe('Service requester node whitelist', function () {
         service_id: serviceId,
         service_name: serviceName,
         requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
         active: true,
       });
     });
@@ -66,6 +67,7 @@ describe('Service requester node whitelist', function () {
         service_id: serviceId,
         service_name: serviceName,
         requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
         active: true,
       });
     });
@@ -97,6 +99,7 @@ describe('Service requester node whitelist', function () {
         service_id: serviceId,
         service_name: serviceName,
         requester_node_whitelist_enabled: true,
+        request_type_whitelist_enabled: false,
         active: true,
       });
 
@@ -108,6 +111,7 @@ describe('Service requester node whitelist', function () {
         service_id: serviceId,
         service_name: serviceName,
         requester_node_whitelist_enabled: true,
+        request_type_whitelist_enabled: false,
         active: true,
       });
 
@@ -152,6 +156,7 @@ describe('Service requester node whitelist', function () {
         service_id: serviceId,
         service_name: serviceName,
         requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
         active: true,
       });
 
@@ -163,6 +168,7 @@ describe('Service requester node whitelist', function () {
         service_id: serviceId,
         service_name: serviceName,
         requester_node_whitelist_enabled: false,
+        request_type_whitelist_enabled: false,
         active: true,
       });
 

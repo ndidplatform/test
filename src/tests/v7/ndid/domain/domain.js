@@ -350,7 +350,7 @@ describe('General', function () {
 
     before(async function () {
       const identity = db.idp1Identities.filter(
-        (identity) => identity.mode === 2
+        (identity) => identity.mode === 2 && !identity.revokeIdentityAssociation
       );
 
       if (identity.length === 0) {

@@ -9,6 +9,7 @@ export async function ensureService({
   dataSchemaVersion,
   domain,
   requesterNodeWhitelistEnabled,
+  requestTypeWhitelistEnabled,
 }) {
   let response;
 
@@ -31,6 +32,7 @@ export async function ensureService({
     data_schema_version: dataSchemaVersion,
     domain,
     requester_node_whitelist_enabled: requesterNodeWhitelistEnabled,
+    request_type_whitelist_enabled: requestTypeWhitelistEnabled,
   });
 
   if (!response.ok) {
@@ -90,6 +92,30 @@ export async function ensureNodeInServiceRequesterNodeWhitelist({
   if (!response.ok) {
     throw new Error(
       `error adding node to service requester node whitelist, response status: ${response.status}`
+    );
+  }
+}
+
+export async function ensureServiceRequestTypeWhitelistEnabled({
+  serviceId,
+}) {
+  let response;
+
+  let res = await apiHelpers.getResponseAndBody(
+    commonApi.getService('ndid1', { serviceId })
+  );
+
+  if (res.responseBody.request_type_whitelist_enabled) {
+    return;
+  }
+
+  response = await ndidApi.enableServiceRequestTypeWhitelist('ndid1', {
+    service_id: serviceId,
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `error enabling service request type whitelist, response status: ${response.status}`
     );
   }
 }

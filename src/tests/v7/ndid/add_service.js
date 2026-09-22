@@ -53,6 +53,7 @@ describe('NDID add new service test', function () {
       service_id: 'test_add_new_service',
       service_name: 'Test add new service',
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
       active: true,
     });
 
@@ -81,6 +82,7 @@ describe('NDID add new service test', function () {
       service_id: 'test_add_new_service',
       service_name: 'Test add new service',
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
       active: true,
     });
   });
@@ -107,6 +109,7 @@ describe('NDID add new service test', function () {
       service_id: 'test_add_new_service',
       service_name: 'Test update service name by ndid',
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
       active: true,
     });
   });
@@ -159,6 +162,7 @@ describe('Service with domain', function () {
       service_name: serviceName,
       domain,
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
       active: true,
     });
   });
@@ -174,6 +178,7 @@ describe('Service with domain', function () {
       service_name: serviceName,
       domain,
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
       active: true,
     });
   });
@@ -203,6 +208,7 @@ describe('Service with domain', function () {
       service_name: serviceNewName,
       domain,
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
       active: true,
     });
   });
@@ -232,6 +238,7 @@ describe('Service with domain', function () {
       service_name: serviceNewName,
       // domain: undefined,
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
       active: true,
     });
   });
@@ -261,6 +268,7 @@ describe('Service with domain', function () {
       service_name: serviceNewName,
       domain,
       requester_node_whitelist_enabled: false,
+      request_type_whitelist_enabled: false,
       active: true,
     });
   });
@@ -314,6 +322,7 @@ describe('Service with requester node whitelist flag', function () {
       service_name: serviceName,
       domain,
       requester_node_whitelist_enabled: true,
+      request_type_whitelist_enabled: false,
     });
 
     expect(response.status).to.equal(201);
@@ -333,6 +342,7 @@ describe('Service with requester node whitelist flag', function () {
       service_name: serviceName,
       domain,
       requester_node_whitelist_enabled: true,
+      request_type_whitelist_enabled: false,
       active: true,
     });
   });
@@ -348,6 +358,7 @@ describe('Service with requester node whitelist flag', function () {
       service_name: serviceName,
       domain,
       requester_node_whitelist_enabled: true,
+      request_type_whitelist_enabled: false,
       active: true,
     });
   });
