@@ -20,6 +20,9 @@ describe('Data request flow', function() {
   require('./large_data_size');
   require('./large_data_size_response_through_callback');
   require('./base64_data_url_data');
+
+  // Require config change and processes restart
+  // require('./large_request_message_size');
 });
 
 describe('Data request flow (Node behind proxy)', function() {

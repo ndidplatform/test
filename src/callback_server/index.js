@@ -64,7 +64,7 @@ export function setIdPAccessorEncryptWithRamdomByte(
 */
 let ndidServer;
 const ndidApp = express();
-ndidApp.use(bodyParser.json({ limit: '2mb' }));
+ndidApp.use(bodyParser.json({ limit: '200mb' }));
 
 ndidApp.post('/ndid/callback', async function (req, res) {
   const callbackData = req.body;
@@ -77,7 +77,7 @@ ndidApp.post('/ndid/callback', async function (req, res) {
 */
 let rpServer;
 const rpApp = express();
-rpApp.use(bodyParser.json({ limit: '2mb' }));
+rpApp.use(bodyParser.json({ limit: '200mb' }));
 
 rpApp.post('/rp/callback', async function (req, res) {
   const callbackData = req.body;
@@ -90,7 +90,7 @@ rpApp.post('/rp/callback', async function (req, res) {
 */
 let rp2Server;
 const rp2App = express();
-rp2App.use(bodyParser.json({ limit: '2mb' }));
+rp2App.use(bodyParser.json({ limit: '200mb' }));
 
 rp2App.post('/rp/callback', async function (req, res) {
   const callbackData = req.body;
@@ -103,7 +103,7 @@ rp2App.post('/rp/callback', async function (req, res) {
 */
 let idp1Server;
 const idp1App = express();
-idp1App.use(bodyParser.json({ limit: '2mb' }));
+idp1App.use(bodyParser.json({ limit: '200mb' }));
 
 idp1App.post('/idp/callback', async function (req, res) {
   const callbackData = req.body;
@@ -168,7 +168,7 @@ idp1App.post('/idp/identity/notification', async function (req, res) {
 */
 let idp2Server;
 const idp2App = express();
-idp2App.use(bodyParser.json({ limit: '2mb' }));
+idp2App.use(bodyParser.json({ limit: '200mb' }));
 
 idp2App.post('/idp/callback', async function (req, res) {
   const callbackData = req.body;
@@ -223,7 +223,7 @@ idp2App.post('/idp/identity/notification', async function (req, res) {
 */
 let idp3Server;
 const idp3App = express();
-idp3App.use(bodyParser.json({ limit: '2mb' }));
+idp3App.use(bodyParser.json({ limit: '200mb' }));
 
 idp3App.post('/idp/callback', async function (req, res) {
   const callbackData = req.body;
@@ -288,7 +288,7 @@ idp3App.post('/idp/identity/notification', async function (req, res) {
 */
 let as1Server;
 const as1App = express();
-as1App.use(bodyParser.json({ limit: '2mb' }));
+as1App.use(bodyParser.json({ limit: '200mb' }));
 
 as1App.post('/as/callback', async function (req, res) {
   const callbackData = req.body;
@@ -328,7 +328,7 @@ as1App.post('/as/callback', async function (req, res) {
 */
 let as2Server;
 const as2App = express();
-as2App.use(bodyParser.json({ limit: '2mb' }));
+as2App.use(bodyParser.json({ limit: '200mb' }));
 
 as2App.post('/as/callback', async function (req, res) {
   const callbackData = req.body;
@@ -341,7 +341,7 @@ as2App.post('/as/callback', async function (req, res) {
 */
 let proxy1Server;
 const proxy1App = express();
-proxy1App.use(bodyParser.json({ limit: '2mb' }));
+proxy1App.use(bodyParser.json({ limit: '200mb' }));
 
 proxy1App.post('/proxy/callback', async function (req, res) {
   const callbackData = req.body;
@@ -400,7 +400,7 @@ proxy1App.post('/proxy/identity/notification', async function (req, res) {
 */
 let proxy2Server;
 const proxy2App = express();
-proxy2App.use(bodyParser.json({ limit: '2mb' }));
+proxy2App.use(bodyParser.json({ limit: '200mb' }));
 
 proxy2App.post('/proxy/callback', async function (req, res) {
   const callbackData = req.body;
